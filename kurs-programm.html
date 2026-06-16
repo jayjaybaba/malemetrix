@@ -1,0 +1,137 @@
+﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <script>try{var _t=localStorage.getItem('mm_theme');if(_t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dein 12-Wochen-Programm — MaleMetrix</title>
+  <meta name="description" content="Das MaleMetrix 12-Wochen-Programm zum Selbststudium: Woche für Woche Aufgaben mit Fortschritts-Tracking.">
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="css/fonts.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%232e7cf6'/><stop offset='1' stop-color='%2300c2ff'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='url(%23g)'/><path d='M8 23V9.5l8 7 8-7V23' fill='none' stroke='white' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/><circle cx='8' cy='9.5' r='2.2' fill='white'/><circle cx='24' cy='9.5' r='2.2' fill='white'/><circle cx='16' cy='16.5' r='1.9' fill='%23bfe9ff'/></svg>">
+  <link rel="canonical" href="https://malemetrix.de/kurs-programm.html">
+  <meta name="theme-color" content="#07090d">
+</head>
+<body>
+
+<header class="site-header" id="siteHeader">
+  <div class="container header-inner">
+    <a href="index.html" class="logo"><span class="logo-mark">M</span>Male<span class="x">Metrix</span></a>
+    <nav class="main-nav" id="mainNav">
+      <a href="check.html" data-i18n="nav.check">Score-Check</a>
+      <a href="coaching.html" data-i18n="nav.coaching">Coaching</a>
+      <a href="kurs.html" data-i18n="nav.course">Programm</a>
+      <a href="tracker.html" data-i18n="nav.tracker">Tracker</a>
+      <a href="ebooks.html" data-i18n="nav.ebooks">Ebooks</a>
+      <div class="nav-more">
+        <button class="nav-more-toggle" data-i18n="nav.more">Mehr</button>
+        <div class="nav-more-menu">
+          <a href="kurs-programm.html" data-i18n="nav.mycourse">Mein Programm öffnen</a>
+          <a href="tools.html" data-i18n="nav.tools">Rechner</a>
+          <a href="shop.html" data-i18n="nav.shop">Shop</a>
+          <a href="blutwerte.html" data-i18n="nav.blood">Blutwerte</a>
+          <a href="ueber.html" data-i18n="nav.about">Über</a>
+          <a href="faq.html" data-i18n="nav.faq">FAQ</a>
+          <a href="kontakt.html" data-i18n="nav.contact">Kontakt</a>
+        </div>
+      </div>
+      <a href="termin.html" class="btn btn-primary btn-sm" data-i18n="nav.booking">Analysegespräch</a>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-btn lang-btn" aria-label="Sprache wechseln / Switch language" title="DE / EN">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"/></svg>
+        <span class="lang-code">EN</span>
+      </button>
+      <button class="icon-btn theme-btn" aria-label="Hell/Dunkel umschalten" title="Theme">
+        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </button>
+      <button class="cart-btn" id="cartBtn" aria-label="Warenkorb öffnen">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span class="cart-count empty" id="cartCount">0</span>
+      </button>
+      <button class="nav-toggle" id="navToggle" aria-label="Menü öffnen">☰</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- GATE (vor Freischaltung sichtbar) -->
+  <section class="section" id="courseGate" hidden>
+    <div class="container-narrow">
+      <div class="section-head center reveal">
+        <span class="eyebrow">12-Wochen-Programm · Zugang</span>
+        <h1 class="h-section">Programm freischalten.</h1>
+        <p class="lead">Gib deinen Zugangscode ein, den du nach dem Kauf erhalten hast. Der Zugang bleibt danach auf diesem Gerät gespeichert.</p>
+      </div>
+
+      <div class="card reveal" style="max-width:460px;margin:0 auto;padding:32px">
+        <div class="field">
+          <label for="courseCode">Zugangscode</label>
+          <input type="text" id="courseCode" placeholder="z. B. MM12-XXXX" autocomplete="off" spellcheck="false" style="text-transform:uppercase">
+        </div>
+        <p id="courseCodeError" class="hint" style="color:var(--red);display:none;margin-bottom:14px"></p>
+        <button class="btn btn-primary btn-block btn-lg" id="courseUnlockBtn">Freischalten</button>
+      </div>
+
+      <div class="card reveal" style="max-width:460px;margin:24px auto 0;padding:24px;text-align:center;border-style:dashed">
+        <p class="muted" style="margin-bottom:14px">Du hast das Programm noch nicht?</p>
+        <button class="btn btn-ghost" id="courseBuyBtn">Programm kaufen — 79&nbsp;€</button>
+        <p class="small" style="color:var(--muted-2);margin-top:12px">Alle Infos zum Programm findest du auf der <a href="kurs.html" style="text-decoration:underline">Programmseite</a>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- KURSINHALT (nach Freischaltung sichtbar) -->
+  <section class="section" id="courseContent" hidden>
+    <div class="container-narrow">
+
+      <div class="course-hero reveal">
+        <span class="eyebrow">Dein 12-Wochen-Programm</span>
+        <h1 class="h-section" style="margin-bottom:10px">Willkommen — leg los.</h1>
+        <p class="lead">Arbeite die Wochen der Reihe nach durch. Hak erledigte Aufgaben ab — dein Fortschritt wird automatisch auf diesem Gerät gespeichert.</p>
+
+        <div class="course-progress" id="courseProgress"></div>
+
+        <div class="course-toolbar">
+          <a href="check.html" class="btn btn-sm btn-dark">Score-Check</a>
+          <a href="tools.html" class="btn btn-sm btn-dark">Rechner</a>
+          <a href="tracker.html" class="btn btn-sm btn-dark">Tracker</a>
+          <a href="ebooks.html" class="btn btn-sm btn-dark">Ebooks</a>
+          <button class="btn btn-sm btn-ghost" onclick="window.print()">Drucken</button>
+          <button class="btn btn-sm btn-ghost" id="courseReset">Fortschritt zurücksetzen</button>
+        </div>
+      </div>
+
+      <div id="courseWeeks"></div>
+
+      <div class="alert alert-info reveal" style="margin-top:28px">
+        <span class="alert-icon">ℹ️</span>
+        <div>Dieses Programm ersetzt keine ärztliche Beratung. Bei Beschwerden, auffälligen Blutwerten oder medizinischen Fragen wende dich an einen Arzt. Keine Diagnosen, keine Therapie, keine Medikamenten- oder Hormonberatung.</div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-bottom" style="border-top:none;padding-top:0">
+      <span>© <span data-year></span> MaleMetrix. <span data-i18n="foot.rights">Alle Rechte vorbehalten.</span></span>
+      <span><a href="index.html">Zur Startseite</a></span>
+    </div>
+  </div>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/analytics.js"></script>
+<script src="js/shop-data.js"></script>
+<script src="js/course-data.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/main.js"></script>
+<script src="js/course.js"></script>
+</body>
+</html>
