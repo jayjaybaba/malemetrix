@@ -107,6 +107,19 @@ window.MM_EBOOKS = [
   },
 
   {
+    id: "glp1-agonisten",
+    kicker: { de: "MaleMetrix · Aufklärung", en: "MaleMetrix · Education" },
+    cover: "linear-gradient(150deg,#0a2440,#0c1320)",
+    badge: { de: "Neu · Aufklärung", en: "New · Education" },
+    title: { de: "GLP-1-Agonisten verstehen", en: "Understanding GLP-1 Agonists" },
+    desc: { de: "Ozempic, Tirzepatid & Retatrutid sachlich erklärt: Wie diese Wirkstoffe wirken, was die Studien zeigen, welche Risiken (Stichwort Muskelverlust) es gibt und warum sie kein Ersatz für Training, Ernährung und Schlaf sind — ohne Hype, ohne Empfehlung.",
+            en: "Ozempic, tirzepatide & retatrutide explained factually: how they work, what the studies show, the risks (muscle loss) and why they don't replace training, nutrition and sleep — no hype, no recommendation." },
+    minutes: 15,
+    read: "ebooks/glp1-agonisten.html",
+    gated: false
+  },
+
+  {
     id: "blutwerte-guide",
     kicker: { de: "MaleMetrix · Blutwerte", en: "MaleMetrix · Blood Values" },
     cover: "linear-gradient(150deg,#3a1018,#0c1320)",
