@@ -107,6 +107,32 @@ window.MM_EBOOKS = [
   },
 
   {
+    id: "testosteron",
+    kicker: { de: "MaleMetrix · Aufklärung", en: "MaleMetrix · Education" },
+    cover: "linear-gradient(150deg,#3a2410,#0c1320)",
+    badge: { de: "Neu · Aufklärung", en: "New · Education" },
+    title: { de: "Testosteron verstehen", en: "Understanding Testosterone" },
+    desc: { de: "Der ehrliche Guide: Was Testosteron wirklich macht, welche Blutwerte zählen, welche natürlichen Hebel (Schlaf, Training, Körperfett) wirken, was reine Geldverschwendung ist und wann ein Arztbesuch sinnvoll ist — ohne Hype, ohne Booster-Verkauf.",
+            en: "The honest guide: what testosterone really does, which blood values matter, the natural levers that work (sleep, training, body fat), what's a waste of money and when to see a doctor — no hype, no booster sales." },
+    minutes: 14,
+    read: "ebooks/testosteron.html",
+    gated: false
+  },
+
+  {
+    id: "glp1-agonisten",
+    kicker: { de: "MaleMetrix · Aufklärung", en: "MaleMetrix · Education" },
+    cover: "linear-gradient(150deg,#0a2440,#0c1320)",
+    badge: { de: "Neu · Aufklärung", en: "New · Education" },
+    title: { de: "GLP-1-Agonisten verstehen", en: "Understanding GLP-1 Agonists" },
+    desc: { de: "Ozempic, Tirzepatid & Retatrutid sachlich erklärt: Wie diese Wirkstoffe wirken, was die Studien zeigen, welche Risiken (Stichwort Muskelverlust) es gibt und warum sie kein Ersatz für Training, Ernährung und Schlaf sind — ohne Hype, ohne Empfehlung.",
+            en: "Ozempic, tirzepatide & retatrutide explained factually: how they work, what the studies show, the risks (muscle loss) and why they don't replace training, nutrition and sleep — no hype, no recommendation." },
+    minutes: 15,
+    read: "ebooks/glp1-agonisten.html",
+    gated: false
+  },
+
+  {
     id: "blutwerte-guide",
     kicker: { de: "MaleMetrix · Blutwerte", en: "MaleMetrix · Blood Values" },
     cover: "linear-gradient(150deg,#3a1018,#0c1320)",

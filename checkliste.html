@@ -35,11 +35,21 @@
     .paper .c-questions li { list-style: none; padding: 8px 0; border-bottom: 1px dashed #d9dee5; font-size: 0.9rem; color: #3a4150; display: flex; gap: 10px; }
     .paper .c-questions li::before { content: "→"; color: #2e7cf6; font-weight: 700; }
     .checklist-toolbar { max-width: 860px; margin: 0 auto 22px; display: flex; gap: 12px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+    @media (max-width: 600px) {
+      /* Auf dem iPhone: schmaleres Papier-Padding und die breiten Ausfüll-
+         Tabellen pro Kategorie horizontal scrollen lassen, statt die ganze
+         Seite über den Bildschirmrand zu schieben (iOS Shrink-to-fit). */
+      .paper { padding: 22px 18px; }
+      .paper .c-cat { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .paper table { min-width: 440px; }
+    }
     @media print {
       @page { margin: 12mm; }
       body { background: #fff !important; }
       .paper-wrap { padding: 0; }
       .paper { box-shadow: none; border-radius: 0; padding: 0; max-width: none; }
+      .paper .c-cat { overflow-x: visible; }
+      .paper table { min-width: 0; }
       .checklist-toolbar, .site-header, .site-footer { display: none !important; }
     }
   </style>
