@@ -107,6 +107,19 @@ window.MM_EBOOKS = [
   },
 
   {
+    id: "sexuelle-gesundheit",
+    kicker: { de: "MaleMetrix · Aufklärung", en: "MaleMetrix · Education" },
+    cover: "linear-gradient(150deg,#3a1030,#0c1320)",
+    badge: { de: "Neu · Aufklärung", en: "New · Education" },
+    title: { de: "Sexuelle Gesundheit & Beckenboden", en: "Sexual Health & Pelvic Floor" },
+    desc: { de: "Sachlich und ohne Tabu: was hinter Erektions-, Ejakulations- und Libido-Problemen steckt, Kegelübungen Schritt für Schritt mit Trainingsplan, die echten Lebensstil-Hebel (Erektion = Durchblutung) und wann ein Arzt oder Sexualtherapeut der richtige Weg ist.",
+            en: "Factual and without taboo: what's behind erection, ejaculation and libido issues, Kegel exercises step by step with a plan, the real lifestyle levers (erection = blood flow) and when to see a doctor or sex therapist." },
+    minutes: 15,
+    read: "ebooks/sexuelle-gesundheit.html",
+    gated: false
+  },
+
+  {
     id: "testosteron",
     kicker: { de: "MaleMetrix · Aufklärung", en: "MaleMetrix · Education" },
     cover: "linear-gradient(150deg,#3a2410,#0c1320)",
