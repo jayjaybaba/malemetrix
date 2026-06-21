@@ -107,6 +107,19 @@ window.MM_EBOOKS = [
   },
 
   {
+    id: "sexuelle-gesundheit",
+    kicker: { de: "MaleMetrix · Aufklärung", en: "MaleMetrix · Education" },
+    cover: "linear-gradient(150deg,#3a1030,#0c1320)",
+    badge: { de: "Neu · Aufklärung", en: "New · Education" },
+    title: { de: "Sexuelle Gesundheit & die Medikamente", en: "Sexual Health & the Medications" },
+    desc: { de: "Der eigentliche Mehrwert: das Wissen über die Medikamente — Viagra (Sildenafil), Cialis (Tadalafil), Dapoxetin, PT-141, Testosteron und die Rolle der Schilddrüse, jeweils mit Wirkmechanismus und Risiken. Plus Beckenboden & Kegelübungen, Lebensstil-Hebel und der Weg zum richtigen Arzt — sachlich, ohne Tabu.",
+            en: "The real value: knowledge about the medications — Viagra (sildenafil), Cialis (tadalafil), dapoxetine, PT-141, testosterone and the thyroid's role, each with mechanism and risks. Plus pelvic floor & Kegel exercises, lifestyle levers and the path to the right doctor — factual, no taboo." },
+    minutes: 19,
+    read: "ebooks/sexuelle-gesundheit.html",
+    gated: false
+  },
+
+  {
     id: "testosteron",
     kicker: { de: "MaleMetrix · Aufklärung", en: "MaleMetrix · Education" },
     cover: "linear-gradient(150deg,#3a2410,#0c1320)",
