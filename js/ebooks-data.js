@@ -112,8 +112,8 @@ window.MM_EBOOKS = [
     cover: "linear-gradient(150deg,#103226,#0c1320)",
     badge: { de: "Neu · Training", en: "New · Training" },
     title: { de: "Jeden Tag trainieren", en: "Train Every Day" },
-    desc: { de: "Warum „3× die Woche\" ständig vor sich hergeschoben wird — und wie tägliche 25–30 Minuten plus 2–3 harte Gym-Einheiten das Aufschieben killen und dich dauerhaft am Ball halten. Das Anti-Aufschieben-System mit Wochenplan, Regenerations- und Dranbleiben-Strategie.",
-            en: "Why \"3× a week\" keeps getting postponed — and how daily 25–30 minutes plus 2–3 hard gym sessions kill procrastination and keep you consistent. The anti-procrastination system with a weekly plan, recovery and adherence strategy." },
+    desc: { de: "Warum „3× die Woche\" ständig vor sich hergeschoben wird — und wie tägliche 25–30 Minuten plus drei harte Gym-Tage als Push/Pull/Legs das Aufschieben killen und dich dauerhaft am Ball halten. Das Anti-Aufschieben-System, kombiniert mit dem 3-Tage-System.",
+            en: "Why \"3× a week\" keeps getting postponed — and how daily 25–30 minutes plus three hard gym days as Push/Pull/Legs kill procrastination and keep you consistent. The anti-procrastination system, combined with the 3-day system." },
     minutes: 13,
     read: "ebooks/taeglich-trainieren.html",
     gated: false
