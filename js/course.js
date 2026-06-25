@@ -11,6 +11,17 @@
 (function () {
   "use strict";
 
+  // Ausgeblendete Ebooks: hier gelistete Dateien werden NICHT als Programm-
+  // Ressource angezeigt (Dateien bleiben erhalten — nur unsichtbar). Zum
+  // Wieder-Einblenden Eintrag aus dieser Liste entfernen.
+  const HIDDEN_EBOOKS = [
+    "gewohnheiten.html", "protein-system.html", "training-system.html",
+    "fettabbau.html", "schlaf-energie.html", "masterguide.html"
+  ];
+  function isHiddenEbook(href) {
+    return !!href && HIDDEN_EBOOKS.some(function (h) { return href.indexOf("ebooks/" + h) >= 0; });
+  }
+
   const CFG = window.MM_CONFIG || {};
   const DATA = window.MM_COURSE || { weeks: [], phases: {}, modules: [] };
   const gate = document.getElementById("courseGate");
@@ -158,7 +169,8 @@
   }
 
   function resourceBlock(items) {
-    if (!items || !items.length) return "";
+    items = (items || []).filter(function (r) { return !isHiddenEbook(r.href); });
+    if (!items.length) return "";
     var ICON = { ebook: "📕", check: "🎯", tool: "🧮", tracker: "📈", page: "📄" };
     var links = items.map(function (r) {
       var ext = (r.kind === "ebook" || /\.pdf/i.test(r.href || "")) ? ' target="_blank" rel="noopener"' : "";
@@ -182,7 +194,8 @@
         ? '<div class="coaching-tease"><span class="coaching-tease-label">🔒 Mehr im 1:1-Coaching</span><p>' + esc(m.coachingTease) + "</p>" +
           '<a href="coaching.html" class="btn btn-sm btn-primary">Coaching ansehen</a></div>'
         : "";
-      const eb = (DATA.resources && DATA.resources.modules) ? DATA.resources.modules[m.id] : null;
+      let eb = (DATA.resources && DATA.resources.modules) ? DATA.resources.modules[m.id] : null;
+      if (eb && isHiddenEbook(eb.href)) eb = null;
       const ebookLink = eb ? '<a class="course-module-ebook" href="' + eb.href + '" target="_blank" rel="noopener">📕 ' + esc(eb.label) + " →</a>" : "";
       return '<article class="course-module card reveal">' +
         '<div class="course-module-head"><span class="course-module-icon">' + m.icon + "</span>" +

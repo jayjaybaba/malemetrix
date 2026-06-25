@@ -10,7 +10,7 @@
   var feat = document.getElementById("featuredEbook");
   if (!grid && !feat) return;
 
-  var books = window.MM_EBOOKS || [];
+  var books = (window.MM_EBOOKS || []).filter(function (b) { return !b.hidden; });
   var LANG = function () { return (window.MM && MM.i18n) ? MM.i18n.lang : "de"; };
   var tr = function (o) { if (o == null) return ""; if (typeof o === "string") return o; return o[LANG()] || o.de || ""; };
   var T = function (k, fb) { return (window.MM && MM.i18n && MM.i18n.t(k)) || fb; };

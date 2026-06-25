@@ -33,6 +33,7 @@ window.MM_EBOOKS = [
 
   {
     id: "masterguide",
+    hidden: true,
     featured: true,
     kicker: { de: "MaleMetrix · Flaggschiff-Guide", en: "MaleMetrix · Flagship Guide" },
     cover: "linear-gradient(150deg,#1a2c52,#0a1020)",
@@ -47,6 +48,7 @@ window.MM_EBOOKS = [
 
   {
     id: "training-system",
+    hidden: true,
     kicker: { de: "MaleMetrix · Training", en: "MaleMetrix · Training" },
     cover: "linear-gradient(150deg,#11203c,#0c1320)",
     title: { de: "Das 3-Tage-System", en: "The 3-Day System" },
@@ -59,6 +61,7 @@ window.MM_EBOOKS = [
 
   {
     id: "protein-system",
+    hidden: true,
     kicker: { de: "MaleMetrix · Ernährung", en: "MaleMetrix · Nutrition" },
     cover: "linear-gradient(150deg,#0c2b2a,#0c1320)",
     title: { de: "Protein ohne Kochen", en: "Protein Without Cooking" },
@@ -71,6 +74,7 @@ window.MM_EBOOKS = [
 
   {
     id: "schlaf-energie",
+    hidden: true,
     kicker: { de: "MaleMetrix · Recovery", en: "MaleMetrix · Recovery" },
     cover: "linear-gradient(150deg,#231042,#0c1320)",
     title: { de: "Schlaf- & Energie-Reset", en: "Sleep & Energy Reset" },
@@ -96,6 +100,7 @@ window.MM_EBOOKS = [
 
   {
     id: "fettabbau",
+    hidden: true,
     kicker: { de: "MaleMetrix · Fettabbau", en: "MaleMetrix · Fat Loss" },
     cover: "linear-gradient(150deg,#3a1d12,#0c1320)",
     title: { de: "Fettabbau ohne Hunger", en: "Fat Loss Without Hunger" },
@@ -185,6 +190,7 @@ window.MM_EBOOKS = [
 
   {
     id: "gewohnheiten",
+    hidden: true,
     kicker: { de: "MaleMetrix · Verhalten", en: "MaleMetrix · Behavior" },
     cover: "linear-gradient(150deg,#11203c,#0c1320)",
     title: { de: "Gewohnheiten, die bleiben", en: "Habits That Stick" },
