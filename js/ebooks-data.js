@@ -107,6 +107,19 @@ window.MM_EBOOKS = [
   },
 
   {
+    id: "taeglich-trainieren",
+    kicker: { de: "MaleMetrix · Training", en: "MaleMetrix · Training" },
+    cover: "linear-gradient(150deg,#103226,#0c1320)",
+    badge: { de: "Neu · Training", en: "New · Training" },
+    title: { de: "Jeden Tag trainieren", en: "Train Every Day" },
+    desc: { de: "Warum „3× die Woche\" ständig vor sich hergeschoben wird — und wie tägliche 25–30 Minuten plus 2–3 harte Gym-Einheiten das Aufschieben killen und dich dauerhaft am Ball halten. Das Anti-Aufschieben-System mit Wochenplan, Regenerations- und Dranbleiben-Strategie.",
+            en: "Why \"3× a week\" keeps getting postponed — and how daily 25–30 minutes plus 2–3 hard gym sessions kill procrastination and keep you consistent. The anti-procrastination system with a weekly plan, recovery and adherence strategy." },
+    minutes: 13,
+    read: "ebooks/taeglich-trainieren.html",
+    gated: false
+  },
+
+  {
     id: "sexuelle-gesundheit",
     kicker: { de: "MaleMetrix · Aufklärung", en: "MaleMetrix · Education" },
     cover: "linear-gradient(150deg,#3a1030,#0c1320)",
