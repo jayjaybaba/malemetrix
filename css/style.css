@@ -1673,19 +1673,29 @@ input[type="range"]::-moz-range-thumb {
 
 @media (max-width: 980px) {
   .nav-more { width: 100%; }
-  /* "Mehr" wird auf dem Handy zum dezenten Abschnitts-Label, das die lange
-     Liste sichtbar in eine Haupt- und eine Weiteres-Gruppe teilt. */
+  /* "Mehr" ist auf dem Handy eine antippbare, einklappbare Zeile (Akkordeon).
+     Das Menue bleibt kurz: Haupt-Navigation + "Mehr ▾" + CTA. Antippen klappt
+     die Sekundaer-Punkte auf. Nutzt die vorhandene Toggle-Logik (main.js). */
   .nav-more-toggle {
-    display: block; width: 100%; text-align: left; cursor: default;
-    margin-top: 18px; padding: 18px 4px 8px;
-    border-top: 1px solid var(--line-strong);
-    font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600;
-    letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted-2);
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; padding: 14px 4px; cursor: pointer;
+    font-size: 1.05rem; font-weight: 500; color: var(--muted);
+    border-bottom: 1px solid var(--line);
   }
-  .nav-more-toggle::after { display: none; }
-  .nav-more-menu { position: static; display: flex; box-shadow: none; border: none; padding: 0; min-width: 0; background: none; }
-  /* Sekundär-Links etwas leichter, damit die Haupt-Navigation hervorsticht */
-  .nav-more-menu a { border-bottom: 1px solid var(--line) !important; padding: 13px 4px !important; font-size: 1rem !important; color: var(--muted-2); }
+  .nav-more-toggle:hover { color: var(--text); }
+  .nav-more-toggle::after {
+    content: "▾"; font-size: 0.85rem; opacity: 0.7; transition: transform 0.2s;
+  }
+  /* Chevron dreht, wenn aufgeklappt */
+  .nav-more:has(.nav-more-menu.open) .nav-more-toggle::after { transform: rotate(180deg); }
+  /* Eingeklappt: Sekundaer-Liste ausgeblendet; .open klappt sie auf */
+  .nav-more-menu { position: static; display: none; box-shadow: none; border: none; padding: 0; min-width: 0; background: none; }
+  .nav-more-menu.open { display: flex; }
+  .nav-more-menu a {
+    border-bottom: 1px solid var(--line) !important;
+    padding: 13px 4px 13px 18px !important; font-size: 1rem !important;
+    color: var(--muted-2);
+  }
   .nav-more-menu a:hover, .nav-more-menu a.active { color: var(--text); background: none; }
 }
 
