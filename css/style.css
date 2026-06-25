@@ -1140,18 +1140,18 @@ input[type="range"]::-moz-range-thumb {
   background: var(--bg-1);
   border-left: 1px solid var(--line-strong);
   z-index: 201;
-  transform: translateX(100%);
-  /* Geschlossen unsichtbar, damit das nach rechts geschobene Panel auf
-     iOS Safari nicht das Layout-Viewport verbreitert (schwarzer Streifen
-     rechts + abgeschnittener Text). visibility wird erst NACH der Slide-
-     Animation umgeschaltet, damit das Zu-Schieben sichtbar bleibt. */
-  visibility: hidden;
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), visibility 0s linear 0.35s;
-  display: flex;
+  /* Geschlossen KOMPLETT aus dem Layout nehmen (display:none). Ein full-width,
+     per translateX(100%) nach rechts geparktes Panel verbreitert auf iOS Safari
+     sonst das Layout-Viewport -> der Menue-Button (☰) rutscht rechts aus dem
+     Bild und der Text wird abgeschnitten. display:none hat keine Box, kann das
+     Viewport also nicht aufblaehen. */
+  display: none;
   flex-direction: column;
 }
 
-.cart-drawer.open { transform: translateX(0); visibility: visible; transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), visibility 0s; }
+.cart-drawer.open { display: flex; animation: cartSlideIn 0.35s cubic-bezier(0.22, 1, 0.36, 1); }
+
+@keyframes cartSlideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
 
 .cart-head {
   display: flex;
