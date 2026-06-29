@@ -89,12 +89,12 @@ window.MM_EBOOKS = [
     id: "schlaf-stack",
     kicker: { de: "MaleMetrix · Recovery", en: "MaleMetrix · Recovery" },
     cover: "linear-gradient(160deg,#1a1140,#0a1020)",
-    badge: { de: "PDF · Schlaf-Stack", en: "PDF · Sleep Stack" },
+    badge: { de: "Recovery · Schlaf-Stack", en: "Recovery · Sleep Stack" },
     title: { de: "Der Schlaf-Stack", en: "The Sleep Stack" },
-    desc: { de: "Das kompakte PDF zum Tiefschlaf: die Stack-Routine aus Licht, Timing, Temperatur und Abendritual — Schritt für Schritt zu erholsamem Schlaf.",
-            en: "The compact deep-sleep PDF: the stack of light, timing, temperature and evening ritual — step by step to restful sleep." },
-    minutes: 9,
-    read: "ebooks/files/MaleMetrix_Schlaf-Stack.pdf",
+    desc: { de: "Die Abend-Routine für tieferen Schlaf: die wenigen Schlaf-Supplemente mit Evidenz (Magnesium, L-Theanin, Glycin) plus die Basis aus Licht, Timing und Temperatur — als eigene Seite (PDF weiterhin enthalten).",
+            en: "The evening routine for deeper sleep: the few sleep supplements with evidence (magnesium, L-theanine, glycine) plus the basics of light, timing and temperature — as its own page (PDF still included)." },
+    minutes: 10,
+    read: "ebooks/schlaf-stack.html",
     gated: false
   },
 
