@@ -34,7 +34,6 @@ window.MM_EBOOKS = [
   {
     id: "masterguide",
     hidden: true,
-    featured: true,
     kicker: { de: "MaleMetrix · Flaggschiff-Guide", en: "MaleMetrix · Flagship Guide" },
     cover: "linear-gradient(150deg,#1a2c52,#0a1020)",
     badge: { de: "Komplettes System · 11 Kapitel", en: "Complete system · 11 chapters" },
@@ -152,6 +151,7 @@ window.MM_EBOOKS = [
 
   {
     id: "glp1-agonisten",
+    featured: true,
     kicker: { de: "MaleMetrix · Aufklärung", en: "MaleMetrix · Education" },
     cover: "linear-gradient(150deg,#0a2440,#0c1320)",
     badge: { de: "Neu · Aufklärung", en: "New · Education" },
