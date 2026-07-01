@@ -199,6 +199,123 @@
 
   function renderAll() { renderLog(); renderRemain(); }
 
+  /* ---- Foto-Kalorienschätzung (Claude Vision) ----
+     Konfiguration lazy lesen (MM_CONFIG.foodVision): entweder eigener
+     Proxy-endpoint (empfohlen) oder apiKey fuer den Direktaufruf aus dem
+     Browser. Ohne Konfiguration bleibt der Button unsichtbar. */
+  function visionCfg() {
+    var c = (window.MM_CONFIG && MM_CONFIG.foodVision) || {};
+    return { apiKey: c.apiKey || "", endpoint: c.endpoint || "", model: c.model || "claude-haiku-4-5" };
+  }
+
+  var photoWrap = document.getElementById("dpPhotoWrap");
+  var photoBtn = document.getElementById("dpPhotoBtn");
+  var photoInput = document.getElementById("dpPhotoInput");
+  var photoStatus = document.getElementById("dpPhotoStatus");
+
+  function initPhoto() {
+    var cfg = visionCfg();
+    if (!photoWrap || (!cfg.apiKey && !cfg.endpoint)) return;
+    photoWrap.style.display = "block";
+    photoBtn.addEventListener("click", function () { photoInput.click(); });
+    photoInput.addEventListener("change", function () {
+      if (photoInput.files && photoInput.files[0]) analyzePhoto(photoInput.files[0]);
+      photoInput.value = "";
+    });
+  }
+
+  /* Bild clientseitig verkleinern (max 1024px, JPEG) — schneller Upload,
+     weniger Bild-Token, deutlich guenstiger. */
+  function downscale(file) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      var url = URL.createObjectURL(file);
+      img.onload = function () {
+        try {
+          var MAX = 1024;
+          var scale = Math.min(1, MAX / Math.max(img.width, img.height));
+          var canvas = document.createElement("canvas");
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+          var dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+          URL.revokeObjectURL(url);
+          resolve(dataUrl.split(",")[1]); // reines Base64 ohne Prefix
+        } catch (e) { reject(e); }
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("Bild konnte nicht gelesen werden")); };
+      img.src = url;
+    });
+  }
+
+  function buildRequestBody(b64, model) {
+    return {
+      model: model,
+      max_tokens: 300,
+      output_config: {
+        format: {
+          type: "json_schema",
+          schema: {
+            type: "object",
+            properties: {
+              name: { type: "string", description: "Kurzer deutscher Name des Gerichts" },
+              kcal: { type: "integer", description: "Geschätzte Kalorien der abgebildeten Portion" },
+              protein: { type: "integer", description: "Geschätztes Protein in Gramm" }
+            },
+            required: ["name", "kcal", "protein"],
+            additionalProperties: false
+          }
+        }
+      },
+      messages: [{
+        role: "user",
+        content: [
+          { type: "image", source: { type: "base64", media_type: "image/jpeg", data: b64 } },
+          { type: "text", text: "Das ist ein Foto einer Mahlzeit. Schätze realistisch für die abgebildete Portion: kurzer deutscher Gerichtname, Kalorien (kcal) und Protein (g). Alltags-Schätzung, keine Nachkommastellen." }
+        ]
+      }]
+    };
+  }
+
+  async function analyzePhoto(file) {
+    var cfg = visionCfg();
+    photoBtn.disabled = true;
+    photoStatus.textContent = "🔍 Foto wird analysiert …";
+    try {
+      var b64 = await downscale(file);
+      var body = buildRequestBody(b64, cfg.model);
+      var url, headers = { "content-type": "application/json" };
+      if (cfg.endpoint) {
+        url = cfg.endpoint; // eigener Proxy: haelt den API-Schluessel geheim
+      } else {
+        url = "https://api.anthropic.com/v1/messages";
+        headers["x-api-key"] = cfg.apiKey;
+        headers["anthropic-version"] = "2023-06-01";
+        headers["anthropic-dangerous-direct-browser-access"] = "true";
+      }
+      var res = await fetch(url, { method: "POST", headers: headers, body: JSON.stringify(body) });
+      if (!res.ok) throw new Error("API-Fehler (" + res.status + ")");
+      var data = await res.json();
+      var textBlock = (data.content || []).filter(function (b) { return b.type === "text"; })[0];
+      if (!textBlock) throw new Error("Keine Auswertung erhalten");
+      var meal = JSON.parse(textBlock.text);
+      if (!meal.kcal || meal.kcal <= 0) throw new Error("Keine Mahlzeit erkannt");
+      log.push({ name: "📸 " + (meal.name || "Foto-Mahlzeit"), kcal: Math.round(meal.kcal), protein: Math.round(meal.protein || 0) });
+      saveLog();
+      renderAll();
+      photoStatus.innerHTML = '✅ <strong style="color:var(--text)">' + esc(meal.name) + "</strong> erkannt: ~" +
+        Math.round(meal.kcal) + " kcal · " + Math.round(meal.protein || 0) + " g Protein — eingetragen!";
+      if (window.MM && MM.track) MM.track("dinner_photo_analyzed", {});
+      var remain = document.getElementById("dpRemain");
+      if (remain) remain.scrollIntoView({ behavior: "smooth", block: "center" });
+    } catch (e) {
+      photoStatus.textContent = "⚠️ Analyse fehlgeschlagen: " + (e && e.message ? e.message : "unbekannter Fehler") + " — trag die Mahlzeit einfach manuell ein.";
+    } finally {
+      photoBtn.disabled = false;
+    }
+  }
+
+  initPhoto();
   renderTabs();
   renderAll();
 })();

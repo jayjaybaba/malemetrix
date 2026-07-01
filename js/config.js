@@ -73,6 +73,21 @@ window.MM_CONFIG = {
   // andere Domain nutzt, hier und in sitemap.xml + den OG-Tags anpassen.
   siteUrl: "https://malemetrix.de",
 
+  // --- Dinner-Planer: Foto-Kalorienschätzung (KI) --------------------------
+  // Mahlzeit fotografieren -> Claude schätzt Gericht, kcal & Protein.
+  // Aktivieren: API-Schlüssel von console.anthropic.com unten eintragen.
+  // Kosten: mit claude-haiku-4-5 ca. 0,2-0,4 Cent pro Foto.
+  // SICHERHEIT: Ein hier eingetragener Schlüssel ist oeffentlich sichtbar
+  // (statische Seite!). Nutze einen eigenen Schluessel MIT Ausgabenlimit
+  // (Console -> Limits) oder besser: einen kleinen Proxy (z. B. Cloudflare
+  // Worker), dessen URL du unter "endpoint" eintraegst — dann bleibt der
+  // Schluessel geheim. Solange beides leer ist, ist der Foto-Button aus.
+  foodVision: {
+    apiKey: "",                    // z. B. "sk-ant-..." (nur mit Spend-Limit!)
+    endpoint: "",                  // ODER eigene Proxy-URL (empfohlen)
+    model: "claude-haiku-4-5"      // guenstigstes Vision-Modell
+  },
+
   // --- Analytics (datenschutzfreundlich) ----------------------------------
   // Plausible ist cookielos und DSGVO-freundlich (kein Cookie-Banner nötig).
   // 1. Kostenpflichtig/Trial: Konto auf plausible.io, Domain hinzufügen.

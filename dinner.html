@@ -94,6 +94,11 @@
       <!-- 2) Heute gegessen -->
       <div class="card" style="margin-bottom:20px">
         <span class="card-num">2 · WAS HAST DU HEUTE SCHON GEGESSEN?</span>
+        <div id="dpPhotoWrap" style="display:none;margin:14px 0 4px">
+          <button class="btn btn-primary btn-block" id="dpPhotoBtn">📸 Mahlzeit fotografieren — KI schätzt die Kalorien</button>
+          <input type="file" id="dpPhotoInput" accept="image/*" capture="environment" style="display:none">
+          <div id="dpPhotoStatus" style="margin-top:10px;font-size:0.9rem;color:var(--muted)"></div>
+        </div>
         <p class="small" style="color:var(--muted);margin:8px 0 14px">Schnell hinzufügen (Schätzwerte) oder eigenes Gericht eintragen:</p>
         <div id="dpPresets" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px"></div>
         <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr auto;gap:8px;align-items:end">
