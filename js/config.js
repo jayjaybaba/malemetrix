@@ -95,6 +95,10 @@ window.MM_CONFIG = {
   // Programmplattform nutzen (elopage, Copecart, Digistore24).
   courseAccessCode: "MM12-START",
 
+  // Zugangscode für "DAS PROTOKOLL" (Premium-Ebook). Käufer erhalten ihn nach
+  // Zahlung und schalten damit ebooks/protokoll.html frei (Sofort-Zugang).
+  protokollAccessCode: "PROTOKOLL-M",
+
   // --- E-Mail-Liste / Ebook-Unlock ----------------------------------------
   // Damit eingesammelte E-Mails automatisch in deiner Liste landen (statt nur
   // ins Postfach), nutze ein kostenloses Brevo-Konto (brevo.com):

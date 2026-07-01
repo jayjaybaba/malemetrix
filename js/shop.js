@@ -24,9 +24,12 @@
       '<h3>' + p.name + '</h3>' +
       '<p class="desc">' + p.desc + '</p>' +
       '<div class="product-foot">' +
-      '<div class="product-price">' + MM.eur(p.price) + '<small>inkl. ggf. USt.' + (p.digital ? " · kein Versand" : "") + '</small></div>' +
+      '<div class="product-price">' + MM.eur(p.price) +
+      (p.compareAt ? ' <s style="color:var(--muted-2);font-weight:400;font-size:0.72em">' + MM.eur(p.compareAt) + '</s>' : '') +
+      '<small>inkl. ggf. USt.' + (p.digital ? " · kein Versand" : "") + '</small></div>' +
       '<div style="display:flex;gap:8px">' +
-      '<button class="btn btn-dark btn-sm" data-details="' + p.id + '">' + T("common.details", "Details") + '</button>' +
+      (p.cta ? '<a class="btn btn-dark btn-sm" href="' + p.cta.href + '">' + p.cta.label + '</a>'
+             : '<button class="btn btn-dark btn-sm" data-details="' + p.id + '">' + T("common.details", "Details") + '</button>') +
       '<button class="btn btn-primary btn-sm" data-add="' + p.id + '">' + T("common.addCart", "In den Warenkorb") + '</button>' +
       '</div></div></div></article>'
     ).join("");

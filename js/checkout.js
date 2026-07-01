@@ -260,6 +260,24 @@
       }
     }
 
+    /* DAS PROTOKOLL: Sofort-Zugang nach Kauf */
+    if ((order.productIds || []).indexOf("protokoll") !== -1) {
+      const pcode = CFG.protokollAccessCode || "";
+      if (paypalPaid && pcode) {
+        const plink = "ebooks/protokoll.html?code=" + encodeURIComponent(pcode);
+        courseBlock += '<div class="card" style="text-align:left;margin-bottom:24px;border-color:var(--accent-line)">' +
+          '<span class="card-num" style="color:var(--accent)">📕 DEIN PROTOKOLL-ZUGANG</span>' +
+          '<p class="muted" style="margin:6px 0 14px">Dein Premium-Ebook „DAS PROTOKOLL" ist freigeschaltet. Dein Zugangscode:</p>' +
+          '<div style="font-family:monospace;font-size:1.5rem;font-weight:700;letter-spacing:2px;color:var(--text);background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:14px;text-align:center;margin-bottom:16px">' + pcode + '</div>' +
+          '<a class="btn btn-primary btn-block" href="' + plink + '">Jetzt lesen →</a>' +
+          '<p class="small" style="color:var(--muted-2);margin-top:12px">Tipp: Speichere den Code. Du gibst ihn einmalig ein, danach bleibt der Zugang auf deinem Gerät.</p></div>';
+      } else {
+        courseBlock += '<div class="card" style="text-align:left;margin-bottom:24px">' +
+          '<span class="card-num">📕 DEIN PROTOKOLL-ZUGANG</span>' +
+          '<p class="muted" style="margin-top:6px">Sobald deine Zahlung eingegangen ist, erhältst du per E-Mail deinen Zugangscode für „DAS PROTOKOLL" — in der Regel innerhalb von 24 Stunden.</p></div>';
+      }
+    }
+
     let payBlock;
     if (paypalPaid) {
       payBlock = '<div class="card" style="text-align:left;margin-bottom:24px;border-color:var(--accent-line)">' +

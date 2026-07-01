@@ -29,6 +29,33 @@
 
     /* ---------- Digital ---------- */
     {
+      id: "protokoll",
+      name: "DAS PROTOKOLL — Der komplette Männer-Guide",
+      cat: "digital", catLabel: "Digital · Ebook · Sofort-Zugang",
+      price: 49.00,
+      compareAt: 199.00,
+      digital: true,
+      emoji: "📕",
+      badge: "Bestseller",
+      desc: "Das gesamte MaleMetrix-Wissen in einem einzigen Premium-Ebook: Training, Fettabbau, Hormone, Blutwerte, Schlaf, Supplemente — und das komplette Medikamenten-Kapitel (GLP-1/Ozempic, Tirzepatid, Viagra & Cialis, PT-141, Testosteron, Schilddrüse). Kein Bro-Science, kein Hype — das ehrliche Komplettsystem für Männer, die endlich Klarheit und Ergebnisse wollen. Sofortiger Online-Zugang nach dem Kauf.",
+      details: [
+        "11 Module: Mindset & System, Training (täglich + Push/Pull/Legs), Fettabbau ohne Hunger, Protein, Supplemente, Schlaf-Stack, Blutwerte-Komplettpanel, Hormone & Testosteron, Sexuelle Gesundheit, das große Medikamenten-Kapitel, 12-Wochen-Umsetzungsplan",
+        "Das Medikamenten-Wissen, das sonst niemand offen erklärt — verständlich und ehrlich eingeordnet",
+        "Blutwerte-Komplettpanel inkl. kleinem Blutbild, ApoB, Lp(a), Cystatin C, PSA & freiem PSA, Schilddrüse",
+        "Sofortiger Online-Zugang per Code — kein Warten, jederzeit auf allen Geräten lesbar",
+        "Bonus: druckbare Arzt-Checkliste + Wochenplan-Vorlagen",
+        "49 € statt 199 € — Founder-Preis, solange die Seite jung ist",
+        "30 Tage Geld-zurück: Wenn du keinen einzigen umsetzbaren Hebel findest, bekommst du dein Geld zurück"
+      ],
+      cta: { label: "Alles ansehen →", href: "protokoll.html" },
+      svg: visual(
+        '<rect x="132" y="42" width="136" height="170" rx="12" fill="#161b26" stroke="url(#pgGrad)" stroke-width="2"/>' +
+        '<rect x="132" y="42" width="136" height="46" rx="12" fill="url(#pgGrad)" opacity="0.9"/>' +
+        '<text x="200" y="72" font-family="monospace" font-size="17" font-weight="bold" fill="#ffffff" text-anchor="middle">PROTOKOLL</text>' +
+        '<g stroke="rgba(255,255,255,0.22)" stroke-width="3" stroke-linecap="round"><line x1="152" y1="108" x2="248" y2="108"/><line x1="152" y1="124" x2="230" y2="124"/><line x1="152" y1="140" x2="242" y2="140"/><line x1="152" y1="156" x2="220" y2="156"/><line x1="152" y1="172" x2="238" y2="172"/><line x1="152" y1="188" x2="210" y2="188"/></g>'
+      )
+    },
+    {
       id: "kurs-12w",
       name: "MaleMetrix 12-Wochen-Programm (Selbststudium)",
       cat: "digital", catLabel: "Digital · Online-Programm",
