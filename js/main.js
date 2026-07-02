@@ -421,6 +421,55 @@
 
     // Lead-Magnet-Band (E-Mail-Liste) vor dem Footer
     injectLeadBand();
+
+    // "Heute dran"-Hinweis für Tracker-Nutzer mit Wochenplan
+    injectTodayHint();
+
+    // PWA: Service Worker registrieren (nur über http/https)
+    try {
+      if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+        var swPath = location.pathname.indexOf("/ebooks/") !== -1 || location.pathname.indexOf("/blog/") !== -1 ? "../sw.js" : "sw.js";
+        navigator.serviceWorker.register(swPath).catch(function () {});
+      }
+    } catch (e) {}
+  }
+
+  /* ---------- "Heute dran": tägliche Trainings-Erinnerung auf allen Seiten
+     Erscheint nur für Nutzer, die im Gym-Tracker einen Wochenplan haben und
+     heute noch nichts geloggt haben — die Website-Version der Morgen-Push. */
+  function injectTodayHint() {
+    var file = (location.pathname.split("/").pop() || "index.html") || "index.html";
+    var skip = ["tracker.html", "checkout.html", "kurs-programm.html", "lead-blutwerte.html",
+      "checkliste.html", "datenschutz.html", "impressum.html", "agb.html", "report.html"];
+    if (skip.indexOf(file) !== -1) return;
+    if (location.pathname.indexOf("/ebooks/") !== -1) return;
+
+    var plan = MM.store.get("trk_plan", null);
+    if (!plan) return; // nur Nutzer, die den Tracker eingerichtet haben
+
+    function ymdLocal(d) {
+      return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    }
+    var today = ymdLocal(new Date());
+    var done =
+      (MM.store.get("trk_sessions", []) || []).some(function (s) { return ymdLocal(new Date(s.date)) === today; }) ||
+      (MM.store.get("trk_cardio", []) || []).some(function (c) { return c.date === today; }) ||
+      (MM.store.get("trk_daily", []) || []).some(function (d) { return d.date === today; });
+    if (done) return;
+
+    var wd = String(new Date().getDay());
+    var tplId = (plan.gymDays || {})[wd];
+    var NAMES = { push: "Push", pull: "Pull", legs: "Legs", fullA: "Ganzkörper A", fullB: "Ganzkörper B", fullC: "Ganzkörper C", upper: "Oberkörper", lower: "Unterkörper" };
+    var label = tplId
+      ? "🏋️ Heute ist Gym-Tag: <strong>" + (NAMES[tplId] || "Dein Plan") + "</strong> — jetzt trainieren"
+      : "🚶 Heute: <strong>" + (plan.dailyMin || 25) + " min Bewegung</strong> — kein Null-Tag";
+
+    var pill = document.createElement("a");
+    pill.id = "todayHint";
+    pill.href = (location.pathname.indexOf("/blog/") !== -1 ? "../" : "") + "tracker.html";
+    pill.className = "today-hint no-print";
+    pill.innerHTML = label + " →";
+    document.body.appendChild(pill);
   }
 
   /* ---------- Lead-Magnet: E-Mail-Einsammler vor dem Footer ----------
