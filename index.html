@@ -1,0 +1,485 @@
+﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <script>try{var _t=localStorage.getItem('mm_theme');if(_t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MaleMetrix — Das Performance-System für Männer</title>
+  <meta name="description" content="Verliere Bauchfett, baue Kraft auf und bekomme wieder Energie und Struktur — mit Training, Ernährung, Schlaf und messbarem Tracking. Starte mit dem kostenlosen MaleMetrix Score.">
+  <link rel="stylesheet" href="css/fonts.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%232e7cf6'/><stop offset='1' stop-color='%2300c2ff'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='url(%23g)'/><path d='M8 23V9.5l8 7 8-7V23' fill='none' stroke='white' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/><circle cx='8' cy='9.5' r='2.2' fill='white'/><circle cx='24' cy='9.5' r='2.2' fill='white'/><circle cx='16' cy='16.5' r='1.9' fill='%23bfe9ff'/></svg>">
+  <link rel="canonical" href="https://malemetrix.de/">
+  <meta name="theme-color" content="#07090d">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="MaleMetrix">
+  <meta property="og:locale" content="de_DE">
+  <meta property="og:title" content="MaleMetrix — Das Performance-System für Männer">
+  <meta property="og:description" content="Verliere Bauchfett, baue Kraft auf und bekomme wieder Energie und Struktur — mit Training, Ernährung, Schlaf und messbarem Tracking. Starte mit dem kostenlosen MaleMetrix Score.">
+  <meta property="og:url" content="https://malemetrix.de/">
+  <meta property="og:image" content="https://malemetrix.de/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="MaleMetrix — Das Performance-System für Männer">
+  <meta name="twitter:description" content="Verliere Bauchfett, baue Kraft auf und bekomme wieder Energie und Struktur — mit Training, Ernährung, Schlaf und messbarem Tracking. Starte mit dem kostenlosen MaleMetrix Score.">
+  <meta name="twitter:image" content="https://malemetrix.de/og-image.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://malemetrix.de/#org",
+        "name": "MaleMetrix",
+        "url": "https://malemetrix.de/",
+        "logo": "https://malemetrix.de/og-image.png",
+        "description": "Performance-Coaching-System für Männer — Training, Ernährung, Schlaf, Tracking und Blutwerte-Verständnis.",
+        "slogan": "Das Performance-System für Männer."
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://malemetrix.de/#website",
+        "url": "https://malemetrix.de/",
+        "name": "MaleMetrix",
+        "inLanguage": "de-DE",
+        "publisher": { "@id": "https://malemetrix.de/#org" }
+      },
+      {
+        "@type": "Service",
+        "name": "MaleMetrix 1:1 Coaching",
+        "serviceType": "Performance-Coaching für Männer",
+        "provider": { "@id": "https://malemetrix.de/#org" },
+        "areaServed": "DE",
+        "offers": { "@type": "Offer", "price": "149", "priceCurrency": "EUR", "description": "1:1 Coaching ab 149 €/Monat, flexible Laufzeit" }
+      }
+    ]
+  }
+  </script></head>
+<body>
+
+<header class="site-header" id="siteHeader">
+  <div class="container header-inner">
+    <a href="index.html" class="logo"><span class="logo-mark">M</span>Male<span class="x">Metrix</span></a>
+    <nav class="main-nav" id="mainNav">
+      <a href="check.html" data-i18n="nav.check">Score-Check</a>
+      <a href="coaching.html" data-i18n="nav.coaching">Coaching</a>
+      <a href="kurs.html" data-i18n="nav.course">Programm</a>
+      <a href="tracker.html" data-i18n="nav.tracker">Tracker</a>
+      <a href="ebooks.html" data-i18n="nav.ebooks">Ebooks</a>
+      <div class="nav-more">
+        <button class="nav-more-toggle" data-i18n="nav.more">Mehr</button>
+        <div class="nav-more-menu">
+          <a href="kurs-programm.html" data-i18n="nav.mycourse">Mein Programm öffnen</a>
+          <a href="tools.html" data-i18n="nav.tools">Rechner</a>
+          <a href="shop.html" data-i18n="nav.shop">Shop</a>
+          <a href="blutwerte.html" data-i18n="nav.blood">Blutwerte</a>
+          <a href="ueber.html" data-i18n="nav.about">Über</a>
+          <a href="faq.html" data-i18n="nav.faq">FAQ</a>
+          <a href="kontakt.html" data-i18n="nav.contact">Kontakt</a>
+        </div>
+      </div>
+      <a href="termin.html" class="btn btn-primary btn-sm" data-i18n="nav.booking">Analysegespräch</a>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-btn lang-btn" aria-label="Sprache wechseln / Switch language" title="DE / EN">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"/></svg>
+        <span class="lang-code">EN</span>
+      </button>
+      <button class="icon-btn theme-btn" aria-label="Hell/Dunkel umschalten" title="Theme">
+        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </button>
+      <button class="cart-btn" id="cartBtn" aria-label="Warenkorb öffnen">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span class="cart-count empty" id="cartCount">0</span>
+      </button>
+      <button class="nav-toggle" id="navToggle" aria-label="Menü öffnen">☰</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ============================ HERO ============================ -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-grid-bg"></div>
+    <div class="container hero-inner">
+      <div>
+        <div class="hero-badge"><span data-i18n="home.badge">Performance-System statt Fitnessprogramm</span> <span class="dot"></span></div>
+        <h1 class="h-display"><span data-i18n="home.h1a">Das Performance-System für</span> <span class="text-grad" data-i18n="home.h1b">Männer</span>.</h1>
+        <p class="lead" data-i18n="home.lead">Verliere Bauchfett, baue Kraft auf und bekomme wieder Energie und Struktur — mit Training, Ernährung, Schlaf und messbarem Tracking. Kein Crash. Kein Bro-Science. Ein System, das zu Job und Familie passt.</p>
+        <div class="hero-ctas">
+          <a href="check.html" class="btn btn-primary btn-lg btn-arrow" data-i18n="cta.startCheck">Kostenlosen MaleMetrix Check starten</a>
+          <a href="coaching.html" class="btn btn-ghost btn-lg" data-i18n="cta.viewCoaching">1:1 Coaching ansehen</a>
+        </div>
+        <ul class="hero-trust">
+          <li data-i18n="home.trust1">Für Männer mit Job, Familie &amp; wenig Zeit</li>
+          <li data-i18n="home.trust2">Kein Crash-Diät-System</li>
+          <li data-i18n="home.trust3">Keine medizinischen Versprechen — klare Lifestyle-Struktur</li>
+        </ul>
+      </div>
+
+      <div class="dash-card js-bars">
+        <div class="dash-head">
+          <span class="dash-title">MaleMetrix Score · Beispiel</span>
+          <span class="dash-tag">LIVE-ANALYSE</span>
+        </div>
+        <div class="dash-score-row">
+          <div class="dash-score-num">52<small>/100</small></div>
+          <div>
+            <div style="font-weight:600;font-size:0.95rem">Solide Basis mit klaren Engpässen</div>
+            <div class="muted small">Typ: Der müde Leistungsträger</div>
+          </div>
+        </div>
+        <div class="dash-bars">
+          <div class="dash-bar-row"><span class="label">Body</span><div class="bar-track"><div class="bar-fill mid" data-width="54"></div></div><span class="val">54</span></div>
+          <div class="dash-bar-row"><span class="label">Strength</span><div class="bar-track"><div class="bar-fill mid" data-width="61"></div></div><span class="val">61</span></div>
+          <div class="dash-bar-row"><span class="label">Fuel</span><div class="bar-track"><div class="bar-fill low" data-width="38"></div></div><span class="val">38</span></div>
+          <div class="dash-bar-row"><span class="label">Recovery</span><div class="bar-track"><div class="bar-fill low" data-width="31"></div></div><span class="val">31</span></div>
+          <div class="dash-bar-row"><span class="label">Blood</span><div class="bar-track"><div class="bar-fill low" data-width="24"></div></div><span class="val">24</span></div>
+          <div class="dash-bar-row"><span class="label">Drive</span><div class="bar-track"><div class="bar-fill mid" data-width="47"></div></div><span class="val">47</span></div>
+          <div class="dash-bar-row"><span class="label">Execution</span><div class="bar-track"><div class="bar-fill high" data-width="72"></div></div><span class="val">72</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ STATS ============================ -->
+  <section class="section-tight">
+    <div class="container">
+      <div class="stats-strip reveal">
+        <div><div class="stat-num text-grad">7</div><div class="stat-label">Bereiche, ein System</div></div>
+        <div><div class="stat-num text-grad">12</div><div class="stat-label">Wochen bis zum Re-Check</div></div>
+        <div><div class="stat-num text-grad">10 Min</div><div class="stat-label">bis zu deinem Score</div></div>
+        <div><div class="stat-num text-grad">0 €</div><div class="stat-label">Check &amp; Analysegespräch</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ KOSTENLOS-BAND ============================ -->
+  <section class="section-tight" style="padding-top:0">
+    <div class="container">
+      <div class="card reveal" style="border-color:var(--accent-line);background:var(--accent-soft)">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px">
+          <div style="flex:1;min-width:260px">
+            <span class="free-pill" data-i18n="common.free">Kostenlos</span>
+            <h3 class="h-card" style="margin:12px 0 6px" data-i18n="home.freeTitle">Erst nutzen, dann entscheiden — komplett kostenlos.</h3>
+            <p class="muted" style="font-size:0.95rem" data-i18n="home.freebar">100 % kostenlos: Score-Check, 19 Rechner, Training-Tracker & Ebooks — ohne Anmeldung.</p>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <a href="dinner.html" class="btn btn-dark btn-sm">🍽 Dinner-Planer</a>
+            <a href="tools.html" class="btn btn-dark btn-sm" data-i18n="nav.tools">Rechner</a>
+            <a href="tracker.html" class="btn btn-dark btn-sm" data-i18n="nav.tracker">Tracker</a>
+            <a href="ebooks.html" class="btn btn-dark btn-sm" data-i18n="nav.ebooks">Ebooks</a>
+            <a href="check.html" class="btn btn-primary btn-sm" data-i18n="nav.check">Score-Check</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ PROBLEM ============================ -->
+  <section class="section">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Das eigentliche Problem</span>
+        <h2 class="h-section">Du bist nicht undiszipliniert. Dein System passt nur nicht mehr zu deinem Leben.</h2>
+        <p class="lead">Mit 25 haben ein paar Gym-Einheiten und weniger Essen oft gereicht. Mit 35 sieht es anders aus: mehr Stress, weniger Schlaf, Familie, Job, weniger Bewegung — und mehr Bauchfett. MaleMetrix bringt wieder Struktur rein: messbar, realistisch und passend zu deinem Alltag.</p>
+      </div>
+      <div class="grid-2 reveal">
+        <div class="card">
+          <h3 class="h-card">MaleMetrix ist für dich, wenn du…</h3>
+          <ul class="check-list" style="margin-top:18px">
+            <li>früher fitter warst und es wieder werden willst</li>
+            <li>Bauchfett loswerden willst — planbar, nicht per Crash</li>
+            <li>trotz Training nicht zufrieden bist</li>
+            <li>oft müde bist und deine Energie zurückwillst</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 class="h-card">…oder wenn dir das bekannt vorkommt:</h3>
+          <ul class="check-list" style="margin-top:18px">
+            <li>keine klare Ernährungsstruktur — nur gute Vorsätze</li>
+            <li>immer wieder anfangen und abbrechen</li>
+            <li>Blutwerte vorhanden, aber nie richtig eingeordnet</li>
+            <li>keine Lust auf das nächste 08/15-Fitnessprogramm</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card reveal" style="margin-top:24px;border-left:3px solid var(--accent)">
+        <p style="font-size:1.15rem;color:var(--text);font-weight:600;font-family:var(--font-display)">„Du brauchst nicht mehr Motivation. Du brauchst ein System, das zu deinem Leben passt.“</p>
+        <p class="small" style="margin-top:8px">— Der Kern von MaleMetrix</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ SYSTEM / 7 SÄULEN ============================ -->
+  <section class="section section-alt">
+    <div class="container">
+      <div class="section-head center reveal">
+        <span class="eyebrow">Das MaleMetrix System</span>
+        <h2 class="h-section">7 Bereiche. 1 System. Messbarer Fortschritt.</h2>
+        <p class="lead">Die meisten Männer scheitern nicht, weil sie zu wenig wissen. Sie scheitern, weil Training, Ernährung, Schlaf und Alltag nicht zusammenpassen. MaleMetrix verbindet diese Bereiche zu einem umsetzbaren System.</p>
+      </div>
+      <div class="pillar-grid">
+        <div class="pillar reveal"><span class="pillar-tag">01 · BodyMetrix</span><h3>Body</h3><p>Gewicht, Bauchumfang, Körperform, Fotos — deine messbare Ausgangslage und dein sichtbarer Fortschritt.</p></div>
+        <div class="pillar reveal reveal-d1"><span class="pillar-tag">02 · StrengthMetrix</span><h3>Strength</h3><p>Krafttraining mit Progression und Muskelerhalt — 3 Tage pro Woche reichen, wenn das System stimmt.</p></div>
+        <div class="pillar reveal reveal-d2"><span class="pillar-tag">03 · FuelMetrix</span><h3>Fuel</h3><p>Protein, Kalorien, Mahlzeiten, Alkohol — Ernährung, die deinen Alltag überlebt statt ihn zu bekämpfen.</p></div>
+        <div class="pillar reveal reveal-d3"><span class="pillar-tag">04 · RecoveryMetrix</span><h3>Recovery</h3><p>Schlaf, Stress, Regeneration — der unterschätzte Hebel bei Männern.</p></div>
+        <div class="pillar reveal"><span class="pillar-tag">05 · BloodMetrix</span><h3>Blood</h3><p>Blutwerte verstehen, Basis-Marker strukturieren, Arztgespräche vorbereiten — Daten statt Bauchgefühl.</p></div>
+        <div class="pillar reveal reveal-d1"><span class="pillar-tag">06 · DriveMetrix</span><h3>Drive</h3><p>Energie, Fokus, Libido, Motivation — die Marker, die dir sagen, ob dein System wirklich funktioniert.</p></div>
+        <div class="pillar reveal reveal-d2"><span class="pillar-tag">07 · ExecutionMetrix</span><h3>Execution</h3><p>Routinen, Check-ins, Planbarkeit — denn Umsetzung schlägt Wissen. Jede Woche.</p></div>
+        <div class="pillar reveal reveal-d3" style="background:var(--accent-soft);border-color:var(--accent-line)">
+          <span class="pillar-tag">→ Dein Startpunkt</span><h3>Der Score</h3><p>Finde in 10 Minuten heraus, welcher der 7 Bereiche dich aktuell am meisten bremst.</p>
+          <a href="check.html" class="btn btn-sm btn-primary" style="margin-top:14px">Check starten</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ CHECK ============================ -->
+  <section class="section">
+    <div class="container">
+      <div class="hero-inner">
+        <div class="reveal">
+          <span class="eyebrow">Kostenloser Check</span>
+          <h2 class="h-section">Finde deinen MaleMetrix Score.</h2>
+          <p class="lead" style="margin:18px 0 28px">Der kostenlose 10-Minuten-Check zeigt dir, welcher Bereich dich aktuell am meisten bremst: Körper, Training, Ernährung, Schlaf, Blutwerte, Energie oder Umsetzung.</p>
+          <ul class="check-list" style="margin-bottom:32px">
+            <li>MaleMetrix Gesamtscore (0–100) + 7 Einzel-Scores</li>
+            <li>Dein größter Engpass — oft nicht der, den du vermutest</li>
+            <li>Dein Männer-Performance-Archetyp</li>
+            <li>3 Sofortmaßnahmen + persönlicher 7-Tage-Plan</li>
+            <li>Auf Wunsch: vollständiger PDF-Report</li>
+          </ul>
+          <a href="check.html" class="btn btn-primary btn-lg btn-arrow">Check kostenlos starten</a>
+        </div>
+        <div class="card reveal reveal-d1" style="padding:34px">
+          <span class="card-num">SO FUNKTIONIERT'S</span>
+          <div class="phase-list">
+            <div class="phase-item"><div class="phase-dot">1</div><div class="phase-body"><h3>10 Minuten Check</h3><p>~45 präzise Fragen zu Körper, Training, Ernährung, Schlaf, Blutwerten, Energie und Alltag.</p></div></div>
+            <div class="phase-item"><div class="phase-dot">2</div><div class="phase-body"><h3>Sofortiges Dashboard</h3><p>Score, Radar-Profil, Engpass-Analyse und dein Performance-Typ — direkt im Browser, ohne E-Mail-Zwang.</p></div></div>
+            <div class="phase-item"><div class="phase-dot">3</div><div class="phase-body"><h3>Dein Plan</h3><p>3 Sofortmaßnahmen, 7-Tage-Plan und auf Wunsch das kostenlose Analysegespräch zu deinem Ergebnis.</p></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ DAS PROTOKOLL ============================ -->
+  <section class="section">
+    <div class="container container-tight">
+      <a href="protokoll.html" class="card reveal" style="display:block;text-decoration:none;border-color:var(--accent-line);background:linear-gradient(135deg,var(--accent-soft),transparent);text-align:center;padding:40px 28px">
+        <span class="product-badge" style="position:static;display:inline-block;margin-bottom:14px">Neu · Premium-Ebook · Bestseller</span>
+        <h2 class="h-section" style="margin-bottom:12px">Alles Wissen in <span class="text-grad">einem</span> Guide: DAS PROTOKOLL</h2>
+        <p class="lead" style="max-width:620px;margin:0 auto 10px">Training, Fettabbau, Hormone, Blutwerte, Schlaf, Supplemente — plus das ehrliche Medikamenten-Kapitel (GLP-1/Ozempic, Viagra &amp; Cialis, PT-141, Testosteron). Kein Hype, nur was funktioniert.</p>
+        <p style="color:var(--muted);margin-bottom:24px"><strong style="color:var(--text);font-size:1.3rem">49&nbsp;€</strong> &nbsp;<s style="color:var(--muted-2)">199&nbsp;€</s> &nbsp;·&nbsp; Sofort-Zugang · 30 Tage Geld-zurück</p>
+        <span class="btn btn-primary btn-lg btn-arrow">DAS PROTOKOLL ansehen</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ============================ PROGRAMM & COACHING ============================ -->
+  <section class="section section-alt">
+    <div class="container">
+      <div class="section-head center reveal">
+        <span class="eyebrow">Zwei Wege, ein System</span>
+        <h2 class="h-section">Mach es selbst — oder lass dich 1:1 begleiten.</h2>
+        <p class="lead">Starte eigenständig mit dem 12-Wochen-Programm oder geh mit persönlichem 1:1-Coaching tiefer. Beide bauen auf demselben System.</p>
+      </div>
+
+      <div class="pricing-grid" style="max-width:840px;margin:0 auto;grid-template-columns:repeat(2,1fr)">
+        <div class="price-card reveal">
+          <div class="price-name">12-Wochen-Programm</div>
+          <p class="price-for">Zum Selbermachen, in deinem Tempo.</p>
+          <div class="price-amount"><span class="num">79&nbsp;€</span><span class="per">einmalig</span></div>
+          <p class="price-note">Online-Dokument · sofortiger Zugang · kein Abo</p>
+          <ul class="check-list">
+            <li>12 Wochen strukturiert: Baseline → Build → Optimize → Lock-in</li>
+            <li>To-dos zum Abhaken + Fortschritts-Tracking im Browser</li>
+            <li>Voller Zugriff auf Score-Check, Rechner, Tracker &amp; Ebooks</li>
+            <li>Vertiefungs-Ebook in jedem Kapitel</li>
+          </ul>
+          <a href="kurs.html" class="btn btn-ghost btn-block">Programm ansehen — 79&nbsp;€</a>
+        </div>
+
+        <div class="price-card featured reveal reveal-d1">
+          <span class="price-flag">Persönlich · 1:1</span>
+          <div class="price-name">1:1 Coaching</div>
+          <p class="price-for">Maximale Tiefe, komplett individuell, flexibel.</p>
+          <div class="price-amount"><span class="num">ab 149&nbsp;€</span><span class="per">/ Monat</span></div>
+          <p class="price-note">Flexible Laufzeit · monatlich kündbar</p>
+          <ul class="check-list">
+            <li>Komplett individueller Plan, wöchentlich angepasst</li>
+            <li>Viel mehr Tiefe, Detail &amp; Wissen als im Programm</li>
+            <li>Supplement-Strategie inkl. Dosierungen (rezeptfrei)</li>
+            <li>Blutwerte-Struktur + Arztgespräch-Vorbereitung</li>
+            <li>Direkter Draht per WhatsApp/Telegram (Mo–Fr)</li>
+          </ul>
+          <a href="coaching.html#buchen" class="btn btn-primary btn-block btn-arrow">Kostenloses Erstgespräch buchen</a>
+        </div>
+      </div>
+      <p class="small center reveal" style="text-align:center;color:var(--muted-2);margin-top:24px">Programm: 14 Tage Widerrufsrecht (erlischt bei sofortigem digitalen Zugang mit deiner Zustimmung). Coaching: monatlich, ohne Mindestlaufzeit, jederzeit zum Monatsende kündbar. Alle Preise inkl. ggf. anfallender USt.</p>
+    </div>
+  </section>
+
+  <!-- ============================ FÜR WEN ============================ -->
+  <section class="section">
+    <div class="container">
+      <div class="section-head center reveal">
+        <span class="eyebrow">Ehrliche Auswahl</span>
+        <h2 class="h-section">Für wen MaleMetrix ist — und für wen nicht.</h2>
+      </div>
+      <div class="grid-2">
+        <div class="card reveal">
+          <h3 class="h-card" style="color:var(--green)">Für dich, wenn:</h3>
+          <ul class="check-list" style="margin-top:18px">
+            <li>du männlich bist</li>
+            <li>du Verantwortung im Job oder in der Familie trägst</li>
+            <li>du sichtbare, messbare Veränderung willst</li>
+            <li>du bereit bist zu tracken</li>
+            <li>du ehrliches Feedback willst</li>
+            <li>du 3–4 Stunden pro Woche investieren kannst</li>
+            <li>du nicht mehr raten willst</li>
+          </ul>
+        </div>
+        <div class="card reveal reveal-d1">
+          <h3 class="h-card" style="color:var(--red)">Nicht für dich, wenn:</h3>
+          <ul class="check-list cross-list" style="margin-top:18px">
+            <li>du Wunder in 10 Tagen erwartest</li>
+            <li>du keine Daten teilen willst</li>
+            <li>du keine Verantwortung übernehmen willst</li>
+            <li>du nur einen kostenlosen Plan suchst</li>
+            <li>du medizinische Behandlung statt Coaching erwartest</li>
+            <li>du illegale oder riskante Abkürzungen suchst</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ VERTRAUEN ============================ -->
+  <section class="section section-alt">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Transparenz statt Hochglanz</span>
+        <h2 class="h-section">Warum du uns vertrauen kannst — gerade weil wir neu sind.</h2>
+        <p class="lead">MaleMetrix arbeitet nicht mit Crash-Diäten, Angstmarketing oder medizinischen Versprechen. Der Fokus liegt auf messbaren Lifestyle-Hebeln: Training, Ernährung, Schlaf, Tracking und strukturierter Umsetzung.</p>
+      </div>
+      <div class="grid-3">
+        <div class="card reveal"><div class="card-icon">📐</div><h3 class="h-card">Klare Methode</h3><p>7 Bereiche, feste Gewichtung, dokumentierte Phasen. Du siehst von Tag 1, wie das System funktioniert — nichts ist Blackbox.</p></div>
+        <div class="card reveal reveal-d1"><div class="card-icon">🧭</div><h3 class="h-card">Transparente Grenzen</h3><p>Keine Diagnosen, keine Hormon-Versprechen, keine Medikamenten-Tipps. Blutwerte ordnen wir strukturiert ein — die Medizin gehört zum Arzt.</p></div>
+        <div class="card reveal reveal-d2"><div class="card-icon">🤝</div><h3 class="h-card">Founder-Runde</h3><p>Die ersten 5 Plätze bekommen den vollen Umfang zum reduzierten Preis — gegen ehrliches Feedback und dokumentierten Fortschritt. Deshalb ist es jetzt so günstig.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ FAQ TEASER ============================ -->
+  <section class="section">
+    <div class="container-narrow">
+      <div class="section-head center reveal">
+        <span class="eyebrow">Häufige Fragen</span>
+        <h2 class="h-section">Kurz beantwortet.</h2>
+      </div>
+      <div class="accordion reveal">
+        <details>
+          <summary>Ist MaleMetrix medizinische Beratung?</summary>
+          <div class="acc-body">Nein. MaleMetrix ist Coaching für Training, Ernährung, Schlaf, Tracking und Lifestyle-Struktur. Blutwerte können zur Orientierung besprochen werden, ersetzen aber keine ärztliche Diagnose oder Behandlung.</div>
+        </details>
+        <details>
+          <summary>Muss ich ins Fitnessstudio?</summary>
+          <div class="acc-body">Nicht zwingend, aber für optimale Ergebnisse ist Krafttraining wichtig. Der Plan wird an deine Möglichkeiten angepasst — Gym, Homegym oder minimal equipment.</div>
+        </details>
+        <details>
+          <summary>Wie viel Zeit brauche ich?</summary>
+          <div class="acc-body">Realistisch 3 Trainingseinheiten pro Woche plus kurze Check-ins und einfache Ernährungsvorbereitung — zusammen etwa 3–4 Stunden. Das System ist für Männer mit Job und Familie gebaut.</div>
+        </details>
+        <details>
+          <summary>Was kostet das Coaching und wie lange läuft es?</summary>
+          <div class="acc-body">Das 1:1-Coaching startet bei ab 149&nbsp;€/Monat, mit flexibler Laufzeit ohne Mindestlaufzeit — du kannst jederzeit zum Monatsende kündigen. Den genauen Umfang und Preis klären wir transparent im kostenlosen Erstgespräch. Das 12-Wochen-Programm zum Selbststudium gibt es separat für 79&nbsp;€ einmalig.</div>
+        </details>
+      </div>
+      <div style="text-align:center;margin-top:28px" class="reveal">
+        <a href="faq.html" class="btn btn-dark">Alle Fragen ansehen</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ CTA ============================ -->
+  <section class="section-tight">
+    <div class="container">
+      <div class="cta-band reveal">
+        <span class="eyebrow" style="justify-content:center">Kostenlos · 10 Minuten</span>
+        <h2>Finde heraus, was dich wirklich bremst.</h2>
+        <p>Mach den kostenlosen MaleMetrix Check und erhalte deinen Score, deinen Hauptengpass und deine nächsten 3 Schritte — sofort, ohne E-Mail-Zwang.</p>
+        <div class="hero-ctas">
+          <a href="check.html" class="btn btn-primary btn-lg btn-arrow">MaleMetrix Check starten</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="index.html" class="logo"><span class="logo-mark">M</span>Male<span class="x">Metrix</span></a>
+        <p data-i18n="foot.brand">Das Performance-System für Männer. Körper. Kraft. Energie. Blutwerte. Umsetzung.</p>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="foot.system">System</h4>
+        <ul>
+          <li><a href="check.html" data-i18n="foot.score">MaleMetrix Score</a></li>
+          <li><a href="coaching.html" data-i18n="foot.coaching">1:1 Coaching</a></li>
+          <li><a href="kurs.html" data-i18n="foot.course">12-Wochen-Programm</a></li>
+          <li><a href="shop.html" data-i18n="foot.shop">Shop</a></li>
+          <li><a href="blutwerte.html" data-i18n="foot.blood">Blutwerte verstehen</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="foot.freecol">Kostenlos</h4>
+        <ul>
+          <li><a href="tools.html" data-i18n="foot.tools">Kostenlose Rechner</a></li>
+          <li><a href="tracker.html" data-i18n="foot.tracker">Training-Tracker</a></li>
+          <li><a href="ebooks.html" data-i18n="foot.ebooks">Ebooks</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="foot.info">Info</h4>
+        <ul>
+          <li><a href="ueber.html" data-i18n="foot.about">Über MaleMetrix</a></li>
+          <li><a href="faq.html" data-i18n="foot.faq">FAQ</a></li>
+          <li><a href="termin.html" data-i18n="foot.booking">Analysegespräch</a></li>
+          <li><a href="kontakt.html" data-i18n="foot.contact">Kontakt</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="foot.legal">Rechtliches</h4>
+        <ul>
+          <li><a href="impressum.html" data-i18n="foot.imprint">Impressum</a></li>
+          <li><a href="datenschutz.html" data-i18n="foot.privacy">Datenschutz</a></li>
+          <li><a href="agb.html" data-i18n="foot.terms">AGB &amp; Widerruf</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-disclaimer" data-i18n="foot.disclaimer">
+      MaleMetrix bietet Coaching, Lifestyle-Analyse und strukturierte Orientierung zu Training, Ernährung, Schlaf, Körperkomposition und allgemeinen Gesundheitsmarkern. MaleMetrix stellt keine medizinischen Diagnosen, ersetzt keine ärztliche Beratung und gibt keine Therapie- oder Medikamentenempfehlungen. Bei gesundheitlichen Beschwerden, auffälligen Laborwerten oder medizinischen Fragen wende dich bitte an einen Arzt.
+    </div>
+    <div class="footer-bottom">
+      <span>© <span data-year></span> MaleMetrix. <span data-i18n="foot.rights">Alle Rechte vorbehalten.</span></span>
+      <span data-i18n="foot.tagline">Made for Männer, die mehr wollen.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/analytics.js"></script>
+<script src="js/shop-data.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

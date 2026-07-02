@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(New-Item -ItemType Directory -Force C:\\\\Users\\\\uralb\\\\malemetrix\\\\fonts | Out-Null; $ua = \"Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0 Safari/537.36\"; $css = \\(Invoke-WebRequest -Uri \"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500;700&display=swap\" -Headers @{ \"User-Agent\" = $ua }\\).Content; $css | Out-File -Encoding utf8 C:\\\\Users\\\\uralb\\\\malemetrix\\\\fonts\\\\google-fonts-raw.css; \\($css -split \"`n\" | Select-String \"latin\"\\).Count)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(ls -la && echo \"---MEMORY---\" && ls -la /c/Users/uralb/.claude/projects/C--Users-uralb-malemetrix/memory/ 2>/dev/null)",
+      "WebSearch",
+      "Bash(python -c \"import PIL; print\\('PIL', PIL.__version__\\)\")",
+      "Bash(python -c \"import cairosvg; print\\('cairosvg ok'\\)\")",
+      "Bash(python og_gen.py)",
+      "Bash(node --check js/course-data.js)",
+      "Bash(node -e ' *)",
+      "Bash(node --check js/course.js)",
+      "Bash(node --check js/tools.js)",
+      "Bash(node --check js/ebooks-data.js)",
+      "Bash(node --check js/check.js)",
+      "mcp__2208435e-9585-45ba-ab74-66428fda232e__balance",
+      "mcp__2208435e-9585-45ba-ab74-66428fda232e__models_explore",
+      "mcp__2208435e-9585-45ba-ab74-66428fda232e__generate_image",
+      "mcp__2208435e-9585-45ba-ab74-66428fda232e__job_display",
+      "mcp__2208435e-9585-45ba-ab74-66428fda232e__generate_video",
+      "PowerShell(git *)"
+    ]
+  }
+}

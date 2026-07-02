@@ -1,0 +1,14 @@
+MaleMetrix — Ebook-PDFs hier ablegen
+=====================================
+
+Lege deine fertigen Ebook-PDFs in diesen Ordner, z. B.:
+  ebooks/files/mein-neues-ebook.pdf
+
+Danach traegst du das Ebook EINMALIG in der Liste ein:
+  js/ebooks-data.js
+
+Dann erscheint es automatisch in der Bibliothek (ebooks.html) — du musst
+keinen Seitencode mehr anfassen.
+
+Tipp: Mit "gated": true wird vor dem Oeffnen die E-Mail abgefragt
+(gut, um aus PDF-Downloads Newsletter-Kontakte zu machen).

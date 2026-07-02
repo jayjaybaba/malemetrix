@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Interne / nicht-indexierbare Seiten (haben zusätzlich meta robots noindex)
+Disallow: /checkout.html
+Disallow: /report.html
+Disallow: /impressum.html
+Disallow: /datenschutz.html
+Disallow: /agb.html
+
+Sitemap: https://malemetrix.de/sitemap.xml
