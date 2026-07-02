@@ -270,11 +270,12 @@
           '<p class="muted" style="margin:6px 0 14px">Dein Premium-Ebook „DAS PROTOKOLL" ist freigeschaltet. Dein Zugangscode:</p>' +
           '<div style="font-family:monospace;font-size:1.5rem;font-weight:700;letter-spacing:2px;color:var(--text);background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:14px;text-align:center;margin-bottom:16px">' + pcode + '</div>' +
           '<a class="btn btn-primary btn-block" href="' + plink + '">Jetzt lesen →</a>' +
-          '<p class="small" style="color:var(--muted-2);margin-top:12px">Tipp: Speichere den Code. Du gibst ihn einmalig ein, danach bleibt der Zugang auf deinem Gerät.</p></div>';
+          '<a class="btn btn-dark btn-block" style="margin-top:10px" href="kurs-programm.html?code=' + encodeURIComponent(pcode) + '">🎓 Inklusive: interaktives 12-Wochen-Programm starten →</a>' +
+          '<p class="small" style="color:var(--muted-2);margin-top:12px">Tipp: Speichere den Code. Er schaltet Ebook UND Programm frei — einmalig eingeben, danach bleibt der Zugang auf deinem Gerät.</p></div>';
       } else {
         courseBlock += '<div class="card" style="text-align:left;margin-bottom:24px">' +
           '<span class="card-num">📕 DEIN PROTOKOLL-ZUGANG</span>' +
-          '<p class="muted" style="margin-top:6px">Sobald deine Zahlung eingegangen ist, erhältst du per E-Mail deinen Zugangscode für „DAS PROTOKOLL" — in der Regel innerhalb von 24 Stunden.</p></div>';
+          '<p class="muted" style="margin-top:6px">Sobald deine Zahlung eingegangen ist, erhältst du per E-Mail deinen Zugangscode für „DAS PROTOKOLL" — in der Regel innerhalb von 24 Stunden. Der Code schaltet auch das enthaltene interaktive 12-Wochen-Programm frei.</p></div>';
       }
     }
 

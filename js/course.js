@@ -29,7 +29,11 @@
   if (!gate || !content) return;
 
   function norm(s) { return String(s || "").trim().toUpperCase().replace(/\s+/g, ""); }
-  const CODE = norm(CFG.courseAccessCode || "");
+  /* Das Programm ist Teil von DAS PROTOKOLL: Der Protokoll-Code schaltet es
+     frei. Der alte courseAccessCode bleibt für Alt-Käufer gültig. */
+  const CODES = [norm(CFG.protokollAccessCode || ""), norm(CFG.courseAccessCode || "")].filter(Boolean);
+  const CODE = CODES[0] || "";
+  function codeOk(v) { return !!v && CODES.indexOf(v) !== -1; }
   function esc(s) {
     return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   }
@@ -66,7 +70,7 @@
         err.style.display = "block";
         return;
       }
-      if (val && val === CODE) {
+      if (codeOk(val)) {
         unlock();
         if (MM.track) MM.track("course_unlocked", {});
         MM.toast("Programm freigeschaltet — viel Erfolg!");
@@ -83,7 +87,7 @@
     btn.addEventListener("click", tryUnlock);
     input.addEventListener("keydown", e => { if (e.key === "Enter") tryUnlock(); });
     input.addEventListener("input", () => { err.style.display = "none"; input.classList.remove("invalid"); });
-    if (buy) buy.addEventListener("click", () => { if (MM.cart) MM.cart.add("kurs-12w", 1); });
+    if (buy) buy.addEventListener("click", () => { location.href = "protokoll.html"; });
   }
 
   /* ---------- Render-Bausteine ---------- */
@@ -293,7 +297,7 @@
   /* ---------- Start ---------- */
   try {
     const urlCode = norm(new URLSearchParams(location.search).get("code") || "");
-    if (urlCode && CODE && urlCode === CODE) {
+    if (codeOk(urlCode)) {
       unlock();
       history.replaceState(null, "", location.pathname);
     }
