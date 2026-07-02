@@ -2232,3 +2232,30 @@ input[type="range"]::-moz-range-thumb {
 .msl-track { flex:1; height:9px; background:var(--line); border-radius:5px; overflow:hidden; }
 .msl-fill { height:100%; background:linear-gradient(90deg,#2e7cf6,#00c2ff); border-radius:5px; }
 .msl-val { flex:0 0 24px; text-align:right; font-size:0.85rem; color:var(--text); }
+
+/* --- Wochenplan-Kalender & Heute-Karte (Gym-Tracker) --- */
+.today-card { margin-bottom:16px; border-left:3px solid var(--accent); }
+.today-card.gym { border-left-color:var(--amber); background:linear-gradient(135deg,var(--accent-soft),transparent); }
+.today-card.done-card { border-left-color:var(--green); }
+.today-kick { font-family:var(--font-mono); font-size:0.68rem; letter-spacing:0.14em; color:var(--accent); }
+.today-card.gym .today-kick { color:var(--amber); }
+
+.wk-cal-card { margin-bottom:20px; padding:16px 18px; }
+.wk-cal-head { display:flex; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+.wk-cal-head strong { flex:1; font-size:0.95rem; }
+.wk-cal { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+.wk-day { display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 2px; border-radius:10px; border:1px solid var(--line); background:var(--card-2); min-width:0; }
+.wk-name { font-size:0.62rem; color:var(--muted-2); font-family:var(--font-mono); text-transform:uppercase; }
+.wk-icon { font-size:0.95rem; line-height:1.2; }
+.wk-sub { font-size:0.56rem; color:var(--muted-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.wk-day.done { border-color:rgba(45,212,167,0.45); background:rgba(45,212,167,0.08); }
+.wk-day.done .wk-sub { color:var(--green); }
+.wk-day.missed { opacity:0.45; }
+.wk-day.today { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+
+.plan-row { display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--line); }
+.plan-row:last-of-type { border-bottom:none; }
+.plan-day { flex:0 0 130px; display:flex; align-items:center; gap:8px; font-size:0.9rem; color:var(--text); cursor:pointer; }
+.plan-row select { flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--card-2); color:var(--text); font-size:0.88rem; min-width:0; }
+.plan-row select:disabled { opacity:0.35; }
+@media (max-width:480px){ .plan-day{ flex-basis:104px; font-size:0.82rem; } }

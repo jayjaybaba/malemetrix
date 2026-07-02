@@ -36,6 +36,13 @@
     active: () => MM.store.get("trk_active", null),
     saveActive: (v) => MM.store.set("trk_active", v),
     clearActive: () => MM.store.remove("trk_active"),
+    /* Wochenplan: Gym-Tage (Wochentag -> Plan-ID) + tägliches Bewegungsziel.
+       MaleMetrix-Prinzip: JEDEN Tag 20-30 min bewegen, 2-3x pro Woche Gym. */
+    plan: () => MM.store.get("trk_plan", { gymDays: { "1": "push", "3": "pull", "5": "legs" }, dailyMin: 25 }),
+    savePlan: (v) => MM.store.set("trk_plan", v),
+    /* Tägliche Bewegungs-Einheiten (ohne Gym): [{date:"YYYY-MM-DD", min, kind}] */
+    daily: () => MM.store.get("trk_daily", []),
+    saveDaily: (v) => MM.store.set("trk_daily", v),
     restPref: () => MM.store.get("trk_rest_sec", 120),
     saveRestPref: (v) => MM.store.set("trk_rest_sec", v),
     barPref: () => MM.store.get("trk_bar_kg", (window.MM_TRK_PLATES || {}).barKg || 20),
@@ -89,6 +96,154 @@
     return prs;
   }
 
+  /* ---------- Tages-System (jeden Tag trainieren) ---------- */
+  function localYmd(d) {
+    const x = d instanceof Date ? d : new Date(d);
+    return x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0");
+  }
+  /* Was wurde an einem Tag gemacht? (Gym-Session, Cardio, tägliche Bewegung) */
+  function activityOn(ymd) {
+    const gym = S.sessions().some(s => localYmd(s.date) === ymd);
+    const cardio = S.cardio().some(c => c.date === ymd);
+    const daily = S.daily().some(d => d.date === ymd);
+    return { gym, cardio, daily, any: gym || cardio || daily };
+  }
+  /* Tage in Folge mit Aktivität (heute zählt, wenn schon trainiert;
+     sonst beginnt die Zählung gestern — der Streak ist noch nicht gerissen). */
+  function dayStreak() {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    let streak = 0;
+    let d = new Date(today);
+    if (!activityOn(localYmd(d)).any) d.setDate(d.getDate() - 1); // heute noch offen
+    for (let i = 0; i < 730; i++) {
+      if (activityOn(localYmd(d)).any) { streak++; d.setDate(d.getDate() - 1); }
+      else break;
+    }
+    return streak;
+  }
+  function planTplFor(weekday) {
+    const plan = S.plan();
+    const id = (plan.gymDays || {})[String(weekday)];
+    if (!id) return null;
+    return MM_TRK_TEMPLATES.concat(S.templates()).find(t => t.id === id) || null;
+  }
+  function logDaily(min, kind) {
+    const list = S.daily();
+    list.push({ date: localYmd(new Date()), min: min, kind: kind || "move" });
+    S.saveDaily(list);
+    MM.toast("🔥 " + T("Tagesziel erledigt — Streak: ", "Daily goal done — streak: ") + dayStreak() + " " + T("Tage", "days"));
+    if (MM.track) MM.track("tracker_daily_logged", {});
+    render();
+  }
+
+  /* ---------- Wochen-Kalender (Mo–So, aktuelle Woche) ---------- */
+  function weekCalHTML() {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - ((today.getDay() + 6) % 7)); // Wochenstart Mo
+    const names = LANG() === "de" ? ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] : ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+    let cells = "";
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday); d.setDate(monday.getDate() + i);
+      const ymd = localYmd(d);
+      const act = activityOn(ymd);
+      const tpl = planTplFor(d.getDay());
+      const isToday = ymd === localYmd(today);
+      const isPast = d < today;
+      let icon, cls = "wk-day";
+      if (act.gym) { icon = "🏋️"; cls += " done"; }
+      else if (act.any) { icon = "✓"; cls += " done"; }
+      else if (isPast) { icon = "·"; cls += " missed"; }
+      else icon = tpl ? "🏋️" : "🚶";
+      if (isToday) cls += " today";
+      cells += '<div class="' + cls + '"><span class="wk-name">' + names[i] + '</span>' +
+        '<span class="wk-icon">' + icon + '</span>' +
+        '<span class="wk-sub">' + (tpl ? tr(tpl.name).split(" ")[0] : (LANG() === "de" ? "Bewegung" : "Move")) + '</span></div>';
+    }
+    return '<div class="card wk-cal-card"><div class="wk-cal-head">' +
+      '<strong>📅 ' + T("Deine Trainingswoche", "Your training week") + '</strong>' +
+      '<span class="mono" style="color:var(--amber);font-size:0.85rem">🔥 ' + dayStreak() + ' ' + T("Tage Streak", "day streak") + '</span>' +
+      '<button class="btn btn-dark btn-sm" id="planSetup">⚙ ' + T("Plan", "Plan") + '</button></div>' +
+      '<div class="wk-cal">' + cells + '</div></div>';
+  }
+
+  /* ---------- Heute-Karte: sagt jeden Morgen, was dran ist ---------- */
+  function todayCardHTML() {
+    const now = new Date();
+    const ymd = localYmd(now);
+    const act = activityOn(ymd);
+    const tpl = planTplFor(now.getDay());
+    const plan = S.plan();
+    const min = plan.dailyMin || 25;
+    if (tpl && !act.gym) {
+      return '<div class="card today-card gym"><div class="today-kick">' + T("HEUTE IST GYM-TAG", "TODAY IS GYM DAY") + '</div>' +
+        '<h3 class="h-card" style="margin:6px 0 4px">🏋️ ' + tr(tpl.name) + '</h3>' +
+        '<p class="muted" style="margin-bottom:16px">' + tpl.exIds.slice(0, 4).map(id => tr(exById(id).name)).join(" · ") + (tpl.exIds.length > 4 ? " …" : "") + '</p>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
+        '<button class="btn btn-primary" data-starttpl="' + tpl.id + '">' + T("Jetzt starten", "Start now") + ' →</button>' +
+        '<button class="btn btn-dark btn-sm" id="onlyMove">' + T("Heute nur Bewegung", "Just movement today") + '</button></div></div>';
+    }
+    if (!act.any) {
+      return '<div class="card today-card"><div class="today-kick">' + T("DEIN TAGESZIEL", "TODAY'S GOAL") + '</div>' +
+        '<h3 class="h-card" style="margin:6px 0 4px">🚶 ' + min + '–' + (min + 5) + ' min ' + T("Bewegung", "movement") + '</h3>' +
+        '<p class="muted" style="margin-bottom:16px">' + T("Gehen, Mobility, Core oder Eigengewicht — Hauptsache, die Kette reißt nicht. Kein Null-Tag.", "Walk, mobility, core or bodyweight — just don't break the chain. No zero days.") + '</p>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap" id="dailyChips">' +
+        [20, 25, 30, 40].map(m => '<button class="btn btn-dark btn-sm" data-dmin="' + m + '">✓ ' + m + ' min</button>').join("") +
+        '</div></div>';
+    }
+    return '<div class="card today-card done-card"><div class="today-kick" style="color:var(--green)">✓ ' + T("TAGESZIEL ERLEDIGT", "DAILY GOAL DONE") + '</div>' +
+      '<h3 class="h-card" style="margin:6px 0 4px">' + (act.gym ? "🏋️ " + T("Gym-Einheit im Kasten — stark!", "Gym session done — strong!") : "🔥 " + T("Bewegung geloggt — die Kette hält.", "Movement logged — chain intact.")) + '</h3>' +
+      '<p class="muted">' + T("Streak:", "Streak:") + ' ' + dayStreak() + ' ' + T("Tage. Morgen geht's weiter.", "days. See you tomorrow.") + '</p></div>';
+  }
+
+  function bindTodayCard(p) {
+    const ps = p.querySelector("#planSetup");
+    if (ps) ps.addEventListener("click", openPlanSetup);
+    p.querySelectorAll("[data-dmin]").forEach(b => b.addEventListener("click", () => logDaily(+b.dataset.dmin)));
+    const om = p.querySelector("#onlyMove");
+    if (om) om.addEventListener("click", () => logDaily(S.plan().dailyMin || 25));
+  }
+
+  /* ---------- Plan-Setup (Gym-Tage + Plan pro Tag + tägliche Minuten) ---------- */
+  function openPlanSetup() {
+    let modal = document.getElementById("planModal");
+    if (!modal) { modal = document.createElement("div"); modal.id = "planModal"; modal.className = "modal-overlay"; document.body.appendChild(modal); }
+    const plan = S.plan();
+    const gymDays = Object.assign({}, plan.gymDays || {});
+    const tpls = MM_TRK_TEMPLATES.concat(S.templates());
+    const names = LANG() === "de" ? ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"] : ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    const order = [1, 2, 3, 4, 5, 6, 0];
+    const rows = order.map((wd, i) => {
+      const active = !!gymDays[String(wd)];
+      const sel = '<select data-pltpl="' + wd + '"' + (active ? "" : " disabled") + '>' +
+        tpls.map(t => '<option value="' + t.id + '"' + (gymDays[String(wd)] === t.id ? " selected" : "") + '>' + tr(t.name) + '</option>').join("") + '</select>';
+      return '<div class="plan-row"><label class="plan-day"><input type="checkbox" data-plday="' + wd + '"' + (active ? " checked" : "") + '> ' + names[i] + '</label>' + sel + '</div>';
+    }).join("");
+    modal.innerHTML = '<div class="modal-box"><div class="modal-head"><h3 class="h-card">📅 ' + T("Dein Wochenplan", "Your weekly plan") + '</h3><button class="cart-close" id="plnClose">✕</button></div>' +
+      '<p class="muted" style="font-size:0.88rem;margin-bottom:14px">' + T("Das MaleMetrix-Prinzip: jeden Tag 20–30 min Bewegung, an 2–3 Tagen Gym. Wähle deine Gym-Tage — an allen anderen zählt die tägliche Bewegung.", "The MaleMetrix principle: 20–30 min movement every day, gym on 2–3 days. Pick your gym days — every other day counts daily movement.") + '</p>' +
+      rows +
+      '<div class="field" style="margin-top:14px"><label>' + T("Tägliches Bewegungsziel (Minuten)", "Daily movement goal (minutes)") + '</label>' +
+      '<input type="number" id="plnMin" inputmode="numeric" value="' + (plan.dailyMin || 25) + '" min="10" max="90"></div>' +
+      '<button class="btn btn-primary btn-block" id="plnSave" style="margin-top:10px">' + T("Plan speichern", "Save plan") + '</button></div>';
+    modal.classList.add("open");
+    modal.querySelector("#plnClose").addEventListener("click", () => modal.classList.remove("open"));
+    modal.addEventListener("click", e => { if (e.target === modal) modal.classList.remove("open"); });
+    modal.querySelectorAll("[data-plday]").forEach(cb => cb.addEventListener("change", () => {
+      const sel = modal.querySelector('[data-pltpl="' + cb.dataset.plday + '"]');
+      sel.disabled = !cb.checked;
+    }));
+    modal.querySelector("#plnSave").addEventListener("click", () => {
+      const out = {};
+      modal.querySelectorAll("[data-plday]").forEach(cb => {
+        if (cb.checked) out[cb.dataset.plday] = modal.querySelector('[data-pltpl="' + cb.dataset.plday + '"]').value;
+      });
+      S.savePlan({ gymDays: out, dailyMin: Math.max(10, parseInt(modal.querySelector("#plnMin").value, 10) || 25) });
+      modal.classList.remove("open");
+      MM.toast(T("Wochenplan gespeichert", "Weekly plan saved"));
+      render();
+    });
+  }
+
   /* ==========================================================================
      TAB-SYSTEM
      ========================================================================== */
@@ -119,16 +274,10 @@
     const thisWeek = ss.filter(s => new Date(s.date) >= weekAgo).length;
     const totalVol = ss.reduce((a, s) => a + sessionVolume(s), 0);
     const totalPRs = ss.reduce((a, s) => a + countPRsIn(s), 0);
-    let streak = 0;
-    for (let w = 0; w < 52; w++) {
-      const start = new Date(now.getTime() - (w + 1) * 7 * 864e5), end = new Date(now.getTime() - w * 7 * 864e5);
-      if (ss.some(s => { const d = new Date(s.date); return d >= start && d < end; })) streak++;
-      else if (w > 0) break;
-    }
     const volStr = totalVol >= 1000 ? (units() === "imperial" ? Math.round(totalVol * KG / 1000) + "k lb" : Math.round(totalVol / 1000) + "k kg") : fmtW(totalVol, 0);
     return '<div class="stat-grid-tracker">' +
-      stat(ss.length, T("Einheiten gesamt", "Total workouts")) +
-      stat(thisWeek, T("Diese Woche", "This week")) +
+      stat("🔥 " + dayStreak(), T("Tage-Streak", "Day streak")) +
+      stat(thisWeek, T("Gym diese Woche", "Gym this week")) +
       stat(volStr, T("Gesamtvolumen", "Total volume")) +
       stat(totalPRs, T("Persönliche Rekorde", "Personal records")) +
       '</div>';
@@ -155,6 +304,8 @@
       const templates = MM_TRK_TEMPLATES.concat(S.templates());
       const last = S.sessions().slice().sort((a, b) => new Date(b.date) - new Date(a.date))[0];
       p.innerHTML =
+        todayCardHTML() +
+        weekCalHTML() +
         '<div class="card" style="text-align:center;padding:36px 24px;margin-bottom:22px">' +
         '<div style="font-size:2.4rem;margin-bottom:12px">🏋️</div>' +
         '<h3 class="h-card" style="margin-bottom:8px">' + T("Bereit fürs Training?", "Ready to train?") + '</h3>' +
@@ -173,6 +324,7 @@
       p.querySelector("#startEmpty").addEventListener("click", () => startSession(null));
       const rl = p.querySelector("#repeatLast"); if (rl) rl.addEventListener("click", () => repeatSession(last));
       p.querySelectorAll("[data-starttpl]").forEach(b => b.addEventListener("click", () => startSession(b.dataset.starttpl)));
+      bindTodayCard(p);
       return;
     }
 
