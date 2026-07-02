@@ -114,6 +114,19 @@ window.MM_CONFIG = {
   // Zahlung und schalten damit ebooks/protokoll.html frei (Sofort-Zugang).
   protokollAccessCode: "PROTOKOLL-M",
 
+  // --- MaleMetrix Circle (bezahlte Community, monatlich) -------------------
+  // 1. Telegram: private Gruppe erstellen -> Einladungslink hier eintragen
+  //    (t.me/+xxxx). Er wird NUR nach erfolgreicher Zahlung angezeigt.
+  // 2. PayPal-Abo: auf developer.paypal.com (Live) unter "Products & Plans"
+  //    einen Plan mit deinem Monatspreis anlegen und die Plan-ID (P-xxx)
+  //    unten eintragen. Braucht die Live-Client-ID oben (paypalClientId).
+  // Solange planId leer ist, zeigt die Seite eine Warteliste (E-Mail-Anfrage).
+  circle: {
+    priceMonthly: 15,
+    paypalPlanId: "",          // z. B. "P-5ML4271244454362WXNWU5NQ"
+    telegramInvite: ""         // z. B. "https://t.me/+AbCdEfGh"
+  },
+
   // --- E-Mail-Liste / Ebook-Unlock ----------------------------------------
   // Damit eingesammelte E-Mails automatisch in deiner Liste landen (statt nur
   // ins Postfach), nutze ein kostenloses Brevo-Konto (brevo.com):
