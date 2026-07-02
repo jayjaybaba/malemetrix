@@ -75,13 +75,13 @@ window.MM_CONFIG = {
 
   // --- Dinner-Planer: Foto-Kalorienschätzung (KI) --------------------------
   // Mahlzeit fotografieren -> Claude schätzt Gericht, kcal & Protein.
-  // Aktivieren: API-Schlüssel von console.anthropic.com unten eintragen.
+  // AKTIVIEREN (5 Minuten, Copy-Paste): Anleitung in proxy/README.md —
+  // fertiger Cloudflare-Worker liegt in proxy/food-vision-worker.js.
+  // Danach unten die Worker-URL bei "endpoint" eintragen (empfohlen).
   // Kosten: mit claude-haiku-4-5 ca. 0,2-0,4 Cent pro Foto.
-  // SICHERHEIT: Ein hier eingetragener Schlüssel ist oeffentlich sichtbar
-  // (statische Seite!). Nutze einen eigenen Schluessel MIT Ausgabenlimit
-  // (Console -> Limits) oder besser: einen kleinen Proxy (z. B. Cloudflare
-  // Worker), dessen URL du unter "endpoint" eintraegst — dann bleibt der
-  // Schluessel geheim. Solange beides leer ist, ist der Foto-Button aus.
+  // SICHERHEIT: Ein direkt hier eingetragener apiKey waere oeffentlich
+  // sichtbar (statische Seite!) — wenn ueberhaupt, nur mit Ausgabenlimit.
+  // Solange beides leer ist, bleibt der Foto-Button unsichtbar.
   foodVision: {
     apiKey: "",                    // z. B. "sk-ant-..." (nur mit Spend-Limit!)
     endpoint: "",                  // ODER eigene Proxy-URL (empfohlen)
