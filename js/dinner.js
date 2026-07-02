@@ -83,6 +83,43 @@
     return t;
   }
 
+  /* ---------- Verknüpfung mit dem Gym-Tracker ----------
+     Liest die Trainingsdaten des Fitness-Trackers (gleicher Browser) und
+     rechnet einen ehrlichen, gedeckelten Trainings-Bonus aufs Tagesbudget:
+     Gym-Einheit +250 kcal · Cardio ~7 kcal/min (max 300) ·
+     tägliche Bewegung ~5 kcal/min (max 150). Gesamt max +500. */
+  function trkStore(key, d) {
+    try {
+      if (window.MM && MM.store) return MM.store.get(key, d);
+      var raw = localStorage.getItem("mm_" + key);
+      return raw ? JSON.parse(raw) : d;
+    } catch (e) { return d; }
+  }
+  function trainingBonus(dateObj) {
+    var key = ymd(dateObj);
+    var out = { kcal: 0, parts: [], gym: false };
+    var gym = (trkStore("trk_sessions", []) || []).some(function (s) {
+      var x = new Date(s.date); x.setHours(0, 0, 0, 0); return ymd(x) === key;
+    });
+    if (gym) { out.kcal += 250; out.gym = true; out.parts.push("🏋️ Gym +250"); }
+    var cdMin = (trkStore("trk_cardio", []) || []).reduce(function (a, c) {
+      return a + (c.date === key ? (c.durationMin || 0) : 0);
+    }, 0);
+    if (cdMin > 0) {
+      var cd = Math.min(300, Math.round(cdMin * 7));
+      out.kcal += cd; out.parts.push("🏃 Cardio " + Math.round(cdMin) + " min +" + cd);
+    }
+    var dyMin = (trkStore("trk_daily", []) || []).reduce(function (a, d) {
+      return a + (d.date === key ? (d.min || 0) : 0);
+    }, 0);
+    if (dyMin > 0) {
+      var dy = Math.min(150, Math.round(dyMin * 5));
+      out.kcal += dy; out.parts.push("🚶 Bewegung " + Math.round(dyMin) + " min +" + dy);
+    }
+    out.kcal = Math.min(500, out.kcal);
+    return out;
+  }
+
   /* ---------- Rendering ---------- */
   var el = {
     date: document.getElementById("mmDate"),
@@ -130,7 +167,9 @@
 
   function renderDashboard() {
     var t = dayTotals();
-    var goalK = goals.kcal || 0;
+    var baseGoal = goals.kcal || 0;
+    var bonus = baseGoal > 0 ? trainingBonus(current) : { kcal: 0, parts: [] };
+    var goalK = baseGoal + bonus.kcal;
     var rem = goalK - t.kcal;
     var pct = goalK > 0 ? t.kcal / goalK : 0;
     var center = goalK > 0
@@ -139,14 +178,22 @@
     el.ring.innerHTML = ringSVG(pct, center);
 
     var head = goalK > 0
-      ? '<div style="font-size:0.82rem;color:var(--muted)">Ziel ' + goalK + ' · gegessen ' + t.kcal + ' kcal</div>'
+      ? '<div style="font-size:0.82rem;color:var(--muted)">Ziel ' + baseGoal +
+        (bonus.kcal > 0 ? ' <strong style="color:var(--green)">+ ' + bonus.kcal + ' Trainings-Bonus</strong>' : '') +
+        ' · gegessen ' + t.kcal + ' kcal</div>'
       : '<div style="font-size:0.82rem;color:var(--muted)">Kein Ziel gesetzt — <button id="mmGoalInline" class="linklike">jetzt berechnen</button></div>';
+    var bonusLine = "";
+    if (baseGoal > 0) {
+      bonusLine = bonus.kcal > 0
+        ? '<div style="font-size:0.78rem;color:var(--green);margin-top:10px">' + bonus.parts.join(" · ") + ' <span style="color:var(--muted-2)">(aus deinem <a href="tracker.html" style="color:inherit;text-decoration:underline">Gym-Tracker</a>)</span></div>'
+        : '<div style="font-size:0.78rem;color:var(--muted-2);margin-top:10px">Heute noch kein Training — <a href="tracker.html" style="color:var(--accent);text-decoration:underline">Einheit loggen</a> und Kalorien-Bonus holen 🏋️</div>';
+    }
     el.macros.innerHTML = head +
       '<div style="margin-top:12px">' +
       macroBar("Protein", t.p, goals.p, "var(--accent)") +
       macroBar("Kohlenhydrate", t.c, goals.c, "#f5b54a") +
       macroBar("Fett", t.f, goals.f, "#e0679b") +
-      '</div>';
+      '</div>' + bonusLine;
     var inl = document.getElementById("mmGoalInline");
     if (inl) inl.addEventListener("click", openGoalModal);
   }
@@ -487,10 +534,11 @@
 
   function renderSuggest() {
     if (!el.suggest) return;
-    var goalK = goals.kcal || 0;
+    var baseGoal = goals.kcal || 0;
+    if (!baseGoal) { el.suggest.innerHTML = ""; return; }
+    var goalK = baseGoal + trainingBonus(current).kcal;
     var t = dayTotals();
     var rem = goalK - t.kcal;
-    if (!goalK) { el.suggest.innerHTML = ""; return; }
     var tabs = CATS.map(function (c) {
       return '<button data-cat="' + c.id + '" class="btn ' + (c.id === activeCat ? "btn-primary" : "btn-dark") + ' btn-sm">' + c.icon + " " + c.label + '</button>';
     }).join("");
