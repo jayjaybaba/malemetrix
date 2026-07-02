@@ -41,6 +41,7 @@
       details: [
         "12 Module: Mindset & System, Training (täglich + Push/Pull/Legs), Fettabbau ohne Hunger, Supplemente, Schlaf-Stack, Blutwerte-Komplettpanel, Hormone & Testosteron, Sexuelle Gesundheit, das große Medikamenten-Kapitel, der Ultimate Stack, der 12-Wochen-Masterplan",
         "Das Herzstück: der 12-Wochen-Masterplan — Woche für Woche durchgeplant, mit Standard-Woche, Kontrollterminen und Troubleshooting",
+        "INKLUSIVE: das interaktive 12-Wochen-Programm mit Wochen-Aufgaben & Fortschritts-Tracking im Browser (79 € Wert) — derselbe Zugangscode schaltet beides frei",
         "Das Medikamenten-Wissen, das sonst niemand offen erklärt — verständlich und ehrlich eingeordnet",
         "Blutwerte-Komplettpanel inkl. kleinem Blutbild, ApoB, Lp(a), Cystatin C, PSA & freiem PSA, Schilddrüse",
         "Sofortiger Online-Zugang per Code — kein Warten, jederzeit auf allen Geräten lesbar",
@@ -56,32 +57,8 @@
         '<g stroke="rgba(255,255,255,0.22)" stroke-width="3" stroke-linecap="round"><line x1="152" y1="108" x2="248" y2="108"/><line x1="152" y1="124" x2="230" y2="124"/><line x1="152" y1="140" x2="242" y2="140"/><line x1="152" y1="156" x2="220" y2="156"/><line x1="152" y1="172" x2="238" y2="172"/><line x1="152" y1="188" x2="210" y2="188"/></g>'
       )
     },
-    {
-      id: "kurs-12w",
-      name: "MaleMetrix 12-Wochen-Programm (Selbststudium)",
-      cat: "digital", catLabel: "Digital · Online-Programm",
-      price: 79.00,
-      digital: true,
-      emoji: "🎓",
-      badge: "Selbststudium",
-      desc: "Das komplette 12-Wochen-System als Online-Programm zum Selbermachen — ohne 1:1-Coaching. Woche für Woche klare Aufgaben für Training, Ernährung, Schlaf und Tracking, mit Fortschritts-Häkchen direkt im Browser. Du machst es in deinem Tempo.",
-      details: [
-        "12 Wochen strukturiert: Baseline → Build → Optimize → Lock-in",
-        "Jede Woche: Fokus, konkrete To-dos, Trainings- & Ernährungs-Vorgabe, Check-in",
-        "Fortschritts-Tracking mit Häkchen, jederzeit fortsetzbar",
-        "Voller Zugriff auf Score-Check, 19 Rechner, Tracker & Ebooks",
-        "Sofortiger Zugang per Code nach Zahlungseingang — kein Warten",
-        "Kein Coaching, kein Abo, keine Termine — du arbeitest selbstständig"
-      ],
-      svg: visual(
-        '<rect x="120" y="70" width="160" height="110" rx="10" fill="#161b26" stroke="rgba(255,255,255,0.15)"/>' +
-        '<path d="M200 50 L130 78 L200 106 L270 78 Z" fill="url(#pgGrad)"/>' +
-        '<path d="M200 106 L130 78 L130 92 L200 120 L270 92 L270 78 Z" fill="url(#pgGrad)" opacity="0.55"/>' +
-        '<line x1="270" y1="84" x2="270" y2="120" stroke="url(#pgGrad)" stroke-width="2.5" stroke-linecap="round"/>' +
-        '<circle cx="270" cy="124" r="5" fill="#00c2ff"/>' +
-        '<g stroke="rgba(255,255,255,0.18)" stroke-width="3" stroke-linecap="round"><line x1="150" y1="135" x2="250" y2="135"/><line x1="150" y1="150" x2="225" y2="150"/><line x1="150" y1="165" x2="240" y2="165"/></g>'
-      )
-    },
+    /* Das 12-Wochen-Programm ist seit der Zusammenlegung Teil von
+       DAS PROTOKOLL (ein Kauf, ein Code) — kein eigenes Produkt mehr. */
     {
       id: "express-plan",
       name: "MaleMetrix Express-Plan",
