@@ -37,9 +37,10 @@
       digital: true,
       emoji: "📕",
       badge: "Bestseller",
-      desc: "Das gesamte MaleMetrix-Wissen in einem einzigen Premium-Ebook: Training, Fettabbau, Hormone, Blutwerte, Schlaf, Supplemente — und das komplette Medikamenten-Kapitel (GLP-1/Ozempic, Tirzepatid, Viagra & Cialis, PT-141, Testosteron, Schilddrüse). Kein Bro-Science, kein Hype — das ehrliche Komplettsystem für Männer, die endlich Klarheit und Ergebnisse wollen. Sofortiger Online-Zugang nach dem Kauf.",
+      desc: "Das gesamte MaleMetrix-Wissen in einem einzigen Premium-Ebook: Training, Fettabbau, Hormone, Blutwerte, Schlaf — plus das komplette Medikamenten-Kapitel (GLP-1/Ozempic, Tirzepatid, Viagra & Cialis, TRT, Schilddrüse), der Ultimate Stack und das Herzstück: der 12-Wochen-Masterplan, der alles Woche für Woche in einen Fahrplan gießt. Kein Bro-Science, kein Hype — das ehrliche Komplettsystem für Männer, die Ergebnisse wollen. Sofortiger Online-Zugang nach dem Kauf.",
       details: [
-        "11 Module: Mindset & System, Training (täglich + Push/Pull/Legs), Fettabbau ohne Hunger, Protein, Supplemente, Schlaf-Stack, Blutwerte-Komplettpanel, Hormone & Testosteron, Sexuelle Gesundheit, das große Medikamenten-Kapitel, 12-Wochen-Umsetzungsplan",
+        "12 Module: Mindset & System, Training (täglich + Push/Pull/Legs), Fettabbau ohne Hunger, Supplemente, Schlaf-Stack, Blutwerte-Komplettpanel, Hormone & Testosteron, Sexuelle Gesundheit, das große Medikamenten-Kapitel, der Ultimate Stack, der 12-Wochen-Masterplan",
+        "Das Herzstück: der 12-Wochen-Masterplan — Woche für Woche durchgeplant, mit Standard-Woche, Kontrollterminen und Troubleshooting",
         "Das Medikamenten-Wissen, das sonst niemand offen erklärt — verständlich und ehrlich eingeordnet",
         "Blutwerte-Komplettpanel inkl. kleinem Blutbild, ApoB, Lp(a), Cystatin C, PSA & freiem PSA, Schilddrüse",
         "Sofortiger Online-Zugang per Code — kein Warten, jederzeit auf allen Geräten lesbar",
