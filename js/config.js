@@ -88,6 +88,23 @@ window.MM_CONFIG = {
     model: "claude-haiku-4-5"      // guenstigstes Vision-Modell
   },
 
+  // --- Affiliate- / Partner-Links -------------------------------------------
+  // Sobald du bei einem Partnerprogramm angemeldet bist, trägst du hier
+  // deinen persönlichen Link ein — alle Empfehlungs-Boxen auf der Seite
+  // nutzen ihn dann automatisch (mit rel="sponsored" und Kennzeichnung).
+  // Solange ein Feld leer ist, zeigt der Link neutral auf den Hersteller.
+  // Wo du dich anmeldest:
+  //  - oura:       ouraring.com -> "Affiliate" (läuft über impact.com)
+  //  - bloodtest:  z. B. Lykon (awin.com) oder Aware (Partnerprogramm)
+  //  - supplements: z. B. ESN/More via awin.com, iHerb-Partnerprogramm
+  //  - telemed:    Männergesundheits-/Telemedizin-Anbieter mit Partnerprogramm
+  affiliate: {
+    oura: "",          // z. B. "https://ouraring.com/?irclickid=..."
+    bloodtest: "",     // z. B. dein Lykon/Aware-Partnerlink
+    supplements: "",   // z. B. dein ESN/iHerb-Partnerlink
+    telemed: ""        // z. B. dein Telemedizin-Partnerlink
+  },
+
   // --- Analytics (datenschutzfreundlich) ----------------------------------
   // Plausible ist cookielos und DSGVO-freundlich (kein Cookie-Banner nötig).
   // 1. Kostenpflichtig/Trial: Konto auf plausible.io, Domain hinzufügen.
