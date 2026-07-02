@@ -2126,3 +2126,62 @@ input[type="range"]::-moz-range-thumb {
   .icon-btn { padding: 0 8px; }
   .container, .container-narrow, .container-tight { width: calc(100% - 24px); }
 }
+
+/* ==========================================================================
+   MealMetrix — Kalorien-Tracker (dinner.html)
+   ========================================================================== */
+.mm-daybar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+.mm-daybar .mm-daynav { display:flex; align-items:center; gap:14px; }
+.mm-daybar button.mm-arrow { background:var(--card-2); border:1px solid var(--line); color:var(--text); width:38px; height:38px; border-radius:10px; font-size:1.1rem; cursor:pointer; }
+.mm-daybar .mm-datelabel { font-family:var(--font-display); font-weight:700; font-size:1.1rem; min-width:120px; text-align:center; }
+
+.mm-dash { display:grid; grid-template-columns:auto 1fr; gap:22px; align-items:center; padding:22px; margin-bottom:20px; }
+.mm-dash .mm-ring { display:flex; justify-content:center; }
+@media (max-width:520px){ .mm-dash{ grid-template-columns:1fr; text-align:center; gap:8px; } }
+
+.mm-meal { padding:16px 18px; margin-bottom:14px; }
+.mm-meal-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:0.98rem; }
+.mm-empty { color:var(--muted-2); font-size:0.88rem; padding:4px 0 10px; }
+.mm-add { width:100%; margin-top:8px; }
+.mm-entry { display:flex; align-items:center; gap:10px; padding:9px 0; border-top:1px solid var(--line); }
+.mm-entry:first-of-type { border-top:none; }
+.mm-entry-main { flex:1; min-width:0; }
+.mm-entry-name { display:block; color:var(--text); font-weight:500; font-size:0.92rem; }
+.mm-entry-sub { display:block; color:var(--muted-2); font-size:0.74rem; }
+.mm-entry-kcal { color:var(--muted); font-size:0.9rem; white-space:nowrap; }
+.mm-entry-del { background:none; border:none; color:var(--muted-2); font-size:1.2rem; cursor:pointer; line-height:1; padding:0 2px; }
+
+.linklike { background:none; border:none; color:var(--accent); text-decoration:underline; cursor:pointer; font:inherit; padding:0; }
+
+/* Modal */
+.mm-modal { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; z-index:1000; align-items:flex-end; justify-content:center; }
+.mm-modal.open { display:flex; }
+.mm-modal-box { background:var(--bg); border:1px solid var(--line); border-radius:18px 18px 0 0; width:100%; max-width:560px; max-height:90vh; overflow-y:auto; padding:18px; }
+@media (min-width:560px){ .mm-modal{ align-items:center; } .mm-modal-box{ border-radius:18px; } }
+.mm-modal-head { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.mm-modal-head strong { flex:1; font-size:1.02rem; }
+.mm-modal-close, .mm-modal-back { background:var(--card-2); border:1px solid var(--line); color:var(--text); width:34px; height:34px; border-radius:9px; font-size:1rem; cursor:pointer; }
+#mmSearch, .mm-portion input, .mm-portion select { width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:10px; background:var(--card-2); color:var(--text); font-size:1rem; }
+.mm-results { margin-top:12px; display:flex; flex-direction:column; gap:6px; }
+.mm-res-label { font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted-2); margin:6px 2px; }
+.mm-res { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; text-align:left; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:11px 14px; cursor:pointer; color:var(--text); }
+.mm-res:hover { border-color:var(--accent-line); }
+.mm-res-name { display:block; font-weight:500; font-size:0.92rem; }
+.mm-res-cat { display:block; color:var(--muted-2); font-size:0.74rem; }
+.mm-res-kcal { color:var(--accent); font-weight:700; text-align:right; white-space:nowrap; }
+.mm-res-kcal span { display:block; font-size:0.62rem; color:var(--muted-2); font-weight:400; }
+.mm-modal-foot { display:flex; gap:8px; margin-top:14px; }
+.mm-modal-foot .btn { flex:1; }
+
+.mm-portion label { display:block; font-size:0.78rem; color:var(--muted); margin:12px 0 5px; }
+.mm-portion-row { display:flex; gap:8px; align-items:center; }
+.mm-portion-row input { text-align:center; }
+.mm-portion-row .btn { width:44px; height:44px; font-size:1.2rem; flex:none; }
+.mm-quick-g { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+.mm-preview { background:var(--card-2); border:1px solid var(--line); border-radius:12px; padding:14px; margin-top:14px; text-align:center; }
+.mm-preview-k { font-family:var(--font-display); font-weight:700; font-size:1.5rem; color:var(--accent); }
+.mm-preview-m { color:var(--muted); font-size:0.85rem; margin-top:2px; }
+.mm-portion-actions { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:16px; }
+.mm-manual-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+.mm-sugg-row { display:flex; justify-content:space-between; align-items:center; gap:12px; background:var(--card-2); border:1px solid var(--line); border-radius:10px; padding:11px 14px; }
