@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <script>try{var _t=localStorage.getItem('mm_theme');if(_t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Was geht heute Abend noch? — Rest-Budget Dinner-Planer | MaleMetrix</title>
-  <meta name="description" content="Trag ein, was du heute gegessen hast — der MaleMetrix Dinner-Planer sagt dir, was du heute Abend noch essen kannst, und schlägt konkrete Gerichte vor: selbst kochen, liefern lassen oder auswärts. Genuss statt Verzicht.">
+  <title>Kalorien-Tracker mit Makros &amp; Foto-KI — kostenlos | MaleMetrix</title>
+  <meta name="description" content="Der kostenlose MaleMetrix Kalorien-Tracker: Lebensmittel suchen, Mahlzeiten & Makros (Protein/KH/Fett) tracken, Tagesziel berechnen, Foto-KI — plus der clevere Vorschlag, was heute Abend noch ins Budget passt. Ohne Anmeldung.">
   <link rel="stylesheet" href="css/fonts.css">
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%232e7cf6'/><stop offset='1' stop-color='%2300c2ff'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='url(%23g)'/><path d='M8 23V9.5l8 7 8-7V23' fill='none' stroke='white' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/><circle cx='8' cy='9.5' r='2.2' fill='white'/><circle cx='24' cy='9.5' r='2.2' fill='white'/><circle cx='16' cy='16.5' r='1.9' fill='%23bfe9ff'/></svg>">
@@ -13,13 +13,13 @@
   <meta name="theme-color" content="#07090d">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="MaleMetrix">
-  <meta property="og:title" content="Was geht heute Abend noch? — Rest-Budget Dinner-Planer">
-  <meta property="og:description" content="Der Planer denkt vorwärts: was du heute Abend noch essen kannst — kochen, liefern oder auswärts. Genuss statt Verzicht.">
+  <meta property="og:title" content="Kalorien-Tracker mit Makros &amp; Foto-KI — kostenlos">
+  <meta property="og:description" content="Lebensmittel suchen, Mahlzeiten & Makros tracken, Tagesziel berechnen, Foto-KI — plus der clevere Vorschlag, was heute Abend noch ins Budget passt. Ohne Anmeldung.">
   <meta property="og:url" content="https://malemetrix.de/dinner.html">
   <meta property="og:image" content="https://malemetrix.de/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Was geht heute Abend noch? — MaleMetrix Dinner-Planer">
-  <meta name="twitter:description" content="Der Planer denkt vorwärts: was du heute Abend noch essen kannst — kochen, liefern oder auswärts.">
+  <meta name="twitter:title" content="Kalorien-Tracker mit Makros &amp; Foto-KI — MaleMetrix">
+  <meta name="twitter:description" content="Lebensmittel suchen, Makros tracken, Tagesziel berechnen, Foto-KI — und was heute Abend noch ins Budget passt. Kostenlos, ohne Anmeldung.">
   <meta name="twitter:image" content="https://malemetrix.de/og-image.png">
 </head>
 <body>
@@ -68,59 +68,44 @@
 </header>
 
 <main>
-  <section class="page-head" style="padding-bottom:16px">
+  <section class="page-head" style="padding-bottom:12px">
     <div class="hero-bg"></div>
     <div class="hero-grid-bg"></div>
     <div class="container" style="position:relative">
-      <div class="section-head" style="max-width:760px">
-        <span class="eyebrow">Kostenloses Tool · Denkt vorwärts</span>
-        <h1 class="h-display">Was geht heute Abend <span class="text-grad">noch</span>?</h1>
-        <p class="lead" style="margin-top:16px">Andere Tracker denken rückwärts: abends siehst du, dass du zu viel gegessen hast. Zu spät. Dieser Planer dreht es um — trag ein, was du heute schon hattest, und er sagt dir, was heute Abend noch reingeht. Mit konkreten Gerichten: <strong>selbst kochen</strong>, <strong>liefern lassen</strong> oder <strong>auswärts</strong>. Genuss statt Verzicht.</p>
+      <div class="section-head" style="max-width:720px">
+        <span class="eyebrow">Kostenloser Kalorien-Tracker · Ohne Anmeldung</span>
+        <h1 class="h-display">Tracke, was zählt — <span class="text-grad">Kalorien &amp; Makros</span>.</h1>
+        <p class="lead" style="margin-top:14px">Lebensmittel suchen, Portion wählen, fertig — mit Protein, Kohlenhydraten und Fett. Setz dir dein Tagesziel, sieh deinen Fortschritt im Ring, und lass dir vorschlagen, was heute Abend noch reingeht. Alles bleibt auf deinem Gerät.</p>
       </div>
     </div>
   </section>
 
-  <section class="section-tight" style="padding-top:8px">
-    <div class="container container-narrow">
+  <section class="section-tight" style="padding-top:6px">
+    <div class="container container-narrow" id="mmTracker">
 
-      <!-- 1) Budget -->
-      <div class="card" style="margin-bottom:20px">
-        <span class="card-num">1 · DEIN TAGESBUDGET</span>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
-          <div class="field"><label for="dpKcal">Kalorien-Ziel / Tag</label><input id="dpKcal" type="number" inputmode="numeric" placeholder="z. B. 2200"></div>
-          <div class="field"><label for="dpProt">Protein-Ziel (g)</label><input id="dpProt" type="number" inputmode="numeric" placeholder="z. B. 160"></div>
+      <!-- Tages-Navigation -->
+      <div class="mm-daybar">
+        <div class="mm-daynav">
+          <button class="mm-arrow" id="mmPrev" aria-label="Voriger Tag">‹</button>
+          <span class="mm-datelabel" id="mmDate">Heute</span>
+          <button class="mm-arrow" id="mmNext" aria-label="Nächster Tag">›</button>
         </div>
-        <p class="small" style="color:var(--muted-2);margin-top:6px">Kennst du deinen Bedarf nicht? Berechne ihn mit dem <a href="tools.html#tdee" style="color:#2e7cf6;text-decoration:underline">TDEE-Rechner</a> und dem <a href="tools.html#protein" style="color:#2e7cf6;text-decoration:underline">Protein-Rechner</a>. Deine Eingaben bleiben auf diesem Gerät gespeichert.</p>
+        <button class="btn btn-dark btn-sm" id="mmGoalBtn">🎯 Ziel</button>
       </div>
 
-      <!-- 2) Heute gegessen -->
-      <div class="card" style="margin-bottom:20px">
-        <span class="card-num">2 · WAS HAST DU HEUTE SCHON GEGESSEN?</span>
-        <div id="dpPhotoWrap" style="display:none;margin:14px 0 4px">
-          <button class="btn btn-primary btn-block" id="dpPhotoBtn">📸 Mahlzeit fotografieren — KI schätzt die Kalorien</button>
-          <input type="file" id="dpPhotoInput" accept="image/*" capture="environment" style="display:none">
-          <div id="dpPhotoStatus" style="margin-top:10px;font-size:0.9rem;color:var(--muted)"></div>
-        </div>
-        <p class="small" style="color:var(--muted);margin:8px 0 14px">Schnell hinzufügen (Schätzwerte) oder eigenes Gericht eintragen:</p>
-        <div id="dpPresets" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px"></div>
-        <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr auto;gap:8px;align-items:end">
-          <div class="field" style="margin:0"><label for="dpName">Eigenes Gericht</label><input id="dpName" type="text" placeholder="z. B. Wrap vom Bäcker"></div>
-          <div class="field" style="margin:0"><label for="dpAddKcal">kcal</label><input id="dpAddKcal" type="number" inputmode="numeric" placeholder="450"></div>
-          <div class="field" style="margin:0"><label for="dpAddProt">Protein</label><input id="dpAddProt" type="number" inputmode="numeric" placeholder="20"></div>
-          <button class="btn btn-dark btn-sm" id="dpAdd" style="height:44px">+</button>
-        </div>
-        <div id="dpLog" style="margin-top:16px"></div>
+      <!-- Dashboard: Ring + Makros -->
+      <div class="card mm-dash">
+        <div class="mm-ring" id="mmRing"></div>
+        <div id="mmMacros"></div>
       </div>
 
-      <!-- 3) Rest-Budget + Vorschläge -->
-      <div class="card" style="border-color:var(--accent-line)">
-        <span class="card-num" style="color:var(--accent)">3 · HEUTE ABEND GEHT SICH DAS AUS</span>
-        <div id="dpRemain" style="margin:14px 0 6px"></div>
-        <div id="dpTabs" class="no-print" style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 4px"></div>
-        <div id="dpSuggest"></div>
-      </div>
+      <!-- Mahlzeiten -->
+      <div id="mmMeals"></div>
 
-      <p class="small" style="color:var(--muted-2);margin-top:14px;text-align:center">Alle Nährwerte sind Schätzungen für die Alltagsplanung — keine exakte Ernährungsberatung. Portionsgrößen variieren.</p>
+      <!-- Was geht heute Abend noch -->
+      <div id="mmSuggestWrap"></div>
+
+      <p class="small" style="color:var(--muted-2);margin-top:14px;text-align:center">Alle Nährwerte sind Alltags-Schätzungen zur Orientierung — keine exakte Ernährungsberatung. Deine Daten bleiben auf diesem Gerät.</p>
     </div>
   </section>
 
@@ -135,6 +120,9 @@
     </div>
   </section>
 </main>
+
+<!-- Such-/Portions-/Ziel-Modal -->
+<div class="mm-modal" id="mmModal"></div>
 
 <footer class="site-footer">
   <div class="container">
@@ -151,7 +139,7 @@
       </ul></div>
       <div class="footer-col"><h4>Kostenlos</h4><ul>
         <li><a href="tracker.html">Training-Tracker</a></li>
-        <li><a href="dinner.html">Dinner-Planer</a></li>
+        <li><a href="dinner.html">Kalorien-Tracker</a></li>
         <li><a href="ebooks.html">Ebooks</a></li>
       </ul></div>
       <div class="footer-col"><h4>Rechtliches</h4><ul>
@@ -161,7 +149,7 @@
       </ul></div>
     </div>
     <div class="footer-disclaimer">
-      Die Nährwertangaben im Dinner-Planer sind Schätzungen zur Alltagsorientierung und ersetzen keine Ernährungs- oder ärztliche Beratung. Bei gesundheitlichen Fragen wende dich an eine Fachperson.
+      Die Nährwertangaben im Kalorien-Tracker sind Schätzungen zur Alltagsorientierung und ersetzen keine Ernährungs- oder ärztliche Beratung. Bei gesundheitlichen Fragen wende dich an eine Fachperson.
     </div>
     <div class="footer-bottom">
       <span>© <span data-year></span> MaleMetrix. Alle Rechte vorbehalten.</span>
@@ -175,6 +163,7 @@
 <script src="js/shop-data.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/main.js"></script>
+<script src="js/food-db.js"></script>
 <script src="js/dinner.js"></script>
 </body>
 </html>
