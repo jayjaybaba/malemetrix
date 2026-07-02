@@ -1,0 +1,32 @@
+# MaleMetrix iOS-App — Projektdefinition für XcodeGen
+# Auf dem Mac: `brew install xcodegen` → in diesem Ordner `xcodegen generate`
+# → MaleMetrix.xcodeproj öffnet sich in Xcode. Details: README.md
+name: MaleMetrix
+options:
+  bundleIdPrefix: de.malemetrix
+  deploymentTarget:
+    iOS: "16.0"
+targets:
+  MaleMetrix:
+    type: application
+    platform: iOS
+    sources: [Sources]
+    info:
+      path: Sources/Info.plist
+      properties:
+        CFBundleDisplayName: MaleMetrix
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSHealthShareUsageDescription: "MaleMetrix liest Aktivitäts-, Schlaf- und Herzdaten aus Apple Health, um deinen Kalorienverbrauch, dein Kalorien-Budget und deine Erholung (Readiness) zu berechnen."
+        NSHealthUpdateUsageDescription: "MaleMetrix kann deine erfassten Mahlzeiten (Kalorien & Protein) in Apple Health speichern, damit alle Gesundheits-Apps dieselben Daten sehen."
+    entitlements:
+      path: MaleMetrix.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.malemetrix.app
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1"
