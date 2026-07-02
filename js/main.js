@@ -83,10 +83,11 @@
    * landet sie direkt in deiner Liste (Double-Opt-In über Brevo), sonst per
    * FormSubmit in deinem Postfach. Speichert die E-Mail lokal (Unlock-Status).
    */
-  MM.subscribe = async function (email, source) {
+  MM.subscribe = async function (email, source, opts) {
     MM.store.set("unlock_email", email);
     MM.store.set("unlock_date", new Date().toISOString());
     if (MM.track) MM.track("email_unlock", { source: source || "ebook" });
+    const quiet = opts && opts.quiet;
 
     if (CFG.brevoFormAction) {
       try {
@@ -109,6 +110,20 @@
         setTimeout(() => { f.remove(); iframe.remove(); }, 5000);
         return { ok: true, viaBrevo: true };
       } catch (e) { /* Fallback unten */ }
+    }
+
+    // quiet: Hintergrund-Eintrag ohne Mailto-Fallback (würde die Seite kapern)
+    if (quiet) {
+      if (CFG.formEndpoint) {
+        try {
+          await fetch(CFG.formEndpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify({ _subject: "📩 Newsletter — " + email, Typ: "E-Mail-Unlock", "E-Mail": email, Quelle: source || "leadmagnet" })
+          });
+        } catch (e) { /* Unlock bleibt lokal gespeichert */ }
+      }
+      return { ok: true, viaMailto: false };
     }
 
     const res = await MM.sendForm("📩 Ebook-Unlock / Newsletter — " + email, {
@@ -403,6 +418,68 @@
     // Social Proof
     MM.renderTrust();
     document.addEventListener("mm:langchange", MM.renderTrust);
+
+    // Lead-Magnet-Band (E-Mail-Liste) vor dem Footer
+    injectLeadBand();
+  }
+
+  /* ---------- Lead-Magnet: E-Mail-Einsammler vor dem Footer ----------
+     Gratis-PDF gegen E-Mail (lead-blutwerte.html). Nutzt MM.subscribe
+     (Brevo, sonst FormSubmit). Erscheint nicht auf Checkout-, Rechts-,
+     Reader- und bereits konvertierenden Seiten. */
+  function injectLeadBand() {
+    const skip = ["checkout.html", "kurs-programm.html", "lead-blutwerte.html",
+      "checkliste.html", "datenschutz.html", "impressum.html", "agb.html", "report.html"];
+    const file = (location.pathname.split("/").pop() || "index.html") || "index.html";
+    if (skip.indexOf(file) !== -1) return;
+    if (location.pathname.indexOf("/ebooks/") !== -1) return;
+    const footer = document.querySelector(".site-footer");
+    if (!footer || document.getElementById("leadBand")) return;
+
+    const unlocked = !!MM.store.get("unlock_email", null);
+    const band = document.createElement("section");
+    band.id = "leadBand";
+    band.className = "section-tight no-print";
+    band.innerHTML =
+      '<div class="container">' +
+      '<div class="cta-band" style="text-align:center">' +
+      '<span class="eyebrow" style="justify-content:center">Gratis-Download</span>' +
+      '<h2 style="margin-bottom:8px">Die 5 Blutwerte, die jeder Mann ab 30 kennen muss.</h2>' +
+      '<p style="max-width:560px;margin:0 auto 18px">Das kostenlose Cheat-Sheet: was jeder Wert bedeutet, worauf du achtest und was du konkret tun kannst — auf einer Seite, zum Ausdrucken.</p>' +
+      (unlocked
+        ? '<a href="lead-blutwerte.html" class="btn btn-primary btn-lg btn-arrow">Cheat-Sheet öffnen</a>'
+        : '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;max-width:520px;margin:0 auto">' +
+          '<input type="email" id="leadEmail" placeholder="deine@email.de" autocomplete="email" ' +
+          'style="flex:1;min-width:220px;padding:13px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card-2);color:var(--text);font-size:1rem">' +
+          '<button class="btn btn-primary btn-lg" id="leadSubmit">Gratis holen</button></div>' +
+          '<p class="small" style="color:var(--muted-2);margin-top:12px">Dazu gelegentliche, ehrliche Tipps für Männer. Kein Spam, jederzeit abbestellbar. Mit dem Absenden akzeptierst du die <a href="datenschutz.html" style="text-decoration:underline">Datenschutzerklärung</a>.</p>' +
+          '<p id="leadErr" class="small" style="color:var(--red);display:none;margin-top:8px"></p>'
+      ) +
+      '</div></div>';
+    footer.parentNode.insertBefore(band, footer);
+
+    const btn = document.getElementById("leadSubmit");
+    const input = document.getElementById("leadEmail");
+    if (!btn || !input) return;
+    const submit = () => {
+      const email = String(input.value || "").trim();
+      const err = document.getElementById("leadErr");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+        if (err) { err.textContent = "Bitte gib eine gültige E-Mail-Adresse ein."; err.style.display = "block"; }
+        return;
+      }
+      // UI sofort umschalten; der Listen-Eintrag läuft im Hintergrund weiter
+      band.querySelector(".cta-band").innerHTML =
+        '<span class="eyebrow" style="justify-content:center">✅ Freigeschaltet</span>' +
+        '<h2 style="margin-bottom:8px">Dein Cheat-Sheet ist bereit.</h2>' +
+        '<p style="max-width:520px;margin:0 auto 18px">Öffne es jetzt und speichere es über den PDF-Button — es gehört dir.</p>' +
+        '<a href="lead-blutwerte.html" class="btn btn-primary btn-lg btn-arrow">Cheat-Sheet öffnen</a>';
+      if (MM.track) MM.track("leadmagnet_signup", {});
+      try { Promise.resolve(MM.subscribe(email, "leadmagnet", { quiet: true })).catch(function () {}); }
+      catch (e) { /* Unlock ist lokal gespeichert; Eintrag ggf. beim nächsten Besuch */ }
+    };
+    btn.addEventListener("click", submit);
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
