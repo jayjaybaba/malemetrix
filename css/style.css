@@ -2185,3 +2185,50 @@ input[type="range"]::-moz-range-thumb {
 .mm-manual-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 
 .mm-sugg-row { display:flex; justify-content:space-between; align-items:center; gap:12px; background:var(--card-2); border:1px solid var(--line); border-radius:10px; padding:11px 14px; }
+
+/* ==========================================================================
+   Fitness-Tracker — neue Komponenten (Übungs-Detail, Insights, Scheiben, RPE)
+   ========================================================================== */
+/* Übungs-Titel als Link im aktiven Workout */
+.ex-title-link { background:none; border:none; padding:0; font-family:var(--font-display); font-weight:700; font-size:1.05rem; color:var(--text); cursor:pointer; text-align:left; }
+.ex-title-link:hover { color:var(--accent); }
+
+/* Satz-Nummer / Aufwärm-Toggle */
+.set-num { width:26px; height:26px; border-radius:7px; border:1px solid var(--line); background:var(--card-2); color:var(--muted); font-size:0.8rem; font-weight:600; cursor:pointer; }
+.set-num.is-warmup { background:rgba(245,181,74,0.18); color:var(--amber); border-color:rgba(245,181,74,0.4); }
+.warmup-row .set-w, .warmup-row .set-r { opacity:0.7; }
+.set-rpe { width:52px; }
+.cue-up { color:var(--green); font-size:0.72rem; }
+.cue-down { color:var(--red); font-size:0.72rem; }
+
+/* Muskel-Filter-Chips im Übungspicker */
+.mfilter-row { display:flex; gap:6px; flex-wrap:wrap; margin:12px 0; }
+.mfilter { background:var(--card-2); border:1px solid var(--line); color:var(--muted); border-radius:20px; padding:5px 12px; font-size:0.8rem; cursor:pointer; }
+.mfilter.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+/* Scheiben-Rechner */
+.plate-btn { }
+.plate-visual { display:flex; align-items:center; justify-content:center; gap:3px; flex-wrap:wrap; padding:16px; background:var(--card-2); border-radius:12px; margin-top:8px; }
+.plate-bar-end { width:10px; height:14px; background:var(--muted-2); border-radius:2px; }
+.plate-bar-mid { flex:1; min-width:20px; max-width:60px; height:6px; background:var(--muted-2); border-radius:3px; }
+.plate-chip { min-width:34px; height:48px; display:inline-flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#2e7cf6,#00c2ff); color:#fff; font-weight:700; font-size:0.82rem; border-radius:6px; padding:0 6px; }
+
+/* Übungs-Fortschritt (Bibliothek/Detail) */
+.ex-progress-row { display:flex; justify-content:space-between; align-items:center; gap:12px; width:100%; text-align:left; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 14px; cursor:pointer; }
+.ex-progress-row:hover { border-color:var(--accent-line); }
+.mini-stat-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+.mini-stat { background:var(--card-2); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+.mini-stat span { display:block; font-size:0.72rem; color:var(--muted); }
+.mini-stat strong { font-family:var(--font-display); font-size:1.15rem; color:var(--text); }
+
+/* Insights: Wochen-Volumen-Balken */
+.ins-bars { display:flex; align-items:flex-end; gap:8px; height:130px; }
+.ins-bar-col { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:6px; }
+.ins-bar { width:100%; max-width:32px; background:linear-gradient(180deg,#00c2ff,#2e7cf6); border-radius:5px 5px 0 0; min-height:2px; }
+.ins-bar-lbl { font-size:0.66rem; color:var(--muted-2); font-family:var(--font-mono); }
+/* Sätze pro Muskel */
+.msl-row { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+.msl-label { flex:0 0 90px; font-size:0.85rem; color:var(--muted); }
+.msl-track { flex:1; height:9px; background:var(--line); border-radius:5px; overflow:hidden; }
+.msl-fill { height:100%; background:linear-gradient(90deg,#2e7cf6,#00c2ff); border-radius:5px; }
+.msl-val { flex:0 0 24px; text-align:right; font-size:0.85rem; color:var(--text); }
