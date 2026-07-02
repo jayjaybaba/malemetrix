@@ -23,6 +23,8 @@ struct RootView: View {
         TabView {
             DashboardView()
                 .tabItem { Label("Heute", systemImage: "gauge.medium") }
+            TrainingView()
+                .tabItem { Label("Training", systemImage: "dumbbell.fill") }
             EnergyView()
                 .tabItem { Label("Kalorien", systemImage: "flame.fill") }
             AnalysisView()

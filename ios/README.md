@@ -14,8 +14,13 @@ App, kein Web-Wrapper.
 | Tab | Inhalt |
 |---|---|
 | **Heute** | Readiness-Score (0–100 aus HRV + Ruhepuls + Schlaf vs. deiner 14-Tage-Baseline), Verbrauch heute (aktiv + Grundumsatz), Schritte, Schlaf, HRV, Ruhepuls, Gewicht |
+| **Training** | Das MaleMetrix-Prinzip als Wochenplan: Gym-Tage (z. B. Mo/Mi/Fr = Push/Pull/Legs) + tägliches Bewegungsziel — und die **Morgen-Erinnerung**: jeden Tag zur Wunschzeit eine Mitteilung, die genau sagt, was heute dran ist („Heute ist Gym-Tag 🏋️ Push" bzw. „25 Minuten Bewegung 🚶 — kein Null-Tag") |
 | **Kalorien** | Tages-Budget = dein echter Ø-Verbrauch (7 Tage, aus Health) minus einstellbares Defizit · Mahlzeiten erfassen · optional automatisch nach Apple Health schreiben (kcal + Protein) |
 | **Analyse** | 14-Tage-Charts (Aktivkalorien, HRV) + Klartext-Einordnung |
+
+Die Morgen-Erinnerung nutzt **lokale Mitteilungen** (kein Server, keine Daten
+verlassen das Gerät). Beim ersten Aktivieren fragt iOS einmalig nach der
+Mitteilungs-Erlaubnis.
 
 Gelesen werden: Aktiv-/Grundumsatz-Kalorien, Schritte, HRV (SDNN), Ruhepuls,
 Schlafanalyse, Gewicht. Geschrieben werden (optional): Mahlzeiten-Kalorien und
