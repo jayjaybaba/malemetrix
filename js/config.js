@@ -131,6 +131,12 @@ window.MM_CONFIG = {
   // Zahlung und schalten damit ebooks/protokoll.html frei (Sofort-Zugang).
   protokollAccessCode: "PROTOKOLL-M",
 
+  // Zugangscode für den privaten "Ultimate Stack"-Leitfaden
+  // (ebooks/ultimate-stack.html). Bewusst NICHT öffentlich verlinkt — du gibst
+  // diesen Code nur Leuten, die konkret Interesse zeigen (Anfrage, Gespräch).
+  // So bleibt das Medikamenten-/Stack-Wissen aus der öffentlichen Seite raus.
+  stackAccessCode: "STACK-M",
+
   // --- MaleMetrix Circle (bezahlte Community, monatlich) -------------------
   // 1. Telegram: private Gruppe erstellen -> Einladungslink hier eintragen
   //    (t.me/+xxxx). Er wird NUR nach erfolgreicher Zahlung angezeigt.
