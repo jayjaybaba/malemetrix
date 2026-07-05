@@ -118,7 +118,7 @@ window.MM_CONFIG = {
   },
 
   // --- 12-Wochen-Programm (Selbststudium) -------------------------------------
-  // Das Programm ist ein digitales Produkt (im Shop / auf kurs.html kaufbar).
+  // Das Programm ist in DAS PROTOKOLL enthalten (Verkauf über protokoll.html).
   // Nach dem Kauf bekommt der Käufer diesen Zugangscode, um den Programminhalt
   // (kurs/programm.html) freizuschalten. Ändere ihn jederzeit (dann brauchen
   // bestehende Käufer den neuen Code — am besten nur bei Missbrauch ändern).
