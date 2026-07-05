@@ -14,7 +14,7 @@
     "nav.coaching":{ de: "Coaching", en: "Coaching" },
     "nav.tools":   { de: "Rechner", en: "Calculators" },
     "nav.tracker": { de: "Tracker", en: "Tracker" },
-    "nav.course":  { de: "Programm", en: "Program" },
+    "nav.course":  { de: "12-Wochen-Kurs", en: "12-Week Course" },
     "nav.mycourse":{ de: "Mein Programm", en: "My Program" },
     "nav.shop":    { de: "Shop", en: "Shop" },
     "nav.more":    { de: "Mehr", en: "More" },
