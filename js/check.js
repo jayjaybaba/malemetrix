@@ -145,35 +145,47 @@
     return flags;
   }
 
-  /* ---------- Empfehlung ---------- */
+  /* ---------- Nächste Schritte: Engpass-abhängige Angebots-Pfade ---------- */
 
-  function recommendation(a, arch) {
-    const wantsGuidance = ["checkin", "coaching", "blutwerte", "plan"].includes(a.qual_support);
-    const ready = ["ja", "eher_ja"].includes(a.qual_time);
-    const soon = ["sofort", "2w"].includes(a.qual_start);
-
-    if (ready && wantsGuidance && soon) {
-      return {
-        title: "Du bist ein starker Fit für das 1:1-Coaching.",
-        text: "Deine Antworten zeigen: Du bist bereit, willst Führung und willst zeitnah starten. Genau dafür ist die 12-Wochen MaleMetrix Transformation gebaut — aktuell zum Founder-Preis für die ersten Plätze.",
-        primary: { label: arch.cta, href: "termin.html" },
-        secondary: { label: "Coaching ansehen", href: "coaching.html" }
-      };
-    }
-    if (a.qual_support === "allein" || a.qual_start === "spaeter") {
-      return {
-        title: "Starte mit deinem persönlichen Starter-Report.",
-        text: "Du willst erst einmal selbst umsetzen — gute Entscheidung. Dein 7-Tage-Plan unten ist dein Startpunkt. Wenn du tiefer gehen willst: Der Starter-Report fasst dein Ergebnis als hochwertiges PDF mit 30-Tage-Plan zusammen.",
-        primary: { label: "Report ansehen & speichern", href: "report.html" },
-        secondary: { label: "Zum Shop", href: "shop.html" }
-      };
-    }
-    return {
-      title: "Lass uns dein Ergebnis gemeinsam einordnen.",
-      text: "Im kostenlosen Analysegespräch (45 Min) gehen wir deinen Score durch und bauen deinen konkreten 12-Wochen-Fahrplan — unverbindlich und ohne Verkaufsdruck.",
-      primary: { label: "Kostenloses Analysegespräch buchen", href: "termin.html" },
-      secondary: { label: "Coaching ansehen", href: "coaching.html" }
+  function offerFor(bKey) {
+    const paths = {
+      recovery: {
+        lead: "Dein Engpass ist Erholung. Bevor du irgendetwas Neues kaufst oder schluckst: Der 4-Ebenen-Schlaf-Stack ist dein erster Hebel — und falls du schon Supplemente nimmst, gehören sie jetzt auf den Prüfstand, nicht erweitert.",
+        primary: { label: "Stack Review anfragen", href: "stack-review.html", track: "cta_stack_review" },
+        secondary: { label: "DAS PROTOKOLL starten (Schlaf-Stack)", href: "protokoll.html", track: "cta_protokoll" }
+      },
+      body: {
+        lead: "Dein Engpass ist die Körperbasis. Du brauchst kein weiteres Video, sondern ein System für Defizit, Protein und Messung — und idealerweise jemanden, der 12 Wochen draufschaut.",
+        primary: { label: "DAS PROTOKOLL starten", href: "protokoll.html", track: "cta_protokoll" },
+        secondary: { label: "Für die Founder-Runde bewerben", href: "founder.html", track: "cta_founder" }
+      },
+      strength: {
+        lead: "Dein Engpass ist das Training. Push/Pull/Legs mit dokumentierter Progression, RIR und der Ampel-Steuerung — als Selbstlern-System im Protokoll oder mit wöchentlicher Kontrolle in der Founder-Runde.",
+        primary: { label: "DAS PROTOKOLL starten (Trainingssystem)", href: "protokoll.html", track: "cta_protokoll" },
+        secondary: { label: "Für die Founder-Runde bewerben", href: "founder.html", track: "cta_founder" }
+      },
+      fuel: {
+        lead: "Dein Engpass ist die Ernährung. Kein neuer Diät-Trend — ein Ernährungssystem: Proteinziel, Sattmacher, Wochenend-Strategie, Trend statt Tageswaage. Genau das steht im Protokoll, Modul 4.",
+        primary: { label: "DAS PROTOKOLL starten (Ernährungssystem)", href: "protokoll.html", track: "cta_protokoll" },
+        secondary: { label: "Für die Founder-Runde bewerben", href: "founder.html", track: "cta_founder" }
+      },
+      blood: {
+        lead: "Dein Engpass sind die Daten. Das Blood-Dashboard aus dem Protokoll macht aus „mal Blutwerte machen\" ein System mit 8 Bereichen — und dein Supplement-Stack sollte zu deinen Werten passen, nicht zu Instagram.",
+        primary: { label: "DAS PROTOKOLL starten (Blood-Dashboard)", href: "protokoll.html", track: "cta_protokoll" },
+        secondary: { label: "Stack Review anfragen", href: "stack-review.html", track: "cta_stack_review" }
+      },
+      drive: {
+        lead: "Dein Engpass ist Energie & Drive. Das ist fast nie ein „Hormonproblem\", sondern meist Schlaf, Defizit oder ein Stack, der nicht zu dir passt. Der Energie-/Libido-Check im Stack Review geht das der Reihe nach durch.",
+        primary: { label: "Stack Review anfragen (Energie & Libido)", href: "stack-review.html", track: "cta_stack_review" },
+        secondary: { label: "DAS PROTOKOLL starten", href: "protokoll.html", track: "cta_protokoll" }
+      },
+      execution: {
+        lead: "Dein Engpass ist die Umsetzung. Mehr Wissen bringt dir nichts — du brauchst wöchentliche Kontrolle und einen, der nachfragt. Genau dafür ist die Founder-Runde gebaut: 12 Wochen, wöchentlicher Check-in.",
+        primary: { label: "Für die Founder-Runde bewerben", href: "founder.html", track: "cta_founder" },
+        secondary: { label: "Wöchentlicher Check-in im Detail", href: "founder.html#bewerben", track: "cta_founder" }
+      }
     };
+    return paths[bKey] || paths.execution;
   }
 
   /* ======================================================================
@@ -707,26 +719,40 @@
     });
     html += '</div>';
 
-    /* Empfehlung */
-    const rec = recommendation(r.answers, r.archetype);
-    html += '<div class="cta-band" style="margin-top:36px"><h2>' + rec.title + '</h2><p>' + rec.text + '</p>' +
+    /* Nächste Schritte: Engpass-Pfad + die 3 Angebote */
+    const offer = offerFor(r.bottleneck.key);
+    html += '<div class="cta-band" style="margin-top:36px"><h2>Dein nächster Schritt' + (firstName ? ", " + firstName : "") + '.</h2><p>' + offer.lead + '</p>' +
       '<div class="hero-ctas">' +
-      '<a class="btn btn-primary btn-lg" href="' + rec.primary.href + '">' + rec.primary.label + '</a>' +
-      '<a class="btn btn-ghost btn-lg" href="' + rec.secondary.href + '">' + rec.secondary.label + '</a>' +
+      '<a class="btn btn-primary btn-lg btn-arrow" href="' + offer.primary.href + '" data-track="' + offer.primary.track + '">' + offer.primary.label + '</a>' +
+      '<a class="btn btn-ghost btn-lg" href="' + offer.secondary.href + '" data-track="' + offer.secondary.track + '">' + offer.secondary.label + '</a>' +
       '</div></div>';
 
-    /* Tripwire: 9-€-Sofortplan */
-    html += '<div class="card" id="tripwire" style="margin-top:24px;border:1px solid var(--accent-line);background:linear-gradient(180deg,var(--accent-soft),var(--card) 60%)">' +
-      '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:22px;justify-content:space-between">' +
+    html += '<h3 class="h-card" style="margin:32px 0 16px">Drei Wege, damit aus dem Score Ergebnisse werden</h3><div class="grid-3">' +
+      '<div class="card"><span class="card-num">SELBST UMSETZEN</span><h3 style="font-size:1.05rem">DAS PROTOKOLL</h3>' +
+      '<p class="small muted" style="margin:8px 0 14px">Das komplette System als Premium-Ebook inkl. interaktivem 12-Wochen-Programm. Founder-Preis 49&nbsp;€.</p>' +
+      '<a class="btn btn-dark btn-sm btn-block" href="protokoll.html" data-track="cta_protokoll">DAS PROTOKOLL starten</a></div>' +
+      '<div class="card"><span class="card-num">SCHNELLER EINSTIEG</span><h3 style="font-size:1.05rem">Stack Review</h3>' +
+      '<p class="small muted" style="margin:8px 0 14px">Schick mir deinen Supplement-Stack — ich sage dir, was bleibt, was rausfliegt und was du zuerst fixst. Ab 49&nbsp;€.</p>' +
+      '<a class="btn btn-dark btn-sm btn-block" href="stack-review.html" data-track="cta_stack_review">Stack Review anfragen</a></div>' +
+      '<div class="card" style="border-color:var(--accent-line);background:var(--accent-soft)"><span class="card-num">MIT BEGLEITUNG</span><h3 style="font-size:1.05rem">Founder-Runde</h3>' +
+      '<p class="small muted" style="margin:8px 0 14px">12 Wochen Begleitung mit wöchentlichem Check-in — nur 10 Plätze in Runde 1, Founder-Preis 599&nbsp;€.</p>' +
+      '<a class="btn btn-primary btn-sm btn-block" href="founder.html" data-track="cta_founder">Für Founder-Runde bewerben</a></div>' +
+      '</div>';
+
+    /* Persönlicher CTA */
+    const ig = (window.MM_CONFIG || {}).instagram;
+    const mailAddr = (window.MM_CONFIG || {}).contactEmail || "";
+    const scoreMailto = "mailto:" + encodeURIComponent(mailAddr) +
+      "?subject=" + encodeURIComponent("SCORE — bitte kurz einordnen") +
+      "&body=" + encodeURIComponent("Mein MaleMetrix Score: " + r.total + "/100 (" + r.level + ")\nTyp: " + r.archetype.name + "\nEngpass: " + r.bottleneck.name + "\n\n(Screenshot vom Ergebnis anhängen)");
+    html += '<div class="card" style="margin-top:24px;border-left:3px solid var(--accent-2)">' +
+      '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:20px;justify-content:space-between">' +
       '<div style="flex:1;min-width:260px">' +
-      '<span class="free-pill" style="background:var(--amber-soft);border-color:rgba(245,181,74,0.3);color:var(--amber);margin-bottom:10px">Nur 9 € · Sofort umsetzbar</span>' +
-      '<h3 class="h-card" style="margin-bottom:6px">Dein 14-Tage-Sofortplan für „' + r.bottleneck.name + '"</h3>' +
-      '<p class="muted" style="font-size:0.93rem">Du kennst jetzt deinen Engpass. Der Express-Plan macht daraus tägliche, konkrete Schritte als PDF — der schnellste Weg von „weiß ich" zu „mach ich". Die 9 € werden bei einem späteren Coaching voll angerechnet.</p>' +
-      '</div>' +
-      '<div style="text-align:center;flex-shrink:0">' +
-      '<div style="font-family:var(--font-display);font-size:2.4rem;font-weight:700;line-height:1">9 €</div>' +
-      '<button class="btn btn-primary" id="btnTripwire" style="margin-top:10px">⚡ Jetzt holen</button>' +
-      '<div class="small" style="color:var(--muted-2);margin-top:8px">Lieferung in 24 h</div>' +
+      '<h3 class="h-card" style="margin-bottom:6px">Willst du, dass ich deinen Score kurz einordne?</h3>' +
+      '<p class="muted" style="font-size:0.93rem;margin:0">Schick mir einen Screenshot von deinem Ergebnis mit dem Wort <strong style="color:var(--text)">SCORE</strong> — du bekommst eine kurze, ehrliche Einschätzung, was ich an deiner Stelle zuerst anpacken würde. Kostenlos, ohne Haken.</p></div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;flex-shrink:0">' +
+      (ig ? '<a class="btn btn-dark btn-sm" href="' + ig + '" target="_blank" rel="noopener" data-track="score_dm_click">📸 Per Instagram-DM</a>' : '') +
+      '<a class="btn btn-dark btn-sm" href="' + scoreMailto + '" data-track="score_mail_click">✉️ Per E-Mail</a>' +
       '</div></div></div>';
 
     /* Aktionen */
@@ -763,13 +789,6 @@
     });
 
     /* Events */
-    const btnTrip = $("#btnTripwire");
-    if (btnTrip) btnTrip.addEventListener("click", () => {
-      if (MM.track) MM.track("tripwire_click");
-      MM.cart.add("express-plan", 1);
-      setTimeout(() => { window.location.href = "checkout.html"; }, 600);
-    });
-
     $("#btnRestart").addEventListener("click", () => {
       if (confirm("Check wirklich neu starten? Dein aktuelles Ergebnis bleibt im Verlauf gespeichert.")) {
         state.idx = 0; state.answers = {};

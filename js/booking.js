@@ -80,6 +80,18 @@
     return bookings.filter(b => b.dateKey === dateKey).map(b => b.slot);
   }
 
+  /* Grundauslastung: ~40 % der Slots sind je Datum deterministisch belegt
+     (stabil über Besuche hinweg); mindestens ein Slot pro Tag bleibt frei. */
+  function hashStr(s) {
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+    return h;
+  }
+  function baseTaken(dateKey, slots) {
+    const taken = slots.filter(s => hashStr(dateKey + "|" + s) % 100 < 40);
+    return taken.length >= slots.length ? taken.slice(1) : taken;
+  }
+
   function isBookable(d) {
     return d >= minDate && d <= maxDate && WEEKDAYS.includes(d.getDay());
   }
@@ -130,7 +142,8 @@
       box.innerHTML = '<p class="muted small">Wähle zuerst einen Tag im Kalender.</p>';
       return;
     }
-    const taken = bookedSlots(keyOf(selDate));
+    const dayKey = keyOf(selDate);
+    const taken = bookedSlots(dayKey).concat(baseTaken(dayKey, slotsForDate(selDate)));
     box.innerHTML = '<p class="small" style="margin-bottom:14px;color:var(--muted)">Freie Zeiten am <strong style="color:var(--text)">' + fmtDate(selDate) + '</strong>:</p>' +
       '<div class="slot-grid">' +
       slotsForDate(selDate).map(s => {
