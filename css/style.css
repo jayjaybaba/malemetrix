@@ -1938,6 +1938,11 @@ input[type="range"]::-moz-range-thumb {
 .doc-toc li { margin-bottom: 5px; font-size: 0.92rem; }
 .doc-toc a { color: #2e3a52; text-decoration: none; }
 .doc-toc a:hover { color: #2e7cf6; text-decoration: underline; }
+.doc-level { display: inline-block; font-family: var(--font-mono); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 9px; border-radius: 6px; vertical-align: 2px; margin-left: 8px; white-space: nowrap; }
+.doc-level.lv1 { background: #e7f6ec; color: #1e7a3c; }
+.doc-level.lv2 { background: #e8f0fe; color: #2e5fc4; }
+.doc-level.lv3 { background: #f3ecfd; color: #7a3ccf; }
+.doc-level.lv4 { background: #fdecec; color: #c0392b; }
 .doc-callout { background: #eef4ff; border-left: 4px solid #2e7cf6; border-radius: 10px; padding: 16px 20px; margin: 18px 0; font-size: 0.92rem; }
 .doc-callout strong { color: #1d3a6b; }
 .doc-callout.warn { background: #fff8ec; border-left-color: #e0a020; }
