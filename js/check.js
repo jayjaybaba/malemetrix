@@ -727,6 +727,22 @@
       '<a class="btn btn-ghost btn-lg" href="' + offer.secondary.href + '" data-track="' + offer.secondary.track + '">' + offer.secondary.label + '</a>' +
       '</div></div>';
 
+    /* Persönlicher CTA */
+    const ig = (window.MM_CONFIG || {}).instagram;
+    const mailAddr = (window.MM_CONFIG || {}).contactEmail || "";
+    const scoreMailto = "mailto:" + encodeURIComponent(mailAddr) +
+      "?subject=" + encodeURIComponent("SCORE — bitte kurz einordnen") +
+      "&body=" + encodeURIComponent("Mein MaleMetrix Score: " + r.total + "/100 (" + r.level + ")\nTyp: " + r.archetype.name + "\nEngpass: " + r.bottleneck.name + "\n\n(Screenshot vom Ergebnis anhängen)");
+    html += '<div class="card" style="margin-top:16px;border-left:3px solid var(--accent-2)">' +
+      '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:20px;justify-content:space-between">' +
+      '<div style="flex:1;min-width:260px">' +
+      '<h3 class="h-card" style="margin-bottom:6px">Schick mir deinen Score-Screenshot mit dem Wort SCORE.</h3>' +
+      '<p class="muted" style="font-size:0.93rem;margin:0">Ich sage dir, welcher Hebel für dich zuerst kommt — kurz, ehrlich, kostenlos. Kein Bot, keine Warteliste: Du redest direkt mit mir.</p></div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;flex-shrink:0">' +
+      (ig ? '<a class="btn btn-dark btn-sm" href="' + ig + '" target="_blank" rel="noopener" data-track="score_dm_click">📸 Per Instagram-DM</a>' : '') +
+      '<a class="btn btn-dark btn-sm" href="' + scoreMailto + '" data-track="score_mail_click">✉️ Per E-Mail</a>' +
+      '</div></div></div>';
+
     html += '<h3 class="h-card" style="margin:32px 0 16px">Drei Wege, damit aus dem Score Ergebnisse werden</h3><div class="grid-3">' +
       '<div class="card"><span class="card-num">SELBST UMSETZEN</span><h3 style="font-size:1.05rem">DAS PROTOKOLL</h3>' +
       '<p class="small muted" style="margin:8px 0 14px">Das komplette System als Premium-Ebook inkl. interaktivem 12-Wochen-Programm. Founder-Preis 49&nbsp;€.</p>' +
@@ -738,22 +754,6 @@
       '<p class="small muted" style="margin:8px 0 14px">12 Wochen Begleitung mit wöchentlichem Check-in — nur 10 Plätze in Runde 1, Founder-Preis 599&nbsp;€.</p>' +
       '<a class="btn btn-primary btn-sm btn-block" href="founder.html" data-track="cta_founder">Für Founder-Runde bewerben</a></div>' +
       '</div>';
-
-    /* Persönlicher CTA */
-    const ig = (window.MM_CONFIG || {}).instagram;
-    const mailAddr = (window.MM_CONFIG || {}).contactEmail || "";
-    const scoreMailto = "mailto:" + encodeURIComponent(mailAddr) +
-      "?subject=" + encodeURIComponent("SCORE — bitte kurz einordnen") +
-      "&body=" + encodeURIComponent("Mein MaleMetrix Score: " + r.total + "/100 (" + r.level + ")\nTyp: " + r.archetype.name + "\nEngpass: " + r.bottleneck.name + "\n\n(Screenshot vom Ergebnis anhängen)");
-    html += '<div class="card" style="margin-top:24px;border-left:3px solid var(--accent-2)">' +
-      '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:20px;justify-content:space-between">' +
-      '<div style="flex:1;min-width:260px">' +
-      '<h3 class="h-card" style="margin-bottom:6px">Willst du, dass ich deinen Score kurz einordne?</h3>' +
-      '<p class="muted" style="font-size:0.93rem;margin:0">Schick mir einen Screenshot von deinem Ergebnis mit dem Wort <strong style="color:var(--text)">SCORE</strong> — du bekommst eine kurze, ehrliche Einschätzung, was ich an deiner Stelle zuerst anpacken würde. Kostenlos, ohne Haken.</p></div>' +
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;flex-shrink:0">' +
-      (ig ? '<a class="btn btn-dark btn-sm" href="' + ig + '" target="_blank" rel="noopener" data-track="score_dm_click">📸 Per Instagram-DM</a>' : '') +
-      '<a class="btn btn-dark btn-sm" href="' + scoreMailto + '" data-track="score_mail_click">✉️ Per E-Mail</a>' +
-      '</div></div></div>';
 
     /* Aktionen */
     html += '<div class="card" style="margin-top:24px"><h3 style="margin-bottom:14px">Dein Ergebnis sichern</h3>' +
