@@ -1,11 +1,11 @@
 ﻿/* ==========================================================================
    MaleMetrix — 12-Wochen-Programm (Zugang + Fortschritt + Rendering)
    --------------------------------------------------------------------------
-   - Zugang über den Code aus config.js (courseAccessCode). Einfacher, geteilter
-     Code — kein echter Kopierschutz. Für automatische Auslieferung + Schutz
-     später eine Programmplattform (elopage, Copecart, Digistore24) nutzen.
+   - Der Programminhalt liegt AES-verschlüsselt in der Seite (#courseVault);
+     der Zugangscode ist der Schlüssel (js/vault.js) und steht nirgends im
+     ausgelieferten Code. Falscher Code ⇒ Entschlüsselung schlägt fehl.
    - Fortschritt (abgehakte Aufgaben) wird lokal im Browser gespeichert.
-   - Inhalt kommt komplett aus js/course-data.js (window.MM_COURSE).
+   - Inhalt (window.MM_COURSE) wird nach Freischaltung aus dem Vault geladen.
    ========================================================================== */
 
 (function () {
@@ -22,25 +22,28 @@
     return !!href && HIDDEN_EBOOKS.some(function (h) { return href.indexOf("ebooks/" + h) >= 0; });
   }
 
-  const CFG = window.MM_CONFIG || {};
-  const DATA = window.MM_COURSE || { weeks: [], phases: {}, modules: [] };
+  let DATA = { weeks: [], phases: {}, modules: [] };
   const gate = document.getElementById("courseGate");
   const content = document.getElementById("courseContent");
   if (!gate || !content) return;
 
-  function norm(s) { return String(s || "").trim().toUpperCase().replace(/\s+/g, ""); }
-  /* Das Programm ist Teil von DAS PROTOKOLL: Der Protokoll-Code schaltet es
-     frei. Der alte courseAccessCode bleibt für Alt-Käufer gültig. */
-  const CODES = [norm(CFG.protokollAccessCode || ""), norm(CFG.courseAccessCode || "")].filter(Boolean);
-  const CODE = CODES[0] || "";
-  function codeOk(v) { return !!v && CODES.indexOf(v) !== -1; }
+  function norm(s) { return MM.vault ? MM.vault.norm(s) : String(s || "").trim().toUpperCase().replace(/\s+/g, ""); }
   function esc(s) {
     return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   }
 
-  /* ---------- Zugang ---------- */
-  function isUnlocked() { return MM.store.get("course_unlocked", false) === true; }
-  function unlock() { MM.store.set("course_unlocked", true); }
+  /* ---------- Zugang: Code entschlüsselt den Inhalt (Vault) ---------- */
+  async function tryCode(code) {
+    const c = norm(code);
+    if (!c || !window.MM || !MM.vault) return false;
+    try {
+      const js = await MM.vault.open("courseVault", c);
+      (0, eval)(js); // eigener, per GCM-Auth verifizierter Inhalt
+      DATA = window.MM_COURSE || DATA;
+      MM.store.set("course_code", c);
+      return true;
+    } catch (e) { return false; }
+  }
 
   /* ---------- Fortschritt ---------- */
   function progress() { return MM.store.get("course_progress", {}) || {}; }
@@ -63,15 +66,8 @@
     const btn = document.getElementById("courseUnlockBtn");
     const buy = document.getElementById("courseBuyBtn");
 
-    function tryUnlock() {
-      const val = norm(input.value);
-      if (!CODE) {
-        err.textContent = "Es ist noch kein Zugangscode hinterlegt. Bitte trage in js/config.js einen courseAccessCode ein.";
-        err.style.display = "block";
-        return;
-      }
-      if (codeOk(val)) {
-        unlock();
+    async function tryUnlock() {
+      if (await tryCode(input.value)) {
         if (MM.track) MM.track("course_unlocked", {});
         MM.toast("Programm freigeschaltet — viel Erfolg!");
         showContent();
@@ -295,14 +291,16 @@
   }
 
   /* ---------- Start ---------- */
-  try {
-    const urlCode = norm(new URLSearchParams(location.search).get("code") || "");
-    if (codeOk(urlCode)) {
-      unlock();
+  (async function boot() {
+    let urlCode = "";
+    try { urlCode = norm(new URLSearchParams(location.search).get("code") || ""); } catch (e) { /* noop */ }
+    if (urlCode && await tryCode(urlCode)) {
       history.replaceState(null, "", location.pathname);
+      showContent();
+      return;
     }
-  } catch (e) { /* noop */ }
-
-  if (isUnlocked()) showContent();
-  else showGate();
+    const saved = MM.store.get("course_code", "");
+    if (saved && await tryCode(saved)) { showContent(); return; }
+    showGate();
+  })();
 })();

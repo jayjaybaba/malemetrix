@@ -117,25 +117,13 @@ window.MM_CONFIG = {
     plausibleSrc: "https://plausible.io/js/script.tagged-events.js"
   },
 
-  // --- 12-Wochen-Programm (Selbststudium) -------------------------------------
-  // Das Programm ist in DAS PROTOKOLL enthalten (Verkauf über protokoll.html).
-  // Nach dem Kauf bekommt der Käufer diesen Zugangscode, um den Programminhalt
-  // (kurs/programm.html) freizuschalten. Ändere ihn jederzeit (dann brauchen
-  // bestehende Käufer den neuen Code — am besten nur bei Missbrauch ändern).
-  // WICHTIG: Das ist ein einfacher, geteilter Code (kein echter Kopierschutz).
-  // Für automatische Auslieferung + Schutz + Rechnungen später eine
-  // Programmplattform nutzen (elopage, Copecart, Digistore24).
-  courseAccessCode: "MM12-START",
-
-  // Zugangscode für "DAS PROTOKOLL" (Premium-Ebook). Käufer erhalten ihn nach
-  // Zahlung und schalten damit ebooks/protokoll.html frei (Sofort-Zugang).
-  protokollAccessCode: "PROTOKOLL-M",
-
-  // Zugangscode für den privaten "Ultimate Stack"-Leitfaden
-  // (ebooks/ultimate-stack.html). Bewusst NICHT öffentlich verlinkt — du gibst
-  // diesen Code nur Leuten, die konkret Interesse zeigen (Anfrage, Gespräch).
-  // So bleibt das Medikamenten-/Stack-Wissen aus der öffentlichen Seite raus.
-  stackAccessCode: "STACK-M",
+  // --- Premium-Zugänge (Protokoll, Programm, Ultimate Stack) ----------------
+  // Die Zugangscodes stehen bewusst NICHT mehr hier (diese Datei ist öffentlich
+  // lesbar). Die Premium-Inhalte liegen AES-verschlüsselt in den jeweiligen
+  // Seiten; der Code ist der Entschlüsselungsschlüssel und wird nach Zahlung
+  // manuell per E-Mail verschickt. Inhalte neu verschlüsseln:
+  //   node tools-dev/vault.mjs encrypt <datei> <CODE>
+  // Klartext-Master liegen in _src/ (wird von GitHub Pages nicht ausgeliefert).
 
   // --- MaleMetrix Circle (bezahlte Community, monatlich) -------------------
   // 1. Telegram: private Gruppe erstellen -> Einladungslink hier eintragen
