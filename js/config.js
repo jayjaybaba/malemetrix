@@ -39,6 +39,12 @@ window.MM_CONFIG = {
   // --- PayPal -------------------------------------------------------------
   // PayPal Smart Buttons (PayPal + Kredit-/Debitkarte) direkt im Checkout.
   //
+  // WICHTIG: Das ist der Schalter für die VOLLAUTOMATISCHE Auslieferung.
+  // Zahlt ein Käufer per PayPal, wird die Zahlung sofort bestätigt und der
+  // Zugangscode automatisch auf der Bestellbestätigung angezeigt & verlinkt —
+  // ohne dein Zutun. (Bei Vorkasse geht das prinzipbedingt nicht: dort kommt
+  // der Code nach Zahlungseingang per E-Mail.)
+  //
   // AKTUELL: "sb" = PayPal-TESTMODUS (Sandbox). Der Button ist sichtbar und
   // funktioniert, es fließt aber KEIN echtes Geld. Gut zum Ausprobieren.
   //

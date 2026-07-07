@@ -49,6 +49,8 @@
       var payload = MM.vault.read(id);
       if (!payload) throw new Error("Vault-Payload fehlt: " + id);
       return decrypt(payload, code);
-    }
+    },
+    /** Entschlüsselt einen direkt übergebenen Payload (Objekt statt DOM). */
+    openRaw: function (payload, code) { return decrypt(payload, code); }
   };
 })();
