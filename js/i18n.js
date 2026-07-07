@@ -17,7 +17,7 @@
     "nav.protokoll":{ de: "Das Protokoll", en: "The Protocol" },
     "nav.mycourse":{ de: "Mein Programm öffnen", en: "Open My Program" },
     "nav.shop":    { de: "Shop", en: "Shop" },
-    "nav.more":    { de: "Mehr", en: "More" },
+    "nav.more":    { de: "Wissen", en: "Knowledge" },
     "nav.ebooks":  { de: "Ebooks", en: "Ebooks" },
     "nav.blood":   { de: "Blutwerte", en: "Blood Values" },
     "nav.about":   { de: "Über", en: "About" },
@@ -92,8 +92,8 @@
     "home.trust2": { de: "Kein Crash-Diät-System", en: "No crash-diet system" },
     "home.trust3": { de: "Keine medizinischen Versprechen — klare Lifestyle-Struktur", en: "No medical promises — clear lifestyle structure" },
     "home.freeTitle": { de: "Erst nutzen, dann entscheiden — komplett kostenlos.", en: "Use it first, decide later — completely free." },
-    "home.freebar": { de: "100 % kostenlos: Score-Check, 19 Rechner, Training-Tracker & Ebooks — ohne Anmeldung.",
-                      en: "100% free: score check, 19 calculators, workout tracker & ebooks — no signup." },
+    "home.freebar": { de: "100 % kostenlos: Score-Check, 19 Rechner, Tracker & alle Ebooks online — ohne Anmeldung. PDF-Download der Ebooks gegen E-Mail.",
+                      en: "100% free: score check, 19 calculators, tracker & all ebooks online — no signup. Ebook PDF downloads in exchange for your email." },
 
     /* ---------- Tools-Seite ---------- */
     "tools.eyebrow": { de: "Kostenlose Tools · keine Anmeldung", en: "Free tools · no signup" },

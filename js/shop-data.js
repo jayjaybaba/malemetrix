@@ -33,10 +33,9 @@
       name: "DAS PROTOKOLL — Der komplette Männer-Guide",
       cat: "digital", catLabel: "Digital · Ebook · Sofort-Zugang",
       price: 49.00,
-      compareAt: 199.00,
       digital: true,
       emoji: "📕",
-      badge: "Bestseller",
+      badge: "Founder-Preis",
       desc: "Das gesamte MaleMetrix-Wissen in einem einzigen Premium-Ebook: Training, Fettabbau, Hormone, Blutwerte, Schlaf, Supplemente — und das Herzstück: der 12-Wochen-Masterplan, der alles Woche für Woche in einen Fahrplan gießt. Alles, was du selbst in der Hand hast. Kein Bro-Science, kein Hype — das ehrliche Komplettsystem für Männer, die Ergebnisse wollen. Sofortiger Online-Zugang nach dem Kauf.",
       details: [
         "10 Module: Mindset & System, Training (täglich + Push/Pull/Legs), Fettabbau ohne Hunger, Supplemente, Schlaf-Stack, Blutwerte-Komplettpanel, Hormone & Testosteron (natürlich), Sexuelle Gesundheit, der 12-Wochen-Masterplan",
@@ -46,7 +45,7 @@
         "Blutwerte-Komplettpanel inkl. kleinem Blutbild, ApoB, Lp(a), Cystatin C, PSA & freiem PSA, Schilddrüse",
         "Sofortiger Online-Zugang per Code — kein Warten, jederzeit auf allen Geräten lesbar",
         "Bonus: druckbare Arzt-Checkliste + Wochenplan-Vorlagen",
-        "49 € statt 199 € — Founder-Preis, solange die Seite jung ist",
+        "Founder-Preis 49 € — steigt nach der Launch-Phase auf regulär 99 €",
         "30 Tage Geld-zurück: Wenn du keinen einzigen umsetzbaren Hebel findest, bekommst du dein Geld zurück"
       ],
       cta: { label: "Alles ansehen →", href: "protokoll.html" },
@@ -201,7 +200,7 @@
       price: 29.90,
       digital: false,
       emoji: "📦",
-      badge: "Bestseller",
+      badge: "Starter",
       desc: "Alles für deine saubere Ausgangslage in einer Box: Roll-Maßband, 12-Wochen Tracking-Journal, Schnellstart-Karten für Training & Ernährung und die gedruckte Blutwerte-Checkliste.",
       details: [
         "Roll-Maßband mit Arretierung (Bauchumfang-Messung)",
