@@ -12,6 +12,20 @@
   const wrap = document.getElementById("checkoutWrap");
   if (!wrap) return;
 
+  /* ---------- Automatische Code-Auslieferung nach bestätigter Zahlung ------
+     Die Zugangscodes liegen AES-verschlüsselt vor und werden erst nach einem
+     erfolgreichen PayPal-Capture entschlüsselt und angezeigt. Bei Vorkasse
+     (Zahlung nicht sofort bestätigbar) kommt der Code nach Zahlungseingang
+     per E-Mail. Payload neu erzeugen: node tools-dev/vault.mjs encrypt ... */
+  const DELIVERY_VAULT = {"v":1,"iter":150000,"salt":"fROUAG3L0nEoxIpJtMRLeg==","iv":"ZzFb44oXqImirqFo","ct":"GFtc9HlVhwT04djp2FzBSpcwmVmZeyte8WkGl2awmSdp5FqQyfSPtH1/6k38CqHG4t893Z4NGv2NTFKmfg=="};
+  const DK = ["MMD-", "A3DFF4F6", "159A8C28", "8578F44B"];
+  async function deliveryCodes() {
+    try {
+      if (!(window.MM && MM.vault)) return null;
+      return JSON.parse(await MM.vault.openRaw(DELIVERY_VAULT, DK.join("")));
+    } catch (e) { return null; }
+  }
+
   function items() {
     return MM.cart.items().map(i => ({ ...i, p: MM.cart.product(i.id) })).filter(i => i.p);
   }
@@ -224,7 +238,8 @@
     });
 
     MM.cart.clear();
-    renderSuccess(order, res.viaMailto, opts.paypalPaid);
+    const codes = opts.paypalPaid ? await deliveryCodes() : null;
+    renderSuccess(order, res.viaMailto, opts.paypalPaid, codes);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -236,7 +251,7 @@
     await finalizeOrder(order);
   }
 
-  function renderSuccess(order, viaMailto, paypalPaid) {
+  function renderSuccess(order, viaMailto, paypalPaid, codes) {
     const bank = CFG.bank || {};
     const isPaypalMe = order.payMethod === "PayPal" && CFG.paypalMe && !paypalPaid;
     const amountRaw = order.total.replace(/[^\d,]/g, "").replace(",", ".");
@@ -244,7 +259,7 @@
     /* 12-Wochen-Programm: Zugang nach Kauf */
     let courseBlock = "";
     if ((order.productIds || []).indexOf("kurs-12w") !== -1) {
-      const code = CFG.courseAccessCode || "";
+      const code = (codes && codes.protokoll) || "";
       if (paypalPaid && code) {
         const link = "kurs-programm.html?code=" + encodeURIComponent(code);
         courseBlock = '<div class="card" style="text-align:left;margin-bottom:24px;border-color:var(--accent-line)">' +
@@ -262,7 +277,7 @@
 
     /* DAS PROTOKOLL: Sofort-Zugang nach Kauf */
     if ((order.productIds || []).indexOf("protokoll") !== -1) {
-      const pcode = CFG.protokollAccessCode || "";
+      const pcode = (codes && codes.protokoll) || "";
       if (paypalPaid && pcode) {
         const plink = "ebooks/protokoll.html?code=" + encodeURIComponent(pcode);
         courseBlock += '<div class="card" style="text-align:left;margin-bottom:24px;border-color:var(--accent-line)">' +
