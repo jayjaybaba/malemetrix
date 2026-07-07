@@ -197,10 +197,10 @@ window.MM_CONFIG = {
   // --- Rechtliches ----------------------------------------------------------
   // Diese Angaben werden im Impressum & in Bestellbestätigungen verwendet.
   legal: {
-    name: "[VOLLSTÄNDIGER NAME EINTRAGEN]",
-    street: "[STRASSE + HAUSNUMMER]",
-    city: "[PLZ + ORT]",
-    phone: "[TELEFONNUMMER]",
+    name: "Ural Bayramoglu",
+    street: "Eberwurzstraße 15",
+    city: "80935 München",
+    phone: "0176 70240248",
     ustHinweis: "Kleinunternehmer gemäß § 19 UStG — keine Ausweisung der Umsatzsteuer."
   }
 };
