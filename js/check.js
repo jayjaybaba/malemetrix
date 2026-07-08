@@ -157,17 +157,17 @@
       body: {
         lead: "Dein Engpass ist die Körperbasis. Du brauchst kein weiteres Video, sondern ein System für Defizit, Protein und Messung — und idealerweise jemanden, der 12 Wochen draufschaut.",
         primary: { label: "DAS PROTOKOLL starten", href: "protokoll.html", track: "cta_protokoll" },
-        secondary: { label: "Für die Founder-Runde bewerben", href: "founder.html", track: "cta_founder" }
+        secondary: { label: "Für die 12-Wochen-Transformation bewerben", href: "transformation.html", track: "cta_founder" }
       },
       strength: {
-        lead: "Dein Engpass ist das Training. Push/Pull/Legs mit dokumentierter Progression, RIR und der Ampel-Steuerung — als Selbstlern-System im Protokoll oder mit wöchentlicher Kontrolle in der Founder-Runde.",
+        lead: "Dein Engpass ist das Training. Push/Pull/Legs mit dokumentierter Progression, RIR und der Ampel-Steuerung — als Selbstlern-System im Protokoll oder mit wöchentlicher Kontrolle in der 12-Wochen-Transformation.",
         primary: { label: "DAS PROTOKOLL starten (Trainingssystem)", href: "protokoll.html", track: "cta_protokoll" },
-        secondary: { label: "Für die Founder-Runde bewerben", href: "founder.html", track: "cta_founder" }
+        secondary: { label: "Für die 12-Wochen-Transformation bewerben", href: "transformation.html", track: "cta_founder" }
       },
       fuel: {
         lead: "Dein Engpass ist die Ernährung. Kein neuer Diät-Trend — ein Ernährungssystem: Proteinziel, Sattmacher, Wochenend-Strategie, Trend statt Tageswaage. Genau das steht im Protokoll, Modul 4.",
         primary: { label: "DAS PROTOKOLL starten (Ernährungssystem)", href: "protokoll.html", track: "cta_protokoll" },
-        secondary: { label: "Für die Founder-Runde bewerben", href: "founder.html", track: "cta_founder" }
+        secondary: { label: "Für die 12-Wochen-Transformation bewerben", href: "transformation.html", track: "cta_founder" }
       },
       blood: {
         lead: "Dein Engpass sind die Daten. Das Blood-Dashboard aus dem Protokoll macht aus „mal Blutwerte machen\" ein System mit 8 Bereichen — und dein Supplement-Stack sollte zu deinen Werten passen, nicht zu Instagram.",
@@ -180,9 +180,9 @@
         secondary: { label: "DAS PROTOKOLL starten", href: "protokoll.html", track: "cta_protokoll" }
       },
       execution: {
-        lead: "Dein Engpass ist die Umsetzung. Mehr Wissen bringt dir nichts — du brauchst wöchentliche Kontrolle und einen, der nachfragt. Genau dafür ist die Founder-Runde gebaut: 12 Wochen, wöchentlicher Check-in.",
-        primary: { label: "Für die Founder-Runde bewerben", href: "founder.html", track: "cta_founder" },
-        secondary: { label: "Wöchentlicher Check-in im Detail", href: "founder.html#bewerben", track: "cta_founder" }
+        lead: "Dein Engpass ist die Umsetzung. Mehr Wissen bringt dir nichts — du brauchst wöchentliche Kontrolle und einen, der nachfragt. Genau dafür ist die 12-Wochen-Transformation gebaut: 12 Wochen, wöchentlicher Check-in.",
+        primary: { label: "Für die 12-Wochen-Transformation bewerben", href: "transformation.html", track: "cta_founder" },
+        secondary: { label: "Wöchentlicher Check-in im Detail", href: "transformation.html#bewerben", track: "cta_founder" }
       }
     };
     return paths[bKey] || paths.execution;
@@ -745,14 +745,14 @@
 
     html += '<h3 class="h-card" style="margin:32px 0 16px">Drei Wege, damit aus dem Score Ergebnisse werden</h3><div class="grid-3">' +
       '<div class="card"><span class="card-num">SELBST UMSETZEN</span><h3 style="font-size:1.05rem">DAS PROTOKOLL</h3>' +
-      '<p class="small muted" style="margin:8px 0 14px">Das komplette System als Premium-Ebook inkl. interaktivem 12-Wochen-Programm. Founder-Preis 49&nbsp;€.</p>' +
+      '<p class="small muted" style="margin:8px 0 14px">Das komplette System als Premium-Ebook inkl. interaktivem 12-Wochen-Programm. Startpreis 49&nbsp;€.</p>' +
       '<a class="btn btn-dark btn-sm btn-block" href="protokoll.html" data-track="cta_protokoll">DAS PROTOKOLL starten</a></div>' +
       '<div class="card"><span class="card-num">SCHNELLER EINSTIEG</span><h3 style="font-size:1.05rem">Stack Review</h3>' +
-      '<p class="small muted" style="margin:8px 0 14px">Schick mir deinen Supplement-Stack — ich sage dir, was bleibt, was rausfliegt und was du zuerst fixst. Ab 49&nbsp;€.</p>' +
+      '<p class="small muted" style="margin:8px 0 14px">Schick mir deinen Supplement-Stack — ich sage dir, was bleibt, was rausfliegt und was du zuerst fixst. Regulär 99&nbsp;€ — in der Launch-Phase kostenlos.</p>' +
       '<a class="btn btn-dark btn-sm btn-block" href="stack-review.html" data-track="cta_stack_review">Stack Review anfragen</a></div>' +
-      '<div class="card" style="border-color:var(--accent-line);background:var(--accent-soft)"><span class="card-num">MIT BEGLEITUNG</span><h3 style="font-size:1.05rem">Founder-Runde</h3>' +
-      '<p class="small muted" style="margin:8px 0 14px">12 Wochen Begleitung mit wöchentlichem Check-in — nur 10 Plätze in Runde 1, Founder-Preis 599&nbsp;€.</p>' +
-      '<a class="btn btn-primary btn-sm btn-block" href="founder.html" data-track="cta_founder">Für Founder-Runde bewerben</a></div>' +
+      '<div class="card" style="border-color:var(--accent-line);background:var(--accent-soft)"><span class="card-num">MIT BEGLEITUNG</span><h3 style="font-size:1.05rem">12-Wochen-Transformation</h3>' +
+      '<p class="small muted" style="margin:8px 0 14px">12 Wochen Begleitung mit wöchentlichem Check-in — nur 10 Plätze in Runde 1, Startpreis 599&nbsp;€.</p>' +
+      '<a class="btn btn-primary btn-sm btn-block" href="founder.html" data-track="cta_founder">Für Runde 1 bewerben</a></div>' +
       '</div>';
 
     /* Aktionen */
