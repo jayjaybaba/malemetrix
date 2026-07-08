@@ -31,9 +31,8 @@
     setJSON: function (k, v) { LS.set(k, JSON.stringify(v)); }
   };
 
-  function ymd(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
-  function pad(n) { return (n < 10 ? "0" : "") + n; }
-  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  var ymd = MM.ymd;
+  var esc = MM.esc;
 
   /* Aktueller Tag (Date-Objekt, auf Mitternacht) */
   var current = new Date(); current.setHours(0, 0, 0, 0);

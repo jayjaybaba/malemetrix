@@ -187,7 +187,7 @@
     const required = ["coFirst", "coLast", "coEmail"].concat(needsAddress ? ["coStreet", "coZip", "coCity"] : []);
     required.forEach(id => {
       const el = document.getElementById(id);
-      const bad = !el.value.trim() || (id === "coEmail" && !el.value.includes("@"));
+      const bad = !el.value.trim() || (id === "coEmail" && !MM.validEmail(el.value));
       el.classList.toggle("invalid", bad);
       if (bad) ok = false;
     });
@@ -318,9 +318,9 @@
       '<div class="order-success">' +
       '<div class="success-icon">✓</div>' +
       '<span class="eyebrow" style="justify-content:center">Bestellung ' + order.no + '</span>' +
-      '<h1 class="h-section" style="margin-bottom:14px">Danke, ' + order.name.split(" ")[0] + '!</h1>' +
+      '<h1 class="h-section" style="margin-bottom:14px">Danke, ' + MM.esc(order.name.split(" ")[0]) + '!</h1>' +
       '<p class="muted" style="margin-bottom:8px">Deine Bestellung ist eingegangen' + (viaMailto ? " — bitte sende die geöffnete E-Mail noch ab, damit sie uns erreicht" : "") + '.</p>' +
-      '<p class="muted" style="margin-bottom:28px">Bestellbestätigung &amp; Details gehen an <strong style="color:var(--text)">' + order.email + '</strong>.</p>' +
+      '<p class="muted" style="margin-bottom:28px">Bestellbestätigung &amp; Details gehen an <strong style="color:var(--text)">' + MM.esc(order.email) + '</strong>.</p>' +
       courseBlock +
       payBlock +
 

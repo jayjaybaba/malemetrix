@@ -7,6 +7,10 @@
 
   const C = window.MM_CHECK;
   const $ = (sel) => document.querySelector(sel);
+  const esc = MM.esc;
+
+  /* Die 7 Score-Module in Anzeige-Reihenfolge (Radar, Balken, E-Mail-Report) */
+  const MODULE_KEYS = ["body", "strength", "fuel", "recovery", "blood", "drive", "execution"];
 
   /* Flache Liste aller Fragen-Schritte */
   const steps = [];
@@ -34,7 +38,7 @@
   }
 
   function computeScores(a) {
-    const scores = { body: 0, strength: 0, fuel: 0, recovery: 0, blood: 0, drive: 0, execution: 0 };
+    const scores = Object.fromEntries(MODULE_KEYS.map(k => [k, 0]));
 
     steps.forEach(({ q }) => {
       if (!q.module) return;
@@ -134,8 +138,8 @@
 
   function collectRedFlags(a) {
     const flags = [];
+    const q = steps.find(st => st.q.id === "redflags").q;
     (a.redflags || []).forEach(v => {
-      const q = steps.find(st => st.q.id === "redflags").q;
       const o = q.options.find(x => x.v === v);
       if (o && o.flag) flags.push(o.flag);
     });
@@ -253,7 +257,7 @@
           html += '</select>';
         } else if (f.type === "text") {
           html += '<input type="text" id="f_' + f.id + '" data-field="' + f.id + '" autocomplete="given-name" maxlength="40"' +
-            ' placeholder="' + (f.placeholder || "") + '" value="' + String(cur).replace(/"/g, "&quot;") + '"' + (f.required ? " required" : "") + '>';
+            ' placeholder="' + (f.placeholder || "") + '" value="' + esc(cur) + '"' + (f.required ? " required" : "") + '>';
         } else {
           html += '<input type="number" id="f_' + f.id + '" data-field="' + f.id + '" min="' + f.min + '" max="' + f.max +
             '" placeholder="' + (f.placeholder || "") + '" value="' + cur + '"' + (f.required ? " required" : "") + ' inputmode="numeric">';
@@ -270,7 +274,9 @@
     if (q.type === "single") {
       wrap.querySelectorAll(".option-card").forEach(btn => {
         btn.addEventListener("click", () => {
-          state.answers[q.id] = isNaN(btn.dataset.val) ? btn.dataset.val : (q.options.some(o => typeof o.v === "number") ? Number(btn.dataset.val) : btn.dataset.val);
+          // Antwort im nativen Typ der Option speichern (Zahl bleibt Zahl)
+          const opt = q.options.find(o => String(o.v) === btn.dataset.val);
+          state.answers[q.id] = opt ? opt.v : btn.dataset.val;
           saveDraft();
           wrap.querySelectorAll(".option-card").forEach(b => b.classList.remove("selected"));
           btn.classList.add("selected");
@@ -412,7 +418,7 @@
   /* ---------- SVG-Helfer ---------- */
 
   function radarSVG(scores) {
-    const keys = ["body", "strength", "fuel", "recovery", "blood", "drive", "execution"];
+    const keys = MODULE_KEYS;
     const cx = 170, cy = 165, R = 115;
     const pt = (i, val) => {
       const ang = (Math.PI * 2 * i / 7) - Math.PI / 2;
@@ -621,9 +627,9 @@
 
   function renderResult(r) {
     const el = $("#checkResult");
-    const keys = ["body", "strength", "fuel", "recovery", "blood", "drive", "execution"];
+    const keys = MODULE_KEYS;
     const prev = (MM.store.get("check_history", []) || []).slice(0, -1).pop();
-    const firstName = ((r.answers && r.answers.name) || "").trim().split(/\s+/)[0].slice(0, 24);
+    const firstName = esc(((r.answers && r.answers.name) || "").trim().split(/\s+/)[0].slice(0, 24));
 
     let html = '';
 
@@ -805,8 +811,7 @@
     $("#btnSendResult").addEventListener("click", async () => {
       const name = $("#resName").value.trim();
       const email = $("#resEmail").value.trim();
-      if (!email || !email.includes("@")) { MM.toast("Bitte gültige E-Mail eingeben"); return; }
-      const keysAll = ["body", "strength", "fuel", "recovery", "blood", "drive", "execution"];
+      if (!MM.validEmail(email)) { MM.toast("Bitte gültige E-Mail eingeben"); return; }
       const payload = {
         Typ: "Score-Ergebnis",
         Name: name || "—",
@@ -815,7 +820,7 @@
         Archetyp: r.archetype.name,
         Engpass: r.bottleneck.name
       };
-      keysAll.forEach(k => payload[C.moduleNames[k]] = r.scores[k] + "/100");
+      MODULE_KEYS.forEach(k => payload[C.moduleNames[k]] = r.scores[k] + "/100");
       const res = await MM.sendForm("MaleMetrix Score: " + r.total + "/100 — " + (name || email), payload);
       MM.toast(res.viaMailto ? "E-Mail-Programm geöffnet" : "Ergebnis gesendet — check dein Postfach");
     });

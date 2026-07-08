@@ -14,6 +14,8 @@
 
   const LANG = () => (window.MM && MM.i18n ? MM.i18n.lang : "de");
   const tr = (o) => (o && (o[LANG()] || o.de)) || "";
+  const esc = MM.esc;
+  const trE = (o) => esc(tr(o)); // übersetzt + escaped (Namen können vom Nutzer stammen)
   const KG = 2.2046226218;
   const units = () => { try { return localStorage.getItem("mm_units") || "metric"; } catch (e) { return "metric"; } };
   const setUnits = (u) => { try { localStorage.setItem("mm_units", u); } catch (e) {} };
@@ -97,10 +99,7 @@
   }
 
   /* ---------- Tages-System (jeden Tag trainieren) ---------- */
-  function localYmd(d) {
-    const x = d instanceof Date ? d : new Date(d);
-    return x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0");
-  }
+  const localYmd = MM.ymd;
   /* Was wurde an einem Tag gemacht? (Gym-Session, Cardio, tägliche Bewegung) */
   function activityOn(ymd) {
     const gym = S.sessions().some(s => localYmd(s.date) === ymd);
@@ -158,7 +157,7 @@
       if (isToday) cls += " today";
       cells += '<div class="' + cls + '"><span class="wk-name">' + names[i] + '</span>' +
         '<span class="wk-icon">' + icon + '</span>' +
-        '<span class="wk-sub">' + (tpl ? tr(tpl.name).split(" ")[0] : (LANG() === "de" ? "Bewegung" : "Move")) + '</span></div>';
+        '<span class="wk-sub">' + (tpl ? trE(tpl.name).split(" ")[0] : (LANG() === "de" ? "Bewegung" : "Move")) + '</span></div>';
     }
     return '<div class="card wk-cal-card"><div class="wk-cal-head">' +
       '<strong>📅 ' + T("Deine Trainingswoche", "Your training week") + '</strong>' +
@@ -177,8 +176,8 @@
     const min = plan.dailyMin || 25;
     if (tpl && !act.gym) {
       return '<div class="card today-card gym"><div class="today-kick">' + T("HEUTE IST GYM-TAG", "TODAY IS GYM DAY") + '</div>' +
-        '<h3 class="h-card" style="margin:6px 0 4px">🏋️ ' + tr(tpl.name) + '</h3>' +
-        '<p class="muted" style="margin-bottom:16px">' + tpl.exIds.slice(0, 4).map(id => tr(exById(id).name)).join(" · ") + (tpl.exIds.length > 4 ? " …" : "") + '</p>' +
+        '<h3 class="h-card" style="margin:6px 0 4px">🏋️ ' + trE(tpl.name) + '</h3>' +
+        '<p class="muted" style="margin-bottom:16px">' + tpl.exIds.slice(0, 4).map(id => trE(exById(id).name)).join(" · ") + (tpl.exIds.length > 4 ? " …" : "") + '</p>' +
         '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
         '<button class="btn btn-primary" data-starttpl="' + tpl.id + '">' + T("Jetzt starten", "Start now") + ' →</button>' +
         '<button class="btn btn-dark btn-sm" id="onlyMove">' + T("Heute nur Bewegung", "Just movement today") + '</button></div></div>';
@@ -216,7 +215,7 @@
     const rows = order.map((wd, i) => {
       const active = !!gymDays[String(wd)];
       const sel = '<select data-pltpl="' + wd + '"' + (active ? "" : " disabled") + '>' +
-        tpls.map(t => '<option value="' + t.id + '"' + (gymDays[String(wd)] === t.id ? " selected" : "") + '>' + tr(t.name) + '</option>').join("") + '</select>';
+        tpls.map(t => '<option value="' + t.id + '"' + (gymDays[String(wd)] === t.id ? " selected" : "") + '>' + trE(t.name) + '</option>').join("") + '</select>';
       return '<div class="plan-row"><label class="plan-day"><input type="checkbox" data-plday="' + wd + '"' + (active ? " checked" : "") + '> ' + names[i] + '</label>' + sel + '</div>';
     }).join("");
     modal.innerHTML = '<div class="modal-box"><div class="modal-head"><h3 class="h-card">📅 ' + T("Dein Wochenplan", "Your weekly plan") + '</h3><button class="cart-close" id="plnClose">✕</button></div>' +
@@ -316,8 +315,8 @@
         '</div></div>' +
         '<h3 class="h-card" style="margin-bottom:14px">' + T("Schnellstart mit Plan", "Quick start with a routine") + '</h3>' +
         '<div class="grid-3">' + templates.map(tpl =>
-          '<div class="template-card"><h4>' + tr(tpl.name) + '</h4>' +
-          '<div style="margin:8px 0 14px">' + tpl.exIds.map(id => '<div class="template-ex">· ' + tr(exById(id).name) + '</div>').join("") + '</div>' +
+          '<div class="template-card"><h4>' + trE(tpl.name) + '</h4>' +
+          '<div style="margin:8px 0 14px">' + tpl.exIds.map(id => '<div class="template-ex">· ' + trE(exById(id).name) + '</div>').join("") + '</div>' +
           '<button class="btn btn-dark btn-sm btn-block" data-starttpl="' + tpl.id + '">' + T("Starten", "Start") + '</button></div>'
         ).join("") + '</div>';
 
@@ -331,7 +330,7 @@
     const dur = Math.round((Date.now() - active.startedAt) / 60000);
     const liveVol = sessionVolume({ exercises: active.exercises });
     let html = '<div class="card" style="margin-bottom:18px"><div style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">' +
-      '<div><input type="text" id="sessName" value="' + (active.name || "").replace(/"/g, "&quot;") + '" style="background:none;border:none;font-family:var(--font-display);font-size:1.3rem;font-weight:700;color:var(--text);padding:0;width:auto"></div>' +
+      '<div><input type="text" id="sessName" value="' + esc(active.name || "") + '" style="background:none;border:none;font-family:var(--font-display);font-size:1.3rem;font-weight:700;color:var(--text);padding:0;width:auto"></div>' +
       '<div style="display:flex;gap:10px;align-items:center"><span class="mono muted" style="font-size:0.85rem">⏱ ' + dur + ' min · ' + fmtW(liveVol, 0) + '</span>' +
       '<button class="btn btn-ghost btn-sm" id="discardSess">' + T("Verwerfen", "Discard") + '</button>' +
       '<button class="btn btn-primary btn-sm" id="finishSess">' + T("Beenden", "Finish") + '</button></div></div></div>';
@@ -351,7 +350,7 @@
       const rCol = isTime ? "" : '<th>' + T("Wdh.", "Reps") + '</th>';
 
       html += '<div class="card" style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">' +
-        '<div><button class="ex-title-link" data-exdetail="' + ex.exId + '">' + tr(meta.name) + ' <span style="opacity:0.5">↗</span></button>' +
+        '<div><button class="ex-title-link" data-exdetail="' + ex.exId + '">' + trE(meta.name) + ' <span style="opacity:0.5">↗</span></button>' +
         '<span class="ex-muscle-tag">' + muscleLabel(meta.muscle) + '</span></div>' +
         '<button class="btn-link-del" data-delex="' + ei + '" style="background:none;border:none;color:var(--muted-2);font-size:0.8rem;text-decoration:underline;cursor:pointer">' + T("Entfernen", "Remove") + '</button></div>';
 
@@ -400,7 +399,7 @@
 
     html += '<button class="btn btn-ghost btn-block" id="addExercise" style="margin-top:8px">+ ' + T("Übung hinzufügen", "Add exercise") + '</button>' +
       '<div class="field" style="margin-top:16px"><label>' + T("Notiz zur Einheit", "Session note") + '</label>' +
-      '<textarea id="sessNote" rows="2" placeholder="' + T("z. B. gutes Gefühl, linkes Knie beobachten…", "e.g. felt strong, watch left knee…") + '" style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card-2);color:var(--text);font-family:inherit;resize:vertical">' + (active.note ? String(active.note).replace(/</g, "&lt;") : "") + '</textarea></div>';
+      '<textarea id="sessNote" rows="2" placeholder="' + T("z. B. gutes Gefühl, linkes Knie beobachten…", "e.g. felt strong, watch left knee…") + '" style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card-2);color:var(--text);font-family:inherit;resize:vertical">' + esc(active.note || "") + '</textarea></div>';
     p.innerHTML = html;
 
     p.querySelector("#sessName").addEventListener("change", e => { active.name = e.target.value; S.saveActive(active); });
@@ -512,7 +511,7 @@
         (!muscleFilter || e.muscle === muscleFilter) &&
         (tr(e.name).toLowerCase().includes(q) || muscleLabel(e.muscle).toLowerCase().includes(q)));
       modal.querySelector(".ex-picker-list").innerHTML = list.map(e =>
-        '<button class="ex-pick" data-pick="' + e.id + '"><span>' + tr(e.name) + '</span><span class="ex-muscle-tag">' + muscleLabel(e.muscle) + '</span></button>'
+        '<button class="ex-pick" data-pick="' + e.id + '"><span>' + trE(e.name) + '</span><span class="ex-muscle-tag">' + muscleLabel(e.muscle) + '</span></button>'
       ).join("") || '<p class="muted" style="text-align:center;padding:20px">' + T("Nichts gefunden.", "Nothing found.") + '</p>';
       modal.querySelectorAll("[data-pick]").forEach(b => b.addEventListener("click", () => {
         const active = S.active();
@@ -642,7 +641,7 @@
         (metric.length >= 2 ? '<div style="margin:16px 0"><div class="muted small" style="margin-bottom:6px">' + (type === "weight_reps" ? T("Geschätztes 1RM über Zeit", "Estimated 1RM over time") : T("Beste Wiederholungen über Zeit", "Best reps over time")) + '</div>' + chart + '</div>' : '') +
         '<div style="margin-top:8px">' + rows + '</div>';
     }
-    modal.innerHTML = '<div class="modal-box"><div class="modal-head"><h3 class="h-card">' + tr(meta.name) + '</h3><button class="cart-close" id="exdClose">✕</button></div>' +
+    modal.innerHTML = '<div class="modal-box"><div class="modal-head"><h3 class="h-card">' + trE(meta.name) + '</h3><button class="cart-close" id="exdClose">✕</button></div>' +
       '<span class="ex-muscle-tag" style="margin-bottom:14px;display:inline-block">' + muscleLabel(meta.muscle) + '</span>' + body + '</div>';
     modal.classList.add("open");
     modal.querySelector("#exdClose").addEventListener("click", () => closeModal("exDetailModal"));
@@ -680,7 +679,7 @@
         '<div style="display:grid;gap:8px;margin-bottom:24px">' + trainedIds.map(id => {
           const pr = bestE1RM(id); const meta = exById(id);
           return '<button class="ex-progress-row" data-exdetail="' + id + '">' +
-            '<div><div style="font-weight:600;color:var(--text)">' + tr(meta.name) + '</div>' +
+            '<div><div style="font-weight:600;color:var(--text)">' + trE(meta.name) + '</div>' +
             '<div class="muted small">' + muscleLabel(meta.muscle) + '</div></div>' +
             '<div style="text-align:right"><div class="mono" style="color:var(--accent)">' + (pr > 0 ? fmtW(pr) : "–") + '</div>' +
             '<div class="muted small">' + T("bestes e1RM", "best e1RM") + '</div></div></button>';
@@ -693,7 +692,7 @@
       if (!list.length) return;
       html += '<div class="muted small" style="margin:14px 0 6px;text-transform:uppercase;letter-spacing:0.06em">' + muscleLabel(m) + '</div>' +
         '<div style="display:grid;gap:6px">' + list.map(e =>
-          '<button class="ex-progress-row" data-exdetail="' + e.id + '"><div style="font-weight:500;color:var(--text)">' + tr(e.name) + '</div>' +
+          '<button class="ex-progress-row" data-exdetail="' + e.id + '"><div style="font-weight:500;color:var(--text)">' + trE(e.name) + '</div>' +
           '<span class="ex-muscle-tag">' + (e.equip || "") + '</span></button>').join("") + '</div>';
     });
     p.innerHTML = html;
@@ -740,7 +739,7 @@
     const core = ["squat", "bench", "deadlift", "ohp"];
     const coreRows = core.map(id => {
       const pr = bestE1RM(id);
-      return '<div class="mini-stat"><span>' + tr(exById(id).name) + '</span><strong>' + (pr > 0 ? fmtW(pr) : "–") + '</strong></div>';
+      return '<div class="mini-stat"><span>' + trE(exById(id).name) + '</span><strong>' + (pr > 0 ? fmtW(pr) : "–") + '</strong></div>';
     }).join("");
 
     p.innerHTML =
@@ -758,13 +757,13 @@
     if (!ss.length) { p.innerHTML = emptyState("📋", T("Noch keine Einheiten. Starte dein erstes Training!", "No workouts yet. Start your first session!"), "workout", T("Training starten", "Start workout")); bindEmpty(p); return; }
     p.innerHTML = ss.map(s => {
       const vol = sessionVolume(s), prs = countPRsIn(s);
-      return '<div class="history-item"><div class="hi-head"><div><h4 style="font-size:1.05rem">' + s.name + '</h4>' +
+      return '<div class="history-item"><div class="hi-head"><div><h4 style="font-size:1.05rem">' + esc(s.name) + '</h4>' +
         '<span class="hi-date">' + fmtDate(s.date) + '</span></div>' +
         '<div style="display:flex;gap:12px;align-items:center"><button class="btn btn-dark btn-sm" data-repeat="' + s.id + '">↻ ' + T("Wiederholen", "Repeat") + '</button>' +
         '<button class="btn-link-del" data-delsess="' + s.id + '" style="background:none;border:none;color:var(--muted-2);font-size:0.78rem;text-decoration:underline;cursor:pointer">' + T("Löschen", "Delete") + '</button></div></div>' +
-        s.exercises.map(e => '<div class="history-ex-line"><span>' + tr(exById(e.exId).name) + '</span>' +
+        s.exercises.map(e => '<div class="history-ex-line"><span>' + trE(exById(e.exId).name) + '</span>' +
           '<span class="sets">' + e.sets.map(x => (x.warmup ? "" : "") + dispW(x.weight) + "×" + x.reps).join(", ") + '</span></div>').join("") +
-        (s.note ? '<p class="muted small" style="margin-top:8px;font-style:italic">„' + String(s.note).replace(/</g, "&lt;") + '"</p>' : '') +
+        (s.note ? '<p class="muted small" style="margin-top:8px;font-style:italic">„' + esc(s.note) + '"</p>' : '') +
         '<div style="display:flex;gap:18px;margin-top:12px;font-size:0.8rem;color:var(--muted)" class="mono">' +
         '<span>📊 ' + fmtW(vol, 0) + '</span><span>⏱ ' + (s.duration || 0) + ' min</span>' + (prs ? '<span style="color:var(--amber)">🏆 ' + prs + ' PR</span>' : '') + '</div></div>';
     }).join("");
@@ -948,9 +947,9 @@
     }));
   }
   function tplCard(t, isCustom) {
-    return '<div class="template-card"><div style="display:flex;justify-content:space-between;align-items:start"><h4>' + tr(t.name) + '</h4>' +
+    return '<div class="template-card"><div style="display:flex;justify-content:space-between;align-items:start"><h4>' + trE(t.name) + '</h4>' +
       (isCustom ? '<button class="btn-link-del" data-deltpl="' + t.id + '" style="background:none;border:none;color:var(--muted-2);font-size:0.75rem;text-decoration:underline;cursor:pointer">✕</button>' : '') + '</div>' +
-      '<div style="margin:8px 0 14px">' + t.exIds.map(id => '<div class="template-ex">· ' + tr(exById(id).name) + '</div>').join("") + '</div>' +
+      '<div style="margin:8px 0 14px">' + t.exIds.map(id => '<div class="template-ex">· ' + trE(exById(id).name) + '</div>').join("") + '</div>' +
       '<button class="btn btn-dark btn-sm btn-block" data-starttpl="' + t.id + '">' + T("Starten", "Start") + '</button></div>';
   }
   function openTemplateBuilder() {
@@ -958,14 +957,14 @@
     if (!modal) { modal = document.createElement("div"); modal.id = "tplModal"; modal.className = "modal-overlay"; document.body.appendChild(modal); }
     const chosen = [];
     const redraw = () => {
-      modal.querySelector("#tplChosen").innerHTML = chosen.length ? chosen.map((id, i) => '<span class="chip" style="margin:3px">' + tr(exById(id).name) + ' <button data-rm="' + i + '" style="background:none;border:none;color:var(--muted);cursor:pointer">✕</button></span>').join("") : '<span class="muted small">' + T("Noch keine Übung gewählt", "No exercise chosen yet") + '</span>';
+      modal.querySelector("#tplChosen").innerHTML = chosen.length ? chosen.map((id, i) => '<span class="chip" style="margin:3px">' + trE(exById(id).name) + ' <button data-rm="' + i + '" style="background:none;border:none;color:var(--muted);cursor:pointer">✕</button></span>').join("") : '<span class="muted small">' + T("Noch keine Übung gewählt", "No exercise chosen yet") + '</span>';
       modal.querySelectorAll("[data-rm]").forEach(b => b.addEventListener("click", () => { chosen.splice(+b.dataset.rm, 1); redraw(); }));
     };
     modal.innerHTML = '<div class="modal-box"><div class="modal-head"><h3 class="h-card">' + T("Eigenen Plan erstellen", "Create routine") + '</h3><button class="cart-close" id="tplClose">✕</button></div>' +
       '<div class="field"><label>' + T("Name des Plans", "Routine name") + '</label><input type="text" id="tplName" placeholder="' + T("z. B. Oberkörper Dienstag", "e.g. Upper Body Tuesday") + '"></div>' +
       '<div class="field"><label>' + T("Übungen", "Exercises") + '</label><div id="tplChosen" style="margin-bottom:10px"></div>' +
       '<select id="tplAdd"><option value="">' + T("Übung hinzufügen…", "Add exercise…") + '</option>' +
-      allExercises().map(e => '<option value="' + e.id + '">' + tr(e.name) + ' (' + muscleLabel(e.muscle) + ')</option>').join("") + '</select></div>' +
+      allExercises().map(e => '<option value="' + e.id + '">' + trE(e.name) + ' (' + muscleLabel(e.muscle) + ')</option>').join("") + '</select></div>' +
       '<button class="btn btn-primary btn-block" id="tplSave" style="margin-top:8px">' + T("Plan speichern", "Save routine") + '</button></div>';
     modal.classList.add("open");
     redraw();

@@ -28,9 +28,7 @@
   if (!gate || !content) return;
 
   function norm(s) { return MM.vault ? MM.vault.norm(s) : String(s || "").trim().toUpperCase().replace(/\s+/g, ""); }
-  function esc(s) {
-    return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  }
+  const esc = MM.esc;
 
   /* ---------- Zugang: Code entschlüsselt den Inhalt (Vault) ---------- */
   async function tryCode(code) {

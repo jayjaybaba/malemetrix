@@ -67,8 +67,9 @@
 
   /* ---------- Automatische Basis-Events ---------- */
   function pageView() {
-    const file = (location.pathname.split("/").pop() || "index.html") || "index.html";
-    MM.track("pageview_" + file.replace(/\.html$/, "").replace(/[^a-z0-9_]/gi, "") || "index");
+    const file = location.pathname.split("/").pop() || "index.html";
+    const name = file.replace(/\.html$/, "").replace(/[^a-z0-9_]/gi, "") || "index";
+    MM.track("pageview_" + name);
   }
 
   // Outbound- & CTA-Klicks automatisch erfassen (data-track="name")

@@ -73,7 +73,7 @@
   let selSlot = null;
 
   const fmtDate = (d) => d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  const keyOf = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  const keyOf = MM.ymd;
 
   function bookedSlots(dateKey) {
     const bookings = MM.store.get("bookings", []);
@@ -201,7 +201,7 @@
     const note = $("#bkNote").value.trim();
 
     let ok = true;
-    [["bkName", !name], ["bkEmail", !email || !email.includes("@")], ["bkGoal", !goal]].forEach(([id, bad]) => {
+    [["bkName", !name], ["bkEmail", !MM.validEmail(email)], ["bkGoal", !goal]].forEach(([id, bad]) => {
       document.getElementById(id).classList.toggle("invalid", bad);
       if (bad) ok = false;
     });
@@ -243,12 +243,12 @@
       '<div class="order-success">' +
       '<div class="success-icon">✓</div>' +
       '<span class="eyebrow" style="justify-content:center">Terminanfrage eingegangen</span>' +
-      '<h1 class="h-section" style="margin-bottom:14px">Stark, ' + name.split(" ")[0] + ' — dein Termin ist reserviert.</h1>' +
+      '<h1 class="h-section" style="margin-bottom:14px">Stark, ' + MM.esc(name.split(" ")[0]) + ' — dein Termin ist reserviert.</h1>' +
       '<p class="muted" style="margin-bottom:6px"><strong style="color:var(--text)">' + fmtDate(selDate) + ' · ' + selSlot + ' Uhr</strong> (' + DURATION + ' Minuten)</p>' +
       '<p class="muted" style="margin-bottom:28px">' +
       (res.viaMailto
         ? "Bitte sende die geöffnete E-Mail noch ab, damit uns deine Anfrage erreicht. Danach bestätigen wir den Termin mit dem Video-Link."
-        : "Wir bestätigen den Termin per E-Mail an <strong style=\"color:var(--text)\">" + email + "</strong> und schicken dir den Video-Link.") + '</p>' +
+        : "Wir bestätigen den Termin per E-Mail an <strong style=\"color:var(--text)\">" + MM.esc(email) + "</strong> und schicken dir den Video-Link.") + '</p>' +
       '<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:32px">' +
       '<a class="btn btn-primary" href="' + icsUrl + '" download="malemetrix-analysegespraech.ics">📅 In meinen Kalender eintragen</a>' +
       '<a class="btn btn-ghost" href="check.html">Vorher den Score-Check machen</a></div>' +

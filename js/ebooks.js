@@ -15,7 +15,7 @@
   var tr = function (o) { if (o == null) return ""; if (typeof o === "string") return o; return o[LANG()] || o.de || ""; };
   var T = function (k, fb) { return (window.MM && MM.i18n && MM.i18n.t(k)) || fb; };
 
-  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  var esc = MM.esc;
 
   function readControl(b, cls, extraStyle) {
     var label = T("eb.read", "Jetzt lesen");
@@ -40,7 +40,7 @@
   }
 
   function render() {
-    var featured = books.filter(function (b) { return b.featured; })[0];
+    var featured = books.find(function (b) { return b.featured; });
     var rest = books.filter(function (b) { return b !== featured; });
 
     if (feat) {
@@ -80,7 +80,7 @@
     // Gated Ebooks: vor dem Öffnen E-Mail abfragen
     document.querySelectorAll("[data-read]").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        var b = books.filter(function (x) { return x.id === btn.getAttribute("data-read"); })[0];
+        var b = books.find(function (x) { return x.id === btn.getAttribute("data-read"); });
         if (!b) return;
         if (window.MM && MM.track) MM.track("ebook_open", { id: b.id });
         var open = function () { window.open(b.read, "_blank", "noopener"); };

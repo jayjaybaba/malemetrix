@@ -61,7 +61,7 @@
     const submit = async () => {
       const email = modal.querySelector("#ulEmail").value.trim();
       const consent = modal.querySelector("#ulConsent").checked;
-      if (!email || !email.includes("@")) { MM.toast(T("Bitte gültige E-Mail eingeben", "Please enter a valid email")); return; }
+      if (!MM.validEmail(email)) { MM.toast(T("Bitte gültige E-Mail eingeben", "Please enter a valid email")); return; }
       if (!consent) { MM.toast(T("Bitte Einwilligung bestätigen", "Please confirm consent")); return; }
       const btn = modal.querySelector("#ulSubmit");
       btn.disabled = true; btn.textContent = T("Wird freigeschaltet…", "Unlocking…");
@@ -87,7 +87,7 @@
     const box = document.getElementById("unlockBox");
     if (box && unlocked) {
       box.innerHTML = '<div class="alert alert-info" style="margin:0"><span class="alert-icon">✓</span><div>' +
-        T("Freigeschaltet als <strong>", "Unlocked as <strong>") + MM.unlock.email() + "</strong>. " +
+        T("Freigeschaltet als <strong>", "Unlocked as <strong>") + MM.esc(MM.unlock.email()) + "</strong>. " +
         T("Du kannst jetzt in jedem Ebook auf „PDF“ tippen.", "You can now hit “PDF” in any ebook.") + '</div></div>';
     }
   }
@@ -109,7 +109,7 @@
         const inp = form.querySelector("input[type=email]");
         const consent = form.querySelector("input[type=checkbox]");
         const email = inp.value.trim();
-        if (!email || !email.includes("@")) { MM.toast(T("Bitte gültige E-Mail eingeben", "Please enter a valid email")); return; }
+        if (!MM.validEmail(email)) { MM.toast(T("Bitte gültige E-Mail eingeben", "Please enter a valid email")); return; }
         if (consent && !consent.checked) { MM.toast(T("Bitte Einwilligung bestätigen", "Please confirm consent")); return; }
         const btn = form.querySelector("button");
         btn.disabled = true;

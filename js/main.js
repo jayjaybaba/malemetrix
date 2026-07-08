@@ -15,6 +15,35 @@
     return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(n);
   };
 
+  /** HTML-Escaping für Nutzereingaben, die per innerHTML gerendert werden. */
+  MM.esc = function (s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  };
+
+  /** Lokales Datum als "YYYY-MM-DD" (akzeptiert Date oder ISO-String). */
+  MM.ymd = function (d) {
+    const x = d instanceof Date ? d : new Date(d);
+    return x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0");
+  };
+
+  MM.validEmail = function (s) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(s || "").trim());
+  };
+
+  /** Dateiname der aktuellen Seite, z. B. "check.html". */
+  function pageFile() {
+    return location.pathname.split("/").pop() || "index.html";
+  }
+
+  /* Seiten ohne Lead-Band / Tages-Hinweis (Checkout, Recht, Reader, Print). */
+  const QUIET_PAGES = ["checkout.html", "kurs-programm.html", "lead-blutwerte.html",
+    "checkliste.html", "datenschutz.html", "impressum.html", "agb.html", "report.html"];
+  function isQuietPage(extra) {
+    if (location.pathname.indexOf("/ebooks/") !== -1) return true;
+    const file = pageFile();
+    return QUIET_PAGES.indexOf(file) !== -1 || (extra || []).indexOf(file) !== -1;
+  }
+
   // Übersetzungs-Helfer mit Fallback (i18n.js lädt vor main.js)
   function T(key, fallback) {
     return (window.MM && MM.i18n && MM.i18n.t(key)) || fallback;
@@ -52,13 +81,11 @@
   /**
    * Sendet Formulardaten an den konfigurierten E-Mail-Endpoint (FormSubmit).
    * Fallback: öffnet das Mailprogramm des Besuchers mit fertigem Text.
+   * opts.quiet unterdrückt den Mailto-Fallback (für Hintergrund-Einträge,
+   * die die Seite nicht kapern dürfen).
    * Gibt ein Promise<{ok:boolean, viaMailto:boolean}> zurück.
    */
-  MM.sendForm = async function (subject, data) {
-    const lines = Object.entries(data)
-      .map(([k, v]) => k + ": " + (Array.isArray(v) ? v.join(", ") : v))
-      .join("\n");
-
+  MM.sendForm = async function (subject, data, opts) {
     if (CFG.formEndpoint) {
       try {
         const res = await fetch(CFG.formEndpoint, {
@@ -70,7 +97,12 @@
       } catch (e) { /* offline o. nicht aktiviert → Fallback */ }
     }
 
+    if (opts && opts.quiet) return { ok: false, viaMailto: false };
+
     // Fallback: mailto
+    const lines = Object.entries(data)
+      .map(([k, v]) => k + ": " + (Array.isArray(v) ? v.join(", ") : v))
+      .join("\n");
     const mailto = "mailto:" + encodeURIComponent(CFG.contactEmail || "") +
       "?subject=" + encodeURIComponent(subject) +
       "&body=" + encodeURIComponent(lines);
@@ -114,15 +146,9 @@
 
     // quiet: Hintergrund-Eintrag ohne Mailto-Fallback (würde die Seite kapern)
     if (quiet) {
-      if (CFG.formEndpoint) {
-        try {
-          await fetch(CFG.formEndpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Accept": "application/json" },
-            body: JSON.stringify({ _subject: "📩 Newsletter — " + email, Typ: "E-Mail-Unlock", "E-Mail": email, Quelle: source || "leadmagnet" })
-          });
-        } catch (e) { /* Unlock bleibt lokal gespeichert */ }
-      }
+      await MM.sendForm("📩 Newsletter — " + email, {
+        Typ: "E-Mail-Unlock", "E-Mail": email, Quelle: source || "leadmagnet"
+      }, { quiet: true });
       return { ok: true, viaMailto: false };
     }
 
@@ -348,10 +374,9 @@
     }
 
     // Aktive Nav-Markierung nach Dateiname
-    const file = (location.pathname.split("/").pop() || "index.html") || "index.html";
+    const file = pageFile();
     document.querySelectorAll(".main-nav a[href]").forEach(a => {
-      const href = a.getAttribute("href");
-      if (href === file || (file === "index.html" && href === "index.html")) a.classList.add("active");
+      if (a.getAttribute("href") === file) a.classList.add("active");
     });
   }
 
@@ -438,21 +463,14 @@
      Erscheint nur für Nutzer, die im Gym-Tracker einen Wochenplan haben und
      heute noch nichts geloggt haben — die Website-Version der Morgen-Push. */
   function injectTodayHint() {
-    var file = (location.pathname.split("/").pop() || "index.html") || "index.html";
-    var skip = ["tracker.html", "checkout.html", "kurs-programm.html", "lead-blutwerte.html",
-      "checkliste.html", "datenschutz.html", "impressum.html", "agb.html", "report.html"];
-    if (skip.indexOf(file) !== -1) return;
-    if (location.pathname.indexOf("/ebooks/") !== -1) return;
+    if (isQuietPage(["tracker.html"])) return;
 
     var plan = MM.store.get("trk_plan", null);
     if (!plan) return; // nur Nutzer, die den Tracker eingerichtet haben
 
-    function ymdLocal(d) {
-      return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-    }
-    var today = ymdLocal(new Date());
+    var today = MM.ymd(new Date());
     var done =
-      (MM.store.get("trk_sessions", []) || []).some(function (s) { return ymdLocal(new Date(s.date)) === today; }) ||
+      (MM.store.get("trk_sessions", []) || []).some(function (s) { return MM.ymd(s.date) === today; }) ||
       (MM.store.get("trk_cardio", []) || []).some(function (c) { return c.date === today; }) ||
       (MM.store.get("trk_daily", []) || []).some(function (d) { return d.date === today; });
     if (done) return;
@@ -477,11 +495,7 @@
      (Brevo, sonst FormSubmit). Erscheint nicht auf Checkout-, Rechts-,
      Reader- und bereits konvertierenden Seiten. */
   function injectLeadBand() {
-    const skip = ["checkout.html", "kurs-programm.html", "lead-blutwerte.html",
-      "checkliste.html", "datenschutz.html", "impressum.html", "agb.html", "report.html"];
-    const file = (location.pathname.split("/").pop() || "index.html") || "index.html";
-    if (skip.indexOf(file) !== -1) return;
-    if (location.pathname.indexOf("/ebooks/") !== -1) return;
+    if (isQuietPage()) return;
     const footer = document.querySelector(".site-footer");
     if (!footer || document.getElementById("leadBand")) return;
 
@@ -513,7 +527,7 @@
     const submit = () => {
       const email = String(input.value || "").trim();
       const err = document.getElementById("leadErr");
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+      if (!MM.validEmail(email)) {
         if (err) { err.textContent = "Bitte gib eine gültige E-Mail-Adresse ein."; err.style.display = "block"; }
         return;
       }
