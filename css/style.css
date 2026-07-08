@@ -1954,6 +1954,13 @@ input[type="range"]::-moz-range-thumb {
 .doc-footer { margin-top: 44px; padding-top: 20px; border-top: 1.5px solid #e3e6eb; font-family: var(--font-mono); font-size: 0.72rem; color: #9aa3b2; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 .doc-disclaimer { font-size: 0.78rem; color: #8893a7; margin-top: 14px; line-height: 1.6; }
 
+/* Ebook-Bilder */
+.doc-figure { margin: 26px 0; }
+.doc-figure img { display: block; width: 100%; height: auto; border-radius: 14px; box-shadow: 0 6px 24px rgba(13,15,19,0.12); }
+.doc-figure figcaption { margin-top: 10px; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.03em; color: #9aa3b2; text-align: center; }
+.doc-figure.hero { margin: 4px 0 34px; }
+.doc-figure.hero img { border-radius: 16px; aspect-ratio: 16 / 9; object-fit: cover; }
+
 @media print {
   body { background: #fff; color: #111; }
   .site-header, .site-footer, .no-print, .cart-drawer, .cart-overlay, .toast, .rest-timer-bar { display: none !important; }
@@ -1961,6 +1968,8 @@ input[type="range"]::-moz-range-thumb {
   .doc-wrap { padding: 0; }
   .doc-paper { box-shadow: none; border-radius: 0; padding: 0; max-width: none; }
   .doc-paper h2 { page-break-after: avoid; }
+  .doc-figure { break-inside: avoid; page-break-inside: avoid; }
+  .doc-figure img { box-shadow: none; }
 }
 
 /* ==========================================================================
