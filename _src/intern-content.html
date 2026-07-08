@@ -40,6 +40,7 @@
   <tr><th>Wofür</th><th>Code / Schlüssel</th><th>Schaltet frei</th></tr>
   <tr><td><strong>DAS PROTOKOLL</strong> (Ebook + Programm)</td><td><code>PROTOKOLL-M</code></td><td><a href="ebooks/protokoll.html?code=PROTOKOLL-M" target="_blank">ebooks/protokoll.html</a> &amp; <a href="kurs-programm.html?code=PROTOKOLL-M" target="_blank">kurs-programm.html</a></td></tr>
   <tr><td><strong>Ultimate-Stack-Framework</strong> (privat)</td><td><code>STACK-M</code></td><td><a href="ebooks/ultimate-stack.html?code=STACK-M" target="_blank">ebooks/ultimate-stack.html</a></td></tr>
+  <tr><td><strong>DAS KOMPENDIUM</strong> (Master-Ebook — alles vereint)</td><td><code>MASTER-M</code></td><td><a href="ebooks/master-ebook.html?code=MASTER-M" target="_blank">ebooks/master-ebook.html</a> — <code>PROTOKOLL-M</code> &amp; <code>STACK-M</code> öffnen es ebenfalls</td></tr>
   <tr><td>12-Wochen-Programm (Alt-Code)</td><td><code>MM12-START</code></td><td>funktioniert weiter für Alt-Käufer</td></tr>
   <tr><td>Auslieferungs-Schlüssel (Checkout)</td><td><code>MMD-A3DFF4F6159A8C288578F44B</code></td><td>entschlüsselt die Codes nach PayPal-Zahlung — nur intern, nie weitergeben</td></tr>
   <tr><td>Dieser interne Bereich</td><td><code>Ural.prime</code></td><td>diese Seite (Groß-/Kleinschreibung egal)</td></tr>
@@ -60,9 +61,10 @@
 <div class="doc-callout"><strong>Score-Engpass → Angebot:</strong> Die Ergebnisseite steuert automatisch: Recovery/Drive niedrig → Stack Review · Body/Strength/Fuel niedrig → Protokoll/Transformation · Blood niedrig → Stack Review/Blood-Dashboard · Execution niedrig → 12-Wochen-Transformation. Plus überall der persönliche „Schick mir SCORE"-CTA.</div>
 
 <h2 id="a-ebooks">4. Alle Ebooks — Übersicht &amp; Direktzugang</h2>
-<p>15 Ebooks. Die 13 freien öffnen direkt; die 2 Premium öffnen mit angehängtem Code. Klick zum Ansehen:</p>
+<p>16 Ebooks. Die 13 freien öffnen direkt; die 3 Premium öffnen mit angehängtem Code. Klick zum Ansehen:</p>
 <table class="doc-table">
   <tr><th>Ebook</th><th>Typ</th><th>Öffnen</th></tr>
+  <tr><td><strong>DAS KOMPENDIUM</strong> (Master — alles Wissen vereint, 21 Kapitel)</td><td>Master/Premium</td><td><a href="ebooks/master-ebook.html?code=MASTER-M" target="_blank">öffnen →</a></td></tr>
   <tr><td>DAS PROTOKOLL (10 Module + Bonus)</td><td>Premium</td><td><a href="ebooks/protokoll.html?code=PROTOKOLL-M" target="_blank">öffnen →</a></td></tr>
   <tr><td>Ultimate-Stack-Framework</td><td>Premium/privat</td><td><a href="ebooks/ultimate-stack.html?code=STACK-M" target="_blank">öffnen →</a></td></tr>
   <tr><td>Master-Guide</td><td>frei</td><td><a href="ebooks/masterguide.html" target="_blank">öffnen →</a></td></tr>
@@ -318,7 +320,7 @@
 <h2 id="a-technik">10. Technik-Notizen (Verschlüsselung, PayPal, Deploy)</h2>
 <h3>Premium-Inhalte neu verschlüsseln</h3>
 <p>Die Premium-Master liegen im Ordner <code>_src/</code> (wird von GitHub Pages <em>nicht</em> ausgeliefert). Verschlüsseln mit dem eingebauten Tool:</p>
-<div class="doc-callout"><code>node tools-dev/vault.mjs encrypt _src/protokoll-content.html PROTOKOLL-M</code><br>Der ausgegebene JSON-Payload ersetzt den <code>&lt;script id="protoVault"&gt;</code>-Block in <code>ebooks/protokoll.html</code>. Analog: <code>ultimate-stack-content.html</code> → <code>STACK-M</code>, <code>course-data.js</code> → <code>PROTOKOLL-M</code>. Diese interne Seite: <code>node tools-dev/vault.mjs encrypt _src/intern-content.html Ural.prime</code>, Payload in <code>intern.html</code> ersetzen.</div>
+<div class="doc-callout"><code>node tools-dev/vault.mjs encrypt _src/protokoll-content.html PROTOKOLL-M</code><br>Der ausgegebene JSON-Payload ersetzt den <code>&lt;script id="protoVault"&gt;</code>-Block in <code>ebooks/protokoll.html</code>. Analog: <code>ultimate-stack-content.html</code> → <code>STACK-M</code>, <code>course-data.js</code> → <code>PROTOKOLL-M</code>. Diese interne Seite: <code>node tools-dev/vault.mjs encrypt _src/intern-content.html Ural.prime</code>, Payload in <code>intern.html</code> ersetzen.<br><strong>Master-Ebook (DAS KOMPENDIUM):</strong> Quelle <code>_src/master-content.html</code> wird dreimal verschlüsselt und ersetzt die drei <code>&lt;script&gt;</code>-Blöcke <code>masterVaultMaster</code> / <code>masterVaultProto</code> / <code>masterVaultStack</code> in <code>ebooks/master-ebook.html</code>: <code>… encrypt _src/master-content.html MASTER-M</code> (bzw. <code>PROTOKOLL-M</code>, <code>STACK-M</code>). So öffnen Master-, Protokoll- und Stack-Käufer dasselbe Buch.</div>
 <h3>PayPal live schalten (= automatische Auslieferung)</h3>
 <ol>
   <li>Kostenloses PayPal-<strong>Geschäftskonto</strong> anlegen.</li>
