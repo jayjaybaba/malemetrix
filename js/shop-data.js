@@ -1,6 +1,6 @@
 ﻿/* ==========================================================================
    MaleMetrix Shop — Produkte
-   Preise bewusst niedrig für den Start (Founder-Phase).
+   Preise bewusst niedrig für den Start (Launch-Phase).
    ========================================================================== */
 
 (function () {
@@ -35,7 +35,7 @@
       price: 49.00,
       digital: true,
       emoji: "📕",
-      badge: "Founder-Preis",
+      badge: "Startpreis",
       desc: "Das gesamte MaleMetrix-Wissen in einem einzigen Premium-Ebook: Training, Fettabbau, Hormone, Blutwerte, Schlaf, Supplemente — und das Herzstück: der 12-Wochen-Masterplan, der alles Woche für Woche in einen Fahrplan gießt. Alles, was du selbst in der Hand hast. Kein Bro-Science, kein Hype — das ehrliche Komplettsystem für Männer, die Ergebnisse wollen. Sofortiger Online-Zugang nach dem Kauf.",
       details: [
         "10 Module: Mindset & System, Training (täglich + Push/Pull/Legs), Fettabbau ohne Hunger, Supplemente, Schlaf-Stack, Blutwerte-Komplettpanel, Hormone & Testosteron (natürlich), Sexuelle Gesundheit, der 12-Wochen-Masterplan",
@@ -45,7 +45,7 @@
         "Blutwerte-Komplettpanel inkl. kleinem Blutbild, ApoB, Lp(a), Cystatin C, PSA & freiem PSA, Schilddrüse",
         "Sofortiger Online-Zugang per Code — kein Warten, jederzeit auf allen Geräten lesbar",
         "Bonus: druckbare Arzt-Checkliste + Wochenplan-Vorlagen",
-        "Founder-Preis 49 € — steigt nach der Launch-Phase auf regulär 99 €",
+        "Startpreis 49 € — steigt nach der Launch-Phase auf regulär 99 €",
         "30 Tage Geld-zurück: Wenn du keinen einzigen umsetzbaren Hebel findest, bekommst du dein Geld zurück"
       ],
       cta: { label: "Alles ansehen →", href: "protokoll.html" },
