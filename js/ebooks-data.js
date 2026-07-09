@@ -32,6 +32,19 @@
 window.MM_EBOOKS = [
 
   {
+    id: "master-ebook",
+    kicker: { de: "MaleMetrix · Master-Kompendium", en: "MaleMetrix · Master Compendium" },
+    cover: "linear-gradient(150deg,#1a2c52,#0a1020)",
+    badge: { de: "Master · Premium-Zugang", en: "Master · Premium access" },
+    title: { de: "Das Kompendium — alles vereint", en: "The Compendium — everything united" },
+    desc: { de: "Das große Master-Ebook: das gesamte MaleMetrix-Wissen in einem Buch (21 Kapitel). Training, Ernährung, Schlaf, Supplemente, Blutwerte, Testosteron und sexuelle Gesundheit — plus die ehrliche Red Zone: GLP-1, PDE-5, TRT/Steroide, Peptide und der ärztlich geführte Ultimate Stack. Öffnen mit deinem Premium-Zugangscode (Master, Protokoll oder Stack).",
+            en: "The big master ebook: all MaleMetrix knowledge in one book (21 chapters). Training, nutrition, sleep, supplements, blood values, testosterone and sexual health — plus the honest Red Zone: GLP-1, PDE-5, TRT, peptides and the doctor-led Ultimate Stack. Open with your premium access code (Master, Protokoll or Stack)." },
+    minutes: 60,
+    read: "ebooks/master-ebook.html",
+    gated: false
+  },
+
+  {
     id: "masterguide",
     hidden: true,
     kicker: { de: "MaleMetrix · Flaggschiff-Guide", en: "MaleMetrix · Flagship Guide" },
