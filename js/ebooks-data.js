@@ -33,6 +33,7 @@ window.MM_EBOOKS = [
 
   {
     id: "master-ebook",
+    hidden: true,   // in Überarbeitung — vorerst nicht öffentlich in der Bibliothek zeigen (Datei bleibt erhalten)
     kicker: { de: "MaleMetrix · Master-Kompendium", en: "MaleMetrix · Master Compendium" },
     cover: "linear-gradient(150deg,#1a2c52,#0a1020)",
     badge: { de: "Master · Premium-Zugang", en: "Master · Premium access" },
