@@ -1961,6 +1961,11 @@ input[type="range"]::-moz-range-thumb {
 .doc-figure.hero { margin: 4px 0 34px; }
 .doc-figure.hero img { border-radius: 16px; aspect-ratio: 16 / 9; object-fit: cover; }
 
+/* Ebook-Diagramme (Inline-SVG, erklären Konzepte statt Stimmung zu setzen) */
+.doc-diagram { margin: 26px 0; background: #f7f9fc; border: 1px solid #e6eaf1; border-radius: 14px; text-align: center; padding: 22px 20px 16px; }
+.doc-diagram svg { display: block; width: 100%; max-width: 560px; height: auto; margin: 0 auto; }
+.doc-diagram figcaption { margin-top: 12px; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.03em; color: #9aa3b2; text-align: center; }
+
 @media print {
   body { background: #fff; color: #111; }
   .site-header, .site-footer, .no-print, .cart-drawer, .cart-overlay, .toast, .rest-timer-bar { display: none !important; }
