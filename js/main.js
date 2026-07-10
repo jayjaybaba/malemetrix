@@ -88,6 +88,9 @@
     MM.store.set("unlock_date", new Date().toISOString());
     if (MM.track) MM.track("email_unlock", { source: source || "ebook" });
     const quiet = opts && opts.quiet;
+    const name = (opts && opts.name) ? String(opts.name).trim() : "";
+    const ebook = (opts && opts.ebook) ? String(opts.ebook) : "";
+    if (name) MM.store.set("unlock_name", name);
 
     if (CFG.brevoFormAction) {
       try {
@@ -119,16 +122,16 @@
           await fetch(CFG.formEndpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json", "Accept": "application/json" },
-            body: JSON.stringify({ _subject: "📩 Newsletter — " + email, Typ: "E-Mail-Unlock", "E-Mail": email, Quelle: source || "leadmagnet" })
+            body: JSON.stringify(Object.assign({ _subject: "📩 Lead — " + (name ? name + " · " : "") + email, Typ: "Ebook-Lead", "E-Mail": email, Quelle: source || "leadmagnet" }, name ? { Name: name } : {}, ebook ? { Ebook: ebook } : {}))
           });
         } catch (e) { /* Unlock bleibt lokal gespeichert */ }
       }
       return { ok: true, viaMailto: false };
     }
 
-    const res = await MM.sendForm("📩 Ebook-Unlock / Newsletter — " + email, {
-      Typ: "E-Mail-Unlock", "E-Mail": email, Quelle: source || "ebooks"
-    });
+    const res = await MM.sendForm("📩 Ebook-Unlock / Newsletter — " + (name ? name + " · " : "") + email,
+      Object.assign({ Typ: "E-Mail-Unlock", "E-Mail": email, Quelle: source || "ebooks" },
+        name ? { Name: name } : {}, ebook ? { Ebook: ebook } : {}));
     return { ok: true, viaMailto: res.viaMailto };
   };
 
