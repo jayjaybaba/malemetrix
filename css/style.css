@@ -808,6 +808,7 @@ textarea { resize: vertical; min-height: 110px; }
 
 .checkbox-row:hover { border-color: var(--line-strong); }
 .checkbox-row.checked { border-color: var(--accent-line); background: var(--accent-soft); color: var(--text); }
+.checkbox-row.invalid { border-color: var(--red); }
 
 .checkbox-row input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--accent); flex-shrink: 0; }
 
