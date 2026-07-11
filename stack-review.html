@@ -128,7 +128,7 @@
       </div>
       <div class="card reveal" style="max-width:520px;margin:20px auto 0">
         <h3 class="h-card" style="margin-bottom:8px">Warum kostenlos?</h3>
-        <p class="muted" style="font-size:0.95rem;margin:0">Ehrliche Antwort: MaleMetrix ist neu. In der Launch-Phase mache ich das Review kostenlos — du bekommst den vollen Umfang, ich bekomme Erfahrungswerte und ehrliches Feedback. Sobald die ersten Runden durch sind, kostet dasselbe Review regulär 99&nbsp;€. Wer eine laufende Begleitung bei der Umsetzung will: Das ist Teil der <a href="transformation.html" style="color:var(--accent-2);text-decoration:underline">12-Wochen-Transformation</a>.</p>
+        <p class="muted" style="font-size:0.95rem;margin:0">Ehrliche Antwort: MaleMetrix ist neu. Die <strong>ersten 10 vollständigen Stack Reviews</strong> mache ich kostenlos — du bekommst den vollen Umfang, ich bekomme Erfahrungswerte und ehrliches Feedback. Danach kostet dasselbe Review regulär 99&nbsp;€. Wer eine laufende Begleitung bei der Umsetzung will: Das ist Teil der <a href="transformation.html" style="color:var(--accent-2);text-decoration:underline">12-Wochen-Transformation</a>.</p>
       </div>
     </div>
   </section>
@@ -171,6 +171,8 @@
           </select>
         </div>
         <div class="field"><label for="srMsg">Kontext (optional)</label><textarea id="srMsg" rows="3" placeholder="Schlaf, Training, Blutwerte vorhanden? Was hast du schon probiert?"></textarea></div>
+        <label class="checkbox-row" id="srConsentRow" style="display:flex;gap:10px;align-items:flex-start;font-size:0.88rem;color:var(--muted);margin:2px 0 16px;line-height:1.5"><input type="checkbox" id="srConsent" style="margin-top:3px;flex:none">
+          <span>Ich willige ausdrücklich ein, dass meine hier freiwillig angegebenen Gesundheits-, Supplement- und Wohlbefindensdaten (z.&nbsp;B. Stack, Ziel, Kontext) zur Erstellung meines Stack Reviews verarbeitet werden. Diese Einwilligung kann ich jederzeit mit Wirkung für die Zukunft widerrufen (siehe <a href="datenschutz.html" target="_blank" style="text-decoration:underline">Datenschutzerklärung</a>).</span></label>
         <button class="btn btn-primary btn-lg btn-block btn-arrow" id="srSubmit" data-track="stack_review_submit">Kostenloses Stack Review anfragen</button>
         <p class="small" style="color:var(--muted-2);margin-top:14px">Komplett kostenlos in der Launch-Phase — keine Rechnung, keine Zahlungsdaten. Datenverarbeitung gemäß <a href="datenschutz.html" style="text-decoration:underline">Datenschutzerklärung</a>.</p>
       </div>
@@ -255,6 +257,13 @@
     });
     if (!ok) { MM.toast("Bitte prüfe die markierten Felder"); return; }
 
+    var consent = document.getElementById("srConsent");
+    if (!consent.checked) {
+      consent.closest(".checkbox-row").classList.add("invalid");
+      MM.toast("Bitte bestätige die Einwilligung zur Datenverarbeitung");
+      return;
+    }
+
     this.disabled = true;
     this.textContent = "Wird gesendet…";
     if (window.MM && MM.track) MM.track("stack_review_sent", { plan: "kostenlos-launch" });
@@ -264,7 +273,8 @@
       "E-Mail": email.value.trim(),
       Ziel: goal.value,
       Stack: stack.value.trim(),
-      Kontext: document.getElementById("srMsg").value.trim() || "—"
+      Kontext: document.getElementById("srMsg").value.trim() || "—",
+      "Einwilligung Gesundheitsdaten": "Ja (ausdrücklich, Art. 9 DSGVO)"
     });
 
     document.getElementById("stackFormCard").innerHTML =
