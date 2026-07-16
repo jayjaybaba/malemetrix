@@ -224,7 +224,7 @@
   /* ---------- Passendes Angebot ---------- */
   html += '<div class="r-section"><h2>Dein nächster Schritt mit MaleMetrix</h2>' +
     '<div class="r-box" style="border-left:4px solid #2e7cf6"><h3>Empfehlung für dein Profil: ' + r.archetype.offer + '</h3>' +
-    '<p style="margin-top:6px">Auf Basis deines Ergebnisses passt die <strong>12-Wochen MaleMetrix Transformation</strong> (Runde 1: 599&nbsp;€ Startpreis) mit Fokus auf „' + r.bottleneck.name + '“. ' +
+    '<p style="margin-top:6px">Auf Basis deines Ergebnisses passt das <strong>MaleMetrix 1:1 Coaching</strong> (149&nbsp;€/Monat, monatlich kündbar) mit Fokus auf „' + r.bottleneck.name + '“. ' +
     'Kostenloses Analysegespräch: <strong>malemetrix.de/termin</strong></p></div></div>';
 
   /* ---------- Disclaimer ---------- */

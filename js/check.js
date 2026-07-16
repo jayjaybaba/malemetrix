@@ -150,39 +150,39 @@
   function offerFor(bKey) {
     const paths = {
       recovery: {
-        lead: "Dein Engpass ist Erholung. Bevor du irgendetwas Neues kaufst oder schluckst: Der 4-Ebenen-Schlaf-Stack ist dein erster Hebel — und falls du schon Supplemente nimmst, gehören sie jetzt auf den Prüfstand, nicht erweitert.",
-        primary: { label: "Stack Review anfragen", href: "stack-review.html", track: "cta_stack_review" },
-        secondary: { label: "DAS PROTOKOLL starten (Schlaf-Stack)", href: "protokoll.html", track: "cta_protokoll" }
+        lead: "Dein Engpass ist Erholung. Bevor du irgendetwas Neues kaufst oder schluckst: Der 4-Ebenen-Schlaf-Stack ist dein erster Hebel — als Selbstlern-System im Protokoll oder persönlich gesteuert im 1:1 Coaching.",
+        primary: { label: "DAS PROTOKOLL starten (Schlaf-Stack)", href: "protokoll.html", track: "cta_protokoll" },
+        secondary: { label: "1:1 Coaching: Erstgespräch buchen", href: "coaching.html#buchen", track: "cta_coaching" }
       },
       body: {
-        lead: "Dein Engpass ist die Körperbasis. Du brauchst kein weiteres Video, sondern ein System für Defizit, Protein und Messung — und idealerweise jemanden, der 12 Wochen draufschaut.",
+        lead: "Dein Engpass ist die Körperbasis. Du brauchst kein weiteres Video, sondern ein System für Defizit, Protein und Messung — und idealerweise jemanden, der jede Woche draufschaut.",
         primary: { label: "DAS PROTOKOLL starten", href: "protokoll.html", track: "cta_protokoll" },
-        secondary: { label: "Für die 12-Wochen-Transformation bewerben", href: "transformation.html", track: "cta_founder" }
+        secondary: { label: "1:1 Coaching: Erstgespräch buchen", href: "coaching.html#buchen", track: "cta_coaching" }
       },
       strength: {
-        lead: "Dein Engpass ist das Training. Push/Pull/Legs mit dokumentierter Progression, RIR und der Ampel-Steuerung — als Selbstlern-System im Protokoll oder mit wöchentlicher Kontrolle in der 12-Wochen-Transformation.",
+        lead: "Dein Engpass ist das Training. Push/Pull/Legs mit dokumentierter Progression, RIR und der Ampel-Steuerung — als Selbstlern-System im Protokoll oder mit wöchentlicher Kontrolle im 1:1 Coaching.",
         primary: { label: "DAS PROTOKOLL starten (Trainingssystem)", href: "protokoll.html", track: "cta_protokoll" },
-        secondary: { label: "Für die 12-Wochen-Transformation bewerben", href: "transformation.html", track: "cta_founder" }
+        secondary: { label: "1:1 Coaching: Erstgespräch buchen", href: "coaching.html#buchen", track: "cta_coaching" }
       },
       fuel: {
         lead: "Dein Engpass ist die Ernährung. Kein neuer Diät-Trend — ein Ernährungssystem: Proteinziel, Sattmacher, Wochenend-Strategie, Trend statt Tageswaage. Genau das steht im Protokoll, Modul 4.",
         primary: { label: "DAS PROTOKOLL starten (Ernährungssystem)", href: "protokoll.html", track: "cta_protokoll" },
-        secondary: { label: "Für die 12-Wochen-Transformation bewerben", href: "transformation.html", track: "cta_founder" }
+        secondary: { label: "1:1 Coaching: Erstgespräch buchen", href: "coaching.html#buchen", track: "cta_coaching" }
       },
       blood: {
-        lead: "Dein Engpass sind die Daten. Das Blood-Dashboard aus dem Protokoll macht aus „mal Blutwerte machen\" ein System mit 8 Bereichen — und dein Supplement-Stack sollte zu deinen Werten passen, nicht zu Instagram.",
+        lead: "Dein Engpass sind die Daten. Das Blood-Dashboard aus dem Protokoll macht aus „mal Blutwerte machen\" ein System mit 8 Bereichen — und im 1:1 Coaching wird deine Supplement-Strategie an deine Werte angepasst, nicht an Instagram.",
         primary: { label: "DAS PROTOKOLL starten (Blood-Dashboard)", href: "protokoll.html", track: "cta_protokoll" },
-        secondary: { label: "Stack Review anfragen", href: "stack-review.html", track: "cta_stack_review" }
+        secondary: { label: "1:1 Coaching: Erstgespräch buchen", href: "coaching.html#buchen", track: "cta_coaching" }
       },
       drive: {
-        lead: "Dein Engpass ist Energie & Drive. Das ist fast nie ein „Hormonproblem\", sondern meist Schlaf, Defizit oder ein Stack, der nicht zu dir passt. Der Energie-/Libido-Check im Stack Review geht das der Reihe nach durch.",
-        primary: { label: "Stack Review anfragen (Energie & Libido)", href: "stack-review.html", track: "cta_stack_review" },
+        lead: "Dein Engpass ist Energie & Drive. Das ist fast nie ein „Hormonproblem\", sondern meist Schlaf, Defizit oder ein Stack, der nicht zu dir passt. Im 1:1 Coaching gehen wir das der Reihe nach durch — Schlaf zuerst.",
+        primary: { label: "1:1 Coaching: Erstgespräch buchen", href: "coaching.html#buchen", track: "cta_coaching" },
         secondary: { label: "DAS PROTOKOLL starten", href: "protokoll.html", track: "cta_protokoll" }
       },
       execution: {
-        lead: "Dein Engpass ist die Umsetzung. Mehr Wissen bringt dir nichts — du brauchst wöchentliche Kontrolle und einen, der nachfragt. Genau dafür ist die 12-Wochen-Transformation gebaut: 12 Wochen, wöchentlicher Check-in.",
-        primary: { label: "Für die 12-Wochen-Transformation bewerben", href: "transformation.html", track: "cta_founder" },
-        secondary: { label: "Wöchentlicher Check-in im Detail", href: "transformation.html#bewerben", track: "cta_founder" }
+        lead: "Dein Engpass ist die Umsetzung. Mehr Wissen bringt dir nichts — du brauchst wöchentliche Kontrolle und einen, der nachfragt. Genau dafür ist das 1:1 Coaching gebaut: jede Woche dein Check-in, meine Antwort, ein klarer Fokus.",
+        primary: { label: "1:1 Coaching: Erstgespräch buchen", href: "coaching.html#buchen", track: "cta_coaching" },
+        secondary: { label: "DAS PROTOKOLL starten (Selbstlernen)", href: "protokoll.html", track: "cta_protokoll" }
       }
     };
     return paths[bKey] || paths.execution;
@@ -743,16 +743,13 @@
       '<a class="btn btn-dark btn-sm" href="' + scoreMailto + '" data-track="score_mail_click">✉️ Per E-Mail</a>' +
       '</div></div></div>';
 
-    html += '<h3 class="h-card" style="margin:32px 0 16px">Drei Wege, damit aus dem Score Ergebnisse werden</h3><div class="grid-3">' +
+    html += '<h3 class="h-card" style="margin:32px 0 16px">Zwei Wege, damit aus dem Score Ergebnisse werden</h3><div class="grid-2">' +
       '<div class="card"><span class="card-num">SELBST UMSETZEN</span><h3 style="font-size:1.05rem">DAS PROTOKOLL</h3>' +
-      '<p class="small muted" style="margin:8px 0 14px">Das komplette System als Premium-Ebook inkl. interaktivem 12-Wochen-Programm. Startpreis 49&nbsp;€.</p>' +
+      '<p class="small muted" style="margin:8px 0 14px">Das komplette System als Premium-Ebook inkl. interaktivem 12-Wochen-Programm. Einmalig 49&nbsp;€.</p>' +
       '<a class="btn btn-dark btn-sm btn-block" href="protokoll.html" data-track="cta_protokoll">DAS PROTOKOLL starten</a></div>' +
-      '<div class="card"><span class="card-num">SCHNELLER EINSTIEG</span><h3 style="font-size:1.05rem">Stack Review</h3>' +
-      '<p class="small muted" style="margin:8px 0 14px">Schick mir deinen Supplement-Stack — ich sage dir, was bleibt, was rausfliegt und was du zuerst fixst. Regulär 99&nbsp;€ — in der Launch-Phase kostenlos.</p>' +
-      '<a class="btn btn-dark btn-sm btn-block" href="stack-review.html" data-track="cta_stack_review">Stack Review anfragen</a></div>' +
-      '<div class="card" style="border-color:var(--accent-line);background:var(--accent-soft)"><span class="card-num">MIT BEGLEITUNG</span><h3 style="font-size:1.05rem">12-Wochen-Transformation</h3>' +
-      '<p class="small muted" style="margin:8px 0 14px">12 Wochen Begleitung mit wöchentlichem Check-in — nur 10 Plätze in Runde 1, Startpreis 599&nbsp;€.</p>' +
-      '<a class="btn btn-primary btn-sm btn-block" href="founder.html" data-track="cta_founder">Für Runde 1 bewerben</a></div>' +
+      '<div class="card" style="border-color:var(--accent-line);background:var(--accent-soft)"><span class="card-num">MIT BEGLEITUNG</span><h3 style="font-size:1.05rem">1:1 Coaching</h3>' +
+      '<p class="small muted" style="margin:8px 0 14px">Persönliche Betreuung mit wöchentlichem Check-in und direktem Draht — 149&nbsp;€/Monat, monatlich kündbar.</p>' +
+      '<a class="btn btn-primary btn-sm btn-block" href="coaching.html#buchen" data-track="cta_coaching">Kostenloses Erstgespräch buchen</a></div>' +
       '</div>';
 
     /* Aktionen */

@@ -12,8 +12,6 @@
     /* ---------- Navigation (überall) ---------- */
     "nav.check":   { de: "Score", en: "Score" },
     "nav.coaching":{ de: "1:1 Coaching", en: "1:1 Coaching" },
-    "nav.founder": { de: "Transformation", en: "Transformation" },
-    "nav.stackreview": { de: "Stack Review", en: "Stack Review" },
     "nav.startScore": { de: "Score starten", en: "Start your score" },
     "nav.tools":   { de: "Rechner", en: "Calculators" },
     "nav.tracker": { de: "Tracker", en: "Tracker" },
