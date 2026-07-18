@@ -1028,6 +1028,61 @@ input[type="range"]::-moz-range-thumb {
 .priority-card { border-left: 3px solid var(--accent); }
 .priority-card .pri-rank { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-2); letter-spacing: 0.12em; text-transform: uppercase; display: block; margin-bottom: 8px; }
 
+/* ---------- Score-Dashboard (Ergebnisseite) ---------- */
+.dash-block { margin-bottom: 20px; }
+.chip.warn { color: var(--red); }
+
+/* Stärkste Bereiche */
+.strength-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 6px; }
+.strength-item { background: var(--card-2, rgba(255,255,255,0.02)); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.strength-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.strength-name { font-weight: 700; color: var(--text); }
+.strength-val { font-family: var(--font-mono); font-weight: 700; color: var(--green); font-size: 1.15rem; }
+.strength-val small { font-size: 0.7rem; color: var(--muted-2, var(--muted)); }
+
+/* Engpass + Priorität */
+.bottleneck-card { border-left: 3px solid var(--red); }
+.priority1 { border: 1px solid var(--accent-line, var(--line)); background: linear-gradient(135deg, var(--accent-soft), transparent); }
+.prio-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.prio-steps li { display: flex; gap: 14px; align-items: flex-start; }
+.prio-num { flex: none; width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #2e7cf6, #00c2ff); color: #fff; font-family: var(--font-mono); font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; }
+.prio-steps li > span:last-child { color: var(--muted); padding-top: 3px; }
+
+/* Personalisierte Wege: Lesen/Tracken + Angebote */
+.path-card { text-decoration: none; display: block; transition: border-color .15s, transform .15s; }
+.path-card:hover { border-color: var(--accent-line, var(--line-strong)); transform: translateY(-2px); }
+.path-tag { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.14em; color: var(--accent); }
+.offer-card { text-decoration: none; display: flex; flex-direction: column; }
+.offer-card.featured { border-color: var(--accent-line); background: var(--accent-soft); }
+.offer-card .offer-price { font-family: var(--font-mono); font-weight: 700; color: var(--text); font-size: 1.2rem; margin: 2px 0 8px; }
+.offer-card .offer-price small { font-size: 0.72rem; color: var(--muted-2, var(--muted)); font-weight: 400; }
+.offer-card .btn { margin-top: auto; }
+
+/* Teilbare Score-Card */
+.mm-scorecard { max-width: 440px; margin: 0 auto; background: linear-gradient(150deg, #10151f, #0a0d13); border: 1px solid var(--accent-line, #223); border-radius: 18px; padding: 22px 24px; box-shadow: 0 12px 40px rgba(0,0,0,0.35); }
+.mm-scorecard .sc-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.mm-scorecard .sc-brand { font-family: var(--font-head, "Poppins", sans-serif); font-weight: 600; letter-spacing: 0.06em; color: #fff; }
+.mm-scorecard .sc-brand strong { color: #2e7cf6; }
+.mm-scorecard .sc-level { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.08em; color: #9aa4b5; text-align: right; }
+.mm-scorecard .sc-score { display: flex; align-items: baseline; gap: 4px; margin: 10px 0 16px; }
+.mm-scorecard .sc-num { font-family: var(--font-head, "Poppins", sans-serif); font-weight: 700; font-size: 3.4rem; line-height: 1; background: linear-gradient(135deg, #2e7cf6, #00c2ff); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.mm-scorecard .sc-of { color: #9aa4b5; font-size: 1rem; }
+.mm-scorecard .sc-bars { display: grid; gap: 7px; }
+.mm-scorecard .sc-bar { display: grid; grid-template-columns: 74px 1fr; align-items: center; gap: 10px; }
+.mm-scorecard .sc-bar-label { font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.04em; color: #9aa4b5; text-transform: uppercase; }
+.mm-scorecard .sc-bar-track { height: 7px; border-radius: 4px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.mm-scorecard .sc-bar-fill { display: block; height: 100%; border-radius: 4px; }
+.mm-scorecard .sc-bar-fill.low { background: #e0a020; }
+.mm-scorecard .sc-bar-fill.mid { background: #4b8ef8; }
+.mm-scorecard .sc-bar-fill.high { background: linear-gradient(90deg, #2e7cf6, #00c2ff); }
+.mm-scorecard .sc-foot { margin-top: 16px; font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.06em; color: #6b7688; text-align: center; }
+
+@media (max-width: 560px) {
+  .mm-scorecard { padding: 18px 18px; }
+  .mm-scorecard .sc-num { font-size: 2.8rem; }
+  .strength-grid { grid-template-columns: 1fr; }
+}
+
 .plan-day {
   display: grid;
   grid-template-columns: 64px 1fr;
