@@ -737,21 +737,17 @@
     });
     html += '</div>';
 
-    /* ---------- 6b. Angebote (erst jetzt, beratend, 3 Wege) ---------- */
+    /* ---------- 6b. Angebote (erst jetzt, beratend, 2 Wege) ---------- */
     html += '<h3 class="h-card" style="margin:38px 0 6px">Wenn du es strukturiert angehen willst</h3>' +
-      '<p class="small muted" style="margin-bottom:18px">Drei Wege — vom Selbermachen bis zur vollen Begleitung. Kein Muss: Der Score, die Guides und die Tools oben sind komplett kostenlos.</p>' +
-      '<div class="grid-3">' +
-      '<a class="card offer-card" href="protokoll.html" data-track="cta_protokoll"><span class="card-num">SELBST UMSETZEN</span>' +
+      '<p class="small muted" style="margin-bottom:18px">Zwei Wege — selbstständig oder mit persönlicher Begleitung. Kein Muss: Der Score, die Guides und die Tools oben sind komplett kostenlos.</p>' +
+      '<div class="grid-2">' +
+      '<a class="card offer-card featured" href="protokoll.html" data-track="cta_protokoll"><span class="card-num">SELBSTSTÄNDIG</span>' +
       '<h3 style="font-size:1.05rem;margin:6px 0 2px">DAS PROTOKOLL</h3><p class="offer-price">49 €<small> einmalig</small></p>' +
-      '<p class="small muted" style="margin:0 0 14px">Das komplette System inkl. interaktivem 12-Wochen-Programm.</p>' +
-      '<span class="btn btn-dark btn-sm btn-block">Protokoll ansehen</span></a>' +
-      '<a class="card offer-card featured" href="transformation.html" data-track="cta_founder"><span class="card-num" style="color:var(--accent)">MIT BEGLEITUNG</span>' +
-      '<h3 style="font-size:1.05rem;margin:6px 0 2px">12-Wochen-Transformation</h3><p class="offer-price">599 €<small> Runde 1</small></p>' +
-      '<p class="small muted" style="margin:0 0 14px">Strategie, Umsetzung, wöchentlicher Check-in — nur 10 Plätze.</p>' +
-      '<span class="btn btn-primary btn-sm btn-block">Transformation ansehen</span></a>' +
-      '<a class="card offer-card" href="coaching.html" data-track="cta_coaching"><span class="card-num">MAXIMAL INDIVIDUELL</span>' +
-      '<h3 style="font-size:1.05rem;margin:6px 0 2px">1:1 Coaching</h3><p class="offer-price">Preis auf der Coaching-Seite</p>' +
-      '<p class="small muted" style="margin:0 0 14px">Individuelle Analyse und laufende Optimierung.</p>' +
+      '<p class="small muted" style="margin:0 0 14px">Das komplette MaleMetrix-System inkl. interaktivem 12-Wochen-Programm — für die selbstständige Umsetzung.</p>' +
+      '<span class="btn btn-primary btn-sm btn-block">Protokoll ansehen</span></a>' +
+      '<a class="card offer-card" href="coaching.html" data-track="cta_coaching"><span class="card-num">INDIVIDUELL</span>' +
+      '<h3 style="font-size:1.05rem;margin:6px 0 2px">1:1 Coaching</h3><p class="offer-price">ab 149 €<small> / Monat</small></p>' +
+      '<p class="small muted" style="margin:0 0 14px">Individuelle Analyse und laufende Optimierung deiner Performance — persönlich begleitet.</p>' +
       '<span class="btn btn-dark btn-sm btn-block">1:1 ansehen</span></a>' +
       '</div>';
 
