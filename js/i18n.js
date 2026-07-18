@@ -56,7 +56,7 @@
     "foot.tagline": { de: "Made for Männer, die mehr wollen.", en: "Made for men who want more." },
 
     /* ---------- Buttons / wiederkehrend ---------- */
-    "cta.startCheck": { de: "Kostenlosen MaleMetrix Check starten", en: "Start the free MaleMetrix Check" },
+    "cta.startCheck": { de: "Kostenlosen MaleMetrix Score starten", en: "Start the free MaleMetrix Score" },
     "cta.viewCoaching": { de: "1:1 Coaching ansehen", en: "View 1:1 coaching" },
     "common.free": { de: "Kostenlos", en: "Free" },
     "common.addCart": { de: "In den Warenkorb", en: "Add to cart" },
