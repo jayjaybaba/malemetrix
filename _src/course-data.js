@@ -31,7 +31,7 @@ window.MM_COURSE = {
   intro: {
     eyebrow: "Bevor du startest",
     title: "Wie dieses Programm funktioniert",
-    lead: "Das hier ist kein Crash-Plan und keine Sammlung loser Tipps. Es ist ein zusammenhängendes 12-Wochen-System mit einem klaren Ziel: gleichzeitig Fett verlieren und Muskeln aufbauen — und dabei besser schlafen, mehr Energie haben, gesündere Marker entwickeln, sichtbar definierter werden und Routinen aufbauen, die auch nach Woche 12 bleiben.",
+    lead: "Das hier ist kein Crash-Plan und keine Sammlung loser Tipps. Es ist ein zusammenhängendes 12-Wochen-System. Du wählst zu Beginn deinen Modus — CUT, RECOMP, BUILD oder PERFORM — und das System richtet Training, Cardio und Ernährung darauf aus. Ziel: sichtbar stärker und leaner werden, besser schlafen, mehr Energie und gesündere Marker — mit Routinen, die auch nach Woche 12 bleiben.",
     pillars: [
       { icon: "🏋️", name: "Training", text: "Progressives Krafttraining ist der Reiz, der Muskeln aufbaut und im Defizit schützt. 3 Einheiten pro Woche reichen — wenn sie richtig gesteuert sind." },
       { icon: "🍳", name: "Ernährung", text: "Hohes Protein, gesteuerte Energiebilanz, echte Lebensmittel. Kein Dogma, keine Verbote — ein System, das auch am Wochenende hält." },
@@ -49,11 +49,29 @@ window.MM_COURSE = {
     promise: "Ehrlich: Es gibt keine Garantie auf eine bestimmte Kilozahl — alles andere wäre unseriös. Was dieses System leistet, wenn du es umsetzt: ein vollständiges, evidenzbasiertes Vorgehen, messbare Veränderung bei Gewicht, Bauchumfang, Kraft und Energie — und Gewohnheiten, die bleiben."
   },
 
+  /* ---------- Moduswahl: CUT / RECOMP / BUILD / PERFORM ----------
+     Der Nutzer wählt oben seinen Modus (gespeichert im Browser). Training,
+     Cardio und Ernährung richten sich daran aus. Der Modus ist ein Werkzeug,
+     keine Identität — du kannst nach 12 Wochen wechseln. */
+  modes: {
+    eyebrow: "Schritt 1 · vor Woche 1",
+    title: "Wähle deinen Modus",
+    lead: "Nicht jeder Mann braucht einen Cut. Leg fest, woran dieses Programm arbeitet — du kannst später wechseln.",
+    order: ["cut", "recomp", "build", "perform"],
+    "default": "recomp",
+    items: {
+      cut:     { label: "CUT",     tag: "Fett runter", summary: "Moderates Defizit (~10–20 % unter Bedarf), Protein oben halten, Kraft schützen. Erfolg misst du an: Bauchumfang ↓ und Gewichtstrend ↓ bei möglichst stabiler Kraft." },
+      recomp:  { label: "RECOMP",  tag: "Fett runter + Muskel rauf", summary: "Nahe Erhaltung oder kleines Defizit, sauberes Training, viel Protein. Erfolg misst du an: Taille ↓ bei stabiler Waage und steigender Kraft. Gut für Wieder-Einsteiger und höheren Körperfettanteil." },
+      build:   { label: "BUILD",   tag: "Muskel & Kraft aufbauen", summary: "Kleiner Überschuss (~5–10 %), konsequente Progression, genug Schlaf. Erfolg misst du an: Kraft ↑ und Maße ↑ bei kontrollierter Taille." },
+      perform: { label: "PERFORM", tag: "Halten & leistungsfähiger", summary: "Erhaltung, Training fuelen, Cardio + Recovery priorisieren. Erfolg misst du an: Kraft, Cardio/VO₂, Schlaf, Energie und guten Gesundheitsmarkern." }
+    }
+  },
+
   /* ---------- 12 Wochen ---------- */
   weeks: [
     {
-      week: 1, phase: "baseline", title: "Standortbestimmung & Baseline",
-      focus: "Bevor du etwas änderst, misst du. Diese Woche baust du die Datenbasis, an der du in 12 Wochen jeden Fortschritt schwarz auf weiß siehst.",
+      week: 1, phase: "baseline", title: "Safety-Gate & Baseline",
+      focus: "Zwei Dinge zuerst: ein kurzer Sicherheits-Check und deine Baseline. Erst klären wir Red Flags, dann baust du die Datenbasis, an der du in 12 Wochen jeden Fortschritt schwarz auf weiß siehst.",
       science: "Selbst-Monitoring (Gewicht, Umfänge, Training) gehört zu den stärksten Einzelprädiktoren für langfristigen Erfolg in der Verhaltensforschung. Allein das ehrliche Messen verändert dein Verhalten — der sogenannte Reaktivitätseffekt.",
       lesson: [
         "Willkommen. Diese Woche trainierst du noch nicht hart. Du erfasst sauber deinen Ist-Zustand, damit Woche 12 dir genau zeigt, was sich verändert hat. Ohne Baseline ist jeder Fortschritt unsichtbar — und unsichtbarer Fortschritt demotiviert.",
@@ -64,9 +82,10 @@ window.MM_COURSE = {
         "Gewicht (morgens, nüchtern) + Bauchumfang auf Nabelhöhe messen",
         "3 Standardfotos: vorne, seitlich, hinten — gleiches Licht, gleiche Tageszeit",
         "Kraft-Baseline: Liegestütze am Stück, Plank-Zeit, eine Kniebeugen-Variante",
-        "Tracker einrichten und alle Startwerte eintragen"
+        "Tracker einrichten und alle Startwerte eintragen",
+        "Safety-Gate: Red Flags checken (Brustschmerz, Ohnmacht, unklare Atemnot, sehr hoher Blutdruck, akute Beschwerden) — im Zweifel zuerst ärztlich abklären, bevor du hart trainierst"
       ],
-      train: "2 lockere Ganzkörper-Einheiten zum Bewegungslernen. Jedes Grundmuster (Knie-, Hüft-, Druck-, Zugbewegung) mit 2 Sätzen bei leichtem Gewicht. Ziel: Technik filmen, Ausgangskraft dokumentieren — nicht ans Limit gehen.",
+      train: "2 lockere Ganzkörper-Einheiten zum Bewegungslernen. Jedes Grundmuster (Knie-, Hüft-, Druck-, Zugbewegung) mit 2 Sätzen bei leichtem Gewicht. Plus 1 lockere Cardio-Einheit (20–30 Min Zone 2, Puste-locker-Tempo) als Ausgangswert. Ziel: Technik filmen, Ausgangskraft dokumentieren — nicht ans Limit gehen.",
       fuel: "Noch nichts umstellen. 3 Tage ganz normal essen und ehrlich mitschreiben. Du sammelst Daten über deinen Ist-Zustand: Kalorien, Protein, Muster, Schwachstellen.",
       recovery: "Schlafzeiten der letzten 7 Tage rekonstruieren (rein/raus). Das ist dein Schlaf-Startwert. Notiere auch nächtliches Aufwachen und wie du morgens aufstehst.",
       behavior: "Such dir EINEN festen Ankerpunkt im Tag (z. B. direkt nach dem Zähneputzen), an den du später neue Gewohnheiten hängst. Verhaltensänderung startet mit Triggern, nicht mit Motivation.",
@@ -84,10 +103,11 @@ window.MM_COURSE = {
         "3 feste Trainingstermine für die nächsten 12 Wochen in den Kalender eintragen",
         "Protein-Tagesziel berechnen (~2 g/kg) und notieren",
         "2 Standardmahlzeiten definieren, die dein Proteinziel fast allein tragen",
-        "Realistisches 12-Wochen-Ziel in Zahlen festlegen (z. B. −5 cm Bauch, +Kraft)",
-        "Wenn-dann-Plan für deine häufigste Ausrede aufschreiben"
+        "Realistisches 12-Wochen-Ziel in Zahlen festlegen (passend zu deinem Modus)",
+        "Wenn-dann-Plan für deine häufigste Ausrede aufschreiben",
+        "Modus wählen (oben im Programm): CUT, RECOMP, BUILD oder PERFORM"
       ],
-      train: "Start des 3-Tage-Ganzkörperplans (A/B/C). Pro Einheit 5–6 Übungen, 2–3 Sätze, 8–12 Wiederholungen, dabei 2–3 Wiederholungen in Reserve (RIR). Gewicht und Wdh. jedes Mal notieren — die Grundlage für die Steigerung.",
+      train: "Start des 3-Tage-Ganzkörperplans (A/B/C). Pro Einheit 5–6 Übungen, 2–3 Sätze, 8–12 Wiederholungen, dabei 2–3 Wiederholungen in Reserve (RIR). Gewicht und Wdh. jedes Mal notieren. Dazu 1–2× Zone-2-Cardio (20–30 Min) als Motor-Basis — locker genug, um nebenbei zu reden.",
       fuel: "Protein bei jeder Mahlzeit (30–50 g). Erhaltungskalorien halten — wir kürzen noch nicht. Flüssigkalorien (Säfte, Softdrinks, Alkohol) bewusst reduzieren.",
       recovery: "Feste Schlafenszeit setzen, Ziel 7–8 h. Koffein-Deadline 8–10 h vor dem Schlafen. Letzte 30 Min vor dem Bett ohne hellen Bildschirm.",
       behavior: "Hänge eine neue Mini-Gewohnheit an deinen Anker aus Woche 1 (z. B. „nach dem Kaffee fülle ich die Wasserflasche”). Eine Gewohnheit pro Woche — nicht mehr.",
@@ -114,8 +134,8 @@ window.MM_COURSE = {
       checkin: "Sind Gewichte/Wdh. gestiegen? Protein-Quote? Schritte?"
     },
     {
-      week: 4, phase: "build", title: "Energiebilanz sichtbar machen",
-      focus: "Dein Körper verändert sich planbar, wenn du Mengen siehst. Diese Woche machst du deine Energiebilanz messbar — ohne in Zwang zu verfallen.",
+      week: 4, phase: "build", title: "Recheck #1 & Energiebilanz sichtbar machen",
+      focus: "Erster fester Recheck-Punkt. Du vergleichst kurz mit Woche 1 und machst deine Energiebilanz messbar — ohne in Zwang zu verfallen. Recheck heißt: messen, einordnen, ggf. eine Kleinigkeit anpassen — nicht alles umwerfen.",
       science: "Fettabbau folgt der Energiebilanz: weniger rein als raus. Das ist Physik. Studien zeigen aber auch, dass Menschen ihre Kalorienzufuhr im Schnitt um 20–40 % unterschätzen. Kurzes, ehrliches Tracking deckt genau diese Lücke auf.",
       lesson: [
         "Du trackst 7 Tage deine Kalorien — nicht für immer, sondern um ein Gefühl für Portionen und versteckte Kalorien zu bekommen. Danach brauchst du es nur noch phasenweise. Die wichtigste Zahl bleibt Protein, die zweite die Gesamtenergie; den Rest überschätzen die meisten in seiner Bedeutung.",
@@ -125,7 +145,8 @@ window.MM_COURSE = {
         "7 Tage Kalorien tracken (so ehrlich wie möglich)",
         "Wochenend-Strategie schriftlich festlegen (Alkohol-/Snack-Limit vorab)",
         "Bauchumfang erneut messen und mit Woche 1 vergleichen",
-        "Eine bewusst geplante Genuss-Mahlzeit einbauen statt unkontrolliert zu essen"
+        "Eine bewusst geplante Genuss-Mahlzeit einbauen statt unkontrolliert zu essen",
+        "Recheck #1: Gewichtstrend, Bauch, Kraft und Schlaf kurz gegen Woche 1 halten — passt der Modus noch?"
       ],
       train: "Progression fortsetzen. Wenn eine Übung über 3 Einheiten stockt: Technik und Bewegungsumfang prüfen, ggf. Übung tauschen — nicht mit Schwung kompensieren.",
       fuel: "Aus den 7 Track-Tagen deinen realen Erhaltungsbedarf ableiten (mit dem TDEE-Rechner abgleichen). Das ist die Basis für die Defizit-Entscheidung in Woche 5.",
@@ -134,9 +155,15 @@ window.MM_COURSE = {
       checkin: "Durchschnittskalorien, Bauchumfang-Trend, Wochenend-Disziplin, Schlaf."
     },
     {
-      week: 5, phase: "build", title: "Defizit setzen — kontrolliert",
-      focus: "Jetzt entscheidest du die Richtung: moderates Defizit für sichtbaren Fettabbau, während Training und Protein deinen Muskel schützen.",
-      science: "Ein moderates Defizit (~0,5–1 % Körpergewicht pro Woche) maximiert Fettverlust bei minimalem Muskelverlust. Aggressive Crash-Defizite verbrennen Muskel, senken Leistung und Hormone — und enden fast immer im Jojo (u. a. Helms zur Diät-Periodisierung).",
+      week: 5, phase: "build", title: "Richtung setzen — passend zu deinem Modus",
+      focus: "Jetzt setzt du die Energierichtung passend zu deinem Modus: Defizit (CUT), nahe Erhaltung (RECOMP), kleiner Überschuss (BUILD) oder Erhaltung (PERFORM). Protein und Krafterhalt bleiben in jedem Modus die Konstante.",
+      byMode: {
+        cut: "CUT: ~15–20 % unter Bedarf (meist 300–500 kcal). Protein Richtung 2,2 g/kg. Ziel: Bauchumfang und Gewichtstrend runter, Kraft halten.",
+        recomp: "RECOMP: nahe Erhaltung oder kleines Defizit. Waage darf stabil bleiben — Taille runter und Kraft rauf sind hier der Erfolg.",
+        build: "BUILD: kleiner Überschuss (~5–10 %), langsam zunehmen. Progression im Gym priorisieren, Taille im Blick behalten.",
+        perform: "PERFORM: Erhaltung. Training und Cardio fuelen, Schlaf und Recovery schützen — Leistung schlägt hier Waage."
+      },
+      science: "Für Fettabbau maximiert ein moderates Defizit (~0,5–1 % Körpergewicht pro Woche) den Fettverlust bei minimalem Muskelverlust; aggressive Crash-Defizite verbrennen Muskel und enden fast immer im Jojo (u. a. Helms zur Diät-Periodisierung). Für Aufbau gilt umgekehrt: ein kleiner Überschuss reicht — mehr wird vor allem Fett.",
       lesson: [
         "Setze dein Defizit auf rund 15–20 % unter Erhaltungsbedarf, meist 300–500 kcal. Mehr ist nicht besser — es ist nur schneller kaputt. Protein bleibt am oberen Ende (Richtung 2,2 g/kg): je größer das Defizit, desto wichtiger Protein, um Muskeln zu halten.",
         "Bewerte ausschließlich den Wochenschnitt der Waage. Tagesschwankungen durch Wasser, Salz und Darminhalt sagen nichts über Fett aus. Wer täglich auf die Einzelzahl reagiert, dreht durch — wer den Trend liest, bleibt ruhig und konsequent."
@@ -167,7 +194,7 @@ window.MM_COURSE = {
         "Was funktioniert, was kippt? Schriftlich festhalten",
         "Den größten Hebel für Phase 3 festlegen"
       ],
-      train: "Letzte harte Woche vor dem Deload. Noch einmal sauber steigern; in Woche 8 kommt bewusst Erholung. Durchhalten, wenn Gelenke oder Schlaf zwicken.",
+      train: "Weiter sauber steigern. In Woche 8 kommt der nächste Recheck — und dort entscheidest du nach Signalen, ob eine Deload-Woche sinnvoll ist. Wenn Gelenke oder Schlaf schon jetzt deutlich zwicken, darfst du früher zurückschalten.",
       fuel: "Defizit beibehalten, wenn der Trend stimmt. Wenn 2–3 Wochen nichts passiert: zuerst Zufuhr verifizieren, dann ggf. 150–200 kcal anpassen.",
       recovery: "Stresslevel ehrlich bewerten (1–10). Chronischer Stress hält Cortisol hoch, verschlechtert Schlaf und begünstigt Bauchfett — ein unterschätzter Bremsklotz.",
       behavior: "Feiere messbar Erreichtes mit einer nicht-essbaren Belohnung. Belohnung festigt Gewohnheiten.",
@@ -189,29 +216,29 @@ window.MM_COURSE = {
       ],
       train: "Intensitätstechniken sparsam einsetzen: bei der letzten Übung einer Muskelgruppe näher ans Versagen (0–1 RIR). Grundübungen bleiben bei 1–2 RIR für Technik und Sicherheit.",
       fuel: "Mahlzeiten-Timing optimieren: Protein gleichmäßig verteilen, Kohlenhydrate um das Training. Das holt die letzten Prozent Leistung und Erholung.",
-      recovery: "Erholungssignale lesen: Trainingslust, Ruhepuls, Laune, Schlaf. Mehrere im Keller sind der Vorbote für den Deload nächste Woche.",
+      recovery: "Erholungssignale lesen: Trainingslust, Ruhepuls, Laune, Schlaf. Mehrere gleichzeitig im Keller sind das Signal, dass beim Recheck nächste Woche eine Deload-Woche fällig sein könnte — bei guter Erholung dagegen steigerst du einfach weiter.",
       behavior: "Gewohnheits-Check: Welche der letzten 6 Wochen laufen automatisch? Welche brauchen noch den bewussten Trigger?",
       checkin: "Reagiert der Trend auf die Anpassung? NEAT/Schritte gestiegen?"
     },
     {
-      week: 8, phase: "optimize", title: "Deload & Superkompensation",
-      focus: "Eine bewusst leichtere Woche. Kein Rückschritt — der Schritt, der die nächste Steigerung erst möglich macht.",
-      science: "Ermüdung akkumuliert über Wochen. Ein geplanter Deload (reduziertes Volumen/Intensität) lässt Kraft und Leistung superkompensieren und beugt Übertraining, Verletzungen und Stagnation vor. Auch eine kurze Diät-Pause auf Erhaltung gibt Hormonen wie Leptin eine messbare Erholung.",
+      week: 8, phase: "optimize", title: "Recheck #2 & Deload nur bei Bedarf",
+      focus: "Zweiter fester Recheck-Punkt — und die ehrliche Frage: Braucht dein Körper einen Deload, oder läuft es? Ein Deload ist ein Werkzeug gegen aufgestaute Ermüdung, kein Pflichttermin im Kalender.",
+      science: "Ermüdung akkumuliert über Wochen — aber nicht bei jedem gleich schnell. Ein Deload (reduziertes Volumen/Intensität) hilft, wenn sich Müdigkeit, Leistungsabfall oder Gelenkstress aufstauen; wer top regeneriert und weiter progressiert, braucht keine künstliche Bremse. Steuere ihn nach Signalen, nicht nach dem Datum.",
       lesson: [
-        "Reduziere Trainingsvolumen und -gewicht diese Woche um rund 30–50 %. Du behältst die Bewegung, nimmst aber den Stress raus. Du verlierst nichts — du lädst auf.",
-        "Optional eine Diät-Pause: 3–5 Tage auf Erhaltungskalorien. Das entlastet Hormone, Schilddrüse und Kopf und macht das nächste Defizit wirksamer. Erholung ist diese Woche die eigentliche Leistung — ohne schlechtes Gewissen."
+        "Recheck: Stell Gewicht, Bauchumfang, Kraftwerte und Schlaf neben Woche 1 und Woche 4. Entscheide daraus die zweite Hälfte — und ob dein Modus noch passt.",
+        "Deload-Entscheidung nach Bedarf: Mehrere dieser Signale gleichzeitig (Kraft fällt über 1–2 Wochen, Dauermüdigkeit, mieser Schlaf, Gelenke zwicken, Trainingslust am Boden)? Dann eine leichtere Woche (Volumen/Last ~30–50 % runter). Läuft alles rund? Dann steigere normal weiter — ein erzwungener Deload wäre hier nur verschenkte Zeit."
       ],
       todos: [
-        "Trainingsvolumen/-gewicht für diese Woche um ~30–50 % senken",
-        "Jeden Tag 7–8 h Schlaf priorisieren",
-        "2× 15 Min Mobility/Dehnen",
-        "Optional: 3–5 Tage Diät-Pause auf Erhaltungskalorien"
+        "Recheck #2: alle Marker gegen Woche 1 und 4 halten (Gewicht/Bauch/Kraft/Schlaf)",
+        "Ehrlich prüfen: stauen sich Ermüdungs-Signale? (Kraft ↓, Schlaf schlecht, Gelenke, Lust am Boden)",
+        "Nur bei Bedarf: eine Deload-Woche einlegen (Volumen/Last ~30–50 % senken)",
+        "Optional bei CUT: 3–5 Tage Diät-Pause auf Erhaltung, Protein hoch"
       ],
-      train: "Leicht und sauber. Gleiche Übungen, deutlich weniger Sätze und Last. Bewusst unterhalb deiner Grenzen bleiben.",
-      fuel: "Bei Diät-Pause: Kalorien auf Erhaltung, Protein hoch lassen. Sonst Defizit moderat fortführen.",
-      recovery: "Schlaf, Tageslicht am Morgen, Spaziergänge. Trainingsstress senken, damit sich das Nervensystem erholt.",
+      train: "Wenn Deload nötig: leicht und sauber, gleiche Übungen, deutlich weniger Sätze und Last. Wenn nicht: normal weiter progressieren. Cardio-Basis (Zone 2) läuft in beiden Fällen locker weiter.",
+      fuel: "Bei Diät-Pause: Kalorien auf Erhaltung, Protein hoch. Sonst deinen Modus normal fortführen.",
+      recovery: "Schlaf, Tageslicht am Morgen, Spaziergänge. Wenn du deloadest, ist Erholung diese Woche die eigentliche Leistung — ohne schlechtes Gewissen.",
       behavior: "Reflektiere: Was war in 7 Wochen dein größter mentaler Widerstand? Plane konkret, wie du ihn in Phase 3 entschärfst.",
-      checkin: "Fühlst du dich erholter? Schlaf, Energie, Trainingslust?"
+      checkin: "Recheck gemacht? Deload nötig oder läuft es? Schlaf, Energie, Trainingslust?"
     },
     {
       week: 9, phase: "optimize", title: "Plateaus durchbrechen",
@@ -275,8 +302,8 @@ window.MM_COURSE = {
       checkin: "Score-Veränderung, Bauch-Differenz, Kraftzuwachs, Schlafqualität."
     },
     {
-      week: 12, phase: "lockin", title: "Erhaltung, Identität & nächster Schritt",
-      focus: "Das Ziel ist nicht das Ende, sondern ein System, das ohne Plan weiterläuft — und die bewusste Entscheidung, wie es weitergeht.",
+      week: 12, phase: "lockin", title: "Final-Recheck, Erhaltung & nächster Schritt",
+      focus: "Dritter und letzter fester Recheck (Woche 4 → 8 → 12): Du machst die 12 Wochen mit Zahlen sichtbar. Das Ziel ist kein Ende, sondern ein System, das ohne Plan weiterläuft — und die bewusste Entscheidung, in welchem Modus es weitergeht.",
       science: "Die meisten Programme scheitern nicht an der Diät, sondern am Danach. Ein bewusster Übergang in die Erhaltung — langsames Zurückfahren des Defizits und Gewohnheiten als Identität — ist der Unterschied zwischen kurzem Erfolg und dauerhaftem Ergebnis.",
       lesson: [
         "Reverse-Phase: Kalorien schrittweise (≈100–150 kcal/Woche) Richtung Erhaltung zurückführen und das Gewicht beobachten. So vermeidest du den Jojo-Effekt. Protein bleibt hoch.",
@@ -285,8 +312,9 @@ window.MM_COURSE = {
       todos: [
         "Erhaltungskalorien festlegen und die Reverse-Phase starten",
         "Dein Dauer-System in 5 Regeln aufschreiben",
-        "Nächstes 12-Wochen-Ziel definieren",
-        "Re-Check-Termin in 4 Wochen in den Kalender setzen"
+        "Nächsten Modus für die kommenden 12 Wochen wählen (CUT/RECOMP/BUILD/PERFORM)",
+        "Re-Check-Termin in 4 Wochen in den Kalender setzen",
+        "Final-Recheck: alle Marker gegen Woche 1, 4 und 8 stellen"
       ],
       train: "Plan beibehalten oder auf das nächste Ziel ausrichten. Konstanz über Monate baut den Körper — nicht 12 perfekte Wochen.",
       fuel: "Langsames Reverse, Protein bleibt hoch. Gewicht und Energie beobachten, nicht überschießen.",
