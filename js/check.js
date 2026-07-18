@@ -440,8 +440,9 @@
     // Beschriftung
     keys.forEach((k, i) => {
       const [x, y] = pt(i, 122);
-      svg += '<text x="' + x + '" y="' + y + '" fill="#9aa4b5" font-size="11" font-family="JetBrains Mono,monospace" text-anchor="middle" dominant-baseline="middle">' +
-        C.moduleNames[k].toUpperCase() + '</text>';
+      const nm = (C.moduleNamesShort && C.moduleNamesShort[k]) || C.moduleNames[k];
+      svg += '<text x="' + x + '" y="' + y + '" fill="#9aa4b5" font-size="10.5" font-family="JetBrains Mono,monospace" text-anchor="middle" dominant-baseline="middle">' +
+        nm.toUpperCase() + '</text>';
     });
     svg += '</svg>';
     return svg;
@@ -625,139 +626,170 @@
     const prev = (MM.store.get("check_history", []) || []).slice(0, -1).pop();
     const firstName = ((r.answers && r.answers.name) || "").trim().split(/\s+/)[0].slice(0, 24);
 
+    const nm = (k) => (C.moduleNamesDe && C.moduleNamesDe[k]) || C.moduleNames[k];
+    const sortedDesc = keys.slice().sort((x, y) => r.scores[y] - r.scores[x]);
+    const strengths = sortedDesc.slice(0, 3);
+    const topVal = r.scores[strengths[0]] || 0;
+    const bKey = r.bottleneck.key;
+
     let html = '';
 
-    /* Hero */
+    /* ---------- 1. HERO: Gesamt-Score + Status ---------- */
     html += '<div class="result-hero">' +
       '<div class="score-ring">' + ringSVG(r.total) +
       '<div class="score-ring-center"><div class="num">' + r.total + '</div><div class="of">VON 100</div></div></div>' +
       '<div class="result-meta">' +
-      '<span class="eyebrow" style="margin-bottom:6px">' + (firstName ? firstName + ", dein MaleMetrix Score" : "Dein MaleMetrix Score") + '</span>' +
+      '<span class="eyebrow" style="margin-bottom:6px">' + (firstName ? firstName + ', dein MaleMetrix Score' : 'Dein MaleMetrix Score') + '</span>' +
       '<div class="result-status">' + r.level + '</div>' +
       '<p class="muted" style="margin-top:8px">' + r.levelText + '</p>' +
       '<div class="result-chips">' +
-      '<span class="chip accent">Typ: <strong>' + r.archetype.name + '</strong></span>' +
-      '<span class="chip">Größter Hebel: <strong>' + r.bottleneck.name + '</strong></span>' +
-      '<span class="chip">Stärkster Bereich: <strong>' + C.moduleNames[r.strongest] + '</strong></span>' +
+      '<span class="chip">Stärkster Bereich: <strong>' + nm(strengths[0]) + '</strong></span>' +
+      '<span class="chip warn">Größter Hebel: <strong>' + r.bottleneck.name + '</strong></span>' +
       (prev ? '<span class="chip ' + (r.total >= prev.total ? 'accent' : 'warn') + '">Letzter Check: <strong>' + prev.total + ' → ' + r.total + '</strong></span>' : '') +
       '</div></div></div>';
 
-    /* Red Flags */
+    /* ---------- Red Flags (Sicherheit zuerst) ---------- */
     if (r.flags.length) {
       html += '<div class="alert alert-danger"><span class="alert-icon">⚕</span><div>' +
         '<strong>Bitte zuerst ärztlich abklären:</strong><ul style="margin-top:8px;display:grid;gap:6px;list-style:disc;padding-left:18px">' +
-        r.flags.map(f => "<li>" + f + "</li>").join("") +
+        r.flags.map(f => '<li>' + f + '</li>').join('') +
         '</ul><p style="margin-top:10px;font-size:0.85rem">MaleMetrix unterstützt dich bei Training, Ernährung, Schlaf und Struktur — ersetzt aber keine medizinische Diagnostik oder Behandlung.</p></div></div>';
     }
 
-    /* Personalisierte Insights aus den konkreten Antworten */
-    const insights = personalInsights(r.answers || {}, r);
-    if (insights.length) {
-      html += '<div class="card" style="margin-bottom:24px;border-left:3px solid var(--accent-2)">' +
-        '<span class="card-num">WAS DEINE ANTWORTEN KONKRET ZEIGEN</span>' +
-        '<p class="small muted" style="margin-bottom:16px">' + (firstName ? firstName + ", k" : "K") + 'ein Standardtext — das hier kommt direkt aus dem, was du angegeben hast:</p>' +
-        '<div style="display:grid;gap:14px">' +
-        insights.map(i => '<div style="display:flex;gap:14px;align-items:flex-start">' +
-          '<div style="font-size:1.3rem;flex-shrink:0;line-height:1.4">' + i.icon + '</div>' +
-          '<p style="color:var(--muted);font-size:0.95rem;margin:0">' + i.text + '</p></div>').join("") +
-        '</div></div>';
-    }
-
-    /* Radar + Balken */
+    /* ---------- 2. PROFIL: Radar + Einzel-Scores ---------- */
     html += '<div class="result-grid">' +
-      '<div class="card"><h3 style="margin-bottom:6px">Dein Profil</h3><p class="small muted" style="margin-bottom:10px">7 Bereiche, ein Bild: je weiter außen, desto stärker.</p>' +
+      '<div class="card"><h3 style="margin-bottom:6px">Dein Performance-Profil</h3><p class="small muted" style="margin-bottom:10px">7 Bereiche, ein Bild: je weiter außen, desto stärker.</p>' +
       '<div class="radar-wrap">' + radarSVG(r.scores) + '</div></div>' +
-      '<div class="card js-bars"><h3 style="margin-bottom:18px">Einzel-Scores</h3><div class="score-rows">';
-
+      '<div class="card js-bars"><h3 style="margin-bottom:18px">Deine 7 Bereiche</h3><div class="score-rows">';
     keys.forEach(k => {
       const v = r.scores[k];
       html += '<div class="score-row"><div class="score-row-top">' +
-        '<span class="name">' + C.moduleNames[k] + ' <span class="muted small">· ' + C.moduleSubtitles[k] + '</span></span>' +
+        '<span class="name">' + nm(k) + ' <span class="muted small">· ' + C.moduleSubtitles[k] + '</span></span>' +
         '<span class="pts">' + v + '/100</span></div>' +
         '<div class="bar-track"><div class="bar-fill ' + levelClass(v) + '" data-width="' + v + '"></div></div></div>';
     });
     html += '</div></div></div>';
 
-    /* Archetyp */
-    html += '<div class="card" style="margin-bottom:24px;border-left:3px solid var(--accent)">' +
-      '<span class="card-num">DEIN PERFORMANCE-TYP</span>' +
-      '<h3 style="font-size:1.5rem">' + r.archetype.name + '</h3>' +
-      '<p style="font-weight:600;color:var(--text);margin:6px 0 10px">' + r.archetype.tagline + '</p>' +
-      '<p>' + r.archetype.text + '</p></div>';
-
-    /* Engpass */
-    html += '<div class="card" style="margin-bottom:24px">' +
-      '<span class="card-num">DEIN GRÖSSTER ENGPASS</span>' +
-      '<h3>' + r.bottleneck.name + '</h3><p style="margin-top:8px">' + r.bottleneck.text + '</p></div>';
-
-    /* Top 3 Prioritäten */
-    html += '<h3 class="h-card" style="margin:36px 0 18px">Deine Top-3-Baustellen</h3><div class="grid-3">';
-    r.weakest.forEach((k, i) => {
-      html += '<div class="card priority-card"><span class="pri-rank">Priorität ' + (i + 1) + ' · ' + r.scores[k] + '/100</span>' +
-        '<h3 style="font-size:1.05rem">' + C.moduleNames[k] + '</h3>' +
-        '<p style="margin-top:6px">' + moduleText(k, r.scores[k]) + '</p></div>';
+    /* ---------- 3. STÄRKSTE BEREICHE ---------- */
+    html += '<div class="card dash-block" style="border-left:3px solid var(--green)">' +
+      '<span class="card-num" style="color:var(--green)">' + (topVal >= 60 ? 'DEINE STÄRKSTEN BEREICHE' : 'DEINE BESTEN AUSGANGSPUNKTE') + '</span>' +
+      '<div class="strength-grid">';
+    strengths.forEach(k => {
+      html += '<div class="strength-item"><div class="strength-head"><span class="strength-name">' + nm(k) + '</span>' +
+        '<span class="strength-val">' + r.scores[k] + '<small>/100</small></span></div>' +
+        '<p class="small muted" style="margin:6px 0 0">' + (C.strengthNotes[k] || moduleText(k, r.scores[k])) + '</p></div>';
     });
-    html += '</div>';
+    html += '</div></div>';
 
-    /* Nächste 3 Schritte */
-    const stepsArr = C.nextSteps[r.bottleneck.key] || C.nextSteps.execution;
-    html += '<div class="card" style="margin-top:24px"><span class="card-num">DEINE NÄCHSTEN 3 SCHRITTE</span><ol style="display:grid;gap:14px;margin-top:6px">';
-    stepsArr.forEach((s, i) => {
-      html += '<li style="display:flex;gap:14px;align-items:flex-start"><span style="font-family:var(--font-mono);color:var(--accent-2);font-weight:700;flex-shrink:0">0' + (i + 1) + '</span><span style="color:var(--muted)">' + s + '</span></li>';
+    /* ---------- 4. GRÖSSTER ENGPASS ---------- */
+    html += '<div class="card dash-block bottleneck-card">' +
+      '<span class="card-num" style="color:var(--red)">DEIN GRÖSSTER ENGPASS · ' + r.scores[bKey] + '/100</span>' +
+      '<h3 style="font-size:1.4rem;margin:2px 0 8px">' + r.bottleneck.name + '</h3>' +
+      '<p>' + r.bottleneck.text + '</p>' +
+      (C.bottleneckAffects[bKey] ? '<p style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted)"><strong style="color:var(--text)">Warum jetzt Priorität:</strong> ' + C.bottleneckAffects[bKey] + '</p>' : '') +
+      '</div>';
+
+    /* ---------- 5. PRIORITÄT #1 + 3 Schritte ---------- */
+    const stepsArr = C.nextSteps[bKey] || C.nextSteps.execution;
+    html += '<div class="card dash-block priority1"><span class="card-num" style="color:var(--accent-2)">DEINE PRIORITÄT #1</span>' +
+      '<h3 style="margin:2px 0 4px">' + nm(bKey) + ' stabilisieren</h3>' +
+      '<p class="small muted" style="margin-bottom:16px">Nicht alles auf einmal. Diese drei Schritte holen dir den größten Effekt — starte heute:</p>' +
+      '<ol class="prio-steps">';
+    stepsArr.forEach((st, i) => {
+      html += '<li><span class="prio-num">' + (i + 1) + '</span><span>' + st + '</span></li>';
     });
     html += '</ol></div>';
 
-    /* 7-Tage-Plan — dynamisch aus den tatsächlichen Schwächen */
+    /* ---------- Was deine Antworten konkret zeigen (Personalisierung) ---------- */
+    const insights = personalInsights(r.answers || {}, r);
+    if (insights.length) {
+      html += '<div class="card dash-block" style="border-left:3px solid var(--accent-2)">' +
+        '<span class="card-num">WAS DEINE ANTWORTEN KONKRET ZEIGEN</span>' +
+        '<div style="display:grid;gap:14px;margin-top:6px">' +
+        insights.map(i => '<div style="display:flex;gap:14px;align-items:flex-start">' +
+          '<div style="font-size:1.3rem;flex-shrink:0;line-height:1.4">' + i.icon + '</div>' +
+          '<p style="color:var(--muted);font-size:0.95rem;margin:0">' + i.text + '</p></div>').join('') +
+        '</div></div>';
+    }
+
+    /* ---------- 6. PERSONALISIERTE WEGE: erst Inhalte, dann Angebote ---------- */
+    const res = C.resource[bKey] || C.resource.execution;
+    html += '<h3 class="h-card" style="margin:38px 0 6px">Deine nächsten Schritte' + (firstName ? ', ' + firstName : '') + '</h3>' +
+      '<p class="small muted" style="margin-bottom:18px">Passend zu deinem Engpass „' + r.bottleneck.name + '" — zuerst verstehen und umsetzen, ohne einen Cent:</p>' +
+      '<div class="grid-2 next-content">' +
+      '<a class="card path-card" href="' + res.read.href + '" data-track="score_path_read"><span class="path-tag">LESEN</span>' +
+      '<h3 style="font-size:1.05rem;margin:6px 0 4px">' + res.read.label + '</h3>' +
+      '<p class="small muted" style="margin:0">Kostenloser Guide zu deinem größten Hebel.</p></a>' +
+      '<a class="card path-card" href="' + res.track.href + '" data-track="score_path_track"><span class="path-tag">TRACKEN</span>' +
+      '<h3 style="font-size:1.05rem;margin:6px 0 4px">' + res.track.label + '</h3>' +
+      '<p class="small muted" style="margin:0">Sichtbar machen, was du veränderst.</p></a>' +
+      '</div>';
+
+    /* ---------- 7-Tage-Plan ---------- */
     let planDays;
-    try { planDays = dynamicPlan(r.answers || {}, r); } catch (e) { planDays = r.plan; }
+    try { planDays = dynamicPlan(r.answers || {}, r); } catch (e2) { planDays = r.plan; }
     if (!planDays || !planDays.length) planDays = r.plan;
-    html += '<div class="card" style="margin-top:24px"><span class="card-num">DEIN PERSÖNLICHER 7-TAGE-PLAN</span>' +
-      '<p class="small muted" style="margin-bottom:10px">Aus deinen Antworten gebaut — er packt zuerst deine größten Hebel an. Starte heute.</p>';
+    html += '<div class="card dash-block" style="margin-top:16px"><span class="card-num">DEIN PERSÖNLICHER 7-TAGE-PLAN</span>' +
+      '<p class="small muted" style="margin-bottom:10px">Aus deinen Antworten gebaut — er packt zuerst deine größten Hebel an.</p>';
     planDays.forEach(d => {
       html += '<div class="plan-day"><div class="plan-day-num">' + d.day + '</div><ul>' +
-        d.items.map(it => "<li>" + it + "</li>").join("") + '</ul></div>';
+        d.items.map(it => '<li>' + it + '</li>').join('') + '</ul></div>';
     });
     html += '</div>';
 
-    /* Nächste Schritte: Engpass-Pfad + die 3 Angebote */
-    const offer = offerFor(r.bottleneck.key);
-    html += '<div class="cta-band" style="margin-top:36px"><h2>Dein nächster Schritt' + (firstName ? ", " + firstName : "") + '.</h2><p>' + offer.lead + '</p>' +
-      '<div class="hero-ctas">' +
-      '<a class="btn btn-primary btn-lg btn-arrow" href="' + offer.primary.href + '" data-track="' + offer.primary.track + '">' + offer.primary.label + '</a>' +
-      '<a class="btn btn-ghost btn-lg" href="' + offer.secondary.href + '" data-track="' + offer.secondary.track + '">' + offer.secondary.label + '</a>' +
-      '</div></div>';
+    /* ---------- 6b. Angebote (erst jetzt, beratend, 3 Wege) ---------- */
+    html += '<h3 class="h-card" style="margin:38px 0 6px">Wenn du es strukturiert angehen willst</h3>' +
+      '<p class="small muted" style="margin-bottom:18px">Drei Wege — vom Selbermachen bis zur vollen Begleitung. Kein Muss: Der Score, die Guides und die Tools oben sind komplett kostenlos.</p>' +
+      '<div class="grid-3">' +
+      '<a class="card offer-card" href="protokoll.html" data-track="cta_protokoll"><span class="card-num">SELBST UMSETZEN</span>' +
+      '<h3 style="font-size:1.05rem;margin:6px 0 2px">DAS PROTOKOLL</h3><p class="offer-price">49 €<small> einmalig</small></p>' +
+      '<p class="small muted" style="margin:0 0 14px">Das komplette System inkl. interaktivem 12-Wochen-Programm.</p>' +
+      '<span class="btn btn-dark btn-sm btn-block">Protokoll ansehen</span></a>' +
+      '<a class="card offer-card featured" href="transformation.html" data-track="cta_founder"><span class="card-num" style="color:var(--accent)">MIT BEGLEITUNG</span>' +
+      '<h3 style="font-size:1.05rem;margin:6px 0 2px">12-Wochen-Transformation</h3><p class="offer-price">599 €<small> Runde 1</small></p>' +
+      '<p class="small muted" style="margin:0 0 14px">Strategie, Umsetzung, wöchentlicher Check-in — nur 10 Plätze.</p>' +
+      '<span class="btn btn-primary btn-sm btn-block">Transformation ansehen</span></a>' +
+      '<a class="card offer-card" href="coaching.html" data-track="cta_coaching"><span class="card-num">MAXIMAL INDIVIDUELL</span>' +
+      '<h3 style="font-size:1.05rem;margin:6px 0 2px">1:1 Coaching</h3><p class="offer-price">Preis auf der Coaching-Seite</p>' +
+      '<p class="small muted" style="margin:0 0 14px">Individuelle Analyse und laufende Optimierung.</p>' +
+      '<span class="btn btn-dark btn-sm btn-block">1:1 ansehen</span></a>' +
+      '</div>';
 
-    /* Persönlicher CTA */
+    /* ---------- Persönlicher DM-CTA ---------- */
     const ig = (window.MM_CONFIG || {}).instagram;
-    const mailAddr = (window.MM_CONFIG || {}).contactEmail || "";
-    const scoreMailto = "mailto:" + encodeURIComponent(mailAddr) +
-      "?subject=" + encodeURIComponent("SCORE — bitte kurz einordnen") +
-      "&body=" + encodeURIComponent("Mein MaleMetrix Score: " + r.total + "/100 (" + r.level + ")\nTyp: " + r.archetype.name + "\nEngpass: " + r.bottleneck.name + "\n\n(Screenshot vom Ergebnis anhängen)");
-    html += '<div class="card" style="margin-top:16px;border-left:3px solid var(--accent-2)">' +
+    const mailAddr = (window.MM_CONFIG || {}).contactEmail || '';
+    const scoreMailto = 'mailto:' + encodeURIComponent(mailAddr) +
+      '?subject=' + encodeURIComponent('SCORE — bitte kurz einordnen') +
+      '&body=' + encodeURIComponent('Mein MaleMetrix Score: ' + r.total + '/100 (' + r.level + ')\nEngpass: ' + r.bottleneck.name + '\n\n(Screenshot vom Ergebnis anhängen)');
+    html += '<div class="card dash-block" style="margin-top:16px;border-left:3px solid var(--accent-2)">' +
       '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:20px;justify-content:space-between">' +
       '<div style="flex:1;min-width:260px">' +
-      '<h3 class="h-card" style="margin-bottom:6px">Schick mir deinen Score-Screenshot mit dem Wort SCORE.</h3>' +
-      '<p class="muted" style="font-size:0.93rem;margin:0">Ich sage dir, welcher Hebel für dich zuerst kommt — kurz, ehrlich, kostenlos. Kein Bot, keine Warteliste: Du redest direkt mit mir.</p></div>' +
+      '<h3 class="h-card" style="margin-bottom:6px">Unsicher, wo du anfangen sollst?</h3>' +
+      '<p class="muted" style="font-size:0.93rem;margin:0">Schick mir deinen Score-Screenshot mit dem Wort SCORE — ich sage dir kurz und ehrlich, welcher Hebel für dich zuerst kommt. Kostenlos, direkt mit mir.</p></div>' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;flex-shrink:0">' +
       (ig ? '<a class="btn btn-dark btn-sm" href="' + ig + '" target="_blank" rel="noopener" data-track="score_dm_click">📸 Per Instagram-DM</a>' : '') +
       '<a class="btn btn-dark btn-sm" href="' + scoreMailto + '" data-track="score_mail_click">✉️ Per E-Mail</a>' +
       '</div></div></div>';
 
-    html += '<h3 class="h-card" style="margin:32px 0 16px">Zwei Wege, damit aus dem Score Ergebnisse werden</h3><div class="grid-2">' +
-      '<div class="card"><span class="card-num">SELBST UMSETZEN</span><h3 style="font-size:1.05rem">DAS PROTOKOLL</h3>' +
-      '<p class="small muted" style="margin:8px 0 14px">Das komplette System als Premium-Ebook inkl. interaktivem 12-Wochen-Programm. Einmalig 49&nbsp;€.</p>' +
-      '<a class="btn btn-dark btn-sm btn-block" href="protokoll.html" data-track="cta_protokoll">DAS PROTOKOLL starten</a></div>' +
-      '<div class="card" style="border-color:var(--accent-line);background:var(--accent-soft)"><span class="card-num">MIT BEGLEITUNG</span><h3 style="font-size:1.05rem">1:1 Coaching</h3>' +
-      '<p class="small muted" style="margin:8px 0 14px">Persönliche Betreuung mit wöchentlichem Check-in und direktem Draht — 149&nbsp;€/Monat, monatlich kündbar.</p>' +
-      '<a class="btn btn-primary btn-sm btn-block" href="coaching.html#buchen" data-track="cta_coaching">Kostenloses Erstgespräch buchen</a></div>' +
-      '</div>';
+    /* ---------- 7. TEILBARE SCORE-CARD ---------- */
+    html += '<h3 class="h-card" style="margin:38px 0 14px">Deine Score-Card</h3>' +
+      '<div class="mm-scorecard" id="scoreCard">' +
+      '<div class="sc-top"><span class="sc-brand">MALE<strong>METRIX</strong></span><span class="sc-level">' + r.level + '</span></div>' +
+      '<div class="sc-score"><span class="sc-num">' + r.total + '</span><span class="sc-of">/100</span></div>' +
+      '<div class="sc-bars">';
+    keys.forEach(k => {
+      html += '<div class="sc-bar"><span class="sc-bar-label">' + (C.moduleNamesShort[k] || nm(k)) + '</span>' +
+        '<span class="sc-bar-track"><span class="sc-bar-fill ' + levelClass(r.scores[k]) + '" style="width:' + Math.max(r.scores[k], 4) + '%"></span></span></div>';
+    });
+    html += '</div><div class="sc-foot">malemetrix.de · kostenloser Score</div></div>' +
+      '<p class="small muted" style="margin-top:10px;text-align:center">Screenshot machen und teilen — oder unten „Score kopieren".</p>';
 
-    /* Aktionen */
-    html += '<div class="card" style="margin-top:24px"><h3 style="margin-bottom:14px">Dein Ergebnis sichern</h3>' +
+    /* ---------- Aktionen ---------- */
+    html += '<div class="card dash-block" style="margin-top:24px"><h3 style="margin-bottom:14px">Dein Ergebnis sichern</h3>' +
       '<div style="display:flex;gap:12px;flex-wrap:wrap">' +
       '<a class="btn btn-dark" href="report.html">📄 Vollständigen Report öffnen (PDF)</a>' +
       '<button class="btn btn-dark" id="btnEmailResult">✉️ Ergebnis per E-Mail erhalten</button>' +
-      '<button class="btn btn-dark" id="btnShare">🔗 Score kopieren & teilen</button>' +
+      '<button class="btn btn-dark" id="btnShare">🔗 Score kopieren &amp; teilen</button>' +
       '<button class="btn btn-ghost" id="btnRestart">Check neu starten</button>' +
       '</div>' +
       '<div id="emailForm" style="display:none;margin-top:20px;max-width:420px">' +
@@ -767,10 +799,8 @@
       '<p class="small muted" style="margin-top:10px">Wir nutzen deine E-Mail nur, um dir dein Ergebnis zu schicken. Details in der <a href="datenschutz.html" style="text-decoration:underline">Datenschutzerklärung</a>.</p>' +
       '</div></div>';
 
-    /* Social Proof */
+    /* ---------- Social Proof + Disclaimer ---------- */
     html += '<div data-mm-trust style="margin-top:28px"></div>';
-
-    /* Disclaimer */
     html += '<p class="small" style="color:var(--muted-2);margin-top:24px">Der MaleMetrix Score ist eine Lifestyle-Analyse — keine medizinische Diagnose und kein Ersatz für ärztliche Beratung. Bei Beschwerden oder auffälligen Werten wende dich bitte an einen Arzt.</p>';
 
     el.innerHTML = html;

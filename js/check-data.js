@@ -23,6 +23,17 @@ window.MM_CHECK = {
     execution: "Umsetzung & Routinen"
   },
 
+  /* Deutsche Anzeigenamen fürs Dashboard (einheitlich mit der Startseite).
+     Nur Darstellung — Scoring/Keys bleiben unverändert. */
+  moduleNamesDe: {
+    body: "Körper", strength: "Training", fuel: "Ernährung", recovery: "Schlaf & Erholung",
+    blood: "Blutwerte", drive: "Energie & Antrieb", execution: "Umsetzung"
+  },
+  moduleNamesShort: {
+    body: "Körper", strength: "Training", fuel: "Ernährung", recovery: "Schlaf",
+    blood: "Blutwerte", drive: "Energie", execution: "Umsetzung"
+  },
+
   /* ---------- Score-Level ---------- */
   levels: [
     { min: 0,  max: 29,  name: "Reset nötig",        text: "Dir fehlt aktuell ein System — das ist keine Schwäche, sondern dein größter Vorteil: Mit einfachen, klaren Maßnahmen wirst du schnell messbare Fortschritte sehen." },
@@ -849,6 +860,39 @@ window.MM_CHECK = {
     blood: { name: "Datenbasis & Blutwerte", text: "Du interpretierst Energie und Fortschritt nach Gefühl. Eine saubere Baseline (Blutwerte + Körperdaten) macht Schluss mit dem Raten." },
     drive: { name: "Energie-Management", text: "Deine Energie ist der Engpass — und sie hängt fast immer an Schlaf, Bewegung, Ernährung und Stress. Genau da setzen wir an." },
     execution: { name: "Umsetzung", text: "Du weißt wahrscheinlich genug. Was fehlt, ist Kontrolle und ein System, das deinen Alltag überlebt — nicht mehr Wissen." }
+  },
+
+  /* ---------- Kurz-Kontext pro Bereich, wenn er eine STÄRKE ist ---------- */
+  strengthNotes: {
+    body: "Deine Körperbasis sitzt — gute Ausgangslage zum Aufbauen.",
+    strength: "Dein Training läuft — dieses Fundament trägt den Rest.",
+    fuel: "Deine Ernährung ist im Griff — ein starker Hebel, den viele nicht haben.",
+    recovery: "Du erholst dich gut — die Basis, auf der alles andere skaliert.",
+    blood: "Du kennst deine Daten — du steuerst mit Fakten statt Gefühl.",
+    drive: "Deine Energie ist stark — nutze sie als Antrieb für den Rest.",
+    execution: "Du setzt um — die seltenste und wertvollste Stärke überhaupt."
+  },
+
+  /* ---------- Welche anderen Bereiche ein schwacher Bereich mitzieht ---------- */
+  bottleneckAffects: {
+    body: "Ohne saubere Ausgangslage bleiben Ernährung und Training ein Blindflug — du kannst Fortschritt nicht sehen.",
+    strength: "Fehlt die Trainingsstruktur, verpufft auch eine gute Ernährung: ohne Reiz kein Muskel, ohne Progression kein Fortschritt.",
+    fuel: "Eine unklare Ernährung bremst Körper und Energie gleichzeitig — selbst gutes Training kann das nicht ausgleichen.",
+    recovery: "Schlechte Erholung zieht Energie, Antrieb, Appetit und Trainingsleistung mit nach unten — sie ist oft die versteckte Ursache.",
+    blood: "Ohne Datenbasis interpretierst du Energie und Hormone nach Gefühl — Fehlentscheidungen bei Supplementen und Fokus sind vorprogrammiert.",
+    drive: "Niedrige Energie kippt Training, Ernährung und Umsetzung — meist liegt die Ursache aber in Schlaf, Bewegung oder Ernährung.",
+    execution: "Ohne Umsetzung bleibt jeder Plan Theorie — der beste Score nützt nichts, wenn der Alltag ihn wegdrückt."
+  },
+
+  /* ---------- Passende Inhalte/Tools pro Bereich (beratend, vor dem Verkauf) ---------- */
+  resource: {
+    body:      { read: { label: "Fettabbau ohne Hunger", href: "ebooks/fettabbau.html" },        track: { label: "Fortschritts-Tracker", href: "tracker.html" } },
+    strength:  { read: { label: "Jeden Tag trainieren", href: "ebooks/taeglich-trainieren.html" }, track: { label: "Trainings-Tracker", href: "tracker.html" } },
+    fuel:      { read: { label: "Protein ohne Kochen", href: "ebooks/protein-system.html" },      track: { label: "Kalorien-Tracker", href: "dinner.html" } },
+    recovery:  { read: { label: "Der Schlaf-Stack", href: "ebooks/schlaf-stack.html" },            track: { label: "Fortschritts-Tracker", href: "tracker.html" } },
+    blood:     { read: { label: "Blutwerte verstehen", href: "ebooks/blutwerte-guide.html" },      track: { label: "Blood Dashboard", href: "blutwerte.html" } },
+    drive:     { read: { label: "Testosteron verstehen", href: "ebooks/testosteron.html" },        track: { label: "Rechner & Tools", href: "tools.html" } },
+    execution: { read: { label: "Gewohnheiten, die bleiben", href: "ebooks/gewohnheiten.html" },   track: { label: "Fortschritts-Tracker", href: "tracker.html" } }
   },
 
   /* ==========================================================================
