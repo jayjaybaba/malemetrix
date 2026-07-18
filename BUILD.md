@@ -26,12 +26,12 @@ privaten Build-Kontext (lokal oder privates Repo/Storage).
 
 ## Vault regenerieren (nach inhaltlichen Änderungen in `_src/`)
 ```bash
-# Verschlüsseln (Payload-JSON auf stdout):
-node tools-dev/vault.mjs encrypt _src/protokoll-content.html PROTOKOLL-M
+# Verschlüsseln (Payload-JSON auf stdout) — <DEIN-CODE> durch den Zugangscode ersetzen:
+node tools-dev/vault.mjs encrypt _src/protokoll-content.html <DEIN-CODE>
 # Ausgabe in den passenden <script id="protoVault"> ... </script>-Block einsetzen.
 
 # Prüfen (Klartext zurück):
-node tools-dev/vault.mjs decrypt <payload.json> PROTOKOLL-M
+node tools-dev/vault.mjs decrypt <payload.json> <DEIN-CODE>
 ```
 
 | Premium-Seite (Vault)        | Quelle in `_src/`              | Vault-Script-ID   |

@@ -17,7 +17,7 @@
      erfolgreichen PayPal-Capture entschlüsselt und angezeigt. Bei Vorkasse
      (Zahlung nicht sofort bestätigbar) kommt der Code nach Zahlungseingang
      per E-Mail. Payload neu erzeugen: node tools-dev/vault.mjs encrypt ... */
-  const DELIVERY_VAULT = {"v":1,"iter":150000,"salt":"fROUAG3L0nEoxIpJtMRLeg==","iv":"ZzFb44oXqImirqFo","ct":"GFtc9HlVhwT04djp2FzBSpcwmVmZeyte8WkGl2awmSdp5FqQyfSPtH1/6k38CqHG4t893Z4NGv2NTFKmfg=="};
+  const DELIVERY_VAULT = {"v":1,"iter":150000,"salt":"0hirgaoETrAqNs5bo9600Q==","iv":"1bvizyOGoFjxO76B","ct":"fQNCYtGwCYPIHjdGlC+fewdbZu3YjpK2uZsL9YH+egROX1/6Mpke1OTfYYTchBeLC240"};
   const DK = ["MMD-", "A3DFF4F6", "159A8C28", "8578F44B"];
   async function deliveryCodes() {
     try {

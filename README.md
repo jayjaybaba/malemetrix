@@ -98,8 +98,8 @@ Ein kaufbarer Online-Programm zum Selbermachen — dasselbe System wie das Coach
 
 - **Verkaufsseite:** [kurs.html](kurs.html) — Kauf-Button legt das Produkt `kurs-12w` in den Warenkorb → Checkout.
 - **Programminhalt:** [kurs-programm.html](kurs-programm.html) — hinter einem Zugangscode. 12 Wochen mit To-dos zum Abhaken; der Fortschritt wird lokal im Browser gespeichert.
-- **Inhalt bearbeiten:** komplett in [js/course-data.js](js/course-data.js) — Wochen, Aufgaben und Texte ändern, ohne Seitencode anzufassen.
-- **Zugangscode:** in `js/config.js` unter `courseAccessCode` (Standard `MM12-START`). Nach dem Kauf:
+- **Inhalt bearbeiten:** im privaten `_src/course-data.js` (nicht im öffentlichen Repo — siehe [BUILD.md](BUILD.md)); danach den `courseVault` neu verschlüsseln.
+- **Zugangscode:** wird nicht im Klartext im Repo gehalten. Der Code entschlüsselt den Vault (siehe BUILD.md). Nach dem Kauf:
   - **PayPal/Karte (sofort bezahlt):** der Käufer sieht den Code direkt auf der Bestätigungsseite + einen Direkt-Link (`kurs-programm.html?code=…`, schaltet automatisch frei).
   - **Vorkasse:** Code schickst du nach Zahlungseingang per E-Mail.
 - **Wichtig:** Das ist ein **einfacher, geteilter Code — kein echter Kopierschutz**. Für automatische Auslieferung, echten Schutz und Rechnungen später eine Programmplattform nutzen (elopage, Copecart, Digistore24) und dort den Kaufabschluss-Button hinterlegen.
