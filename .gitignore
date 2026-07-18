@@ -1,0 +1,5 @@
+# Premium-Quelltexte NICHT ins öffentliche Repo.
+# Der Klartext der Premium-Inhalte liegt nur lokal / im privaten Build-Kontext.
+# Ausgeliefert wird ausschließlich der verschlüsselte Vault in den HTML-Seiten.
+# Siehe BUILD.md zum Regenerieren der Vaults.
+_src/
