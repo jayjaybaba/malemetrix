@@ -36,9 +36,9 @@
       digital: true,
       emoji: "📕",
       badge: "System + Programm",
-      desc: "Das gesamte MaleMetrix-Wissen als ein digitales Performance-System: Training, Fettabbau, Hormone, Blutwerte, Schlaf, Supplemente — und das Herzstück: der 12-Wochen-Masterplan, der alles Woche für Woche in einen Fahrplan gießt. Alles, was du selbst in der Hand hast. Kein Bro-Science, kein Hype — das ehrliche Komplettsystem für Männer, die Ergebnisse wollen. Sofortiger Online-Zugang nach dem Kauf.",
+      desc: "Das gesamte MaleMetrix-Wissen als ein digitales Performance-System: Kraft, Cardio & VO₂, Körperkomposition (Cut · Recomp · Build · Perform), Schlaf, Supplemente, Health- & Longevity-Dashboard, Hormone, Fertilität — und das Herzstück: der 12-Wochen-Masterplan, der alles Woche für Woche in einen Fahrplan gießt. Alles, was du selbst in der Hand hast. Kein Bro-Science, kein Hype — das ehrliche Komplettsystem für Männer, die Ergebnisse wollen. Sofortiger Online-Zugang nach dem Kauf.",
       details: [
-        "10 Module: Mindset & System, Training (täglich + Push/Pull/Legs), Fettabbau ohne Hunger, Supplemente, Schlaf-Stack, Blutwerte-Komplettpanel, Hormone & Testosteron (natürlich), Sexuelle Gesundheit, der 12-Wochen-Masterplan",
+        "10 Module: Operating System, Kraft & Muskel (Minimum Effective Dose), Cardio/VO₂ & Bewegung, Ernährung & Körperkomposition (Cut/Recomp/Build/Perform), Schlaf & Regeneration, Supplemente, Health & Longevity Dashboard, Hormone & Testosteron, Sexuelle Gesundheit & Fertilität, der 12-Wochen-Masterplan",
         "Das Herzstück: der 12-Wochen-Masterplan — Woche für Woche durchgeplant, mit Standard-Woche, Kontrollterminen und Troubleshooting",
         "INKLUSIVE: das interaktive 12-Wochen-Programm mit Wochen-Aufgaben & Fortschritts-Tracking im Browser — derselbe Zugangscode schaltet beides frei",
         "Hormone &amp; Testosteron natürlich optimieren — die kostenlosen Hebel, die wirklich zählen",

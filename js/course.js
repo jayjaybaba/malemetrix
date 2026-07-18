@@ -45,6 +45,14 @@
     } catch (e) { return false; }
   }
 
+  /* ---------- Modus (CUT/RECOMP/BUILD/PERFORM) ---------- */
+  function currentMode() {
+    const items = (DATA.modes && DATA.modes.items) || {};
+    const def = (DATA.modes && DATA.modes["default"]) || "recomp";
+    const saved = MM.store.get("course_mode", "");
+    return items[saved] ? saved : def;
+  }
+
   /* ---------- Fortschritt ---------- */
   function progress() { return MM.store.get("course_progress", {}) || {}; }
   function saveProgress(p) { MM.store.set("course_progress", p); }
@@ -106,6 +114,29 @@
       "</section>";
   }
 
+  function renderModeSelector() {
+    const md = DATA.modes;
+    if (!md || !md.items) return "";
+    const active = currentMode();
+    const order = md.order || Object.keys(md.items);
+    const btns = order.map(k => {
+      const it = md.items[k];
+      if (!it) return "";
+      return '<button type="button" class="course-mode-btn' + (k === active ? " is-active" : "") + '" data-mode="' + k + '">' +
+        '<span class="course-mode-label">' + esc(it.label) + "</span>" +
+        '<span class="course-mode-tag">' + esc(it.tag) + "</span></button>";
+    }).join("");
+    const cur = md.items[active] || {};
+    return '<section class="course-mode card reveal" id="courseMode">' +
+      '<span class="eyebrow">' + esc(md.eyebrow || "") + "</span>" +
+      '<h2 class="h-section" style="margin-bottom:8px">' + esc(md.title || "Wähle deinen Modus") + "</h2>" +
+      (md.lead ? '<p class="lead">' + esc(md.lead) + "</p>" : "") +
+      '<div class="course-mode-grid">' + btns + "</div>" +
+      '<div class="course-mode-active"><span class="course-mode-active-label">Dein Modus: ' + esc(cur.label || "") + "</span>" +
+      "<p>" + esc(cur.summary || "") + "</p></div>" +
+      "</section>";
+  }
+
   function phaseDivider(phaseKey) {
     const ph = (DATA.phases || {})[phaseKey];
     if (!ph) return "";
@@ -143,7 +174,13 @@
       '<div class="course-meta"><span class="course-meta-label">' + m[0] + " " + m[1] + "</span><p>" + esc(m[2]) + "</p></div>"
     ).join("");
 
-    const checkin = w.checkin ? '<div class="course-checkin"><span class="course-checkin-label">📋 Wochen-Check-in</span><span>' + esc(w.checkin) + "</span></div>" : "";
+    const mode = currentMode();
+    const modeLabel = ((DATA.modes && DATA.modes.items && DATA.modes.items[mode]) || {}).label || mode;
+    const modeNote = (w.byMode && w.byMode[mode])
+      ? '<div class="course-modenote"><span class="course-modenote-label">🎯 In deinem Modus · ' + esc(modeLabel) + "</span><p>" + esc(w.byMode[mode]) + "</p></div>"
+      : "";
+
+    const checkin = w.checkin ? '<div class="course-checkin"><span class="course-checkin-label">📋 Sonntag-Review</span><span>' + esc(w.checkin) + " · Frag dich zum Wochenschluss: Was ist nächste Woche dein <strong>#1-Engpass</strong> — und was ist dein eine Hauptprojekt dagegen?</span></div>" : "";
     const note = w.note ? '<div class="alert alert-warn course-note"><span class="alert-icon">⚕️</span><div>' + esc(w.note) + "</div></div>" : "";
     const science = w.science ? '<div class="course-science"><span class="course-science-label">📊 Was die Studienlage zeigt</span><p>' + esc(w.science) + "</p></div>" : "";
     const resources = resourceBlock(DATA.resources && DATA.resources.weeks ? DATA.resources.weeks[w.week] : null);
@@ -157,6 +194,7 @@
       '<h2 class="h-card course-week-title">' + esc(w.title) + "</h2>" +
       '<p class="course-focus">' + esc(w.focus) + "</p>" +
       science +
+      modeNote +
       (lesson ? '<div class="course-lesson">' + lesson + "</div>" : "") +
       '<div class="course-todos" data-week="' + w.week + '">' +
       '<span class="course-block-label">Diese Woche erledigen</span>' + todos +
@@ -247,6 +285,7 @@
     content.hidden = false;
 
     let html = renderIntro();
+    html += renderModeSelector();
     let lastPhase = null;
     DATA.weeks.forEach(w => {
       if (w.phase !== lastPhase) { html += phaseDivider(w.phase); lastPhase = w.phase; }
@@ -255,24 +294,38 @@
     html += renderModules();
     html += renderCta();
 
-    document.getElementById("courseWeeks").innerHTML = html;
+    const cw = document.getElementById("courseWeeks");
+    cw.innerHTML = html;
     renderProgress();
 
-    // Häkchen speichern (Event-Delegation)
-    document.getElementById("courseWeeks").addEventListener("change", e => {
-      const cb = e.target;
-      if (!cb.matches('input[type="checkbox"][data-w]')) return;
-      const p = progress();
-      const k = tkey(cb.dataset.w, cb.dataset.i);
-      if (cb.checked) p[k] = true; else delete p[k];
-      saveProgress(p);
-      cb.closest(".checkbox-row").classList.toggle("checked", cb.checked);
-      const wNum = Number(cb.dataset.w);
-      const wData = DATA.weeks.find(x => x.week === wNum);
-      const card = document.getElementById("woche-" + wNum);
-      if (card && wData) card.classList.toggle("is-done", weekDone(wData));
-      renderProgress();
-    });
+    if (!cw._bound) {
+      cw._bound = true;
+
+      // Häkchen speichern (Event-Delegation)
+      cw.addEventListener("change", e => {
+        const cb = e.target;
+        if (!cb.matches('input[type="checkbox"][data-w]')) return;
+        const p = progress();
+        const k = tkey(cb.dataset.w, cb.dataset.i);
+        if (cb.checked) p[k] = true; else delete p[k];
+        saveProgress(p);
+        cb.closest(".checkbox-row").classList.toggle("checked", cb.checked);
+        const wNum = Number(cb.dataset.w);
+        const wData = DATA.weeks.find(x => x.week === wNum);
+        const card = document.getElementById("woche-" + wNum);
+        if (card && wData) card.classList.toggle("is-done", weekDone(wData));
+        renderProgress();
+      });
+
+      // Modus wählen (Event-Delegation) — speichert Modus, rendert neu
+      cw.addEventListener("click", e => {
+        const btn = e.target.closest(".course-mode-btn");
+        if (!btn) return;
+        MM.store.set("course_mode", btn.dataset.mode);
+        if (MM.track) MM.track("course_mode_selected", { mode: btn.dataset.mode });
+        showContent();
+      });
+    }
 
     // Fortschritt zurücksetzen
     const reset = document.getElementById("courseReset");
