@@ -127,7 +127,11 @@
       }
       var saved = "";
       try { saved = localStorage.getItem(STORE) || ""; } catch (e) {}
-      if (saved) await attempt(saved, true);
+      if (saved) { await attempt(saved, true); }
+      /* ===== TEMPORÄRE GRATIS-VORSCHAU (auf Wunsch des Inhabers) =====
+         Öffnet das Protokoll ohne Zugangscode. Zum WIEDER-SPERREN einfach
+         die nächste Zeile entfernen — dann greift wieder das Code-Gate. */
+      if (gate && !gate.hidden) { await attempt("Ural", true); }
     } catch (e) { /* Gate bleibt sichtbar */ }
   })();
   if (btn) btn.addEventListener("click", function () { attempt(input.value); });
