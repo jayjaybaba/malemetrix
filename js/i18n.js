@@ -16,7 +16,7 @@
     "nav.tools":   { de: "Rechner", en: "Calculators" },
     "nav.tracker": { de: "Tracker", en: "Tracker" },
     "nav.protokoll":{ de: "Das Protokoll", en: "The Protocol" },
-    "nav.mycourse":{ de: "Mein Programm öffnen", en: "Open My Program" },
+    "nav.mycourse":{ de: "Mein Protokoll öffnen", en: "Open My Protokoll" },
     "nav.shop":    { de: "Shop", en: "Shop" },
     "nav.more":    { de: "Wissen", en: "Knowledge" },
     "nav.ebooks":  { de: "Ebooks", en: "Ebooks" },

@@ -111,6 +111,7 @@
       (x.science ? '<div class="course-science"><span class="course-science-label">📊 Was die Studienlage zeigt</span><p>' + esc(x.science) + "</p></div>" : "") +
       (how ? '<div class="course-how"><span class="course-block-label">So nutzt du das Programm</span><ol>' + how + "</ol></div>" : "") +
       (x.promise ? '<p class="course-promise muted">' + esc(x.promise) + "</p>" : "") +
+      (x.backref ? '<div class="course-science" style="border-left-color:var(--accent-2)"><span class="course-science-label" style="color:var(--accent-2)">📕 Buch &amp; Programm</span><p>' + esc(x.backref) + ' <a href="ebooks/protokoll.html" style="color:var(--accent);text-decoration:underline">DAS PROTOKOLL öffnen &rarr;</a></p></div>' : "") +
       "</section>";
   }
 
