@@ -23,7 +23,7 @@
 
   function whtrPoints(a) {
     const waist = parseFloat(a.waist), height = parseFloat(a.height);
-    if (!waist || !height) return { pts: 8, ratio: null };
+    if (!waist || !height) return { pts: 0, ratio: null, missing: true };
     const ratio = waist / height;
     let pts;
     if (ratio < 0.5) pts = 25;
@@ -71,7 +71,14 @@
     });
 
     const wh = whtrPoints(a);
-    scores.body += wh.pts;
+    if (wh.ratio !== null) {
+      scores.body += wh.pts;
+    } else {
+      // Fehlender Bauchumfang ist KEIN schlechter Wert: Body über die vorhandenen
+      // Fragen normalisieren (Nicht-WHtR-Maximum ~68 → auf ~93 hochskalieren),
+      // statt eine feste, niedrige Ersatzbewertung einzurechnen.
+      scores.body = Math.round(scores.body * (93 / 68));
+    }
 
     Object.keys(scores).forEach(k => { scores[k] = Math.max(0, Math.min(100, Math.round(scores[k]))); });
 
@@ -90,13 +97,13 @@
   function findBottleneck(s, a) {
     // Spezialregeln (in Prioritätsreihenfolge)
     if (s.drive <= 45 && s.recovery <= 45 && s.blood <= 45) {
-      return { key: "recovery", name: "Recovery & Datenbasis", text: "Bevor du Hormone oder Energie überinterpretierst, müssen Schlaf und Datenbasis sauberer werden. Erst Erholung stabilisieren, dann messen, dann optimieren." };
+      return { key: "recovery", name: "Schlaf & Datenbasis", text: "Bevor du Hormone oder Energie überinterpretierst, müssen Schlaf und Datenbasis sauberer werden. Erst Erholung stabilisieren, dann messen, dann optimieren." };
     }
     if (s.strength >= 60 && s.body <= 45 && s.fuel <= 45) {
       return { key: "fuel", name: "Ernährungssystem", text: "Du hast kein Trainingsproblem. Du hast ein Ernährungssystem-Problem: Protein, Mengen und Wochenenden müssen messbar werden." };
     }
     if (s.body <= 45 && s.strength <= 45 && s.fuel <= 45) {
-      return { key: "strength", name: "Fundament (Body + Strength + Fuel)", text: "Du brauchst keinen Spezialplan. Du brauchst ein starkes Fundament: feste Trainingstage, Proteinziel, Baseline-Messung. Genau in dieser Reihenfolge." };
+      return { key: "strength", name: "Fundament (Körper, Training & Ernährung)", text: "Du brauchst keinen Spezialplan. Du brauchst ein starkes Fundament: feste Trainingstage, Proteinziel, Baseline-Messung. Genau in dieser Reihenfolge." };
     }
     if (s.blood >= 60 && s.drive <= 45 && s.recovery <= 45) {
       return { key: "recovery", name: "Umsetzung statt Overthinking", text: "Du hast Daten, aber deine Basis ist nicht stabil genug. Mehr Messung ersetzt keine Umsetzung — Schlaf und Routine sind dein erster Hebel." };
@@ -144,50 +151,6 @@
     }
     return flags;
   }
-
-  /* ---------- Nächste Schritte: Engpass-abhängige Angebots-Pfade ---------- */
-
-  function offerFor(bKey) {
-    const paths = {
-      recovery: {
-        lead: "Dein Engpass ist Erholung. Bevor du irgendetwas Neues kaufst oder schluckst: Der 4-Ebenen-Schlaf-Stack ist dein erster Hebel — als Selbstlern-System im Protokoll oder persönlich gesteuert im 1:1 Coaching.",
-        primary: { label: "DAS PROTOKOLL starten (Schlaf-Stack)", href: "protokoll.html", track: "cta_protokoll" },
-        secondary: { label: "1:1 Coaching: Erstgespräch buchen", href: "coaching.html#buchen", track: "cta_coaching" }
-      },
-      body: {
-        lead: "Dein Engpass ist die Körperbasis. Du brauchst kein weiteres Video, sondern ein System für Defizit, Protein und Messung — und idealerweise jemanden, der jede Woche draufschaut.",
-        primary: { label: "DAS PROTOKOLL starten", href: "protokoll.html", track: "cta_protokoll" },
-        secondary: { label: "1:1 Coaching: Erstgespräch buchen", href: "coaching.html#buchen", track: "cta_coaching" }
-      },
-      strength: {
-        lead: "Dein Engpass ist das Training. Push/Pull/Legs mit dokumentierter Progression, RIR und der Ampel-Steuerung — als Selbstlern-System im Protokoll oder mit wöchentlicher Kontrolle im 1:1 Coaching.",
-        primary: { label: "DAS PROTOKOLL starten (Trainingssystem)", href: "protokoll.html", track: "cta_protokoll" },
-        secondary: { label: "1:1 Coaching: Erstgespräch buchen", href: "coaching.html#buchen", track: "cta_coaching" }
-      },
-      fuel: {
-        lead: "Dein Engpass ist die Ernährung. Kein neuer Diät-Trend — ein Ernährungssystem: Proteinziel, Sattmacher, Wochenend-Strategie, Trend statt Tageswaage. Genau das steht im Protokoll, Modul 4.",
-        primary: { label: "DAS PROTOKOLL starten (Ernährungssystem)", href: "protokoll.html", track: "cta_protokoll" },
-        secondary: { label: "1:1 Coaching: Erstgespräch buchen", href: "coaching.html#buchen", track: "cta_coaching" }
-      },
-      blood: {
-        lead: "Dein Engpass sind die Daten. Das Blood-Dashboard aus dem Protokoll macht aus „mal Blutwerte machen\" ein System mit 8 Bereichen — und im 1:1 Coaching wird deine Supplement-Strategie an deine Werte angepasst, nicht an Instagram.",
-        primary: { label: "DAS PROTOKOLL starten (Blood-Dashboard)", href: "protokoll.html", track: "cta_protokoll" },
-        secondary: { label: "1:1 Coaching: Erstgespräch buchen", href: "coaching.html#buchen", track: "cta_coaching" }
-      },
-      drive: {
-        lead: "Dein Engpass ist Energie & Drive. Das ist fast nie ein „Hormonproblem\", sondern meist Schlaf, Defizit oder ein Stack, der nicht zu dir passt. Im 1:1 Coaching gehen wir das der Reihe nach durch — Schlaf zuerst.",
-        primary: { label: "1:1 Coaching: Erstgespräch buchen", href: "coaching.html#buchen", track: "cta_coaching" },
-        secondary: { label: "DAS PROTOKOLL starten", href: "protokoll.html", track: "cta_protokoll" }
-      },
-      execution: {
-        lead: "Dein Engpass ist die Umsetzung. Mehr Wissen bringt dir nichts — du brauchst wöchentliche Kontrolle und einen, der nachfragt. Genau dafür ist das 1:1 Coaching gebaut: jede Woche dein Check-in, meine Antwort, ein klarer Fokus.",
-        primary: { label: "1:1 Coaching: Erstgespräch buchen", href: "coaching.html#buchen", track: "cta_coaching" },
-        secondary: { label: "DAS PROTOKOLL starten (Selbstlernen)", href: "protokoll.html", track: "cta_protokoll" }
-      }
-    };
-    return paths[bKey] || paths.execution;
-  }
-
   /* ======================================================================
      WIZARD-RENDERING
      ====================================================================== */
@@ -459,164 +422,13 @@
       'stroke-dasharray="' + circ + '" stroke-dashoffset="' + circ + '" data-target="' + off + '"/></svg>';
   }
 
-  function levelClass(v) { return v < 40 ? "low" : v < 70 ? "mid" : "high"; }
-
-  function moduleText(key, v) {
-    const t = C.moduleTexts[key];
-    return v < 40 ? t.low : v < 70 ? t.mid : t.high;
-  }
-
-  /* ---------- Personalisierung: Zahlen-Helfer ---------- */
-
-  function protTarget(a) {
-    const w = parseFloat(a.weight);
-    return w ? Math.round(w * 1.8) + "–" + Math.round(w * 2.2) + " g" : "1,8–2 g pro kg";
-  }
-  function stepTargetNum(a) {
-    return (a.steps === "lt4") ? "7.000" : (a.steps === "4to7") ? "8.000" : "10.000";
-  }
-
-  /* ---------- Personalisierung: Insights aus konkreten Antworten ---------- */
-
-  function personalInsights(a, r) {
-    const neg = [], pos = [];
-
-    // Schlaf
-    const sleepMap = { lt5: "unter 5", "5to6": "5–6", "6to7": "6–7" };
-    if (a.rec_duration === "lt5" || a.rec_duration === "5to6")
-      neg.push({ icon: "😴", text: "Du schläfst aktuell nur <strong>" + sleepMap[a.rec_duration] + " Stunden</strong>. Das bremst Regeneration, Appetitkontrolle und Energie mehr als fast alles andere — und ist dein schnellster Hebel." });
-    else if (a.rec_wake === "geraedert" || a.rec_wake === "nachts_wach")
-      neg.push({ icon: "😴", text: "Du wachst gerädert auf bzw. nachts oft. Selbst bei genug Stunden zählt die <strong>Schlafqualität</strong> — Koffein-Timing und Abendroutine sind hier dein Hebel." });
-
-    // Protein
-    if (a.fuel_protein === "keine_ahnung")
-      neg.push({ icon: "🥩", text: "Du weißt nicht, wie viel <strong>Protein</strong> du isst. Solange das im Dunkeln bleibt, sind Fettabbau und Muskelerhalt Glückssache. Dein Zielwert: <strong>" + protTarget(a) + "</strong> pro Tag." });
-    else if (a.fuel_protein === "lt80")
-      neg.push({ icon: "🥩", text: "Dein <strong>Protein liegt unter 80 g</strong> pro Tag — deutlich zu wenig. Allein das auf <strong>" + protTarget(a) + "</strong> anzuheben verändert Sättigung und Körperbild spürbar." });
-
-    // Trainingsfrequenz
-    const freqMap = { "0": "gar nicht", "1": "nur 1×", unregelmaessig: "sehr unregelmäßig" };
-    if (a.str_freq === "0" || a.str_freq === "1" || a.str_freq === "unregelmaessig")
-      neg.push({ icon: "🏋️", text: "Du trainierst aktuell <strong>" + freqMap[a.str_freq] + "</strong> Kraft pro Woche. Genau hier liegt dein größtes ungenutztes Potenzial — schon <strong>3 feste Einheiten</strong> verändern alles." });
-    else if (a.str_plan === "spontan" || a.str_log === "nein")
-      neg.push({ icon: "📈", text: "Du trainierst zwar, aber <strong>ohne dokumentierte Progression</strong>. Ohne Steigerung im Plan stagniert der Reiz — Tracking ist dein Hebel, nicht mehr Schwitzen." });
-
-    // Schritte
-    if (a.steps === "lt4")
-      neg.push({ icon: "👟", text: "<strong>Unter 4.000 Schritte</strong> am Tag — der am meisten unterschätzte Hebel. Mehr Alltagsbewegung verbrennt oft mehr als jedes Workout. Ziel: <strong>" + stepTargetNum(a) + "</strong>." });
-    else if (a.steps === "4to7")
-      neg.push({ icon: "👟", text: "<strong>4.000–7.000 Schritte</strong> sind okay, aber nicht genug. Ein Ziel von <strong>" + stepTargetNum(a) + "</strong> ist ein leiser, großer Hebel für deine Bilanz." });
-
-    // Alkohol
-    if (a.fuel_alcohol === "taeglich")
-      neg.push({ icon: "🍺", text: "<strong>Fast täglich Alkohol</strong> sabotiert Schlafqualität, Regeneration und Kalorienbilanz gleichzeitig — drei deiner Baustellen auf einmal." });
-    else if (a.fuel_alcohol === "we_viel")
-      neg.push({ icon: "🍺", text: "Am Wochenende viel Alkohol: Zwei Tage können das Defizit von fünf disziplinierten löschen. Hier liegt <strong>schnelle Beute</strong>." });
-
-    // Koffein spät
-    if (a.rec_caffeine === "abends" || a.rec_caffeine === "nachmittag")
-      neg.push({ icon: "☕", text: "Du trinkst Koffein bis in den <strong>" + (a.rec_caffeine === "abends" ? "Abend" : "Nachmittag") + "</strong>. Die Wirkung hält 6+ Stunden an und kostet dich Tiefschlaf — eine 14-Uhr-Deadline wirkt oft Wunder." });
-
-    // Neustarts / Umsetzung
-    if (a.exe_restarts === "staendig" || a.exe_restarts === "nie_drin")
-      neg.push({ icon: "🔁", text: "Du startest immer wieder neu. Das ist <strong>kein Disziplinproblem</strong> — dir fehlt ein System, das deinen Alltag überlebt. Genau das ist der Kern von MaleMetrix." });
-
-    // Bauchumfang / WHtR
-    if (r.whtr && r.whtr >= 0.6)
-      neg.push({ icon: "📏", text: "Dein Bauchumfang liegt bei <strong>" + r.whtr.toFixed(2).replace(".", ",") + "×</strong> deiner Größe (Ziel: unter 0,50). Das ist dein wichtigster sichtbarer Marker — und gut veränderbar." });
-    else if (r.whtr && r.whtr >= 0.5)
-      neg.push({ icon: "📏", text: "Dein Bauchumfang liegt <strong>knapp über der Hälfte</strong> deiner Größe. Schon ein paar Zentimeter weniger verschieben das Bild spürbar." });
-
-    // Stress
-    if (a.rec_stress && parseInt(a.rec_stress, 10) >= 8)
-      neg.push({ icon: "🧠", text: "Dein Stresslevel liegt bei <strong>" + a.rec_stress + "/10</strong>. Hoher Dauerstress arbeitet gegen Schlaf, Appetit und Regeneration — kurze tägliche Spaziergänge sind dein Ventil." });
-
-    // Energie nur mit Koffein
-    if (a.drv_energy === "nur_koffein")
-      neg.push({ icon: "⚡", text: "Du <strong>funktionierst nur mit Koffein</strong>. Das ist ein Symptom, kein Zustand — meist steckt Schlaf oder Erholung dahinter, nicht ein „Energie-Problem“." });
-
-    // Blutwerte-Baseline
-    if (a.blood_last === "nie")
-      neg.push({ icon: "🩸", text: "Du hast <strong>noch nie bewusst Blutwerte</strong> machen lassen. Ohne Baseline interpretierst du Energie und Drive nur nach Gefühl — eine saubere Messung beendet das Raten." });
-
-    // Positive Stärke
-    const strongTexts = {
-      execution: "Deine <strong>Umsetzungsbereitschaft</strong> ist stark — der beste Startvorteil, den es gibt.",
-      strength: "Dein <strong>Trainingsfundament</strong> ist solide — darauf lässt sich schnell aufbauen.",
-      recovery: "Deine <strong>Erholung</strong> ist eine Stärke — sie erlaubt dir, über Training und Ernährung zu skalieren.",
-      fuel: "Deine <strong>Ernährung</strong> ist überraschend strukturiert — eine starke Basis.",
-      body: "Deine <strong>Körperbasis</strong> ist gut — bei dir geht es um Feintuning.",
-      drive: "Dein <strong>Antrieb</strong> ist eine Stärke — nutze ihn als Motor.",
-      blood: "Du bist <strong>datenorientiert</strong> — das gibt dir einen echten Vorsprung."
-    };
-    if (r.scores[r.strongest] >= 50 && strongTexts[r.strongest])
-      pos.push({ icon: "✅", text: "Deine Stärke: " + strongTexts[r.strongest] });
-
-    // Ziel-Dringlichkeit als motivierender Abschluss
-    if (a.goal_urgency >= 4 || a.exe_ready >= 8)
-      pos.push({ icon: "🔥", text: "Du willst <strong>jetzt</strong> starten — und Bereitschaft ist der Faktor, der am stärksten über Erfolg entscheidet. Nutze dieses Momentum." });
-
-    // bottleneck-relevante Insights zuerst, dann Rest; max 5 negative + 1-2 positive
-    return neg.slice(0, 5).concat(pos.slice(0, 1));
-  }
-
-  /* ---------- Personalisierung: dynamischer 7-Tage-Plan ---------- */
-
-  function dynamicPlan(a, r) {
-    const has = {
-      sleep: ["lt5", "5to6"].indexOf(a.rec_duration) >= 0 || ["geraedert", "nachts_wach"].indexOf(a.rec_wake) >= 0,
-      caffeine: ["nachmittag", "abends"].indexOf(a.rec_caffeine) >= 0,
-      protein: ["keine_ahnung", "lt80"].indexOf(a.fuel_protein) >= 0,
-      training: ["0", "1", "unregelmaessig"].indexOf(a.str_freq) >= 0,
-      steps: ["lt4", "4to7"].indexOf(a.steps) >= 0,
-      alcohol: ["we_viel", "taeglich", "2to3"].indexOf(a.fuel_alcohol) >= 0,
-      tracking: Array.isArray(a.body_tracking) && a.body_tracking.indexOf("nichts") >= 0,
-      blood: ["nie", "gt2y"].indexOf(a.blood_last) >= 0,
-      weekend: ["wochenende", "abends"].indexOf(a.fuel_control) >= 0
-    };
-    const days = [];
-
-    days.push({ day: "Tag 1", items: [
-      "Gewicht und Bauchumfang messen (Nabelhöhe, ausgeatmet) + 3 Fotos: front, seitlich, hinten",
-      has.protein ? "Protein-Tagesziel festlegen: <strong>" + protTarget(a) + "</strong>" : "Dein wichtigstes 12-Wochen-Ziel in einem Satz aufschreiben"
-    ] });
-
-    const d2 = [];
-    if (has.sleep) d2.push("Feste Schlafenszeit für die nächsten 7 Tage festlegen — Ziel mindestens 7 Stunden");
-    else d2.push("Zwei proteinreiche Standardmahlzeiten definieren, die du ohne Nachdenken wiederholst");
-    if (has.caffeine) d2.push("Koffein-Deadline auf 14 Uhr setzen");
-    else if (has.steps) d2.push("Schritte-Tracking am Handy aktivieren, Ziel " + stepTargetNum(a));
-    days.push({ day: "Tag 2", items: d2 });
-
-    days.push({ day: "Tag 3", items: [
-      has.training ? "Erstes Krafttraining: Ganzkörper, 45–60 Min, Technik vor Gewicht — und im MaleMetrix Tracker dokumentieren" : "Krafttraining wie gewohnt — aber ab heute jede Übung im Tracker dokumentieren (Gewicht, Wdh.)",
-      has.steps ? "Nach dem Training 15–20 Min zügig gehen (Richtung " + stepTargetNum(a) + " Schritte)" : "20 Minuten zügiger Spaziergang"
-    ] });
-
-    const d4 = [];
-    if (has.tracking) d4.push("Einen Tag Ernährung grob mitschreiben — nur beobachten, noch nichts ändern");
-    else d4.push("Protein heute bewusst treffen (" + protTarget(a) + ") und kurz notieren");
-    if (has.blood) d4.push("Letzte Laborwerte raussuchen oder einen Basislabor-Termin vereinbaren");
-    else d4.push("Koffein nach 14 Uhr weglassen, früher ins Bett");
-    days.push({ day: "Tag 4", items: d4 });
-
-    days.push({ day: "Tag 5", items: [
-      "Zweites Krafttraining — gleiche Übungen, kleine Steigerung anstreben",
-      has.sleep ? "Abendroutine: letzte 30 Minuten vor dem Schlafen ohne Bildschirm" : (stepTargetNum(a) + " Schritte erreichen")
-    ] });
-
-    days.push({ day: "Tag 6", items: [
-      (has.alcohol || has.weekend) ? "Wochenendstrategie schriftlich festlegen: Alkohol- und Snack-Limit vorab — nüchtern entschieden" : "Eine flexible Mahlzeit bewusst einplanen statt das Wochenende laufen zu lassen",
-      "Dritte Trainingseinheit oder aktive Erholung (Spaziergang, Mobility 15 Min)"
-    ] });
-
-    days.push({ day: "Tag 7", items: [
-      "Review: Gewicht, Bauchumfang, Schlaf, Trainings und Energie (1–10) mit Tag 1 vergleichen",
-      "3 feste Trainingstermine für die nächste Woche in den Kalender eintragen"
-    ] });
-
-    return days;
-  }
+  /* Geteilte Logik aus check-data.js (EINE Quelle der Wahrheit) */
+  const levelClass = C.levelClass;
+  const moduleText = C.moduleText;
+  const protTarget = C.protTarget;
+  const stepTargetNum = C.stepTargetNum;
+  const personalInsights = C.personalInsights;
+  const dynamicPlan = C.dynamicPlan;
 
   /* ---------- Ergebnis rendern ---------- */
 
@@ -631,6 +443,9 @@
     const strengths = sortedDesc.slice(0, 3);
     const topVal = r.scores[strengths[0]] || 0;
     const bKey = r.bottleneck.key;
+    const ans = r.answers || {};
+    const dc = C.dataConfidence(ans);
+    const tv = C.targetValues(ans);
 
     let html = '';
 
@@ -645,8 +460,17 @@
       '<div class="result-chips">' +
       '<span class="chip">Stärkster Bereich: <strong>' + nm(strengths[0]) + '</strong></span>' +
       '<span class="chip warn">Größter Hebel: <strong>' + r.bottleneck.name + '</strong></span>' +
+      '<span class="chip">Empfohlener Modus: <strong>' + tv.modeLabel + '</strong></span>' +
       (prev ? '<span class="chip ' + (r.total >= prev.total ? 'accent' : 'warn') + '">Letzter Check: <strong>' + prev.total + ' → ' + r.total + '</strong></span>' : '') +
       '</div></div></div>';
+
+    /* ---------- Datenqualität (NICHT Gesundheitsstatus) ---------- */
+    html += '<div class="card" style="margin-bottom:22px;border-left:3px solid ' +
+      (dc.level === 'hoch' ? 'var(--green)' : dc.level === 'mittel' ? 'var(--accent-2)' : 'var(--red)') + '">' +
+      '<span class="card-num">DATENQUALITÄT: ' + dc.level.toUpperCase() + '</span>' +
+      '<p class="small muted" style="margin:6px 0 0">' + dc.text +
+      (dc.missing.indexOf('Bauchumfang') >= 0 ? ' <a href="check.html" style="color:var(--accent)">Bauchumfang nachtragen und Ergebnis präzisieren →</a>' : '') +
+      '</p></div>';
 
     /* ---------- Red Flags (Sicherheit zuerst) ---------- */
     if (r.flags.length) {
@@ -737,9 +561,17 @@
     });
     html += '</div>';
 
-    /* ---------- 6b. Angebote (erst jetzt, beratend, 2 Wege) ---------- */
+    /* ---------- 6b. Personalisierte Empfehlung + 2 Wege ---------- */
+    const rec = C.productRecommendation(r);
+    const recColor = rec.kind === 'medical' ? 'var(--red)' : (rec.kind === 'coaching' ? 'var(--accent-2)' : 'var(--accent)');
     html += '<h3 class="h-card" style="margin:38px 0 6px">Wenn du es strukturiert angehen willst</h3>' +
-      '<p class="small muted" style="margin-bottom:18px">Zwei Wege — selbstständig oder mit persönlicher Begleitung. Kein Muss: Der Score, die Guides und die Tools oben sind komplett kostenlos.</p>' +
+      '<div class="card dash-block" style="border-left:3px solid ' + recColor + ';margin-bottom:14px">' +
+      '<span class="card-num" style="color:' + recColor + '">' + (rec.kind === 'medical' ? 'ZUERST: SICHERHEIT' : 'PASST ZU DEINEM PROFIL') + '</span>' +
+      '<h3 style="margin:2px 0 6px">' + rec.title + '</h3>' +
+      '<p class="small muted" style="margin:0 0 14px">' + rec.why + '</p>' +
+      (rec.primary.href ? '<a class="btn btn-primary btn-sm" href="' + rec.primary.href + '" data-track="cta_reco">' + rec.primary.label + '</a>' : '<span class="btn btn-dark btn-sm" style="cursor:default">' + rec.primary.label + '</span>') +
+      '</div>' +
+      '<p class="small muted" style="margin-bottom:18px">Beide Wege im Überblick — kein Muss: Der Score, die Guides und die Tools oben sind komplett kostenlos.</p>' +
       '<div class="grid-2">' +
       '<a class="card offer-card featured" href="protokoll.html" data-track="cta_protokoll"><span class="card-num">SELBSTSTÄNDIG</span>' +
       '<h3 style="font-size:1.05rem;margin:6px 0 2px">DAS PROTOKOLL</h3><p class="offer-price">49 €<small> einmalig</small></p>' +

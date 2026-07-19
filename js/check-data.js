@@ -15,10 +15,10 @@ window.MM_CHECK = {
 
   moduleSubtitles: {
     body: "Körperkomposition & Bauchumfang",
-    strength: "Krafttraining & Progression",
+    strength: "Kraft, Cardio & Progression",
     fuel: "Ernährung, Protein & Alltag",
     recovery: "Schlaf, Stress & Regeneration",
-    blood: "Blutwerte & Datenbasis",
+    blood: "Gesundheitsdaten & Prävention",
     drive: "Energie, Fokus & Antrieb",
     execution: "Umsetzung & Routinen"
   },
@@ -26,8 +26,8 @@ window.MM_CHECK = {
   /* Deutsche Anzeigenamen fürs Dashboard (einheitlich mit der Startseite).
      Nur Darstellung — Scoring/Keys bleiben unverändert. */
   moduleNamesDe: {
-    body: "Körper", strength: "Training", fuel: "Ernährung", recovery: "Schlaf & Erholung",
-    blood: "Blutwerte", drive: "Energie & Antrieb", execution: "Umsetzung"
+    body: "Körper", strength: "Training & Fitness", fuel: "Ernährung", recovery: "Schlaf & Erholung",
+    blood: "Blutwerte & Prävention", drive: "Energie & Antrieb", execution: "Umsetzung"
   },
   moduleNamesShort: {
     body: "Körper", strength: "Training", fuel: "Ernährung", recovery: "Schlaf",
@@ -156,17 +156,18 @@ window.MM_CHECK = {
 
     /* ---------- 3. Body ---------- */
     {
-      id: "body", label: "Body — Körper & Bauchumfang",
+      id: "body", label: "Körper & Bauchumfang",
       questions: [
         {
           id: "body_weighttrend", type: "single", module: "body",
           title: "Wie hat sich dein Gewicht in den letzten 12 Monaten entwickelt?",
+          sub: "Wir bewerten Stabilität und Kontrolle — nicht Abnehmen um jeden Preis.",
           options: [
             { v: "plus8", label: "Mehr als 8 kg zugenommen", p: 3 },
             { v: "plus48", label: "4–8 kg zugenommen", p: 7 },
             { v: "gleich", label: "Etwa gleich geblieben", p: 15 },
-            { v: "minus48", label: "4–8 kg abgenommen", p: 15 },
-            { v: "minus8", label: "Mehr als 8 kg abgenommen", p: 12 },
+            { v: "minus48", label: "4–8 kg abgenommen", p: 13 },
+            { v: "minus8", label: "Mehr als 8 kg abgenommen", p: 9 },
             { v: "unknown", label: "Weiß ich nicht", p: 4 }
           ]
         },
@@ -210,34 +211,35 @@ window.MM_CHECK = {
         {
           id: "body_satisfaction", type: "scale", module: "body", min: 1, max: 10,
           title: "Wie zufrieden bist du mit deiner aktuellen Form?",
-          sub: "1 = sehr unzufrieden · 10 = sehr zufrieden",
-          pointsMap: [[2, 4], [4, 8], [6, 11], [8, 15], [10, 13]]
+          sub: "1 = sehr unzufrieden · 10 = sehr zufrieden. Subjektiv — fließt bewusst nur schwach in den Score ein.",
+          pointsMap: [[2, 3], [4, 5], [6, 7], [8, 8], [10, 7]]
         }
       ]
     },
 
-    /* ---------- 4. Strength ---------- */
+    /* ---------- 4. Training & Fitness (Kraft + Cardio) ---------- */
     {
-      id: "strength", label: "Strength — Kraft & Training",
+      id: "strength", label: "Training & Fitness — Kraft, Cardio & Progression",
       questions: [
         {
           id: "str_freq", type: "single", module: "strength",
           title: "Wie oft trainierst du Kraft pro Woche?",
+          sub: "Es zählt sinnvolle Regelmäßigkeit — nicht möglichst viele Tage.",
           options: [
             { v: "0", label: "Gar nicht", p: 2 },
-            { v: "1", label: "1× pro Woche", p: 6 },
-            { v: "2", label: "2× pro Woche", p: 12 },
-            { v: "3", label: "3× pro Woche", p: 20 },
-            { v: "4plus", label: "4× oder öfter", p: 18 },
-            { v: "unregelmaessig", label: "Sehr unregelmäßig", p: 4 }
+            { v: "1", label: "1× pro Woche", p: 7 },
+            { v: "2", label: "2× pro Woche", p: 13 },
+            { v: "3", label: "3× pro Woche", p: 16 },
+            { v: "4plus", label: "4× oder öfter", p: 16 },
+            { v: "unregelmaessig", label: "Sehr unregelmäßig", p: 5 }
           ]
         },
         {
           id: "str_plan", type: "single", module: "strength",
-          title: "Trainierst du nach Plan?",
+          title: "Trainierst du mit Progression (steigende Belastung über die Zeit)?",
           options: [
-            { v: "progression", label: "Ja, mit klarer Progression", p: 20 },
-            { v: "ohne_steigerung", label: "Ja, aber ohne klare Steigerung", p: 12 },
+            { v: "progression", label: "Ja, mit klarer Progression", p: 16 },
+            { v: "ohne_steigerung", label: "Ja, aber ohne klare Steigerung", p: 10 },
             { v: "spontan", label: "Ich mache spontan, worauf ich Lust habe", p: 6 },
             { v: "selten", label: "Ich trainiere selten", p: 3 },
             { v: "nein", label: "Gar nicht", p: 0 }
@@ -247,24 +249,24 @@ window.MM_CHECK = {
           id: "str_log", type: "single", module: "strength",
           title: "Wie dokumentierst du dein Training?",
           options: [
-            { v: "app", label: "App / Notizen mit Gewichten & Wiederholungen", p: 20 },
-            { v: "manchmal", label: "Gelegentlich", p: 12 },
-            { v: "kopf", label: "Nur im Kopf", p: 6 },
+            { v: "app", label: "App / Notizen mit Gewichten & Wiederholungen", p: 12 },
+            { v: "manchmal", label: "Gelegentlich", p: 8 },
+            { v: "kopf", label: "Nur im Kopf", p: 5 },
             { v: "nein", label: "Gar nicht", p: 2 }
           ]
         },
         {
-          id: "str_exercises", type: "multi", module: "strength", cap: 15,
-          title: "Welche Übungen nutzt du regelmäßig?",
-          sub: "Mehrfachauswahl möglich.",
+          id: "str_exercises", type: "multi", module: "strength", cap: 8,
+          title: "Deckst du die großen Grundmuster ab?",
+          sub: "Mehrfachauswahl — Vollständigkeit der Muster zählt, nicht die Anzahl der Übungen.",
           options: [
-            { v: "kniebeuge", label: "Kniebeuge / Beinpresse", p: 2.5 },
-            { v: "kreuzheben", label: "Kreuzheben / Hip Hinge", p: 2.5 },
-            { v: "bank", label: "Bankdrücken / Brustpresse", p: 2.5 },
-            { v: "rudern", label: "Rudern", p: 2.5 },
-            { v: "klimmzug", label: "Klimmzüge / Latzug", p: 2.5 },
-            { v: "schulter", label: "Schulterdrücken", p: 2.5 },
-            { v: "core", label: "Core / Rumpf", p: 2.5 },
+            { v: "kniebeuge", label: "Knie (Kniebeuge / Beinpresse)", p: 1.6 },
+            { v: "kreuzheben", label: "Hüfte (Kreuzheben / Hip Hinge)", p: 1.6 },
+            { v: "bank", label: "Druck horizontal (Bank / Brust)", p: 1.6 },
+            { v: "rudern", label: "Zug horizontal (Rudern)", p: 1.6 },
+            { v: "klimmzug", label: "Zug vertikal (Klimmzug / Latzug)", p: 1.6 },
+            { v: "schulter", label: "Druck vertikal (Schulterdrücken)", p: 1.6 },
+            { v: "core", label: "Core / Rumpf", p: 1.6 },
             { v: "keine", label: "Keine davon", p: 0, exclusive: true }
           ]
         },
@@ -279,7 +281,7 @@ window.MM_CHECK = {
             { v: "kein_plan", label: "Kein Plan", p: 4 },
             { v: "technik", label: "Unsicherheit bei der Technik", p: 5 },
             { v: "kein_gym", label: "Keine Lust auf Gym", p: 4 },
-            { v: "nichts", label: "Nichts — läuft", p: 10 }
+            { v: "nichts", label: "Nichts — läuft", p: 8 }
           ]
         },
         {
@@ -287,9 +289,43 @@ window.MM_CHECK = {
           title: "Kennst du deine aktuellen Kraftwerte?",
           sub: "Z. B. Gewichte bei Kniebeuge, Bankdrücken, Kreuzheben — oder Liegestütze am Stück.",
           options: [
-            { v: "genau", label: "Ja, ich kenne meine Werte genau", p: 15 },
-            { v: "ungefaehr", label: "Ungefähr", p: 9 },
+            { v: "genau", label: "Ja, ich kenne meine Werte genau", p: 10 },
+            { v: "ungefaehr", label: "Ungefähr", p: 6 },
             { v: "nein", label: "Nein", p: 3 }
+          ]
+        },
+        {
+          id: "str_cardio_freq", type: "single", module: "strength",
+          title: "Wie oft machst du pro Woche gezielt Ausdauer / Cardio?",
+          sub: "Zügiges Gehen, Laufen, Rad, Rudern, Schwimmen — moderat oder intensiv.",
+          options: [
+            { v: "0", label: "Gar nicht gezielt", p: 2 },
+            { v: "alltag", label: "Nur Alltagsbewegung, nichts Gezieltes", p: 6 },
+            { v: "1", label: "1× pro Woche", p: 9 },
+            { v: "2", label: "2× pro Woche", p: 13 },
+            { v: "3plus", label: "3× oder öfter", p: 15 }
+          ]
+        },
+        {
+          id: "str_cardio_capacity", type: "single", module: "strength",
+          title: "Wie fühlst du dich, wenn du 3–4 Stockwerke zügig hochgehst?",
+          sub: "Einfacher Alltags-Fitnesscheck — keine VO₂max-Messung.",
+          options: [
+            { v: "locker", label: "Locker, kaum außer Atem", p: 9 },
+            { v: "etwas", label: "Etwas außer Atem, aber okay", p: 6 },
+            { v: "deutlich", label: "Deutlich außer Atem", p: 3 },
+            { v: "vermeide", label: "Vermeide ich eher / geht schwer", p: 1 },
+            { v: "unknown", label: "Weiß ich nicht", p: 4 }
+          ]
+        },
+        {
+          id: "str_cardio_marker", type: "single", module: "strength",
+          title: "Kennst du einen reproduzierbaren Ausdauer-Marker von dir?",
+          sub: "Z. B. eine feste Strecke/Zeit, Ruhepuls, ein Wert von einem Cardio-Gerät.",
+          options: [
+            { v: "regelmaessig", label: "Ja, ich verfolge ihn", p: 6 },
+            { v: "grob", label: "Grob / gelegentlich", p: 4 },
+            { v: "nein", label: "Nein", p: 2 }
           ]
         }
       ]
@@ -297,7 +333,7 @@ window.MM_CHECK = {
 
     /* ---------- 5. Fuel ---------- */
     {
-      id: "fuel", label: "Fuel — Ernährung",
+      id: "fuel", label: "Ernährung",
       questions: [
         {
           id: "fuel_protein", type: "single", module: "fuel",
@@ -385,7 +421,7 @@ window.MM_CHECK = {
 
     /* ---------- 6. Recovery ---------- */
     {
-      id: "recovery", label: "Recovery — Schlaf & Stress",
+      id: "recovery", label: "Schlaf & Erholung",
       questions: [
         {
           id: "rec_duration", type: "single", module: "recovery",
@@ -425,12 +461,13 @@ window.MM_CHECK = {
         {
           id: "rec_caffeine", type: "single", module: "recovery",
           title: "Bis wann trinkst du Koffein?",
+          sub: "Timing ist nur ein Faktor — Menge und deine individuelle Schlafreaktion zählen mit.",
           options: [
             { v: "kein", label: "Gar kein Koffein", p: 10 },
             { v: "morgens", label: "Nur morgens", p: 10 },
-            { v: "mittags", label: "Bis mittags", p: 7 },
-            { v: "nachmittag", label: "Bis in den Nachmittag", p: 4 },
-            { v: "abends", label: "Auch abends", p: 1 }
+            { v: "mittags", label: "Bis mittags", p: 8 },
+            { v: "nachmittag", label: "Bis in den Nachmittag", p: 6 },
+            { v: "abends", label: "Auch abends", p: 3 }
           ]
         },
         {
@@ -453,79 +490,88 @@ window.MM_CHECK = {
       ]
     },
 
-    /* ---------- 7. Blood ---------- */
+    /* ---------- 7. Blutwerte & Prävention (risikobasiert, nicht „mehr Marker") ---------- */
     {
-      id: "blood", label: "Blood — Blutwerte & Daten",
+      id: "blood", label: "Blutwerte & Prävention — Gesundheitsdaten mit Sinn",
       questions: [
         {
-          id: "blood_last", type: "single", module: "blood",
-          title: "Wann hast du zuletzt Blutwerte machen lassen?",
+          id: "blood_bp", type: "single", module: "blood",
+          title: "Kennst du deinen aktuellen Blutdruck?",
+          sub: "Der wichtigste einzelne, oft unterschätzte Gesundheitswert.",
           options: [
-            { v: "nie", label: "Nie bewusst", p: 2 },
-            { v: "gt2y", label: "Vor mehr als 2 Jahren", p: 5 },
-            { v: "1to2y", label: "Vor 1–2 Jahren", p: 10 },
-            { v: "12m", label: "In den letzten 12 Monaten", p: 20 },
-            { v: "3m", label: "In den letzten 3 Monaten", p: 25 }
+            { v: "kontrolliert", label: "Ja — gemessen und im Blick / kontrolliert", p: 20 },
+            { v: "grob", label: "Ungefähr (mal gemessen)", p: 12 },
+            { v: "lange_her", label: "Lange nicht mehr gemessen", p: 5 },
+            { v: "nein", label: "Nein / keine Ahnung", p: 2 }
           ]
         },
         {
-          id: "blood_understand", type: "single", module: "blood",
-          title: "Verstehst du deine Blutwerte?",
+          id: "blood_baseline", type: "single", module: "blood",
+          title: "Hast du eine sinnvolle Blutwerte-Basis passend zu deinem Alter/Risiko?",
+          sub: "Gemeint ist eine angemessene Baseline — nicht möglichst viele oder möglichst häufige Tests.",
           options: [
-            { v: "nein", label: "Gar nicht", p: 2 },
-            { v: "bisschen", label: "Ein bisschen", p: 6 },
-            { v: "einzelne", label: "Ich kenne einzelne Werte", p: 10 },
-            { v: "tracke", label: "Ich tracke sie regelmäßig", p: 16 },
-            { v: "strukturiert", label: "Ich bespreche sie strukturiert mit Arzt / Coach", p: 20 }
+            { v: "aktuell_eingeordnet", label: "Ja, aktuell und ärztlich eingeordnet", p: 18 },
+            { v: "aktuell", label: "Ja, aktuelle Werte vorhanden", p: 14 },
+            { v: "nicht_noetig", label: "Bei mir aktuell kein Anlass — fit, jung, kein Risiko", p: 14 },
+            { v: "aelter", label: "Nur ältere Werte", p: 9 },
+            { v: "nie", label: "Noch nie bewusst", p: 3 }
           ]
         },
         {
-          id: "blood_known", type: "multi", module: "blood", bucket: [[0, 0], [1, 4], [3, 8], [6, 14], [9, 20], [99, 25]],
-          title: "Welche Werte kennst du von dir?",
-          sub: "Mehrfachauswahl möglich.",
+          id: "blood_cardiometabolic", type: "single", module: "blood",
+          title: "Kennst du deine cardiometabolischen Basiswerte im Kontext deines Risikos?",
+          sub: "Blutzucker (Glukose/HbA1c) und Blutfette (Lipide) — die wenigen, die für die meisten wirklich zählen.",
           options: [
-            { v: "blutbild", label: "Kleines / großes Blutbild" },
-            { v: "glukose", label: "Nüchternblutzucker" },
-            { v: "hba1c", label: "HbA1c" },
-            { v: "lipide", label: "Lipide (LDL, HDL, Triglyceride)" },
-            { v: "apob", label: "ApoB" },
-            { v: "leber", label: "Leberwerte" },
-            { v: "niere", label: "Nierenwerte" },
-            { v: "tsh", label: "TSH / fT3 / fT4" },
-            { v: "testo", label: "Testosteron gesamt" },
-            { v: "ftesto", label: "Freies Testosteron" },
-            { v: "shbg", label: "SHBG" },
-            { v: "estradiol", label: "Estradiol" },
-            { v: "prolaktin", label: "Prolaktin" },
-            { v: "psa", label: "PSA" },
-            { v: "vitd", label: "Vitamin D" },
-            { v: "crp", label: "hs-CRP" },
-            { v: "ferritin", label: "Ferritin" },
-            { v: "keine", label: "Keine Ahnung", exclusive: true }
+            { v: "eingeordnet", label: "Ja, kenne sie und weiß, was sie bedeuten", p: 16 },
+            { v: "kenne", label: "Ja, kenne die Werte grob", p: 11 },
+            { v: "kein_risiko", label: "Kein erhöhtes Risiko, letzte Basis war unauffällig", p: 13 },
+            { v: "nein", label: "Nein", p: 4 }
           ]
         },
         {
-          id: "blood_pdf", type: "single", module: "blood",
-          title: "Hast du deine Laborwerte als Dokument (PDF / Ausdruck)?",
+          id: "blood_prevention", type: "single", module: "blood",
+          title: "Nimmst du alters-/risikogerechte Vorsorge wahr?",
+          sub: "Z. B. Gesundheits-Check-up beim Hausarzt — nicht mehr als sinnvoll, aber nicht gar nichts.",
           options: [
-            { v: "aktuell", label: "Ja, aktuelle Werte", p: 15 },
-            { v: "alt", label: "Ja, aber ältere", p: 10 },
-            { v: "spaeter", label: "Nein, möchte ich aber machen", p: 5 },
-            { v: "nein", label: "Nein", p: 3 }
+            { v: "regelmaessig", label: "Ja, regelmäßig und passend zu meinem Alter", p: 16 },
+            { v: "einmalig", label: "Einmalig / unregelmäßig", p: 9 },
+            { v: "nein", label: "Nein, gehe kaum zur Vorsorge", p: 3 }
+          ]
+        },
+        {
+          id: "blood_family", type: "single", module: "blood",
+          title: "Kennst du deine relevante Familiengeschichte?",
+          sub: "Herzinfarkt/Schlaganfall (früh), Diabetes, hoher Blutdruck, bestimmte Krebsarten in der Familie.",
+          options: [
+            { v: "ja", label: "Ja, kenne ich", p: 8 },
+            { v: "teilweise", label: "Teilweise", p: 5 },
+            { v: "nein", label: "Nein / unklar", p: 2 }
           ]
         },
         {
           id: "blood_doctor", type: "single", module: "blood",
-          title: "Besprichst du deine Werte mit einem Arzt?",
+          title: "Werden auffällige Werte bei dir ärztlich eingeordnet?",
           options: [
-            { v: "regelmaessig", label: "Ja, regelmäßig", p: 15 },
-            { v: "einmalig", label: "Einmalig / selten", p: 9 },
-            { v: "nein", label: "Nein", p: 3 }
+            { v: "regelmaessig", label: "Ja, ich bespreche Auffälligkeiten mit dem Arzt", p: 12 },
+            { v: "einmalig", label: "Selten / nur wenn es akut wird", p: 7 },
+            { v: "keine_auffaellig", label: "Bisher keine auffälligen Werte", p: 10 },
+            { v: "nein", label: "Nein, ordne nichts ein", p: 3 }
+          ]
+        },
+        {
+          id: "blood_overtest", type: "single", module: "blood",
+          title: "Wie gehst du mit Tests und Spezialmarkern um?",
+          sub: "Mehr Tests sind nicht automatisch mehr Gesundheit — jede Messung braucht eine Frage.",
+          options: [
+            { v: "gezielt", label: "Gezielt — ich teste, wenn es eine Frage/Anlass gibt", p: 10 },
+            { v: "gemischt", label: "Gemischt", p: 7 },
+            { v: "viel_ohne", label: "Ich teste viel / sammle viele Marker ohne klaren Anlass", p: 4 },
+            { v: "gar_nicht", label: "Ich kümmere mich gar nicht darum", p: 3 }
           ]
         },
         {
           id: "blood_why", type: "single", module: null,
-          title: "Warum interessieren dich Blutwerte?",
+          title: "Warum interessieren dich Gesundheitsdaten?",
           sub: "Zählt nicht in den Score — hilft bei der Einordnung.",
           options: [
             { v: "gesundheit", label: "Allgemeine Gesundheit / Vorsorge" },
@@ -542,7 +588,7 @@ window.MM_CHECK = {
 
     /* ---------- 8. Drive ---------- */
     {
-      id: "drive", label: "Drive — Energie & Antrieb",
+      id: "drive", label: "Energie & Antrieb",
       questions: [
         {
           id: "drv_energy", type: "single", module: "drive",
@@ -631,7 +677,7 @@ window.MM_CHECK = {
 
     /* ---------- 9. Execution ---------- */
     {
-      id: "execution", label: "Execution — Umsetzung",
+      id: "execution", label: "Umsetzung",
       questions: [
         {
           id: "exe_slots", type: "single", module: "execution",
@@ -647,10 +693,11 @@ window.MM_CHECK = {
         {
           id: "exe_restarts", type: "single", module: "execution",
           title: "Wie oft hast du in den letzten 2 Jahren neu gestartet?",
+          sub: "Bewiesene Konstanz zählt mehr als guter Vorsatz.",
           options: [
-            { v: "konstant", label: "Gar nicht — ich bin konstant", p: 10 },
-            { v: "1to2", label: "1–2×", p: 8 },
-            { v: "3to5", label: "3–5×", p: 4 },
+            { v: "konstant", label: "Gar nicht — ich bin konstant", p: 14 },
+            { v: "1to2", label: "1–2×", p: 10 },
+            { v: "3to5", label: "3–5×", p: 5 },
             { v: "staendig", label: "Ständig", p: 2 },
             { v: "nie_drin", label: "Ich komme gar nicht richtig rein", p: 1 }
           ]
@@ -659,9 +706,9 @@ window.MM_CHECK = {
           id: "exe_after4w", type: "single", module: "execution",
           title: "Was passiert bei dir typischerweise nach 2–4 Wochen?",
           options: [
-            { v: "durchziehen", label: "Ich ziehe durch", p: 10 },
-            { v: "lockerer", label: "Ich werde lockerer", p: 6 },
-            { v: "plan_wechsel", label: "Ich ändere den Plan", p: 4 },
+            { v: "durchziehen", label: "Ich ziehe durch", p: 14 },
+            { v: "lockerer", label: "Ich werde lockerer", p: 8 },
+            { v: "plan_wechsel", label: "Ich ändere den Plan", p: 5 },
             { v: "abbruch", label: "Ich breche ab", p: 2 },
             { v: "neustart", label: "Ich starte wieder neu", p: 3 }
           ]
@@ -699,8 +746,8 @@ window.MM_CHECK = {
         {
           id: "exe_ready", type: "scale", module: "execution", min: 1, max: 10,
           title: "Wie bereit bist du, in den nächsten 12 Wochen wirklich umzusetzen?",
-          sub: "1 = eher nicht · 10 = absolut bereit",
-          pointsMap: [[2, 2], [4, 5], [6, 10], [8, 16], [10, 20]]
+          sub: "1 = eher nicht · 10 = absolut bereit. Bereitschaft ist ein Startsignal — bewiesene Umsetzung zählt mehr.",
+          pointsMap: [[2, 2], [4, 4], [6, 7], [8, 10], [10, 12]]
         }
       ]
     },
@@ -783,25 +830,25 @@ window.MM_CHECK = {
     strength: {
       low: "Du brauchst keinen perfekten Split. Du brauchst zuerst feste Trainingstage, klare Übungen und einfache Progression.",
       mid: "Du trainierst bereits, aber vermutlich nicht messbar genug. Dein Hebel ist Trainingsdokumentation und planbare Steigerung.",
-      high: "Deine Trainingsbasis ist stark. Dein nächster Hebel liegt wahrscheinlich eher bei Fuel oder Recovery."
+      high: "Dein Trainings- & Fitness-Fundament ist stark — Kraft und Ausdauer stehen. Dein nächster Hebel liegt wahrscheinlich eher bei Ernährung oder Schlaf & Erholung."
     },
     fuel: {
-      low: "Dein Fuel Score ist aktuell ein großer Hebel. Du brauchst keine neue Diät, sondern klare Proteinziele, einfache Standardmahlzeiten und eine Wochenendstrategie.",
+      low: "Deine Ernährung ist aktuell ein großer Hebel. Du brauchst keine neue Diät, sondern klare Proteinziele, einfache Standardmahlzeiten und eine Wochenendstrategie.",
       mid: "Du isst wahrscheinlich qualitativ okay, aber nicht messbar genug. Dein Körper verändert sich erst planbar, wenn Mengen, Protein und Wochenenden kontrollierbarer werden.",
       high: "Deine Ernährung ist gut strukturiert. Feintuning läuft über Timing, Kalorien, Proteinverteilung und Alltagssituationen."
     },
     recovery: {
-      low: "Dein Recovery Score ist ein echter Engpass. Mehr Training wird dich nicht retten, wenn Schlaf, Stress und Regeneration gegen dich arbeiten.",
+      low: "Deine Schlaf & Erholung ist ein echter Engpass. Mehr Training wird dich nicht retten, wenn Schlaf, Stress und Regeneration gegen dich arbeiten.",
       mid: "Deine Erholung ist okay, aber nicht stabil. Kleine Änderungen bei Schlafzeit, Koffein, Abendroutine und Trainingslast können großen Effekt haben.",
-      high: "Deine Recovery-Basis ist gut. Dadurch kannst du stärker über Training und Ernährung skalieren."
+      high: "Deine Erholungs-Basis ist gut. Dadurch kannst du stärker über Training und Ernährung skalieren."
     },
     blood: {
-      low: "Dein Blood Score ist niedrig. Das heißt nicht, dass etwas nicht stimmt — es heißt: Dir fehlt eine saubere Datenbasis. Dein nächster Schritt ist nicht mehr raten, sondern eine klare Baseline.",
-      mid: "Du hast Daten, aber noch kein System. Jetzt geht es darum, Werte zu sortieren, Verläufe zu erkennen und gezielte Fragen für den Arzt vorzubereiten.",
-      high: "Du bist datenorientiert. Dein Risiko ist eher Overthinking — Priorisierung ist wichtiger als noch mehr Einzelwerte."
+      low: "Dein Bereich Blutwerte & Prävention ist niedrig. Das heißt nicht, dass etwas nicht stimmt — es heißt: Dir fehlen ein paar einfache Basics wie Blutdruck oder eine risikogerechte Vorsorge. Dein nächster Schritt ist nicht mehr Tests, sondern die wenigen, die zählen.",
+      mid: "Du hast eine Basis, aber noch kein System. Jetzt geht es darum, die richtigen Werte zu kennen (Blutdruck, cardiometabolische Basics), Vorsorge wahrzunehmen und auffällige Werte ärztlich einordnen zu lassen.",
+      high: "Deine Gesundheitsdaten & Prävention sind im Griff. Dein Risiko ist eher Overthinking — die richtigen wenigen Werte schlagen möglichst viele Marker."
     },
     drive: {
-      low: "Dein Drive Score ist niedrig. Das kann viele Ursachen haben: Schlaf, Stress, Körperfett, Ernährung oder Blutwerte. Wir bewerten das nicht medizinisch, sondern zeigen dir, welche Lifestyle-Hebel zuerst geprüft werden sollten.",
+      low: "Deine Energie & Antrieb sind niedrig. Das kann viele Ursachen haben: Schlaf, Stress, Körperfett, Ernährung oder Blutwerte. Wir bewerten das nicht medizinisch, sondern zeigen dir, welche Lifestyle-Hebel zuerst geprüft werden sollten.",
       mid: "Deine Energie ist nicht schlecht, aber instabil. Wahrscheinlich brauchst du bessere Schlaf- und Ernährungsrhythmen plus kontrolliertes Training.",
       high: "Dein Drive ist eine Stärke. Nutze ihn, um Body, Fuel oder Strength konsequenter umzusetzen."
     },
@@ -1033,3 +1080,323 @@ window.MM_CHECK = {
     recovery: "muede_leistung", blood: "datenblind", drive: "muede_leistung", execution: "ueberoptimierer"
   }
 };
+
+/* ==========================================================================
+   GETEILTE LOGIK — EINE Quelle der Wahrheit für Dashboard (check.js) UND
+   Report (report.js). Beide Oberflächen rufen ausschließlich diese Funktionen
+   auf, damit dieselben Antworten nie zu unterschiedlichen Empfehlungen führen.
+   ========================================================================== */
+(function () {
+  "use strict";
+  var C = window.MM_CHECK;
+
+  C.levelClass = function (v) { return v < 40 ? "low" : v < 70 ? "mid" : "high"; };
+  C.moduleText = function (key, v) {
+    var t = C.moduleTexts[key];
+    return v < 40 ? t.low : v < 70 ? t.mid : t.high;
+  };
+  C.nm = function (k) { return (C.moduleNamesDe && C.moduleNamesDe[k]) || C.moduleNames[k]; };
+
+  var num = function (x) { var n = parseFloat(x); return isFinite(n) ? n : 0; };
+
+  /* ---------- Referenzgewicht (Protein bei starkem Übergewicht sauber) ---------- */
+  C.referenceWeight = function (a) {
+    var h = num(a.height), w = num(a.weight);
+    if (!h || !w) return w || 0;
+    var bmi = w / Math.pow(h / 100, 2);
+    if (bmi <= 27) return w;
+    // bei deutlichem Übergewicht: Referenz auf BMI 27 statt aktuelles Gewicht,
+    // damit kein unnötig hoher Proteinwert entsteht (aber nicht unter reales Zielgewicht)
+    return Math.round(27 * Math.pow(h / 100, 2));
+  };
+  C.proteinRange = function (a) {
+    var refW = C.referenceWeight(a);
+    if (!refW) return { lo: 130, hi: 170, str: "1,6–2 g pro kg Zielgewicht" };
+    var lo = Math.round(refW * 1.6), hi = Math.round(refW * 2.0);
+    return { lo: lo, hi: hi, str: lo + "–" + hi + " g" };
+  };
+  // Rückwärtskompatibler Kurzhelfer (früher in check.js)
+  C.protTarget = function (a) { return C.proteinRange(a).str; };
+  C.stepTargetNum = function (a) {
+    return (a.steps === "lt4") ? "7.000" : (a.steps === "4to7") ? "8.000" : "10.000";
+  };
+
+  /* ---------- Moduswahl aus Ziel: kein automatischer Cut für jeden ---------- */
+  C.goalMode = function (a) {
+    var g = a.goal_main || [];
+    var h = num(a.height), w = num(a.weight);
+    var bmi = a._bmi || (h && w ? w / Math.pow(h / 100, 2) : 0);
+    var has = function (x) { return g.indexOf(x) >= 0; };
+    if (has("muskeln") || has("kraft")) return bmi >= 27 ? "recomp" : "build";
+    if (has("bauchfett")) return "cut";
+    if (has("attraktiv") || has("ernaehrung")) return bmi >= 26 ? "cut" : "recomp";
+    if (has("energie") || has("schlaf") || has("blutwerte") || has("hormone") || has("disziplin"))
+      return bmi >= 28 ? "cut" : "perform";
+    return bmi >= 27 ? "cut" : "recomp";
+  };
+  C.modeLabels = {
+    cut:     { label: "CUT",     desc: "moderates Kaloriendefizit — Fett runter, Kraft schützen" },
+    recomp:  { label: "RECOMP",  desc: "nahe Erhaltung — Taille runter, Kraft rauf" },
+    build:   { label: "BUILD",   desc: "kleiner kontrollierter Überschuss — Muskel & Kraft aufbauen" },
+    perform: { label: "PERFORM", desc: "Erhaltung — Leistung, Schlaf & Gesundheit fuelen" }
+  };
+
+  /* ---------- Zielwerte als Bereiche (keine Scheingenauigkeit) ---------- */
+  C.targetValues = function (a) {
+    var age = num(a.age), h = num(a.height), w = num(a.weight), waist = num(a.waist);
+    var mode = C.goalMode(a);
+    var prot = C.proteinRange(a);
+    var out = {
+      mode: mode, modeLabel: C.modeLabels[mode].label, modeDesc: C.modeLabels[mode].desc,
+      proteinLo: prot.lo, proteinHi: prot.hi, proteinStr: prot.str,
+      stepGoal: C.stepTargetNum(a),
+      hasEnergy: false
+    };
+    if (age && h && w) {
+      var bmr = 10 * w + 6.25 * h - 5 * age + 5;
+      var stepFactor = { lt4: 1.3, "4to7": 1.45, "7to10": 1.6, gt10: 1.75 }[a.steps] || 1.4;
+      var factor = Math.min(1.9, stepFactor + ((a.job === "aktiv" || a.job === "schicht") ? 0.05 : 0));
+      var tdee = bmr * factor;
+      var r50 = function (x) { return Math.round(x / 50) * 50; };
+      out.hasEnergy = true;
+      out.maintLo = r50(tdee * 0.95); out.maintHi = r50(tdee * 1.05);
+      var adj = { cut: [0.78, 0.88], recomp: [0.90, 1.00], build: [1.03, 1.12], perform: [0.97, 1.03] }[mode];
+      out.targetLo = r50(tdee * adj[0]); out.targetHi = r50(tdee * adj[1]);
+    }
+    if (waist && h) { out.waist = waist; out.waistTarget = Math.round(h * 0.5); }
+    else if (h) { out.waistTarget = Math.round(h * 0.5); }
+    return out;
+  };
+
+  /* ---------- Datenqualität (NICHT Gesundheitsstatus) ---------- */
+  C.dataConfidence = function (a) {
+    var missing = [];
+    if (!num(a.waist)) missing.push("Bauchumfang");
+    if (!a.steps || a.steps === "unknown") missing.push("Schritte pro Tag");
+    if (a.blood_bp === "nein" || a.blood_bp === "lange_her") missing.push("aktueller Blutdruck");
+    if (a.drv_libido === "keine_antwort" && a.drv_morning === "keine_antwort") missing.push("Drive-Selbsteinschätzung");
+    var level = missing.length === 0 ? "hoch" : (missing.length <= 1 ? "mittel" : "eingeschränkt");
+    var text = level === "hoch"
+      ? "Datenqualität: hoch — deine zentralen Angaben sind vollständig, dein Ergebnis ist gut belastbar."
+      : "Datenqualität: " + level + " — es fehlen: " + missing.join(", ") + ". Dein Ergebnis bleibt nützlich, ist in diesen Bereichen aber weniger präzise.";
+    return { level: level, missing: missing, text: text };
+  };
+
+  /* ---------- Risikobasierte Blutwerte-/Gesundheitsdaten-Struktur ---------- */
+  C.healthDashboard = function (a) {
+    var age = num(a.age);
+    var base = [
+      "Blutdruck (kennen & im Blick behalten)",
+      "Bauchumfang / Körperkomposition",
+      "Nüchternblutzucker bzw. HbA1c",
+      "Lipidprofil (LDL, HDL, Triglyceride)",
+      "Nikotin-/Alkoholstatus",
+      "Familiäre Vorbelastung (Herz, Diabetes)"
+    ];
+    var cardio = [
+      "ApoB (bei kardiovaskulärem Risiko)",
+      "Lp(a) — einmal im Leben sinnvoll, um vererbtes Risiko zu erkennen",
+      "Nierenwerte inkl. eGFR / UACR (bei Diabetes, Bluthochdruck, Adipositas)"
+    ];
+    var symptom = [
+      "Testosteron (morgens, mehrfach) + SHBG — nur bei klaren Symptomen",
+      "TSH — bei Symptomen",
+      "Ferritin / Vitamin D — bei Symptomen oder Mangelverdacht",
+      "Leberwerte + FIB-4-Kontext (bei Diabetes/Übergewicht/mehreren Risikofaktoren)"
+    ];
+    var special = [
+      "PSA — nach Alter/Risiko und ärztlicher Empfehlung",
+      "hs-CRP, Homocystein u. a. — nur, wenn sie eine Entscheidung verändern"
+    ];
+    return {
+      note: "Nicht jeder Mann braucht alle diese Werte. Welche sinnvoll sind, hängt von Alter, Risiko, Symptomen und ärztlicher Einschätzung ab — mehr Tests sind nicht automatisch mehr Gesundheit.",
+      groups: [
+        { key: "A", title: "Basis & Prävention", items: base },
+        { key: "B", title: "Cardiometabolisch (bei Risiko)", items: cardio },
+        { key: "C", title: "Symptome / konkrete Fragestellung", items: symptom },
+        { key: "D", title: "Spezialmarker (nur wenn entscheidungsrelevant)", items: special }
+      ]
+    };
+  };
+
+  /* ---------- Produktempfehlung: nicht immer Coaching ---------- */
+  C.productRecommendation = function (r) {
+    var s = r.scores, a = r.answers || {};
+    // 1) Red Flags haben Vorrang — kein Sales-Push über eine medizinische Priorität
+    if (r.flags && r.flags.length) {
+      return {
+        kind: "medical",
+        title: "Zuerst ärztlich abklären",
+        why: "Deine Angaben enthalten mindestens einen Punkt, der medizinisch abgeklärt gehört, bevor ein Trainings- oder Ernährungsprogramm sinnvoll startet. Gesundheit geht vor Optimierung.",
+        primary: { label: "Punkte oben mit einem Arzt klären", href: null },
+        secondary: { label: "DAS PROTOKOLL ansehen (für später)", href: "protokoll.html" }
+      };
+    }
+    // Umsetzungs-Signale
+    var weakCount = ["body", "strength", "fuel", "recovery", "blood", "drive", "execution"]
+      .filter(function (k) { return s[k] < 45; }).length;
+    var restartsBad = a.exe_restarts === "staendig" || a.exe_restarts === "nie_drin" || a.exe_after4w === "abbruch" || a.exe_after4w === "neustart";
+    var wantsCoaching = a.exe_support === "coach" || a.exe_support === "accountability" || a.qual_support === "coaching" || a.qual_support === "checkin";
+    var executionStrong = s.execution >= 60 && !restartsBad;
+
+    // Coaching, wenn Umsetzung schwach / viele Baustellen / wiederholte Neustarts / expliziter Wunsch
+    if ((s.execution < 45) || weakCount >= 3 || (restartsBad && weakCount >= 2) || wantsCoaching) {
+      return {
+        kind: "coaching",
+        title: "1:1 Coaching passt zu deinem Profil",
+        why: (s.execution < 45 || restartsBad)
+          ? "Dein Engpass ist weniger Wissen als konstante Umsetzung. Genau da wirkt wöchentliche Begleitung mit Accountability am stärksten."
+          : (weakCount >= 3
+              ? "Mehrere Bereiche sind gleichzeitig schwach — hier hilft ein individuell priorisierter, wöchentlich angepasster Plan mehr als reines Selbstlernen."
+              : "Du suchst ausdrücklich persönliche Begleitung — dafür ist das 1:1 Coaching gebaut."),
+        primary: { label: "1:1 Coaching ansehen", href: "coaching.html" },
+        secondary: { label: "Oder selbstständig: DAS PROTOKOLL", href: "protokoll.html" }
+      };
+    }
+    // Sonst: Protokoll (selbstständig, klarer Engpass, gute Umsetzung)
+    return {
+      kind: "protokoll",
+      title: "DAS PROTOKOLL passt zu deinem Profil",
+      why: executionStrong
+        ? "Du setzt grundsätzlich zuverlässig um und hast einen klaren Hauptengpass. Damit kommst du selbstständig mit dem System am schnellsten voran — ohne laufende Begleitung."
+        : "Du hast einen klaren Fokus und keine große Komplexität. Das Protokoll gibt dir das komplette System für die selbstständige Umsetzung.",
+      primary: { label: "DAS PROTOKOLL ansehen", href: "protokoll.html" },
+      secondary: { label: "Lieber mit Begleitung? 1:1 Coaching", href: "coaching.html" }
+    };
+  };
+
+  /* ---------- Personalisierte Insights (aus konkreten Antworten) ---------- */
+  C.personalInsights = function (a, r) {
+    var neg = [], pos = [];
+    var sleepMap = { lt5: "unter 5", "5to6": "5–6", "6to7": "6–7" };
+    if (a.rec_duration === "lt5" || a.rec_duration === "5to6")
+      neg.push({ icon: "😴", text: "Du schläfst aktuell nur <strong>" + sleepMap[a.rec_duration] + " Stunden</strong>. Das bremst Regeneration, Appetitkontrolle und Energie mehr als fast alles andere — und ist dein schnellster Hebel." });
+    else if (a.rec_wake === "geraedert" || a.rec_wake === "nachts_wach")
+      neg.push({ icon: "😴", text: "Du wachst gerädert auf bzw. nachts oft. Selbst bei genug Stunden zählt die <strong>Schlafqualität</strong> — Koffein-Timing und Abendroutine sind hier dein Hebel." });
+
+    if (a.fuel_protein === "keine_ahnung")
+      neg.push({ icon: "🥩", text: "Du weißt nicht, wie viel <strong>Protein</strong> du isst. Solange das im Dunkeln bleibt, sind Fettabbau und Muskelerhalt Glückssache. Dein Zielwert: <strong>" + C.protTarget(a) + "</strong> pro Tag." });
+    else if (a.fuel_protein === "lt80")
+      neg.push({ icon: "🥩", text: "Dein <strong>Protein liegt unter 80 g</strong> pro Tag — deutlich zu wenig. Allein das auf <strong>" + C.protTarget(a) + "</strong> anzuheben verändert Sättigung und Körperbild spürbar." });
+
+    var freqMap = { "0": "gar nicht", "1": "nur 1×", unregelmaessig: "sehr unregelmäßig" };
+    if (a.str_freq === "0" || a.str_freq === "1" || a.str_freq === "unregelmaessig")
+      neg.push({ icon: "🏋️", text: "Du trainierst aktuell <strong>" + freqMap[a.str_freq] + "</strong> Kraft pro Woche. Schon <strong>2–3 feste Einheiten</strong> mit Progression sind hier dein größter Hebel — mehr Tage sind nicht automatisch besser." });
+    else if (a.str_plan === "spontan" || a.str_log === "nein")
+      neg.push({ icon: "📈", text: "Du trainierst zwar, aber <strong>ohne dokumentierte Progression</strong>. Ohne Steigerung im Plan stagniert der Reiz — Tracking ist dein Hebel, nicht mehr Schwitzen." });
+
+    // Cardio-Lücke sichtbar machen (auch bei starkem Kraftfundament)
+    if (a.str_cardio_freq === "0" || a.str_cardio_freq === "alltag")
+      neg.push({ icon: "🫀", text: "Du machst <strong>kaum gezieltes Cardio</strong>. Aerobe Fitness ist ein eigenständiges System für Herz, Gesundheit und Ausdauer — 2 lockere Zone-2-Einheiten pro Woche sind ein starker, oft fehlender Baustein." });
+
+    if (a.steps === "lt4")
+      neg.push({ icon: "👟", text: "<strong>Unter 4.000 Schritte</strong> am Tag — der am meisten unterschätzte Hebel. Mehr Alltagsbewegung verbrennt oft mehr als jedes Workout. Ziel: <strong>" + C.stepTargetNum(a) + "</strong>." });
+    else if (a.steps === "4to7")
+      neg.push({ icon: "👟", text: "<strong>4.000–7.000 Schritte</strong> sind okay, aber nicht genug. Ein Ziel von <strong>" + C.stepTargetNum(a) + "</strong> ist ein leiser, großer Hebel für deine Bilanz." });
+
+    if (a.fuel_alcohol === "taeglich")
+      neg.push({ icon: "🍺", text: "<strong>Fast täglich Alkohol</strong> sabotiert Schlafqualität, Regeneration und Kalorienbilanz gleichzeitig — drei deiner Baustellen auf einmal." });
+    else if (a.fuel_alcohol === "we_viel")
+      neg.push({ icon: "🍺", text: "Am Wochenende viel Alkohol: Zwei Tage können das Defizit von fünf disziplinierten löschen. Hier liegt <strong>schnelle Beute</strong>." });
+
+    if (a.rec_caffeine === "abends" || a.rec_caffeine === "nachmittag")
+      neg.push({ icon: "☕", text: "Du trinkst Koffein bis in den <strong>" + (a.rec_caffeine === "abends" ? "Abend" : "Nachmittag") + "</strong>. Menge und Timing zusammen kosten oft Tiefschlaf — teste, ob eine frühere Deadline deinen Schlaf verbessert." });
+
+    if (a.blood_bp === "nein" || a.blood_bp === "lange_her")
+      neg.push({ icon: "🩺", text: "Du kennst deinen <strong>Blutdruck</strong> aktuell nicht. Er ist der wichtigste einzelne, still verlaufende Gesundheitswert — einmal messen (Apotheke/Arzt) ist ein großer, kostenloser Schritt." });
+
+    if (a.exe_restarts === "staendig" || a.exe_restarts === "nie_drin")
+      neg.push({ icon: "🔁", text: "Du startest immer wieder neu. Das ist <strong>kein Disziplinproblem</strong> — dir fehlt ein System, das deinen Alltag überlebt. Genau das ist der Kern von MaleMetrix." });
+
+    if (r.whtr && r.whtr >= 0.6)
+      neg.push({ icon: "📏", text: "Dein Bauchumfang liegt bei <strong>" + r.whtr.toFixed(2).replace(".", ",") + "×</strong> deiner Größe (Ziel: unter 0,50). Das ist dein wichtigster sichtbarer Marker — und gut veränderbar." });
+    else if (r.whtr && r.whtr >= 0.5)
+      neg.push({ icon: "📏", text: "Dein Bauchumfang liegt <strong>knapp über der Hälfte</strong> deiner Größe. Schon ein paar Zentimeter weniger verschieben das Bild spürbar." });
+
+    if (a.rec_stress && parseInt(a.rec_stress, 10) >= 8)
+      neg.push({ icon: "🧠", text: "Dein Stresslevel liegt bei <strong>" + a.rec_stress + "/10</strong>. Hoher Dauerstress arbeitet gegen Schlaf, Appetit und Regeneration — kurze tägliche Spaziergänge sind dein Ventil." });
+
+    if (a.drv_energy === "nur_koffein")
+      neg.push({ icon: "⚡", text: "Du <strong>funktionierst nur mit Koffein</strong>. Das ist ein Symptom, kein Zustand — meist steckt Schlaf oder Erholung dahinter, nicht ein „Energie-Problem“." });
+
+    var strongTexts = {
+      execution: "Deine <strong>Umsetzung</strong> ist stark — der beste Startvorteil, den es gibt.",
+      strength: "Dein <strong>Trainings- & Fitness-Fundament</strong> ist solide — darauf lässt sich schnell aufbauen.",
+      recovery: "Deine <strong>Erholung</strong> ist eine Stärke — sie erlaubt dir, über Training und Ernährung zu skalieren.",
+      fuel: "Deine <strong>Ernährung</strong> ist überraschend strukturiert — eine starke Basis.",
+      body: "Deine <strong>Körperbasis</strong> ist gut — bei dir geht es um Feintuning.",
+      drive: "Dein <strong>Antrieb</strong> ist eine Stärke — nutze ihn als Motor.",
+      blood: "Deine <strong>Gesundheitsdaten & Prävention</strong> sind im Griff — du steuerst mit Fakten statt Gefühl."
+    };
+    if (r.scores[r.strongest] >= 50 && strongTexts[r.strongest])
+      pos.push({ icon: "✅", text: "Deine Stärke: " + strongTexts[r.strongest] });
+
+    if (a.goal_urgency >= 4 || a.exe_ready >= 8)
+      pos.push({ icon: "🔥", text: "Du willst <strong>jetzt</strong> starten — und Bereitschaft ist der Faktor, der am stärksten über Erfolg entscheidet. Nutze dieses Momentum." });
+
+    return neg.slice(0, 5).concat(pos.slice(0, 1));
+  };
+
+  /* ---------- Dynamischer 7-Tage-Plan (modusbewusst, inkl. Cardio) ---------- */
+  C.dynamicPlan = function (a, r) {
+    var tv = C.targetValues(a);
+    var has = {
+      sleep: ["lt5", "5to6"].indexOf(a.rec_duration) >= 0 || ["geraedert", "nachts_wach"].indexOf(a.rec_wake) >= 0,
+      caffeine: ["nachmittag", "abends"].indexOf(a.rec_caffeine) >= 0,
+      protein: ["keine_ahnung", "lt80"].indexOf(a.fuel_protein) >= 0,
+      training: ["0", "1", "unregelmaessig"].indexOf(a.str_freq) >= 0,
+      cardio: ["0", "alltag"].indexOf(a.str_cardio_freq) >= 0,
+      steps: ["lt4", "4to7"].indexOf(a.steps) >= 0,
+      alcohol: ["we_viel", "taeglich", "2to3"].indexOf(a.fuel_alcohol) >= 0,
+      tracking: Array.isArray(a.body_tracking) && a.body_tracking.indexOf("nichts") >= 0,
+      blood: a.blood_bp === "nein" || a.blood_bp === "lange_her" || a.blood_baseline === "nie",
+      weekend: ["wochenende", "abends"].indexOf(a.fuel_control) >= 0
+    };
+    var energyLine = tv.hasEnergy
+      ? "Startwerte notieren — Modus " + tv.modeLabel + " (" + tv.modeDesc + "): Zielbereich ca. " + tv.targetLo + "–" + tv.targetHi + " kcal, Protein " + tv.proteinLo + "–" + tv.proteinHi + " g"
+      : "Modus wählen: " + tv.modeLabel + " (" + tv.modeDesc + ") und Protein-Ziel " + tv.proteinStr + " festlegen";
+    var days = [];
+
+    days.push({ day: "Tag 1", items: [
+      "Gewicht und Bauchumfang messen (Nabelhöhe, ausgeatmet) + 3 Fotos: front, seitlich, hinten",
+      energyLine
+    ] });
+
+    var d2 = [];
+    if (has.sleep) d2.push("Feste Schlafenszeit für die nächsten 7 Tage festlegen — Ziel mindestens 7 Stunden");
+    else d2.push("Zwei proteinreiche Standardmahlzeiten definieren, die du ohne Nachdenken wiederholst");
+    if (has.blood) d2.push("Blutdruck messen lassen (Apotheke/Arzt) und notieren");
+    else if (has.caffeine) d2.push("Koffein-Timing testen: Deadline früher legen und Schlaf beobachten");
+    else if (has.steps) d2.push("Schritte-Tracking am Handy aktivieren, Ziel " + tv.stepGoal);
+    days.push({ day: "Tag 2", items: d2 });
+
+    days.push({ day: "Tag 3", items: [
+      has.training ? "Erstes Krafttraining: Ganzkörper, 45–60 Min, Technik vor Gewicht — im Tracker dokumentieren" : "Krafttraining wie gewohnt — ab heute jede Übung im Tracker dokumentieren (Gewicht, Wdh.)",
+      has.cardio ? "20–30 Min lockeres Cardio (Zone 2, nebenbei sprechen möglich) — dein Motor-Startpunkt" : "Nach dem Training 15–20 Min zügig gehen (Richtung " + tv.stepGoal + " Schritte)"
+    ] });
+
+    var d4 = [];
+    if (has.tracking) d4.push("Einen Tag Ernährung grob mitschreiben — nur beobachten, noch nichts ändern");
+    else d4.push("Protein heute bewusst treffen (" + tv.proteinLo + "–" + tv.proteinHi + " g) und kurz notieren");
+    if (has.blood) d4.push("Alters-/risikogerechte Vorsorge prüfen: Wann war der letzte Check-up?");
+    else d4.push("Koffein-Deadline testen, etwas früher ins Bett");
+    days.push({ day: "Tag 4", items: d4 });
+
+    days.push({ day: "Tag 5", items: [
+      "Zweites Krafttraining — gleiche Übungen, kleine Steigerung anstreben",
+      has.sleep ? "Abendroutine: letzte 30 Minuten vor dem Schlafen ohne Bildschirm" : (tv.stepGoal + " Schritte erreichen")
+    ] });
+
+    days.push({ day: "Tag 6", items: [
+      (has.alcohol || has.weekend) ? "Wochenendstrategie schriftlich festlegen: Alkohol- und Snack-Limit vorab — nüchtern entschieden" : "Eine flexible Mahlzeit bewusst einplanen statt das Wochenende laufen zu lassen",
+      has.cardio ? "Zweite lockere Cardio-Einheit (20–30 Min) oder aktive Erholung" : "Dritte Trainingseinheit oder aktive Erholung (Spaziergang, Mobility 15 Min)"
+    ] });
+
+    days.push({ day: "Tag 7", items: [
+      "Sonntag-Review: Gewicht, Bauchumfang, Schlaf, Training, Cardio und Energie (1–10) mit Tag 1 vergleichen",
+      "3 feste Trainingsfenster für die nächste Woche in den Kalender eintragen — und deinen #1-Engpass benennen"
+    ] });
+
+    return days;
+  };
+})();

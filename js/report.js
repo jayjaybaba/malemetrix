@@ -17,10 +17,7 @@
 
   function barColor(v) { return v < 40 ? "#e0654f" : v < 70 ? "#e8a33d" : "#2e7cf6"; }
 
-  function moduleText(key, v) {
-    const t = C.moduleTexts[key];
-    return v < 40 ? t.low : v < 70 ? t.mid : t.high;
-  }
+  const moduleText = C.moduleText;
 
   function radarLight(scores) {
     const cx = 150, cy = 145, R = 100;
@@ -46,7 +43,7 @@
     });
     keys.forEach((k, i) => {
       const [x, y] = pt(i, 124);
-      svg += '<text x="' + x + '" y="' + y + '" fill="#5b6472" font-size="10" font-family="JetBrains Mono,monospace" text-anchor="middle" dominant-baseline="middle">' + C.moduleNames[k].toUpperCase() + '</text>';
+      svg += '<text x="' + x + '" y="' + y + '" fill="#5b6472" font-size="10" font-family="JetBrains Mono,monospace" text-anchor="middle" dominant-baseline="middle">' + C.nm(k).toUpperCase() + '</text>';
     });
     return svg + '</svg>';
   }
@@ -81,38 +78,31 @@
   /* ---------- Executive Summary ---------- */
   html += '<div class="r-section"><h2>01 — Executive Summary</h2>' +
     '<p>' + (firstName ? firstName + ", du" : "Du") + ' bist nicht undiszipliniert. Deine Antworten zeigen, wo dein System aktuell trägt und wo es bricht. ' +
-    'Dein stärkster Bereich ist <strong>' + C.moduleNames[r.strongest] + '</strong> (' + r.scores[r.strongest] + '/100), ' +
+    'Dein stärkster Bereich ist <strong>' + C.nm(r.strongest) + '</strong> (' + r.scores[r.strongest] + '/100), ' +
     'dein größter Engpass liegt bei <strong>' + r.bottleneck.name + '</strong>. ' + r.bottleneck.text + '</p>' +
     (r.whtr && r.whtr >= 0.5 ? '<p style="margin-top:10px">Dein Bauchumfang ist aktuell ein wichtiger Marker (Waist-to-Height: ' + whtrStr + '). Nicht wegen Optik allein — der Bauchumfang sagt oft mehr über zentrale Körperfettverteilung aus als das Gewicht allein. Orientierung: Taille möglichst unter der Hälfte der Körpergröße halten.</p>' : '') +
     '</div>';
 
-  /* ---------- Deine konkreten Zielwerte (personalisiert) ---------- */
+  /* ---------- Deine Startwerte (personalisiert, modusbasiert, als Bereiche) ---------- */
   (function () {
+    const tv = C.targetValues(a);
     const age = parseFloat(a.age), h = parseFloat(a.height), w = parseFloat(a.weight), waist = parseFloat(a.waist);
-    if (!age || !h || !w) return;
-    const bmr = Math.round(10 * w + 6.25 * h - 5 * age + 5);
-    // Aktivitätsfaktor aus Schritten (+ leichter Job-Zuschlag)
-    const stepFactor = { lt4: 1.3, "4to7": 1.45, "7to10": 1.6, gt10: 1.75 }[a.steps] || 1.4;
-    const jobAdd = (a.job === "aktiv" || a.job === "schicht") ? 0.05 : 0;
-    const factor = Math.min(1.9, stepFactor + jobAdd);
-    const tdee = Math.round(bmr * factor);
-    const cut = Math.round(tdee * 0.8);
-    const protLo = Math.round(w * 1.8), protHi = Math.round(w * 2.2);
-    const targetWaist = Math.round(h * 0.5);
-    const stepGoal = (a.steps === "lt4") ? "7.000" : (a.steps === "4to7") ? "8.000" : "10.000";
+    let rows = '';
+    if (tv.hasEnergy) {
+      rows += '<tr><td>Geschätzter Erhaltungsbereich</td><td>ca. ' + tv.maintLo + '–' + tv.maintHi + ' kcal</td></tr>' +
+        '<tr><td>Zielbereich für Modus ' + tv.modeLabel + '</td><td>ca. ' + tv.targetLo + '–' + tv.targetHi + ' kcal</td></tr>';
+    }
+    rows += '<tr><td>Protein pro Tag</td><td>' + tv.proteinLo + '–' + tv.proteinHi + ' g</td></tr>' +
+      '<tr><td>Tägliches Schritteziel (Start)</td><td>' + tv.stepGoal + ' Schritte</td></tr>';
+    if (waist && tv.waistTarget) rows += '<tr><td>Bauchumfang aktuell → Orientierung</td><td>' + waist + ' cm → Richtung ' + tv.waistTarget + ' cm</td></tr>';
+    else if (tv.waistTarget) rows += '<tr><td>Bauchumfang-Orientierung</td><td>unter ' + tv.waistTarget + ' cm (halbe Körpergröße)</td></tr>';
 
-    html += '<div class="r-section"><h2>Deine konkreten Zielwerte</h2>' +
-      '<p style="margin-bottom:12px">Aus deinen Angaben (Alter ' + age + ', ' + h + ' cm, ' + w + ' kg) berechnet — als Startpunkt, den du nach 2–3 Wochen anhand der Waage feinjustierst.</p>' +
-      '<table>' +
-      '<tr><td>Grundumsatz (BMR)</td><td>' + bmr + ' kcal</td></tr>' +
-      '<tr><td>Tagesbedarf (TDEE, geschätzt)</td><td>' + tdee + ' kcal</td></tr>' +
-      '<tr><td>Kalorien für Fettabbau (−20 %)</td><td>' + cut + ' kcal</td></tr>' +
-      '<tr><td>Protein-Tagesziel</td><td>' + protLo + '–' + protHi + ' g</td></tr>' +
-      '<tr><td>Tägliches Schritteziel</td><td>' + stepGoal + ' Schritte</td></tr>' +
-      (waist ? '<tr><td>Bauchumfang aktuell → Ziel</td><td>' + waist + ' cm → unter ' + targetWaist + ' cm</td></tr>'
-             : '<tr><td>Ziel-Bauchumfang (unter halber Größe)</td><td>unter ' + targetWaist + ' cm</td></tr>') +
-      '</table>' +
-      '<p style="font-size:0.8rem;color:#8893a7;margin-top:8px">Orientierungswerte nach etablierten Formeln (Mifflin-St-Jeor, WHtR). Keine ärztliche oder ernährungsmedizinische Vorgabe.</p>' +
+    html += '<div class="r-section"><h2>Deine Startwerte für die nächsten 14 Tage</h2>' +
+      '<p style="margin-bottom:6px"><strong>Dein Modus: ' + tv.modeLabel + '</strong> — ' + tv.modeDesc + '.</p>' +
+      '<p style="margin-bottom:12px">Diese Werte sind <strong>Startbereiche</strong>, keine exakten Vorgaben. Formeln schätzen — sie messen deinen Stoffwechsel nicht direkt.</p>' +
+      '<table>' + rows + '</table>' +
+      '<p style="margin-top:10px">Danach: <strong>14 Tage beobachten</strong> und anhand von Gewichtstrend, Bauchumfang, Training, Hunger und Energie feinjustieren.</p>' +
+      '<p style="font-size:0.8rem;color:#8893a7;margin-top:8px">Orientierungswerte nach etablierten Formeln (Mifflin-St-Jeor, WHtR). Keine ärztliche oder ernährungsmedizinische Vorgabe. Bei starkem Übergewicht ist der Proteinwert bewusst auf ein Referenzgewicht bezogen.</p>' +
       '</div>';
   })();
 
@@ -129,7 +119,7 @@
     '<div class="r-bars">';
   keys.forEach(k => {
     const v = r.scores[k];
-    html += '<div class="r-bar-row"><span class="nm">' + C.moduleNames[k] + '</span>' +
+    html += '<div class="r-bar-row"><span class="nm">' + C.nm(k) + '</span>' +
       '<div class="r-bar-track"><div class="r-bar-fill" style="width:' + v + '%;background:' + barColor(v) + '"></div></div>' +
       '<span class="vl">' + v + '/100</span></div>';
   });
@@ -138,7 +128,7 @@
   /* ---------- Einzel-Auswertung ---------- */
   html += '<div class="r-section"><h2>Einzel-Auswertung der 7 Bereiche</h2><div class="r-grid-2">';
   keys.forEach(k => {
-    html += '<div class="r-box"><span class="r-tag">' + C.moduleNames[k] + ' · ' + r.scores[k] + '/100</span>' +
+    html += '<div class="r-box"><span class="r-tag">' + C.nm(k) + ' · ' + r.scores[k] + '/100</span>' +
       '<p style="font-size:0.86rem">' + moduleText(k, r.scores[k]) + '</p></div>';
   });
   html += '</div></div>';
@@ -153,7 +143,7 @@
   /* ---------- Top 3 Prioritäten ---------- */
   html += '<div class="r-section"><h2>Deine Top-3-Prioritäten</h2><div class="r-grid-2" style="grid-template-columns:1fr">';
   r.weakest.forEach((k, i) => {
-    html += '<div class="r-box"><span class="r-tag">Priorität ' + (i + 1) + ' — ' + C.moduleNames[k] + ' (' + r.scores[k] + '/100)</span>' +
+    html += '<div class="r-box"><span class="r-tag">Priorität ' + (i + 1) + ' — ' + C.nm(k) + ' (' + r.scores[k] + '/100)</span>' +
       '<p style="font-size:0.88rem">' + moduleText(k, r.scores[k]) + '</p></div>';
   });
   html += '</div></div>';
@@ -163,9 +153,12 @@
     stepsArr.map(s => "<li><span>" + s + "</span></li>").join("") + '</ol></div>';
 
   /* ---------- 7-Tage-Plan ---------- */
+  let planDays;
+  try { planDays = C.dynamicPlan(a, r); } catch (e) { planDays = r.plan; }
+  if (!planDays || !planDays.length) planDays = r.plan;
   html += '<div class="r-section"><h2>Dein 7-Tage-Plan</h2>' +
-    '<p style="margin-bottom:12px">Abgestimmt auf deinen Typ „' + r.archetype.name + '“. Ziel: Baseline schaffen und Momentum aufbauen — nicht Perfektion.</p>';
-  r.plan.forEach(d => {
+    '<p style="margin-bottom:12px">Aus deinen Antworten gebaut (Modus ' + C.targetValues(a).modeLabel + '). Ziel: Baseline schaffen und Momentum aufbauen — nicht Perfektion. Identisch zu deinem Dashboard.</p>';
+  planDays.forEach(d => {
     html += '<div class="r-plan-day"><div class="d">' + d.day.toUpperCase() + '</div><ul>' +
       d.items.map(it => "<li>" + it + "</li>").join("") + '</ul></div>';
   });
@@ -180,14 +173,16 @@
     '<tr><td>4 · Optimize</td><td>9–12</td><td>Plateaus lösen, Re-Check des Scores, Blutwerte optional einordnen, Langzeitplan &amp; Erhaltungsstrategie.</td></tr>' +
     '</table></div>';
 
-  /* ---------- Trainingsempfehlung ---------- */
-  html += '<div class="r-section"><h2>Trainings-Empfehlung: Das 3-Tage-System</h2>' +
-    '<p style="margin-bottom:14px">Für Männer mit wenig Zeit: 3 Ganzkörper-Einheiten pro Woche, dokumentierte Progression, keine ständigen Übungswechsel. Orientierung der WHO: zusätzlich 150–300 Min. moderate Bewegung pro Woche (z.&nbsp;B. zügiges Gehen).</p>' +
-    '<table><tr><th>Tag A</th><th>Tag B</th><th>Tag C</th></tr>' +
-    '<tr><td style="font-weight:400">Beinpresse o. Kniebeuge<br>Bankdrücken o. Brustpresse<br>Rudern<br>Beinbeuger<br>Seitheben<br>Core</td>' +
-    '<td style="font-weight:400">Kreuzheben-Variante<br>Schulterdrücken<br>Latzug / Klimmzug<br>Ausfallschritte<br>Bizeps / Trizeps<br>Core</td>' +
-    '<td style="font-weight:400">Kniebeuge-Variante<br>Schrägbankdrücken<br>Kabelrudern<br>Rumänisches Kreuzheben<br>Seitheben<br>Arme</td></tr></table>' +
-    '<p style="margin-top:12px;font-size:0.85rem">Progression: Gewichte und Wiederholungen notieren, jede Woche eine kleine Verbesserung anstreben. Bei Erschöpfung: Deload-Woche mit −30&nbsp;% Volumen.</p></div>';
+  /* ---------- Trainingsempfehlung (Ziel/Erfahrung entscheiden, kein Universal-Plan) ---------- */
+  html += '<div class="r-section"><h2>Trainings-Empfehlung: Kraft + Cardio</h2>' +
+    '<p style="margin-bottom:10px">Es gibt keinen Plan für jeden. Wähle die Frequenz, die zu Ziel, Erfahrung und Alltag passt — und ziehe sie mit Progression durch:</p>' +
+    '<table><tr><th>Variante</th><th>Für wen</th></tr>' +
+    '<tr><td style="font-weight:600">2× Ganzkörper</td><td style="font-weight:400">Sehr guter Minimum-Plan für Einsteiger und Vielbeschäftigte — konsequent besser als 4×, die ausfallen.</td></tr>' +
+    '<tr><td style="font-weight:600">3× Ganzkörper</td><td style="font-weight:400">Solider Standard: jede große Muskelgruppe 3× pro Woche, gute Erholung.</td></tr>' +
+    '<tr><td style="font-weight:600">4× Ober-/Unterkörper</td><td style="font-weight:400">Wenn Zeit und Erfahrung da sind und du mehr Volumen sauber verkraftest.</td></tr>' +
+    '</table>' +
+    '<p style="margin-top:12px;font-size:0.9rem"><strong>Progression:</strong> Gewichte/Wiederholungen notieren, über die Zeit steigern (doppelte Progression). <strong>Deload:</strong> nicht nach Kalender — nur, wenn sich Ermüdung aufstaut (Kraft fällt, Schlaf/Gelenke leiden). Wer top regeneriert, trainiert weiter.</p>' +
+    '<p style="margin-top:10px;font-size:0.9rem"><strong>Cardio (eigenes System):</strong> Einsteiger → Gewohnheit + Gehen; Basis → 2–3× 20–40 Min moderat („Zone 2“ = locker, sprechen möglich); Performance → zusätzlich 1× kurze Intervalle, wenn geeignet. Dauer zuerst erhöhen, Intensität später. Ein reproduzierbarer Marker (feste Strecke/Zeit oder Ruhepuls) macht Fortschritt sichtbar.</p></div>';
 
   /* ---------- Ernährungsempfehlung ---------- */
   const weight = parseFloat(a.weight) || 0;
@@ -203,29 +198,38 @@
   /* ---------- Recovery ---------- */
   html += '<div class="r-section"><h2>Recovery-Empfehlung</h2><ol class="r-steps">' +
     '<li><span><strong>Schlaffenster:</strong> Festes 7–8-Stunden-Fenster — gleiche Zeiten, auch am Wochenende (±1 h).</span></li>' +
-    '<li><span><strong>Koffein-Deadline:</strong> Nach 14 Uhr kein Koffein.</span></li>' +
+    '<li><span><strong>Koffein:</strong> Menge und Timing zusammen denken — teste eine frühere Deadline (z.&nbsp;B. 8–10 h vor dem Schlafen) und prüfe, ob dein Schlaf besser wird. Keine starre Uhrzeit für alle.</span></li>' +
     '<li><span><strong>Abendroutine:</strong> Letzte 30 Minuten ohne Bildschirm; Schlafzimmer kühl und dunkel.</span></li>' +
     '<li><span><strong>Stress:</strong> Tägliche 15–20-Minuten-Geheinheit — der unterschätzte Regenerations-Hebel.</span></li>' +
     '</ol></div>';
 
-  /* ---------- Blutwerte-Checkliste ---------- */
-  html += '<div class="r-section"><h2>BloodMetrix Checkliste — Männer</h2>' +
-    '<p style="margin-bottom:12px">Zum Mitnehmen ins Arztgespräch. Welche Werte sinnvoll sind, entscheidet dein Arzt nach Alter, Beschwerden und Vorgeschichte.</p>' +
-    '<div class="r-grid-2"><div><h3 style="font-size:0.9rem;margin-bottom:8px">Basis</h3><ul class="r-check-cols" style="grid-template-columns:1fr">' +
-    ["Kleines/großes Blutbild", "Leberwerte", "Nierenwerte", "Elektrolyte", "Nüchternglukose", "HbA1c", "Lipidprofil (LDL, HDL, TG)"].map(x => "<li>" + x + "</li>").join("") +
-    '</ul><h3 style="font-size:0.9rem;margin:14px 0 8px">Performance</h3><ul class="r-check-cols" style="grid-template-columns:1fr">' +
-    ["Ferritin", "Vitamin D", "Vitamin B12", "TSH / fT3 / fT4", "hs-CRP"].map(x => "<li>" + x + "</li>").join("") +
-    '</ul></div><div><h3 style="font-size:0.9rem;margin-bottom:8px">Hormone</h3><ul class="r-check-cols" style="grid-template-columns:1fr">' +
-    ["Testosteron gesamt", "Freies Testosteron (o. berechnet)", "SHBG", "LH / FSH", "Estradiol (sensitiv, falls möglich)", "Prolaktin"].map(x => "<li>" + x + "</li>").join("") +
-    '</ul><h3 style="font-size:0.9rem;margin:14px 0 8px">Männergesundheit (Blut)</h3><ul class="r-check-cols" style="grid-template-columns:1fr">' +
-    ["PSA (nach Alter/Risiko, ärztl. Empfehlung)"].map(x => "<li>" + x + "</li>").join("") +
-    '</ul><p style="font-size:0.78rem;color:#9aa3b2;margin-top:10px">Ergänzend (keine Blutwerte, separat erfassen): Blutdruck &amp; Bauchumfang — diese trackst du im MaleMetrix Tracker.</p></div></div></div>';
+  /* ---------- Health & Longevity Dashboard (risikobasiert, nicht „alles messen") ---------- */
+  (function () {
+    const hd = C.healthDashboard(a);
+    let cols = '';
+    hd.groups.forEach(g => {
+      cols += '<div><h3 style="font-size:0.9rem;margin:0 0 8px">' + g.key + ' — ' + g.title + '</h3><ul class="r-check-cols" style="grid-template-columns:1fr">' +
+        g.items.map(x => "<li>" + x + "</li>").join("") + '</ul></div>';
+    });
+    html += '<div class="r-section"><h2>Dein Health &amp; Longevity Dashboard</h2>' +
+      '<p style="margin-bottom:6px">Labor ist nur ein Teil. Priorisiere zuerst das, was Entscheidungen verändert: Blutdruck, Bauchumfang, Bewegung/Fitness, Schlaf, Nikotin, Alkohol, Familienanamnese.</p>' +
+      '<p style="margin-bottom:12px;font-weight:600">' + hd.note + '</p>' +
+      '<div class="r-grid-2">' + cols + '</div>' +
+      '<p style="font-size:0.78rem;color:#9aa3b2;margin-top:10px">Welche Werte für dich sinnvoll sind, entscheidet dein Arzt nach Alter, Risiko, Symptomen und Vorgeschichte. Blutdruck &amp; Bauchumfang trackst du im MaleMetrix Tracker.</p></div>';
+  })();
 
-  /* ---------- Passendes Angebot ---------- */
-  html += '<div class="r-section"><h2>Dein nächster Schritt mit MaleMetrix</h2>' +
-    '<div class="r-box" style="border-left:4px solid #2e7cf6"><h3>Empfehlung für dein Profil: ' + r.archetype.offer + '</h3>' +
-    '<p style="margin-top:6px">Auf Basis deines Ergebnisses passt das <strong>MaleMetrix 1:1 Coaching</strong> (149&nbsp;€/Monat, monatlich kündbar) mit Fokus auf „' + r.bottleneck.name + '“. ' +
-    'Kostenloses Analysegespräch: <strong>malemetrix.de/termin</strong></p></div></div>';
+  /* ---------- Passendes Angebot (personalisiert — nicht immer Coaching) ---------- */
+  (function () {
+    const rec = C.productRecommendation(r);
+    const color = rec.kind === 'medical' ? '#c0392b' : (rec.kind === 'coaching' ? '#7c5cff' : '#2e7cf6');
+    html += '<div class="r-section"><h2>Dein nächster Schritt mit MaleMetrix</h2>' +
+      '<div class="r-box" style="border-left:4px solid ' + color + '"><h3>' + rec.title + '</h3>' +
+      '<p style="margin-top:6px">' + rec.why + '</p>' +
+      (rec.kind === 'medical'
+        ? '<p style="margin-top:8px;font-size:0.85rem">Kläre die oben markierten Punkte zuerst ärztlich. Danach unterstützt dich MaleMetrix bei Struktur und Umsetzung.</p>'
+        : '<p style="margin-top:8px;font-size:0.9rem"><strong>' + rec.primary.label + '</strong>' + (rec.kind === 'coaching' ? ' — kostenloses Analysegespräch: <strong>malemetrix.de/termin</strong>' : ' — <strong>malemetrix.de/protokoll</strong>') + '</p>') +
+      '</div></div>';
+  })();
 
   /* ---------- Disclaimer ---------- */
   html += '<div class="r-section"><div class="r-disclaimer"><strong>Disclaimer:</strong> MaleMetrix bietet Coaching, Lifestyle-Analyse und strukturierte Orientierung zu Training, Ernährung, Schlaf, Körperkomposition und allgemeinen Gesundheitsmarkern. Dieser Report stellt keine medizinische Diagnose dar, ersetzt keine ärztliche Beratung und enthält keine Therapie- oder Medikamentenempfehlungen. Bei gesundheitlichen Beschwerden, auffälligen Laborwerten oder medizinischen Fragen wende dich bitte an einen Arzt.</div></div>';
