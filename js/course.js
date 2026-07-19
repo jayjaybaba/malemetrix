@@ -265,6 +265,49 @@
       "</section>";
   }
 
+  /* ---------- Chaos-Woche / Minimum Viable Week ---------- */
+  function renderMinimumWeek() {
+    const m = DATA.minimumWeek;
+    if (!m) return "";
+    const li = arr => (arr || []).map(x => "<li>" + esc(x) + "</li>").join("");
+    return '<section class="course-minweek card reveal"><span class="eyebrow">' + esc(m.eyebrow || "") + "</span>" +
+      '<h2 class="h-section" style="margin-bottom:6px">' + esc(m.title) + "</h2>" +
+      '<p class="lead">' + esc(m.lead) + "</p>" +
+      '<div class="grid-2" style="margin-top:14px">' +
+      '<div><span class="course-block-label">Standard-Woche</span><ul class="check-list">' + li(m.standard) + "</ul></div>" +
+      '<div><span class="course-block-label">Minimum Viable Week</span><ul class="check-list">' + li(m.minimum) + "</ul></div>" +
+      "</div>" +
+      (m.note ? '<p class="muted" style="margin-top:12px">' + esc(m.note) + "</p>" : "") +
+      "</section>";
+  }
+
+  /* ---------- Recheck-Dashboard W0/4/8/12 (lokal, keine Interpretation) ---------- */
+  const RECHECK_POINTS = [["w0", "Start (W0)"], ["w4", "Woche 4"], ["w8", "Woche 8"], ["w12", "Woche 12"]];
+  const RECHECK_METRICS = [
+    ["score", "MaleMetrix Score", "num"], ["weight", "Gewicht (kg)", "num"], ["waist", "Bauchumfang (cm)", "num"],
+    ["strength", "Kraft-Marker", "txt"], ["cardio", "Cardio-Marker", "txt"], ["sleep", "Schlaf (h)", "num"],
+    ["energy", "Energie (1–10)", "num"], ["bp", "Blutdruck (falls relevant)", "txt"], ["bottleneck", "#1-Engpass", "txt"]
+  ];
+  function rechecks() { return MM.store.get("course_rechecks", {}) || {}; }
+  function saveRechecks(o) { MM.store.set("course_rechecks", o); }
+  function renderRecheck() {
+    const data = rechecks();
+    const head = "<tr><th>Wert</th>" + RECHECK_POINTS.map(p => "<th>" + esc(p[1]) + "</th>").join("") + "</tr>";
+    const rows = RECHECK_METRICS.map(m => {
+      return "<tr><td>" + esc(m[1]) + "</td>" + RECHECK_POINTS.map(p => {
+        const v = (data[p[0]] && data[p[0]][m[0]] != null) ? data[p[0]][m[0]] : "";
+        const im = m[2] === "num" ? ' inputmode="decimal"' : "";
+        return '<td><input class="rc-in" data-cp="' + p[0] + '" data-metric="' + m[0] + '" type="text"' + im + ' value="' + String(v).replace(/"/g, "&quot;") + '"></td>';
+      }).join("") + "</tr>";
+    }).join("");
+    return '<section class="course-recheck card reveal"><span class="eyebrow">Recheck-Dashboard</span>' +
+      '<h2 class="h-section" style="margin-bottom:6px">W0 → W4 → W8 → W12</h2>' +
+      '<p class="lead">Trag deine wichtigsten Werte an den vier Messpunkten ein — alles bleibt lokal auf deinem Gerät. Keine medizinische Bewertung, nur eine ehrliche Antwort auf: <strong>Was hat sich bewegt?</strong></p>' +
+      '<div class="course-recheck-scroll"><table class="course-recheck-table">' + head + rows + "</table></div>" +
+      '<p class="small muted" style="margin-top:10px">Mach den MaleMetrix Score an jedem Messpunkt neu und trag ihn ein. Kraft-/Cardio-Marker frei wählen (z. B. „Bank 4×8@70 kg“ oder „5 km Zeit“).</p>' +
+      "</section>";
+  }
+
   /* ---------- Fortschrittsbalken ---------- */
   function renderProgress() {
     const box = document.getElementById("courseProgress");
@@ -286,6 +329,8 @@
 
     let html = renderIntro();
     html += renderModeSelector();
+    html += renderMinimumWeek();
+    html += renderRecheck();
     let lastPhase = null;
     DATA.weeks.forEach(w => {
       if (w.phase !== lastPhase) { html += phaseDivider(w.phase); lastPhase = w.phase; }
@@ -324,6 +369,17 @@
         MM.store.set("course_mode", btn.dataset.mode);
         if (MM.track) MM.track("course_mode_selected", { mode: btn.dataset.mode });
         showContent();
+      });
+
+      // Recheck-Dashboard: Werte lokal speichern (Event-Delegation)
+      cw.addEventListener("input", e => {
+        const inp = e.target;
+        if (!inp.classList || !inp.classList.contains("rc-in")) return;
+        const o = rechecks();
+        const cp = inp.dataset.cp;
+        if (!o[cp]) o[cp] = {};
+        o[cp][inp.dataset.metric] = inp.value;
+        saveRechecks(o);
       });
     }
 
