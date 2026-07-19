@@ -1956,6 +1956,12 @@ input[type="range"]::-moz-range-thumb {
 .ebook-cover .cov-kicker { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-2); position: relative; }
 .ebook-cover .cov-title { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; line-height: 1.1; position: relative; }
 .ebook-cover .cov-brand { font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); position: relative; }
+/* Echtes Titelbild als Cover (klickbar) */
+.ebook-cover.ebook-cover-img { padding: 0; display: block; background: #0a1020; cursor: pointer; text-decoration: none; }
+.ebook-cover.ebook-cover-img img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; transition: transform .4s ease; }
+.ebook-card:hover .ebook-cover.ebook-cover-img img { transform: scale(1.04); }
+.ebook-cover.ebook-cover-feat { aspect-ratio: auto; height: 100%; min-height: 280px; }
+.ebook-cover .cov-badge-float { position: absolute; top: 12px; left: 12px; z-index: 2; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: #fff; background: rgba(8,12,24,0.74); padding: 5px 10px; border-radius: 999px; border: 1px solid var(--accent-line); }
 .ebook-body { padding: 22px; display: flex; flex-direction: column; flex: 1; }
 .ebook-body p { font-size: 0.86rem; color: var(--muted); flex: 1; margin-bottom: 16px; }
 .ebook-meta { display: flex; gap: 14px; font-size: 0.76rem; color: var(--muted-2); font-family: var(--font-mono); margin-bottom: 16px; }
