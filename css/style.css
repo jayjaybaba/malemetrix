@@ -2034,6 +2034,9 @@ input[type="range"]::-moz-range-thumb {
 .doc-figure figcaption { margin-top: 10px; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.03em; color: #9aa3b2; text-align: center; }
 .doc-figure.hero { margin: 4px 0 34px; }
 .doc-figure.hero img { border-radius: 16px; aspect-ratio: 16 / 9; object-fit: cover; }
+/* Story-Format-Grafiken (hochkant) sinnvoll begrenzt, zentriert */
+.doc-figure.portrait { max-width: 380px; margin: 28px auto; }
+.doc-figure.portrait img { border-radius: 16px; }
 
 /* Founder-Zeile auf der Startseite (Bild + Story) */
 .founder-row { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 36px; align-items: center; max-width: 960px; margin: 0 auto; }
