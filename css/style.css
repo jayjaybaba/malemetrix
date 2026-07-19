@@ -2010,6 +2010,24 @@ input[type="range"]::-moz-range-thumb {
 .doc-footer { margin-top: 44px; padding-top: 20px; border-top: 1.5px solid #e3e6eb; font-family: var(--font-mono); font-size: 0.72rem; color: #9aa3b2; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 .doc-disclaimer { font-size: 0.78rem; color: #8893a7; margin-top: 14px; line-height: 1.6; }
 
+/* Action-Box am Modulende — macht aus jedem Modul eine Entscheidung */
+.doc-actionbox { border: 1.5px solid #d6e4fb; border-radius: 14px; padding: 4px 20px 8px; margin: 26px 0 30px; background: #fafcff; }
+.doc-actionbox h4 { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: #2e7cf6; margin: 16px 0 6px; }
+.doc-actionbox ul { margin: 0 0 6px; padding-left: 20px; }
+.doc-actionbox li { font-size: 0.9rem; color: #3a4150; margin-bottom: 4px; }
+.doc-actionbox .ab-stop h4 { color: #c0392b; }
+.doc-actionbox .ab-esc h4 { color: #b06a00; }
+.doc-actionbox .ab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 26px; }
+@media (max-width: 640px) { .doc-actionbox .ab-grid { grid-template-columns: 1fr; } }
+
+/* 10-Minuten Quick-Start */
+.doc-quickstart { border: 2px solid #2e7cf6; border-radius: 16px; padding: 8px 22px 18px; margin: 24px 0 34px; background: linear-gradient(180deg,#f2f7ff,#ffffff); }
+.doc-quickstart .qs-kick { display: inline-block; font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: #2e7cf6; font-weight: 700; margin-top: 14px; }
+.doc-quickstart ol { counter-reset: qs; list-style: none; padding: 0; margin: 12px 0 8px; }
+.doc-quickstart ol li { counter-increment: qs; position: relative; padding: 8px 0 8px 44px; border-bottom: 1px solid #e6eefb; font-size: 0.95rem; color: #16181d; }
+.doc-quickstart ol li::before { content: counter(qs); position: absolute; left: 0; top: 7px; width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg,#2e7cf6,#00c2ff); color: #fff; font-weight: 700; font-size: 0.85rem; display: grid; place-items: center; }
+.doc-quickstart ol li:last-child { border-bottom: none; }
+
 /* Ebook-Bilder */
 .doc-figure { margin: 26px 0; }
 .doc-figure img { display: block; width: 100%; height: auto; border-radius: 14px; box-shadow: 0 6px 24px rgba(13,15,19,0.12); }
