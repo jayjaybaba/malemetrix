@@ -130,6 +130,7 @@ window.MM_EBOOKS = [
     id: "taeglich-trainieren",
     kicker: { de: "MaleMetrix · Training", en: "MaleMetrix · Training" },
     cover: "linear-gradient(150deg,#103226,#0c1320)",
+    img: "ebooks/img/taeglich-trainieren/01-varianz.jpg",
     badge: { de: "Neu · Training", en: "New · Training" },
     title: { de: "Jeden Tag trainieren", en: "Train Every Day" },
     desc: { de: "Warum „3× die Woche\" ständig vor sich hergeschoben wird — und wie tägliche 25–30 Minuten plus drei harte Gym-Tage als Push/Pull/Legs das Aufschieben killen und dich dauerhaft am Ball halten. Das Anti-Aufschieben-System, kombiniert mit dem 3-Tage-System.",
