@@ -69,6 +69,8 @@
       <p class="lead">Dein Kauf enthält beides: das Protokoll zum <strong>Lesen</strong> und das interaktive 12-Wochen-Programm zum <strong>Umsetzen</strong>. Öffne, was du gerade brauchst — beide nutzen denselben Zugangscode.</p>
     </div>
 
+    <div id="personalPath"></div>
+
     <div class="card reveal" style="max-width:560px;margin:0 auto 26px;text-align:center;border-color:var(--accent-line);background:var(--accent-soft)">
       <p style="margin:0 0 12px;font-weight:600;color:var(--text)">Optional: Zugangscode einmal eingeben — dann öffnen sich beide ohne erneute Eingabe.</p>
       <input id="hubCode" type="text" placeholder="Zugangscode" autocomplete="off" spellcheck="false"
@@ -111,6 +113,73 @@
 <script src="js/shop-data.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/main.js"></script>
+<script src="js/check-data.js"></script>
+<script>
+/* Personalisierter Startpfad: liest den MaleMetrix Score (falls vorhanden)
+   und leitet Engpass, Modus und Lese-Reihenfolge durch DAS PROTOKOLL ab. */
+(function () {
+  "use strict";
+  var host = document.getElementById("personalPath");
+  if (!host) return;
+  var r = (window.MM && MM.store) ? MM.store.get("check_result", null) : null;
+  var C = window.MM_CHECK;
+
+  if (!r || !r.bottleneck) {
+    host.innerHTML =
+      '<div class="card reveal" style="max-width:620px;margin:0 auto 22px;border-color:var(--line)">' +
+        '<span class="eyebrow">Dein persönlicher Start</span>' +
+        '<p style="margin:8px 0 14px;color:var(--muted)">Mach den kostenlosen MaleMetrix&nbsp;Score — dann zeigt dir diese Seite genau, welchen Engpass du zuerst angehst und welche Module du in welcher Reihenfolge liest.</p>' +
+        '<a href="check.html" class="btn btn-primary btn-sm">Score starten →</a>' +
+      '</div>';
+    return;
+  }
+
+  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+  var bKey = r.bottleneck.key;
+  var bName = r.bottleneck.name || (C && C.nm ? C.nm(bKey) : bKey);
+  var mode = (C && C.goalMode) ? C.goalMode(r.answers || {}) : null;
+  var modeInfo = (mode && C.modeLabels && C.modeLabels[mode]) ? C.modeLabels[mode] : null;
+
+  // Engpass → Lese-Reihenfolge durch DAS PROTOKOLL (Modulnummer + Kurzname)
+  var READ = {
+    recovery:  [[5,"Schlaf & Regeneration"],[4,"Ernährung & Körperkomposition"],[2,"Kraft & Muskel"]],
+    strength:  [[2,"Kraft & Muskel"],[3,"Cardio & Bewegung"],[5,"Schlaf & Regeneration"]],
+    fuel:      [[4,"Ernährung & Körperkomposition"],[2,"Kraft & Muskel"],[5,"Schlaf & Regeneration"]],
+    body:      [[4,"Ernährung & Körperkomposition"],[2,"Kraft & Muskel"],[3,"Cardio & Bewegung"]],
+    blood:     [[7,"Health- & Longevity-Dashboard"],[8,"Hormone & Testosteron"],[4,"Ernährung & Körperkomposition"]],
+    drive:     [[8,"Hormone & Testosteron"],[5,"Schlaf & Regeneration"],[9,"Sexuelle Gesundheit"]],
+    execution: [[1,"Das Operating System"],[10,"Der 12-Wochen-Masterplan"],[5,"Schlaf & Regeneration"]]
+  };
+  var reads = READ[bKey] || READ.execution;
+  var ignore = (bKey === "blood")
+    ? ["Supplemente", "Biohacking-Experimente", "Einzelwert-Optimierung"]
+    : ["Supplemente", "Biohacking & Longevity", "Speziallabore"];
+
+  var lis = reads.map(function (m) {
+    return '<li style="margin-bottom:7px"><a href="ebooks/protokoll.html#m' + m[0] + '" style="color:var(--accent);font-weight:600;text-decoration:none">Modul ' + m[0] + ' — ' + esc(m[1]) + '</a></li>';
+  }).join("");
+
+  var modeChip = modeInfo
+    ? '<span class="chip" style="margin:0">Dein Modus: <strong>' + esc(modeInfo.label) + '</strong> · ' + esc(modeInfo.desc) + '</span>'
+    : "";
+
+  host.innerHTML =
+    '<div class="card reveal" style="max-width:620px;margin:0 auto 26px;border-color:var(--accent-line);background:var(--accent-soft)">' +
+      '<span class="eyebrow">Dein persönlicher Start</span>' +
+      '<h2 class="h-card" style="margin:6px 0 12px">Dein Score zeigt, wo du anfängst</h2>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">' +
+        '<span class="chip warn" style="margin:0">Dein Engpass: <strong>' + esc(bName) + '</strong></span>' +
+        modeChip +
+      '</div>' +
+      '<p style="font-weight:600;margin:0 0 6px">Lies zuerst — in dieser Reihenfolge:</p>' +
+      '<ol style="margin:0 0 16px;padding-left:20px">' + lis + '</ol>' +
+      '<p style="font-weight:600;margin:0 0 6px">Diese Woche ignorieren:</p>' +
+      '<p class="small muted" style="margin:0 0 18px">' + ignore.join(" · ") + ' — die kommen später. Erst den Engpass schließen.</p>' +
+      '<a href="ebooks/protokoll.html#m' + reads[0][0] + '" class="btn btn-primary btn-sm">Bei Modul ' + reads[0][0] + ' starten →</a>' +
+    '</div>';
+})();
+</script>
 <script>
 (function () {
   "use strict";
