@@ -472,6 +472,14 @@
       (dc.missing.indexOf('Bauchumfang') >= 0 ? ' <a href="check.html" style="color:var(--accent)">Bauchumfang nachtragen und Ergebnis präzisieren →</a>' : '') +
       '</p></div>';
 
+    /* ---------- Empfohlener Weg (Modus) + transparente Begründung ---------- */
+    html += '<div class="card" style="margin-bottom:22px;border-color:var(--accent-line);background:var(--accent-soft)">' +
+      '<span class="card-num">DEIN EMPFOHLENER WEG</span>' +
+      '<h3 style="font-size:1.3rem;margin:4px 0 6px">' + tv.modeLabel + ' — ' + tv.modeDesc + '</h3>' +
+      '<p class="small" style="margin:0 0 10px">' + tv.modeReason + '</p>' +
+      '<p class="small muted" style="margin:0"><strong>Bewegung:</strong> Jeden Tag ein Reiz oder gezielte Bewegung — 3 Tage gezieltes Krafttraining, die übrigen Tage Zone 2, Mobility, Spaziergänge/Steps oder aktive Regeneration. Nicht jeden Tag maximale Belastung.</p>' +
+      '</div>';
+
     /* ---------- Red Flags (Sicherheit zuerst) ---------- */
     if (r.flags.length) {
       html += '<div class="alert alert-danger"><span class="alert-icon">⚕</span><div>' +

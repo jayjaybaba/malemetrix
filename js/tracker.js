@@ -43,6 +43,9 @@
     /* Tägliche Bewegungs-Einheiten (ohne Gym): [{date:"YYYY-MM-DD", min, kind}] */
     daily: () => MM.store.get("trk_daily", []),
     saveDaily: (v) => MM.store.set("trk_daily", v),
+    /* Schlaf-Log: [{id, date, dur(h), quality 1-5, latency, waking, morning 1-5, rhr?, hrv?, note?}] */
+    sleep: () => MM.store.get("trk_sleep", []),
+    saveSleep: (v) => MM.store.set("trk_sleep", v),
     restPref: () => MM.store.get("trk_rest_sec", 120),
     saveRestPref: (v) => MM.store.set("trk_rest_sec", v),
     barPref: () => MM.store.get("trk_bar_kg", (window.MM_TRK_PLATES || {}).barKg || 20),
@@ -263,6 +266,7 @@
       t("exercises", T("Übungen", "Exercises")) +
       t("insights", T("Insights", "Insights")) +
       t("cardio", T("Cardio", "Cardio")) +
+      t("sleep", T("Schlaf", "Sleep")) +
       t("body", T("Körper", "Body")) +
       t("templates", T("Pläne", "Routines")) +
       '</div>';
@@ -291,6 +295,7 @@
     else if (tab === "exercises") renderExercises(p);
     else if (tab === "insights") renderInsights(p);
     else if (tab === "cardio") renderCardio(p);
+    else if (tab === "sleep") renderSleep(p);
     else if (tab === "body") renderBody(p);
     else if (tab === "templates") renderTemplates(p);
   }
@@ -823,6 +828,141 @@
   function stopRestTimer() { clearInterval(restInterval); const b = document.getElementById("restBar"); if (b) b.classList.remove("active"); }
 
   /* ==========================================================================
+     SCHLAF  (echter Schlaf-Tracker: Dauer, Qualität, Einschlafen, Erwachen,
+     morgendliche Erholung, optional Ruhepuls/HRV — mit Verlauf, 7-Tage-Schnitt
+     und konkreter Auswertung, die in Empfehlungen einfließt.)
+     ========================================================================== */
+  var SLEEP_QUALITY = [
+    { v: 1, de: "sehr schlecht", en: "very poor" },
+    { v: 2, de: "schlecht", en: "poor" },
+    { v: 3, de: "okay", en: "okay" },
+    { v: 4, de: "gut", en: "good" },
+    { v: 5, de: "sehr gut", en: "very good" }
+  ];
+  var SLEEP_LATENCY = [
+    { v: "instant", de: "sofort / < 15 Min", en: "instant / < 15 min" },
+    { v: "normal", de: "15–30 Min", en: "15–30 min" },
+    { v: "slow", de: "30–60 Min", en: "30–60 min" },
+    { v: "hard", de: "> 60 Min", en: "> 60 min" }
+  ];
+  var SLEEP_WAKING = [
+    { v: "none", de: "durchgeschlafen", en: "slept through" },
+    { v: "once", de: "1–2× kurz wach", en: "woke 1–2× briefly" },
+    { v: "often", de: "mehrfach wach", en: "woke repeatedly" },
+    { v: "long", de: "lange wach gelegen", en: "awake for long" }
+  ];
+  function sleepQualityLabel(v) { var o = SLEEP_QUALITY.find(function (x) { return x.v === v; }); return o ? tr(o) : "—"; }
+  function optList(arr, sel) {
+    return arr.map(function (o) {
+      var val = o.v, lab = (o.de != null) ? tr(o) : o.label;
+      return '<option value="' + val + '"' + (String(val) === String(sel) ? " selected" : "") + '>' + lab + '</option>';
+    }).join("");
+  }
+  function renderSleep(p) {
+    var today = new Date().toISOString().slice(0, 10);
+    p.innerHTML =
+      '<div class="card" style="margin-bottom:20px"><h3 class="h-card" style="margin-bottom:6px">' + T("Schlaf erfassen", "Log sleep") + '</h3>' +
+      '<p class="muted small" style="margin:0 0 16px">' + T("Schlaf ist dein größter Hormon- und Erholungs-Hebel. Trag ihn morgens in 20 Sekunden ein — der Verlauf zeigt dir dein echtes Muster.", "Sleep is your biggest hormone and recovery lever. Log it in 20 seconds each morning — the history shows your real pattern.") + '</p>' +
+      '<div class="form-row"><div class="field"><label>' + T("Nacht auf", "Night of") + '</label><input type="date" id="slDate" value="' + today + '"></div>' +
+      '<div class="field"><label>' + T("Schlafdauer", "Sleep duration") + ' (h)</label><input type="number" inputmode="decimal" step="0.25" id="slDur" placeholder="7.5"></div></div>' +
+      '<div class="form-row"><div class="field"><label>' + T("Subjektive Qualität", "Subjective quality") + '</label><select id="slQual">' + optList(SLEEP_QUALITY, 3) + '</select></div>' +
+      '<div class="field"><label>' + T("Morgendliche Erholung", "Morning recovery") + '</label><select id="slMorning">' + optList(SLEEP_QUALITY, 3) + '</select></div></div>' +
+      '<div class="form-row"><div class="field"><label>' + T("Einschlafen", "Falling asleep") + '</label><select id="slLat">' + optList(SLEEP_LATENCY, "normal") + '</select></div>' +
+      '<div class="field"><label>' + T("Nächtliches Erwachen", "Night waking") + '</label><select id="slWake">' + optList(SLEEP_WAKING, "none") + '</select></div></div>' +
+      '<div class="form-row"><div class="field"><label>' + T("Ruhepuls", "Resting HR") + ' (bpm) · <span class="muted">' + T("optional", "optional") + '</span></label><input type="number" inputmode="numeric" id="slRhr" placeholder="—"></div>' +
+      '<div class="field"><label>HRV (ms) · <span class="muted">' + T("optional", "optional") + '</span></label><input type="number" inputmode="numeric" id="slHrv" placeholder="—"></div></div>' +
+      '<div class="field" style="margin-bottom:14px"><label>' + T("Notiz", "Note") + ' · <span class="muted">' + T("optional", "optional") + '</span></label><input type="text" id="slNote" placeholder="' + T("z. B. spät gegessen, Alkohol, Stress …", "e.g. late meal, alcohol, stress …") + '"></div>' +
+      '<button class="btn btn-primary" id="slSave">' + T("Schlaf speichern", "Save sleep") + '</button></div>' +
+      '<div id="sleepInsight"></div>' +
+      '<div id="sleepList"></div>';
+
+    p.querySelector("#slSave").addEventListener("click", function () {
+      var dur = parseFloat(document.getElementById("slDur").value);
+      if (!(dur > 0)) { MM.toast(T("Schlafdauer angeben", "Enter sleep duration")); return; }
+      if (dur > 16) dur = 16;
+      var date = document.getElementById("slDate").value || today;
+      var list = S.sleep().filter(function (s) { return s.date !== date; }); // eine Nacht = ein Eintrag
+      var rhr = parseInt(document.getElementById("slRhr").value, 10);
+      var hrv = parseInt(document.getElementById("slHrv").value, 10);
+      list.push({
+        id: "s" + Date.now(), date: date, dur: Math.round(dur * 4) / 4,
+        quality: parseInt(document.getElementById("slQual").value, 10),
+        morning: parseInt(document.getElementById("slMorning").value, 10),
+        latency: document.getElementById("slLat").value,
+        waking: document.getElementById("slWake").value,
+        rhr: isFinite(rhr) ? rhr : null, hrv: isFinite(hrv) ? hrv : null,
+        note: document.getElementById("slNote").value.trim() || ""
+      });
+      S.saveSleep(list);
+      MM.toast(T("Schlaf gespeichert", "Sleep saved"));
+      renderPanel();
+    });
+
+    drawSleepInsight(p.querySelector("#sleepInsight"));
+    drawSleepList(p.querySelector("#sleepList"));
+  }
+  function drawSleepInsight(box) {
+    var all = S.sleep();
+    if (!all.length) { box.innerHTML = ""; return; }
+    var now = new Date(); var weekAgo = new Date(now.getTime() - 7 * 864e5);
+    var last7 = all.filter(function (s) { return new Date(s.date) >= weekAgo; });
+    var base = last7.length ? last7 : all.slice().sort(function (a, b) { return new Date(b.date) - new Date(a.date); }).slice(0, 7);
+    var avg = function (key) { var v = base.filter(function (s) { return s[key] != null; }); return v.length ? v.reduce(function (a, s) { return a + s[key]; }, 0) / v.length : null; };
+    var aDur = avg("dur"), aQual = avg("quality"), aMorn = avg("morning"), aRhr = avg("rhr");
+    var hardLat = base.filter(function (s) { return s.latency === "slow" || s.latency === "hard"; }).length;
+    var wakeOften = base.filter(function (s) { return s.waking === "often" || s.waking === "long"; }).length;
+
+    var st = function (num, label) { return '<div class="tstat"><div class="tstat-num text-grad">' + num + '</div><div class="tstat-label">' + label + '</div></div>'; };
+    var stats = '<div class="stat-grid-tracker" style="margin-bottom:16px">' +
+      st(aDur != null ? aDur.toFixed(1) + " h" : "—", T("Ø Schlaf (7 T.)", "Ø sleep (7 d)")) +
+      st(aQual != null ? aQual.toFixed(1) + "/5" : "—", T("Ø Qualität", "Ø quality")) +
+      st(aMorn != null ? aMorn.toFixed(1) + "/5" : "—", T("Ø Erholung", "Ø recovery")) +
+      st(aRhr != null ? Math.round(aRhr) : "—", T("Ø Ruhepuls", "Ø resting HR")) +
+      '</div>';
+
+    // Auswertung: konkrete, priorisierte Empfehlung (fließt in die Recovery-Empfehlung ein)
+    var tips = [];
+    if (aDur != null && aDur < 6) tips.push(T("Dein Schnitt liegt unter 6 h — das ist der größte Bremsklotz für Testosteron, Regeneration und Fettabbau. Ziel: 7–9 h. Feste Schlafenszeit ist Hebel Nr. 1.", "Your average is under 6 h — the biggest brake on testosterone, recovery and fat loss. Target: 7–9 h. A fixed bedtime is lever #1."));
+    else if (aDur != null && aDur < 7) tips.push(T("Mit im Schnitt unter 7 h lässt du Erholung liegen. 30–45 Min früher ins Bett bringt oft mehr als jedes Supplement.", "Averaging under 7 h leaves recovery on the table. Going to bed 30–45 min earlier often beats any supplement."));
+    else if (aDur != null) tips.push(T("Deine Schlafdauer liegt im Zielbereich (7–9 h) — sehr gute Basis. Jetzt auf Konstanz und Qualität achten.", "Your sleep duration is in the target range (7–9 h) — great base. Now focus on consistency and quality."));
+    if (hardLat >= 2) tips.push(T("Du brauchst oft > 30 Min zum Einschlafen: Koffein-Deadline früher legen, letzte 30 Min ohne Bildschirm, Schlafzimmer kühl & dunkel.", "You often need > 30 min to fall asleep: earlier caffeine cutoff, last 30 min screen-free, keep the bedroom cool & dark."));
+    if (wakeOften >= 2) tips.push(T("Du wachst nachts häufig auf: Alkohol am Abend und späte große Mahlzeiten sind die häufigsten Ursachen — 2–3 h vor dem Schlafen meiden.", "You wake up often at night: evening alcohol and late large meals are the usual causes — avoid them 2–3 h before bed."));
+    if (aQual != null && aQual < 3 && aDur != null && aDur >= 7) tips.push(T("Genug Stunden, aber schlechte Qualität — achte auf Alkohol, Raumtemperatur, Licht und einen regelmäßigen Rhythmus (auch am Wochenende).", "Enough hours but poor quality — check alcohol, room temperature, light and a regular rhythm (weekends too)."));
+    if (!tips.length) tips.push(T("Solides Schlafmuster. Halte den Rhythmus stabil — Konstanz schlägt einzelne perfekte Nächte.", "Solid sleep pattern. Keep the rhythm stable — consistency beats single perfect nights."));
+
+    box.innerHTML =
+      '<div class="card" style="margin-bottom:20px;border-color:var(--accent-line)">' + stats +
+      '<h4 class="h-card" style="font-size:1.02rem;margin:0 0 8px">💡 ' + T("Deine Schlaf-Auswertung", "Your sleep read-out") + '</h4>' +
+      '<ul style="margin:0;padding-left:18px;display:grid;gap:7px">' + tips.map(function (t) { return '<li class="small" style="color:var(--muted)">' + t + '</li>'; }).join("") + '</ul></div>';
+  }
+  function drawSleepList(box) {
+    var list = S.sleep().slice().sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
+    if (!list.length) { box.innerHTML = '<p class="muted" style="text-align:center;padding:20px">' + T("Noch keine Nacht erfasst. Trag deine letzte Nacht ein.", "No night logged yet. Log your last night.") + '</p>'; return; }
+    var latMap = {}, wakeMap = {};
+    SLEEP_LATENCY.forEach(function (o) { latMap[o.v] = tr(o); });
+    SLEEP_WAKING.forEach(function (o) { wakeMap[o.v] = tr(o); });
+    var moon = function (dur) { return dur >= 7 ? "🌙" : dur >= 6 ? "🌗" : "🌘"; };
+    box.innerHTML = list.map(function (s) {
+      var extra = [];
+      extra.push("💤 " + latMap[s.latency || "normal"]);
+      extra.push("🌃 " + wakeMap[s.waking || "none"]);
+      if (s.rhr) extra.push("❤️ " + s.rhr + " bpm");
+      if (s.hrv) extra.push("📈 " + s.hrv + " ms");
+      return '<div class="history-item"><div class="hi-head"><div><h4 style="font-size:1rem">' + moon(s.dur) + ' ' + s.dur.toFixed(2).replace(/\.00$/, "") + ' h · ' + sleepQualityLabel(s.quality) + '</h4>' +
+        '<span class="hi-date">' + fmtDate(s.date) + '</span></div>' +
+        '<button class="btn-link-del" data-delsl="' + s.id + '" style="background:none;border:none;color:var(--muted-2);font-size:0.78rem;text-decoration:underline;cursor:pointer">' + T("Löschen", "Delete") + '</button></div>' +
+        '<div style="display:flex;gap:16px;flex-wrap:wrap;font-size:0.85rem;color:var(--muted)" class="mono">' + extra.map(function (e) { return '<span>' + e + '</span>'; }).join("") + '</div>' +
+        (s.note ? '<div class="small muted" style="margin-top:6px">„' + s.note.replace(/</g, "&lt;") + '"</div>' : '') +
+        '</div>';
+    }).join("");
+    box.querySelectorAll("[data-delsl]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        if (confirm(T("Eintrag löschen?", "Delete entry?"))) { S.saveSleep(S.sleep().filter(function (s) { return s.id !== b.dataset.delsl; })); renderPanel(); }
+      });
+    });
+  }
+
+  /* ==========================================================================
      CARDIO
      ========================================================================== */
   function renderCardio(p) {
@@ -993,7 +1133,7 @@
 
   /* ---------- Export / Import ---------- */
   window.MM_TRK_EXPORT = function () {
-    const data = { sessions: S.sessions(), cardio: S.cardio(), body: S.body(), templates: S.templates(), customEx: S.customEx() };
+    const data = { sessions: S.sessions(), cardio: S.cardio(), sleep: S.sleep(), body: S.body(), templates: S.templates(), customEx: S.customEx() };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -1006,6 +1146,7 @@
         const d = JSON.parse(reader.result);
         if (d.sessions) S.saveSessions(d.sessions);
         if (d.cardio) S.saveCardio(d.cardio);
+        if (d.sleep) S.saveSleep(d.sleep);
         if (d.body) S.saveBody(d.body);
         if (d.templates) S.saveTemplates(d.templates);
         if (d.customEx) S.saveCustomEx(d.customEx);

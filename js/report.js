@@ -99,6 +99,7 @@
 
     html += '<div class="r-section"><h2>Deine Startwerte für die nächsten 14 Tage</h2>' +
       '<p style="margin-bottom:6px"><strong>Dein Modus: ' + tv.modeLabel + '</strong> — ' + tv.modeDesc + '.</p>' +
+      (tv.modeReason ? '<p style="margin-bottom:6px;font-size:0.92rem;color:#8893a7"><strong style="color:inherit">Warum genau dieser Weg?</strong> ' + tv.modeReason + '</p>' : '') +
       '<p style="margin-bottom:12px">Diese Werte sind <strong>Startbereiche</strong>, keine exakten Vorgaben. Formeln schätzen — sie messen deinen Stoffwechsel nicht direkt.</p>' +
       '<table>' + rows + '</table>' +
       '<p style="margin-top:10px">Danach: <strong>14 Tage beobachten</strong> und anhand von Gewichtstrend, Bauchumfang, Training, Hunger und Energie feinjustieren.</p>' +
@@ -168,18 +169,22 @@
   html += '<div class="r-section"><h2>Deine 90-Tage-Roadmap</h2><table>' +
     '<tr><th>Phase</th><th>Wochen</th><th>Fokus</th></tr>' +
     '<tr><td>1 · Baseline</td><td>1–2</td><td>Ausgangslage erfassen: Gewicht, Bauchumfang, Fotos, Kraftwerte, Schlaf, Schritte. Protein-Ziel festlegen, Trainingstage fixieren.</td></tr>' +
-    '<tr><td>2 · Structure</td><td>3–4</td><td>Ernährung vereinfachen: Standardmahlzeiten, Wochenendstrategie. 3 feste Trainingseinheiten etablieren, Schlafroutine starten.</td></tr>' +
+    '<tr><td>2 · Structure</td><td>3–4</td><td>Ernährung vereinfachen: Standardmahlzeiten, Wochenendstrategie. 3 feste Krafteinheiten + tägliche Bewegung (Steps/Zone 2) etablieren, Schlafroutine starten.</td></tr>' +
     '<tr><td>3 · Build</td><td>5–8</td><td>Progressive Steigerung im Training, Bauchumfang reduzieren, Kalorien feinjustieren, Erholung kontrollieren.</td></tr>' +
     '<tr><td>4 · Optimize</td><td>9–12</td><td>Plateaus lösen, Re-Check des Scores, Blutwerte optional einordnen, Langzeitplan &amp; Erhaltungsstrategie.</td></tr>' +
     '</table></div>';
 
   /* ---------- Trainingsempfehlung (Ziel/Erfahrung entscheiden, kein Universal-Plan) ---------- */
-  html += '<div class="r-section"><h2>Trainings-Empfehlung: Kraft + Cardio</h2>' +
-    '<p style="margin-bottom:10px">Es gibt keinen Plan für jeden. Wähle die Frequenz, die zu Ziel, Erfahrung und Alltag passt — und ziehe sie mit Progression durch:</p>' +
+  html += '<div class="r-section"><h2>Trainings-Empfehlung: jeden Tag Bewegung, gezielt Kraft</h2>' +
+    '<div class="r-callout" style="border-left:3px solid var(--accent);padding:12px 16px;margin-bottom:14px;background:rgba(46,124,246,0.06);border-radius:0 8px 8px 0">' +
+    '<strong>Das MaleMetrix-Prinzip:</strong> Bewege und trainiere jeden Tag — aber nicht jeden Tag maximal. ' +
+    'Drei Tage davon sind gezieltes Krafttraining, die übrigen Tage bestehen aus Zone 2, Mobility, Spaziergängen/Steps oder aktiver Regeneration. ' +
+    'Jeden Tag ein Reiz, damit Bewegung zur Gewohnheit wird — die Belastung steuerst du, nicht das Kalenderblatt.</div>' +
+    '<p style="margin-bottom:10px">Für den <strong>Kraft-Anteil</strong> gibt es keinen Plan für jeden. Wähle die Frequenz, die zu Ziel, Erfahrung und Alltag passt — und ziehe sie mit Progression durch:</p>' +
     '<table><tr><th>Variante</th><th>Für wen</th></tr>' +
-    '<tr><td style="font-weight:600">2× Ganzkörper</td><td style="font-weight:400">Sehr guter Minimum-Plan für Einsteiger und Vielbeschäftigte — konsequent besser als 4×, die ausfallen.</td></tr>' +
-    '<tr><td style="font-weight:600">3× Ganzkörper</td><td style="font-weight:400">Solider Standard: jede große Muskelgruppe 3× pro Woche, gute Erholung.</td></tr>' +
-    '<tr><td style="font-weight:600">4× Ober-/Unterkörper</td><td style="font-weight:400">Wenn Zeit und Erfahrung da sind und du mehr Volumen sauber verkraftest.</td></tr>' +
+    '<tr><td style="font-weight:600">2× Ganzkörper</td><td style="font-weight:400">Sehr guter Minimum-Plan für Einsteiger und Vielbeschäftigte — konsequent besser als 4×, die ausfallen. Die restlichen Tage: Steps, Zone 2, Mobility.</td></tr>' +
+    '<tr><td style="font-weight:600">3× Ganzkörper</td><td style="font-weight:400">Solider Standard: jede große Muskelgruppe 3× pro Woche, gute Erholung. Dazwischen Bewegungstage statt Nichtstun.</td></tr>' +
+    '<tr><td style="font-weight:600">4× Ober-/Unterkörper</td><td style="font-weight:400">Wenn Zeit und Erfahrung da sind und du mehr Volumen sauber verkraftest — mindestens 1 echter Erholungstag mit lockerer Bewegung.</td></tr>' +
     '</table>' +
     '<p style="margin-top:12px;font-size:0.9rem"><strong>Progression:</strong> Gewichte/Wiederholungen notieren, über die Zeit steigern (doppelte Progression). <strong>Deload:</strong> nicht nach Kalender — nur, wenn sich Ermüdung aufstaut (Kraft fällt, Schlaf/Gelenke leiden). Wer top regeneriert, trainiert weiter.</p>' +
     '<p style="margin-top:10px;font-size:0.9rem"><strong>Cardio (eigenes System):</strong> Einsteiger → Gewohnheit + Gehen; Basis → 2–3× 20–40 Min moderat („Zone 2“ = locker, sprechen möglich); Performance → zusätzlich 1× kurze Intervalle, wenn geeignet. Dauer zuerst erhöhen, Intensität später. Ein reproduzierbarer Marker (feste Strecke/Zeit oder Ruhepuls) macht Fortschritt sichtbar.</p></div>';

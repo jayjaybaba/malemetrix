@@ -1122,18 +1122,76 @@ window.MM_CHECK = {
   };
 
   /* ---------- Moduswahl aus Ziel: kein automatischer Cut für jeden ---------- */
-  C.goalMode = function (a) {
+  /* Modus-Entscheidung: kombiniert mehrere Faktoren statt eines Einzelwerts —
+     Körperfett-Level (body_type + WHtR/BMI), Bauchfett-Fokus (Ziel + goal_pain),
+     Muskelziel und Trainingsstatus. Gibt Modus UND eine transparente Begründung.
+     Grundsatz: Wer klar Bauchfett/Körperfett stört, bekommt nicht leichtfertig BUILD. */
+  C.goalDecision = function (a) {
     var g = a.goal_main || [];
-    var h = num(a.height), w = num(a.weight);
-    var bmi = a._bmi || (h && w ? w / Math.pow(h / 100, 2) : 0);
     var has = function (x) { return g.indexOf(x) >= 0; };
-    if (has("muskeln") || has("kraft")) return bmi >= 27 ? "recomp" : "build";
-    if (has("bauchfett")) return "cut";
-    if (has("attraktiv") || has("ernaehrung")) return bmi >= 26 ? "cut" : "recomp";
-    if (has("energie") || has("schlaf") || has("blutwerte") || has("hormone") || has("disziplin"))
-      return bmi >= 28 ? "cut" : "perform";
-    return bmi >= 27 ? "cut" : "recomp";
+    var h = num(a.height), w = num(a.weight), waist = num(a.waist);
+    var bmi = a._bmi || (h && w ? w / Math.pow(h / 100, 2) : 0);
+    var whtr = (waist && h) ? waist / h : 0;
+    var bt = a.body_type;
+
+    // Körperfett-Level grob: 0 = niedrig, 1 = moderat, 2 = hoch
+    var fat = 0;
+    if (bt === "normal_bauch" || bt === "stark_fett") fat = 1;
+    if (bt === "uebergewicht") fat = 2;
+    if (whtr) {
+      if (whtr >= 0.58) fat = 2;
+      else if (whtr >= 0.53) fat = Math.max(fat, 1);
+      else if (whtr < 0.47) fat = Math.min(fat, 0);
+    } else if (bmi) {
+      if (bmi >= 30) fat = 2;
+      else if (bmi >= 27) fat = Math.max(fat, 1);
+      else if (bmi < 23 && bt !== "stark_fett" && bt !== "normal_bauch") fat = Math.min(fat, 0);
+    }
+    if (bt === "skinny" && fat < 1) fat = 0;
+
+    var wantsMuscle = has("muskeln") || has("kraft");
+    var fatConcern = has("bauchfett") || a.goal_pain === "bauch"
+      || bt === "normal_bauch" || bt === "stark_fett" || bt === "uebergewicht"
+      || (whtr && whtr >= 0.53);
+    var beginner = a.str_freq === "0" || a.str_freq === "unregelmaessig"
+      || a.str_plan === "nein" || a.str_plan === "selten";
+
+    var mode, reason;
+    if (fat >= 2) {
+      mode = "cut";
+      reason = wantsMuscle
+        ? "Dein Körperfettanteil ist aktuell hoch. Ein klassischer Aufbau würde vor allem Fett dazupacken — deshalb zuerst CUT: Fett runter, Kraft und Muskeln mit viel Protein und hartem Training schützen. Der Aufbau kommt danach auf einer besseren Basis."
+        : "Dein Körperfettanteil ist aktuell hoch — der größte Hebel ist, ihn kontrolliert zu senken (CUT), ohne dabei Kraft zu verlieren.";
+    } else if (fatConcern && wantsMuscle) {
+      if (fat <= 0 && !beginner) {
+        mode = "build";
+        reason = "Du willst muskulöser werden und trägst dabei wenig Fett — du hast die Reserve, um in einem kleinen Überschuss (BUILD) sauber aufzubauen, ohne den Bauch zu verlieren.";
+      } else {
+        mode = "recomp";
+        reason = "Du willst gleichzeitig Muskeln aufbauen und Bauchfett verlieren" + (beginner ? " — und als (Wieder-)Einsteiger ist genau das besonders gut möglich" : ", was bei deinem Ausgangspunkt realistisch ist") + ". Deshalb RECOMP: nahe der Erhaltung, viel Protein, hart trainieren. Ein klassischer Aufbau würde deinem Ziel — weniger Bauch — wahrscheinlich entgegenlaufen.";
+      }
+    } else if (fatConcern) {
+      mode = "cut";
+      reason = "Dein Fokus liegt klar auf weniger Bauchfett — deshalb CUT: moderates Kaloriendefizit, Protein hoch, Kraft halten. Kein Aufbau, der dem Ziel entgegenläuft.";
+    } else if (wantsMuscle) {
+      mode = fat >= 1 ? "recomp" : "build";
+      reason = fat >= 1
+        ? "Du willst Muskeln aufbauen und trägst moderat Fett — RECOMP baut Muskeln auf, während die Taille eher runter geht, statt Fett mitaufzubauen."
+        : "Du bist relativ schlank und willst Muskeln und Kraft aufbauen — BUILD: ein kleiner, kontrollierter Überschuss für sauberen Aufbau.";
+    } else if (has("energie") || has("schlaf") || has("blutwerte") || has("hormone") || has("disziplin")) {
+      if (fat >= 2) { mode = "cut"; reason = "Für deine Gesundheits- und Energieziele ist der größte Hebel, den hohen Körperfettanteil zu senken (CUT)."; }
+      else if (fat >= 1) { mode = "recomp"; reason = "Für deine Gesundheits- und Energieziele passt RECOMP: Körperkomposition verbessern, ohne aggressive Diät."; }
+      else { mode = "perform"; reason = "Deine Ziele sind Energie, Schlaf und Gesundheit — PERFORM: Gewicht halten, Training und Recovery gezielt fuelen, statt zu diäten oder aufzubauen."; }
+    } else {
+      var wantsLook = has("attraktiv") || has("ernaehrung");
+      mode = fat >= 2 ? "cut" : (fat >= 1 ? "recomp" : (wantsLook ? "recomp" : "perform"));
+      reason = mode === "cut" ? "Bei deinem Körperfettanteil ist CUT der klarste Weg zu einem definierteren Ergebnis."
+        : mode === "recomp" ? "RECOMP passt: definierter und muskulöser werden, ohne aggressive Diät."
+        : "PERFORM: Form halten und Leistung, Schlaf und Gesundheit ausbauen.";
+    }
+    return { mode: mode, reason: reason, fat: fat, beginner: beginner };
   };
+  C.goalMode = function (a) { return C.goalDecision(a).mode; };
   C.modeLabels = {
     cut:     { label: "CUT",     desc: "moderates Kaloriendefizit — Fett runter, Kraft schützen" },
     recomp:  { label: "RECOMP",  desc: "nahe Erhaltung — Taille runter, Kraft rauf" },
@@ -1144,10 +1202,11 @@ window.MM_CHECK = {
   /* ---------- Zielwerte als Bereiche (keine Scheingenauigkeit) ---------- */
   C.targetValues = function (a) {
     var age = num(a.age), h = num(a.height), w = num(a.weight), waist = num(a.waist);
-    var mode = C.goalMode(a);
+    var dec = C.goalDecision(a);
+    var mode = dec.mode;
     var prot = C.proteinRange(a);
     var out = {
-      mode: mode, modeLabel: C.modeLabels[mode].label, modeDesc: C.modeLabels[mode].desc,
+      mode: mode, modeLabel: C.modeLabels[mode].label, modeDesc: C.modeLabels[mode].desc, modeReason: dec.reason,
       proteinLo: prot.lo, proteinHi: prot.hi, proteinStr: prot.str,
       stepGoal: C.stepTargetNum(a),
       hasEnergy: false
@@ -1359,7 +1418,8 @@ window.MM_CHECK = {
 
     days.push({ day: "Tag 1", items: [
       "Gewicht und Bauchumfang messen (Nabelhöhe, ausgeatmet) + 3 Fotos: front, seitlich, hinten",
-      energyLine
+      energyLine,
+      "Heute leichter Start: 20–30 Min zügig spazieren (Richtung " + tv.stepGoal + " Schritte) — jeden Tag ein Bewegungsreiz"
     ] });
 
     var d2 = [];
@@ -1367,7 +1427,7 @@ window.MM_CHECK = {
     else d2.push("Zwei proteinreiche Standardmahlzeiten definieren, die du ohne Nachdenken wiederholst");
     if (has.blood) d2.push("Blutdruck messen lassen (Apotheke/Arzt) und notieren");
     else if (has.caffeine) d2.push("Koffein-Timing testen: Deadline früher legen und Schlaf beobachten");
-    else if (has.steps) d2.push("Schritte-Tracking am Handy aktivieren, Ziel " + tv.stepGoal);
+    d2.push(has.steps ? ("Schritte-Tracking am Handy aktivieren, Ziel " + tv.stepGoal + " — heute Bewegungstag (Gehen/Mobility)") : ("Bewegungstag: " + tv.stepGoal + " Schritte oder 10 Min Mobility — kein Gym, aber nicht nichts"));
     days.push({ day: "Tag 2", items: d2 });
 
     days.push({ day: "Tag 3", items: [
@@ -1380,6 +1440,7 @@ window.MM_CHECK = {
     else d4.push("Protein heute bewusst treffen (" + tv.proteinLo + "–" + tv.proteinHi + " g) und kurz notieren");
     if (has.blood) d4.push("Alters-/risikogerechte Vorsorge prüfen: Wann war der letzte Check-up?");
     else d4.push("Koffein-Deadline testen, etwas früher ins Bett");
+    d4.push("Bewegungstag: 20–40 Min lockere Zone 2 (Gehen/Rad, sprechen möglich) oder Mobility — aktive Erholung zwischen den Krafttagen");
     days.push({ day: "Tag 4", items: d4 });
 
     days.push({ day: "Tag 5", items: [
@@ -1394,7 +1455,8 @@ window.MM_CHECK = {
 
     days.push({ day: "Tag 7", items: [
       "Sonntag-Review: Gewicht, Bauchumfang, Schlaf, Training, Cardio und Energie (1–10) mit Tag 1 vergleichen",
-      "3 feste Trainingsfenster für die nächste Woche in den Kalender eintragen — und deinen #1-Engpass benennen"
+      "Aktive Erholung: leichter Spaziergang oder Mobility — Ruhetag heißt lockere Bewegung, nicht Couch",
+      "Nächste Woche planen: 3 feste Krafteinheiten + tägliche Bewegung in den Kalender eintragen — und deinen #1-Engpass benennen"
     ] });
 
     return days;
