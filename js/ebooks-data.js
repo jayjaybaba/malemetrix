@@ -32,6 +32,33 @@
 window.MM_EBOOKS = [
 
   {
+    id: "glp1-agonisten",
+    kicker: { de: "MaleMetrix · Aufklärung", en: "MaleMetrix · Education" },
+    cover: "linear-gradient(150deg,#0a2440,#0c1320)",
+    img: "ebooks/img/glp1/01-titel.jpg",
+    badge: { de: "Neu · Aufklärung", en: "New · Education" },
+    title: { de: "GLP-1-Agonisten verstehen", en: "Understanding GLP-1 Agonists" },
+    desc: { de: "Ozempic, Tirzepatid & Retatrutid sachlich erklärt: Wie diese Wirkstoffe wirken, was die Studien zeigen, welche Risiken (Stichwort Muskelverlust) es gibt und warum sie kein Ersatz für Training, Ernährung und Schlaf sind — ohne Hype, ohne Empfehlung.",
+            en: "Ozempic, tirzepatide & retatrutide explained factually: how they work, what the studies show, the risks (muscle loss) and why they don't replace training, nutrition and sleep — no hype, no recommendation." },
+    minutes: 15,
+    read: "ebooks/glp1-agonisten.html",
+    gated: false
+  },
+  {
+    id: "ultimate-stack",
+    kicker: { de: "MaleMetrix · High-End", en: "MaleMetrix · High-End" },
+    cover: "linear-gradient(150deg,#0a1424,#05070b)",
+    img: "ebooks/img/ultimate-stack/cover.jpg",
+    badge: { de: "Premium · Zugangscode", en: "Premium · Access code" },
+    title: { de: "Der Ultimate Stack", en: "The Ultimate Stack" },
+    desc: { de: "Das evidenzbasierte High-End-Framework für Körperkomposition, Hormone, metabolische Kontrolle und Performance — ärztlich geführt und ehrlich eingeordnet. Alle besprochenen Wirkstoffe sind verschreibungspflichtig und gehören in ärztliche Hände. Privater Leitfaden, nur mit Zugangscode.",
+            en: "The evidence-based high-end framework for body composition, hormones, metabolic control and performance — physician-led and honestly framed. Every substance discussed is prescription-only and belongs in a doctor's hands. Private guide, access code required." },
+    minutes: 35,
+    read: "ebooks/ultimate-stack.html",
+    gated: false
+  },
+
+  {
     id: "master-ebook",
     hidden: true,   // in Überarbeitung — vorerst nicht öffentlich in der Bibliothek zeigen (Datei bleibt erhalten)
     kicker: { de: "MaleMetrix · Master-Kompendium", en: "MaleMetrix · Master Compendium" },
@@ -168,20 +195,6 @@ window.MM_EBOOKS = [
     gated: false
   },
 
-  {
-    id: "glp1-agonisten",
-    featured: true,
-    kicker: { de: "MaleMetrix · Aufklärung", en: "MaleMetrix · Education" },
-    cover: "linear-gradient(150deg,#0a2440,#0c1320)",
-    img: "ebooks/img/glp1/01-titel.jpg",
-    badge: { de: "Neu · Aufklärung", en: "New · Education" },
-    title: { de: "GLP-1-Agonisten verstehen", en: "Understanding GLP-1 Agonists" },
-    desc: { de: "Ozempic, Tirzepatid & Retatrutid sachlich erklärt: Wie diese Wirkstoffe wirken, was die Studien zeigen, welche Risiken (Stichwort Muskelverlust) es gibt und warum sie kein Ersatz für Training, Ernährung und Schlaf sind — ohne Hype, ohne Empfehlung.",
-            en: "Ozempic, tirzepatide & retatrutide explained factually: how they work, what the studies show, the risks (muscle loss) and why they don't replace training, nutrition and sleep — no hype, no recommendation." },
-    minutes: 15,
-    read: "ebooks/glp1-agonisten.html",
-    gated: false
-  },
 
   {
     id: "blutwerte-guide",
@@ -210,19 +223,6 @@ window.MM_EBOOKS = [
     gated: false
   },
 
-  {
-    id: "ultimate-stack",
-    kicker: { de: "MaleMetrix · High-End", en: "MaleMetrix · High-End" },
-    cover: "linear-gradient(150deg,#0a1424,#05070b)",
-    img: "ebooks/img/ultimate-stack/cover.jpg",
-    badge: { de: "Premium · Zugangscode", en: "Premium · Access code" },
-    title: { de: "Der Ultimate Stack", en: "The Ultimate Stack" },
-    desc: { de: "Das evidenzbasierte High-End-Framework für Körperkomposition, Hormone, metabolische Kontrolle und Performance — ärztlich geführt und ehrlich eingeordnet. Alle besprochenen Wirkstoffe sind verschreibungspflichtig und gehören in ärztliche Hände. Privater Leitfaden, nur mit Zugangscode.",
-            en: "The evidence-based high-end framework for body composition, hormones, metabolic control and performance — physician-led and honestly framed. Every substance discussed is prescription-only and belongs in a doctor's hands. Private guide, access code required." },
-    minutes: 35,
-    read: "ebooks/ultimate-stack.html",
-    gated: false
-  },
 
   {
     id: "gewohnheiten",
