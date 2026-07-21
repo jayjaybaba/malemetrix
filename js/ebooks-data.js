@@ -53,7 +53,7 @@ window.MM_EBOOKS = [
     title: { de: "Der Ultimate Stack", en: "The Ultimate Stack" },
     desc: { de: "Das evidenzbasierte High-End-Framework für Körperkomposition, Hormone, metabolische Kontrolle und Performance — ärztlich geführt und ehrlich eingeordnet. Alle besprochenen Wirkstoffe sind verschreibungspflichtig und gehören in ärztliche Hände. Privater Leitfaden, nur mit Zugangscode.",
             en: "The evidence-based high-end framework for body composition, hormones, metabolic control and performance — physician-led and honestly framed. Every substance discussed is prescription-only and belongs in a doctor's hands. Private guide, access code required." },
-    minutes: 35,
+    minutes: 19,
     read: "ebooks/ultimate-stack.html",
     gated: false
   },
