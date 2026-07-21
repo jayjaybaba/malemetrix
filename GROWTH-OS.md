@@ -145,12 +145,18 @@ gespeichert** — 35 automatisierte Security-/Lifecycle-Tests, s. §6c).
 
 **Schritt für Schritt (Ural):**
 1. **TikTok-Developer-App:** developers.tiktok.com → *Manage apps* → *Connect an app*.
-   App-Name z. B. „MaleMetrix Growth OS“. **Zwei Produkte** hinzufügen
-   (beide nötig, verifiziert 2026-07-21): **Login Kit** (OAuth + Scope
-   `user.info.basic`) **und** **Display API** (Scopes `user.info.stats`
-   und `video.list` — nur damit liefert `/api/videos` echte Daten).
-   Beim Login Kit als Plattform **Web** wählen und die Redirect-URI setzen
-   (Wert steht nach dem Worker-Deploy fest — s. Schritt 3).
+   App-Name z. B. „MaleMetrix Growth OS“. **Produkt:** nur **Login Kit**
+   hinzufügen (verifiziert 2026-07-21: ein separates „Display API“-Produkt
+   existiert nicht mehr; die früher dort verorteten Scopes werden jetzt
+   direkt im **Scopes**-Bereich der App verwaltet). **Content Posting API /
+   Share Kit / Webhooks / Data Portability NICHT hinzufügen.**
+   Im Abschnitt **Scopes** per „+ Add…“ ergänzen: `user.info.basic`
+   (kommt automatisch mit Login Kit), `user.info.stats`, `video.list`
+   (nur mit `video.list` liefert `/api/videos` echte Daten). Zeigt ein Scope
+   „needs review“, zunächst im **Sandbox**-Modus mit dem eigenen Konto als
+   Target-User testen — dort greifen die Scopes ohne App-Review.
+   Bei Login Kit **„Configure for Web“** aktivieren, um die Redirect-URI
+   setzen zu können (Wert steht nach dem Worker-Deploy fest — s. Schritt 3).
    → Aus den App-Einstellungen kopieren: **Client Key** und **Client Secret**
    (Secret geheim halten — nur per `wrangler secret put` setzen, nie ins
    Repo/Frontend/Chat).
