@@ -75,17 +75,25 @@ Selbsteinschätzung:
 
 | Stage | Bedingung | Effekt |
 |---|---|---|
-| 0 | Cold Start | 100 % Selbsteinschätzung (0–10-Faktoren) |
-| 1 | ≥ 3 vergleichbare Videos zum Thema | Historie fließt ein |
+| 0 | < 3 vergleichbare Videos **zum selben Thema** | 100 % Selbsteinschätzung (0–10-Faktoren) |
+| 1 | ≥ 3 vergleichbare Videos zum Thema | Historie fließt ein (wD wächst mit n) |
 | 2 | Search-/Trend-Signal an der Idee verknüpft | Signal-Marker |
-| 3 | wachsende Datenbasis (≥ 15 Videos gesamt) | Daten-Gewicht bis 60 % |
+| 3 | Daten-Gewicht wD ≥ 50 % (≥ 10 vergleichbare Videos zum Thema) | überwiegend datengetrieben |
 | 4 | Kalibrierung aktiv (≥ 5 Prognosen mit Ergebnis) | Trefferquote < 50 % ⇒ Daten-Gewicht bis 75 % |
 
 **Blend je Dimension:** `score = (1−wD)·Selbsteinschätzung + wD·Historie`,
-`wD = min(0.6, n·0.05)` (+0.15 bei schlechter Kalibrierung, Cap 0.75).
-Historie = Themen-Perzentil unter allen eigenen Videos (Viral: Views ·
-Growth: Follower/1k · Reward: RPM). Jede Idee zeigt Stage, Gewichte und
-Datengrundlage offen an (§85); Confidence NIEDRIG/MITTEL/HOCH nach n.
+`wD = min(0.6, n·0.05)` — **n = vergleichbare Videos desselben Themas**
+(nicht die Gesamtzahl aller Videos!). Ein neues Thema startet also immer bei
+Stage 0, egal wie groß der Account ist; ab 10 Themen-Videos überwiegt die
+Historie (wD ≥ 50 %), Maximum 60 % ab 12 (+0.15 bei schlechter Kalibrierung,
+Cap 75 %). Historie = Themen-Perzentil unter allen eigenen Videos (Viral:
+Views · Growth: Follower/1k · Reward: RPM). Jede Idee zeigt Stage, Gewichte
+und Datengrundlage offen an (§85); Confidence NIEDRIG/MITTEL/HOCH nach n.
+
+*Zukünftige Architektur (dokumentiert, bewusst noch nicht gebaut):
+hierarchisches Lernen mit Shrinkage über Account gesamt → Cluster → Thema →
+Format → Hook-Typ → Länge, damit dünn besetzte Ebenen vom Parent erben.
+Erst sinnvoll ab deutlich größerer Datenbasis.*
 
 - **Opportunity Score:** gewichtete Summe (Viral/Growth/Reward/Brand),
   Presets MAX GROWTH / MAX REWARD / MAX VIRALITY / BALANCED / AUTHORITY oder
@@ -164,9 +172,16 @@ gespeichert** — 35 automatisierte Security-/Lifecycle-Tests, s. §6c).
   entfernt: keine Secrets in URLs/Server-Logs/Referrern).
 - **OAuth-State:** einmalig (Delete-on-use), 10 Min TTL, nur über die
   authentifizierte Route erzeugbar und an die Session gebunden. Replay getestet.
-- **Token-Lifecycle:** Ein Bundle in KV, `lastSync` in separatem Key —
-  kein Codepfad kann ein veraltetes Bundle zurückschreiben. Paralleler
-  Refresh über Lock mit Besitz-Verifikation + Fallback-Re-Read.
+- **Token-Lifecycle (v3):** Das Token-Bundle liegt in einem **Durable
+  Object** (`TokenDO`, stark konsistent, global genau eine Instanz).
+  Alle konkurrierenden Refreshes teilen sich eine In-Flight-Promise —
+  zwei gleichzeitige Requests können technisch nicht denselben Refresh
+  Token verwenden oder konkurrierende rotierte Bundles speichern.
+  (Workers KV ist eventual-consistent und kann das nicht garantieren;
+  der frühere KV-Lock bleibt nur als dokumentierter Fallback, falls das
+  DO-Binding fehlt.) `lastSync` liegt weiterhin in separatem KV-Key.
+  Das DO-Binding + die Migration stehen in der wrangler.toml-Vorlage im
+  Worker-Dateikopf — beim Setup einfach mit übernehmen.
 - **Rate-Limits:** Login 5/10 Min/IP, gesamt 120/10 Min/IP.
 - Optionale Zusatz-Härtung ohne Code: **Cloudflare Access** vor die
   Worker-Route legen (Zero-Trust-Login zusätzlich zur App-Session).
@@ -239,10 +254,25 @@ Bis dahin gilt: keine Secrets/Nutzerdaten im Repo (ist bereits erfüllt),
 ## 10. Datenschutz (§75)
 
 Datenminimierung: keine personenbezogenen Fremddaten; nur eigene Account-
-Kennzahlen. Alles lokal; Export (JSON) und vollständige Löschung eingebaut.
-TikTok-Verbindung jederzeit widerrufbar (Revoke serverseitig). Der Worker
-loggt keine Tokens. Keine Änderung der öffentlichen Datenschutzerklärung
-nötig, solange nur Ural selbst das interne Tool nutzt.
+Kennzahlen. **Speicherorte ehrlich benannt:**
+- **Ohne D1 (Standard): Local-only** — alle Growth-OS-Daten ausschließlich
+  im Browser dieses Geräts.
+- **Mit aktivem D1-Sync:** zusätzlich serverseitig in der eigenen
+  Cloudflare-D1-Datenbank: `kv_backup` (gepushter Growth-OS-Datenbestand)
+  sowie `account_snapshots`/`video_snapshots` (per Cron erfasste
+  TikTok-Zeitreihen). Das UI (System → Daten) zeigt das an.
+
+**Getrennte Löschung** (System → Daten):
+- „Nur lokale Daten löschen“ — localStorage dieses Geräts.
+- „Cloud-Daten löschen“ — löscht `kv_backup`; auf Nachfrage zusätzlich die
+  TikTok-Snapshot-Zeitreihen (beides über `/api/sync/delete`, Scopes
+  `backup`/`timeseries`/`all`).
+- „Alle Daten überall löschen“ — Cloud komplett + lokal.
+
+TikTok-Verbindung jederzeit widerrufbar (Revoke serverseitig; Token-Bundle
+wird im Durable Object gelöscht). Der Worker loggt keine Tokens. Keine
+Änderung der öffentlichen Datenschutzerklärung nötig, solange nur Ural
+selbst das interne Tool nutzt.
 
 ## 11. API-Limits & Regeln
 

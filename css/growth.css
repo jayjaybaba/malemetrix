@@ -3,6 +3,10 @@
    Nutzt die Design-Tokens der Hauptseite (style.css).
    ========================================================================== */
 
+/* Der fixe Site-Header (style.css) überlappt sonst die Topbar —
+   normale Seiten kompensieren das über .page-head, die Admin-Shell hier. */
+main { padding-top: var(--header-h); }
+
 .gos-topbar {
   display: flex; justify-content: space-between; align-items: center;
   gap: 12px; flex-wrap: wrap; margin-bottom: 16px;

@@ -120,17 +120,31 @@ window.GOS_SCORE = (function () {
     return out;
   }
 
-  /* ---------- Stage-Anzeige (§Audit-5) ---------- */
+  /* ---------- Stage-Anzeige (§Audit-5) ----------
+     Exakte Logik, keine Pauschalaussagen: Das Daten-Gewicht wD hängt an der
+     Zahl VERGLEICHBARER Videos DESSELBEN Themas (wD = min(0.6, n·0.05)),
+     nicht an der Gesamtzahl aller Videos. Themen ohne eigene Historie
+     bleiben selbsteinschätzungsbasiert, egal wie groß der Account ist. */
   function stageInfo(idea) {
     var comp = comparableVideos(idea.topic || "");
-    var total = G.S.videos().filter(function (v) { return G.metric(v, "views") != null; }).length;
     var cal = calibration();
-    var stage = 0, why = "Cold Start: nur Selbsteinschätzung";
-    if (comp.length >= D.MIN_N) { stage = 1; why = comp.length + " vergleichbare Videos fließen ein"; }
-    if (stage >= 1 && (idea.searchId || (idea.factors && idea.factors.viral && idea.factors.viral.momentum != null))) { stage = 2; why += " · Search-/Trend-Signal verknüpft"; }
-    if (total >= 15 && comp.length >= D.MIN_N) { stage = 3; why = "Daten-Gewicht " + Math.round(dataWeight(comp.length) * 100) + " % (" + comp.length + " vergleichbare, " + total + " gesamt)"; }
-    if (cal.ready) { stage = 4; why += " · Kalibrierung aktiv (" + Math.round(cal.hitRate * 100) + " % Trefferquote)"; }
-    return { stage: stage, why: why };
+    var wD = dataWeight(comp.length);
+    var stage = 0, why;
+    if (comp.length < D.MIN_N) {
+      why = "Cold Start für dieses Thema: " + comp.length + "/" + D.MIN_N + " vergleichbare Videos — Score = 100 % Selbsteinschätzung";
+    } else {
+      stage = 1;
+      why = "Historie fließt ein: " + comp.length + " vergleichbare Videos zum Thema → Daten-Gewicht " + Math.round(wD * 100) + " %";
+    }
+    if (stage >= 1 && (idea.searchId || (idea.factors && idea.factors.viral && idea.factors.viral.momentum != null))) {
+      stage = 2; why += " · Search-/Trend-Signal verknüpft";
+    }
+    if (wD >= 0.5) {
+      stage = 3;
+      why = "Datengetrieben: Daten-Gewicht " + Math.round(wD * 100) + " % aus " + comp.length + " vergleichbaren Videos zu „" + (idea.topic || "?") + "“ — Selbsteinschätzung zählt nur noch " + Math.round((1 - wD) * 100) + " %";
+    }
+    if (cal.ready) { stage = 4; why += " · Kalibrierung aktiv (" + Math.round(cal.hitRate * 100) + " % Trefferquote" + (calibrationPenalty() > 0 ? ", Daten-Gewicht erhöht" : "") + ")"; }
+    return { stage: stage, why: why, comparable: comp.length, dataWeight: wD };
   }
 
   /* ---------- Composite Opportunity Score (§10) ---------- */

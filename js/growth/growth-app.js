@@ -38,7 +38,7 @@
       '<div class="card" style="max-width:420px;margin:60px auto;text-align:center">' +
       '<div style="font-size:2rem;margin-bottom:10px">🔐</div>' +
       '<h2 class="h-card" style="margin-bottom:8px">Growth OS — interner Bereich</h2>' +
-      '<p class="muted small" style="margin-bottom:18px">Zugangscode eingeben. Alle Daten bleiben lokal auf diesem Gerät — auf dem Server liegen keine Nutzerdaten.</p>' +
+      '<p class="muted small" style="margin-bottom:18px">Zugangscode eingeben. Daten liegen lokal in diesem Browser — plus optional in deiner eigenen Cloud, falls du den D1-Sync aktiviert hast.</p>' +
       '<div class="field"><input type="password" id="gosCode" placeholder="Zugangscode" autocomplete="off" aria-label="Zugangscode"></div>' +
       '<button class="btn btn-primary btn-block" id="gosEnter" style="margin-top:12px">Öffnen</button>' +
       '<p class="small muted" id="gosGateErr" style="margin-top:10px;min-height:18px"></p></div>';
@@ -172,7 +172,15 @@
     root.querySelectorAll("[data-tab]").forEach(function (b) {
       b.addEventListener("click", function () { tab = b.dataset.tab; state.editIdea = null; state.detailVideo = null; renderApp(); });
     });
-    document.getElementById("gosLock").addEventListener("click", function () {
+    document.getElementById("gosLock").addEventListener("click", async function () {
+      /* Sperren = auch Worker-Session serverseitig beenden. Fallback: Wenn der
+         Worker nicht erreichbar ist, wird die lokale Session-ID trotzdem
+         entfernt (serverseitig läuft sie nach spätestens 12 h aus). */
+      if (TT.configured() && TT.loggedIn()) {
+        try { await TT.api("/auth/logout", { method: "POST" }); } catch (e) {}
+        TT.setSession("");
+        TT.status = null;
+      }
       try { sessionStorage.removeItem("mm_gos_auth"); } catch (e) {}
       renderGate();
     });
@@ -415,8 +423,10 @@
           matched++;
         });
         G.S.saveVideos(all);
-        G.log("tiktok", "API-Snapshot: " + matched + " gematcht, " + unmatched + " ohne lokales Video");
-        alert("API-Snapshot: " + matched + " Videos aktualisiert" + (unmatched ? ", " + unmatched + " TikTok-Videos ohne lokale Entsprechung (per CSV importieren oder manuell anlegen)" : "") + ".");
+        G.log("tiktok", "API-Snapshot: " + matched + " gematcht, " + unmatched + " ohne lokales Video" + (d.truncated ? " (Cap erreicht)" : "") + (d.partialError ? " (Teilfehler: " + d.partialError + ")" : ""));
+        alert("API-Snapshot: " + matched + " Videos aktualisiert (" + (d.count || 0) + " von TikTok geladen" + (d.truncated ? ", Sicherheitslimit erreicht" : "") + ")" +
+          (unmatched ? ", " + unmatched + " ohne lokale Entsprechung (per CSV importieren oder manuell anlegen)" : "") +
+          (d.partialError ? ".\n⚠️ TikTok-API-Teilfehler: " + d.partialError + " — Liste evtl. unvollständig." : "."));
         renderPanel();
       } catch (e) { alert("Fehler: " + e.message); renderPanel(); }
     });
@@ -1475,13 +1485,22 @@
       '<p class="small" style="margin:0">' + (AI.configured() ? chip("Konfiguriert — Ausgaben werden als KI-VORSCHLAG markiert", "live") : chip("KONFIGURATION ERFORDERLICH", "config") +
         ' <span class="muted">Optional: Endpoint/Key in <code>js/config.js → growth.ai</code>. Empfohlen: eigener Proxy-Endpoint statt API-Key im Browser (Anleitung in GROWTH-OS.md).</span>') + '</p></div>';
 
-    /* --- Daten (DSGVO §75) --- */
+    /* --- Daten (DSGVO §75) — ehrlicher Speicherort + getrennte Löschung --- */
+    var cloudPossible = TT.configured() && TT.loggedIn();
     html += '<div class="card" style="margin-bottom:16px"><h3 class="h-card" style="margin-bottom:4px">Daten</h3>' +
-      '<p class="small muted" style="margin:0 0 10px">Alle Growth-OS-Daten liegen nur in diesem Browser (localStorage). Backup regelmäßig exportieren.</p>' +
+      '<p class="small muted" style="margin:0 0 10px" id="dataWhere">' +
+      (TT.configured()
+        ? 'Growth-OS-Daten liegen lokal in diesem Browser. Ist Cloud-Sync (D1) am Worker aktiv und wurde „Backup → Cloud“ genutzt, liegen sie <strong>zusätzlich serverseitig</strong> in deiner eigenen Cloudflare-D1-Datenbank; der Cron speichert dort außerdem TikTok-Snapshot-Zeitreihen.'
+        : 'Local-only: Alle Growth-OS-Daten liegen ausschließlich in diesem Browser (localStorage). Backup regelmäßig exportieren.') + '</p>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
       '<button class="btn btn-dark btn-sm" id="dataExport">Backup exportieren</button>' +
       '<label class="btn btn-dark btn-sm" style="cursor:pointer">Backup importieren<input type="file" id="dataImport" accept="application/json" style="display:none"></label>' +
-      '<button class="btn btn-ghost btn-sm" id="dataDelete">Alle Daten löschen</button></div></div>';
+      '<button class="btn btn-ghost btn-sm" id="dataDelete">Nur lokale Daten löschen</button>' +
+      (cloudPossible
+        ? '<button class="btn btn-ghost btn-sm" id="dataDeleteCloud">Cloud-Daten löschen</button>' +
+          '<button class="btn btn-ghost btn-sm" id="dataDeleteAll" style="color:#e74c3c">Alle Daten überall löschen</button>'
+        : "") +
+      '</div></div>';
 
     /* --- Log (§76) --- */
     var logs = G.S.log().slice(-12).reverse();
@@ -1622,8 +1641,35 @@
       });
     });
     document.getElementById("dataDelete").addEventListener("click", function () {
-      if (!confirm("Wirklich ALLE Growth-OS-Daten auf diesem Gerät löschen? (Backup vorher exportieren!)")) return;
-      if (!confirm("Letzte Bestätigung: unwiderruflich löschen?")) return;
+      if (!confirm("Alle LOKALEN Growth-OS-Daten auf diesem Gerät löschen? (Backup vorher exportieren!) Cloud-Daten — falls vorhanden — bleiben bestehen.")) return;
+      if (!confirm("Letzte Bestätigung: lokal unwiderruflich löschen?")) return;
+      G.deleteAll();
+      renderApp();
+    });
+    /* Cloud-Löschung (DSGVO): getrennt nach Backup und TikTok-Zeitreihen */
+    async function cloudDelete(scope, label) {
+      try {
+        var r = await TT.api("/api/sync/delete", { method: "POST", body: { scope: scope } });
+        var d = await r.json();
+        if (r.status === 501) { alert("Cloud-Sync (D1) ist am Worker nicht konfiguriert — es gibt keine Cloud-Daten."); return false; }
+        if (!r.ok) throw new Error(d.error || "HTTP " + r.status);
+        G.log("sync", "Cloud-Löschung: " + d.deleted.join(", "));
+        alert(label + " gelöscht (" + d.deleted.join(", ") + ").");
+        return true;
+      } catch (e) { alert("Cloud-Löschung fehlgeschlagen: " + e.message); return false; }
+    }
+    var ddc = document.getElementById("dataDeleteCloud");
+    if (ddc) ddc.addEventListener("click", async function () {
+      if (!confirm("Cloud-Backup (kv_backup — dein Growth-OS-Datenbestand) aus D1 löschen?")) return;
+      var alsoTs = confirm("Auch die TikTok-Snapshot-Zeitreihen (account_snapshots, video_snapshots) löschen?\n\nOK = beides löschen · Abbrechen = nur das Backup");
+      await cloudDelete(alsoTs ? "all" : "backup", alsoTs ? "Cloud-Backup + Zeitreihen" : "Cloud-Backup");
+    });
+    var dda = document.getElementById("dataDeleteAll");
+    if (dda) dda.addEventListener("click", async function () {
+      if (!confirm("ALLE Daten ÜBERALL löschen? (Cloud: Backup + Zeitreihen, danach lokale Daten dieses Geräts)")) return;
+      if (!confirm("Letzte Bestätigung: unwiderruflich — überall?")) return;
+      var ok = await cloudDelete("all", "Cloud-Daten");
+      if (!ok && !confirm("Cloud-Löschung nicht möglich (s. Meldung). Trotzdem lokale Daten löschen?")) return;
       G.deleteAll();
       renderApp();
     });

@@ -1,6 +1,6 @@
 # Growth OS — Feature-Status
 
-Stand: 2026-07-21 (v2 nach Security-/Architektur-Audit) · Legende: ✅ fertig & getestet · 🟡 benötigt Konfiguration · 🔴 blockiert durch externe Genehmigung · ⚪ bewusst nicht gebaut (Begründung)
+Stand: 2026-07-21 (v3 nach Production-Hardening) · Legende: ✅ fertig & getestet · 🟡 benötigt Konfiguration · 🔴 blockiert durch externe Genehmigung · ⚪ bewusst nicht gebaut (Begründung)
 
 ## Foundation
 | Feature | Status |
@@ -51,7 +51,7 @@ Stand: 2026-07-21 (v2 nach Security-/Architektur-Audit) · Legende: ✅ fertig &
 ## TikTok-API
 | Feature | Status |
 |---|---|
-| OAuth-Worker v2: Passwort-Login → kurzlebige Server-Session (12 h, KV), KEIN Secret im Frontend/Repo/URL, CSRF-immun via Custom-Header, State-Replay-Schutz, atomare Refresh-Rotation, Parallel-Refresh-Lock — 35 automatisierte Tests + Browser-Integrationstest | 🟡 Code fertig & getestet — braucht TikTok-Developer-App + Worker-Deploy + `apiBase` in config.js (GROWTH-OS.md §6) |
+| OAuth-Worker v2: Passwort-Login → kurzlebige Server-Session (12 h, KV), KEIN Secret im Frontend/Repo/URL, CSRF-immun via Custom-Header, State-Replay-Schutz, Refresh-Serialisierung über Durable Object (stark konsistent — 10 parallele Requests ⇒ garantiert genau ein Refresh; KV-Lock nur noch als dokumentierter Fallback), Video-Cursor-Pagination (alle Videos, Cap 250, Teilfehler gemeldet) — 52 automatisierte Tests + Browser-Integrationstests | 🟡 Code fertig & getestet — braucht TikTok-Developer-App + Worker-Deploy + `apiBase` in config.js (GROWTH-OS.md §6) |
 | Profil + Account-Stats im Growth OS (Level 1) | 🟡 wie oben |
 | Eigene Videoliste per Display API (Level 2) | 🟡 wie oben + Scope `video.list` im App-Review |
 | Draft-Upload „An TikTok senden“ (Level 3) | 🔴 TikTok-Audit erforderlich — unauditierte Apps posten nur privat (offizielle Doku, geprüft 2026-07-20). UI zeigt das ehrlich an; kein Fake-Button. |
@@ -69,6 +69,7 @@ Stand: 2026-07-21 (v2 nach Security-/Architektur-Audit) · Legende: ✅ fertig &
 | Research-Radar via PubMed E-Utilities (offizielle freie API, serverseitig) | 🟡 nach Worker-Setup + Anmeldung |
 | Creator-Watchlist (§19, manuell — Lücke → Idee) | ✅ |
 | Cloud-Sync geräteübergreifend (D1, Push/Pull mit Bestätigung) | 🟡 Worker + D1-Binding (GROWTH-OS.md §6b) |
+| Cloud-Löschung getrennt: Backup / TikTok-Zeitreihen / alles überall; UI zeigt Speicherorte ehrlich (Local-only vs. + D1) | ✅ (Endpoint + UI; wirksam nach D1-Setup) |
 | Tägliche Auto-Snapshots per Cron → D1-Zeitreihen (`schema.sql` v1) | 🟡 wie oben + Cron-Trigger |
 
 ## KI (optional)

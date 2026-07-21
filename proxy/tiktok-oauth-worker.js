@@ -55,6 +55,14 @@
      [[kv_namespaces]]
      binding = "TOKENS"
      id = "<kv-id>"
+     # Token-Koordinator (STARK konsistent — Pflicht für korrekte
+     # Refresh-Serialisierung über alle PoPs):
+     [[durable_objects.bindings]]
+     name = "TOKENDO"
+     class_name = "TokenDO"
+     [[migrations]]
+     tag = "v1"
+     new_sqlite_classes = ["TokenDO"]
      # optional Phase 2:
      # [[d1_databases]]
      # binding = "DB"
@@ -140,13 +148,96 @@ async function getSession(env, request) {
   return raw ? { id: id } : null;
 }
 
-/* ---------- Token-Bundle (einzige Schreibstelle: saveTokens) ---------- */
+/* ======================================================================
+   TOKEN-KOORDINATOR (Durable Object) — STARK konsistente Serialisierung.
+
+   Workers KV ist eventual-consistent und kennt kein Compare-and-Swap;
+   ein KV-„Lock“ kann Requests aus verschiedenen PoPs nicht garantiert
+   serialisieren. Deshalb liegt das Token-Bundle in EINEM Durable Object
+   (global genau eine Instanz, Single-Threaded): Alle konkurrierenden
+   /fresh-Aufrufe teilen sich dieselbe In-Flight-Refresh-Promise —
+   es ist damit technisch unmöglich, dass zwei Requests gleichzeitig
+   denselben Refresh Token verwenden oder konkurrierende rotierte
+   Bundles speichern. DO-Storage ist stark konsistent.
+
+   Fallback: Ohne TOKENDO-Binding (altes wrangler.toml) läuft der
+   bisherige Best-Effort-KV-Pfad weiter — Deploy bricht nicht, aber
+   die Garantie gilt nur mit DO (siehe wrangler.toml-Vorlage oben).
+   ====================================================================== */
+export class TokenDO {
+  constructor(state, env) {
+    this.state = state;
+    this.env = env;
+    this.refreshing = null; // geteilte In-Flight-Promise (Instanz-lokal = global, da 1 Instanz)
+  }
+  async fetch(request) {
+    const url = new URL(request.url);
+    const out = (d) => new Response(JSON.stringify(d == null ? null : d), { headers: { "content-type": "application/json" } });
+    if (url.pathname === "/load") return out(await this.state.storage.get("tokens"));
+    if (url.pathname === "/save") {
+      await this.state.storage.put("tokens", await request.json());
+      return out({ ok: true });
+    }
+    if (url.pathname === "/delete") {
+      await this.state.storage.delete("tokens");
+      return out({ ok: true });
+    }
+    if (url.pathname === "/fresh") {
+      const t = await this.state.storage.get("tokens");
+      if (!t) return out({ reason: "not_connected" });
+      if (Date.now() < t.expiresAt - 60000) return out({ bundle: t });
+      if (t.refreshExpiresAt && Date.now() > t.refreshExpiresAt) return out({ reason: "refresh_expired" });
+      /* check-and-set der Promise ist synchron => atomar im Single-Thread-DO */
+      if (!this.refreshing) {
+        this.refreshing = this._refresh().finally(() => { this.refreshing = null; });
+      }
+      const fresh = await this.refreshing;
+      return out(fresh ? { bundle: fresh } : { reason: "refresh_failed" });
+    }
+    return out({ error: "not_found" });
+  }
+  async _refresh() {
+    // Re-Read: falls ein früherer Durchlauf schon gespeichert hat
+    const cur = await this.state.storage.get("tokens");
+    if (!cur) return null;
+    if (Date.now() < cur.expiresAt - 60000) return cur;
+    const res = await fetch(TT_TOKEN, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_key: this.env.TT_CLIENT_KEY, client_secret: this.env.TT_CLIENT_SECRET,
+        grant_type: "refresh_token", refresh_token: cur.refresh_token
+      })
+    });
+    const data = await res.json();
+    if (!data.access_token) return null;
+    const fresh = bundleFromTokenResponse(data, cur);
+    await this.state.storage.put("tokens", fresh); // einzige Schreibstelle nach Refresh
+    return fresh;
+  }
+}
+
+function tokenStub(env) {
+  if (!env.TOKENDO) return null;
+  return env.TOKENDO.get(env.TOKENDO.idFromName("tiktok"));
+}
+
+/* ---------- Token-Bundle-Zugriff (DO bevorzugt, KV-Fallback) ---------- */
 async function loadTokens(env) {
+  const stub = tokenStub(env);
+  if (stub) return await (await stub.fetch("https://do/load")).json();
   const raw = await env.TOKENS.get("tt:tokens");
   return raw ? JSON.parse(raw) : null;
 }
 async function saveTokens(env, t) {
+  const stub = tokenStub(env);
+  if (stub) { await stub.fetch("https://do/save", { method: "POST", body: JSON.stringify(t) }); return; }
   await env.TOKENS.put("tt:tokens", JSON.stringify(t));
+}
+async function deleteTokens(env) {
+  const stub = tokenStub(env);
+  if (stub) { await stub.fetch("https://do/delete", { method: "POST" }); return; }
+  await env.TOKENS.delete("tt:tokens");
 }
 function bundleFromTokenResponse(data, prev) {
   const now = Date.now();
@@ -164,17 +255,19 @@ function bundleFromTokenResponse(data, prev) {
   };
 }
 /* Liefert IMMER das aktuell gespeicherte, gültige Bundle (refresht bei Bedarf).
-   Nach einem Refresh wird ausschließlich das NEUE Bundle gespeichert —
-   Rotation des Refresh Tokens geht nie verloren. */
+   Mit TOKENDO-Binding: garantiert serialisiert (siehe TokenDO oben).
+   KV-Fallback nur ohne Binding — Best-Effort-Lock, dokumentiert. */
 async function freshTokens(env) {
+  const stub = tokenStub(env);
+  if (stub) {
+    const d = await (await stub.fetch("https://do/fresh")).json();
+    return d && d.bundle ? d.bundle : null;
+  }
+  /* ---------- KV-Fallback (nur ohne DO-Binding) ---------- */
   let t = await loadTokens(env);
   if (!t) return null;
   if (Date.now() < t.expiresAt - 60000) return t;
-  if (t.refreshExpiresAt && Date.now() > t.refreshExpiresAt) return null; // Re-Login nötig
-
-  /* Lock gegen parallelen Doppel-Refresh. KV kennt kein Compare-and-Swap,
-     deshalb: Lock mit eigener ID schreiben, kurz warten, Besitz verifizieren —
-     der Verlierer wartet und liest das frische Bundle des Gewinners. */
+  if (t.refreshExpiresAt && Date.now() > t.refreshExpiresAt) return null;
   const lockId = crypto.randomUUID();
   const existing = await env.TOKENS.get("tt:refreshing");
   if (!existing) {
@@ -183,7 +276,6 @@ async function freshTokens(env) {
   }
   const owner = await env.TOKENS.get("tt:refreshing");
   if (owner !== lockId) {
-    // Anderer Request refresht gerade — auf dessen Ergebnis warten.
     for (let i = 0; i < 6; i++) {
       await sleep(500);
       const again = await loadTokens(env);
@@ -193,7 +285,6 @@ async function freshTokens(env) {
     return await loadTokens(env);
   }
   try {
-    // Re-Read nach Lock-Erwerb: hat ein anderer Request schon refresht?
     t = await loadTokens(env);
     if (!t) return null;
     if (Date.now() < t.expiresAt - 60000) return t;
@@ -207,8 +298,6 @@ async function freshTokens(env) {
     });
     const data = await res.json();
     if (!data.access_token) {
-      /* Refresh fehlgeschlagen — evtl. hat ein paralleler Request mit dem
-         rotierten Token gewonnen: gespeichertes Bundle erneut prüfen. */
       const again = await loadTokens(env);
       if (again && Date.now() < again.expiresAt - 60000) return again;
       return null;
@@ -229,13 +318,34 @@ async function ttUserInfo(at) {
   const d = await r.json();
   return (d.data && d.data.user) || null;
 }
-async function ttVideoList(at, cursor) {
+async function ttVideoPage(at, cursor) {
   const r = await fetch(TT_VIDEOS + "?fields=id,title,create_time,duration,cover_image_url,share_url,view_count,like_count,comment_count,share_count", {
     method: "POST",
     headers: { authorization: "Bearer " + at, "content-type": "application/json" },
     body: JSON.stringify(cursor ? { max_count: 20, cursor: cursor } : { max_count: 20 })
   });
   return await r.json();
+}
+/* Cursor-Pagination über ALLE eigenen Videos (Display API liefert max. 20 pro
+   Seite). Sicherheitslimit gegen Endlosschleifen/Kosten; bei API-Fehler
+   mitten in der Pagination werden die bereits geladenen Seiten zurückgegeben
+   und der Fehler gemeldet statt verschluckt. */
+const VIDEO_CAP = 250; // ~12 Seiten — weit über aktueller Kanalgröße, anpassbar
+async function ttAllVideos(at) {
+  const videos = [];
+  let cursor = null, error = null, truncated = false;
+  for (let page = 0; page < Math.ceil(VIDEO_CAP / 20); page++) {
+    let d;
+    try { d = await ttVideoPage(at, cursor); }
+    catch (e) { error = "network:" + e.message; break; }
+    if (d.error && d.error.code && d.error.code !== "ok") { error = d.error.message || d.error.code; break; }
+    const batch = (d.data && d.data.videos) || [];
+    videos.push(...batch);
+    if (!(d.data && d.data.has_more) || !batch.length) break;
+    cursor = d.data.cursor;
+    if (videos.length >= VIDEO_CAP) { truncated = true; break; }
+  }
+  return { videos: videos.slice(0, VIDEO_CAP), truncated, error };
 }
 
 /* ---------- D1-Snapshots (Phase 2, optional) ---------- */
@@ -347,11 +457,14 @@ export default {
     if (url.pathname === "/api/videos") {
       const t = await freshTokens(env);
       if (!t) return json({ error: "not_connected" }, 400, request);
-      const d = await ttVideoList(t.access_token, null);
-      if (d.error && d.error.code && d.error.code !== "ok") {
-        return json({ error: "tiktok_api", detail: d.error.message || d.error.code }, 502, request);
+      const all = await ttAllVideos(t.access_token);
+      if (all.error && !all.videos.length) {
+        return json({ error: "tiktok_api", detail: all.error }, 502, request);
       }
-      return json({ videos: (d.data && d.data.videos) || [], hasMore: !!(d.data && d.data.has_more), source: "tiktok_api" }, 200, request);
+      return json({
+        videos: all.videos, count: all.videos.length, truncated: all.truncated,
+        partialError: all.error || null, source: "tiktok_api"
+      }, 200, request);
     }
 
     if (url.pathname === "/api/disconnect" && request.method === "POST") {
@@ -364,7 +477,7 @@ export default {
             body: new URLSearchParams({ client_key: env.TT_CLIENT_KEY, client_secret: env.TT_CLIENT_SECRET, token: t.access_token })
           });
         } catch (e) {}
-        await env.TOKENS.delete("tt:tokens");
+        await deleteTokens(env);
         await env.TOKENS.delete("tt:lastSync");
       }
       return json({ disconnected: true }, 200, request);
@@ -409,6 +522,28 @@ export default {
       if (!row) return json({ data: null }, 200, request);
       return json({ data: JSON.parse(row.data), updatedAt: row.updated_at }, 200, request);
     }
+    /* Cloud-Löschung (DSGVO): getrennte Scopes, ehrlich benannt.
+       backup     = kv_backup (Growth-OS-Datenbestand)
+       timeseries = account_snapshots + video_snapshots (TikTok-Historie)
+       all        = beides */
+    if (url.pathname === "/api/sync/delete" && request.method === "POST") {
+      if (!env.DB) return json({ error: "sync_not_configured" }, 501, request);
+      let body = {};
+      try { body = await request.json(); } catch (e) {}
+      const scope = body.scope;
+      if (["backup", "timeseries", "all"].indexOf(scope) < 0) return json({ error: "invalid_scope" }, 400, request);
+      const deleted = [];
+      if (scope === "backup" || scope === "all") {
+        await env.DB.prepare("DELETE FROM kv_backup").run();
+        deleted.push("kv_backup");
+      }
+      if (scope === "timeseries" || scope === "all") {
+        await env.DB.prepare("DELETE FROM account_snapshots").run();
+        await env.DB.prepare("DELETE FROM video_snapshots").run();
+        deleted.push("account_snapshots", "video_snapshots");
+      }
+      return json({ ok: true, deleted: deleted }, 200, request);
+    }
     if (url.pathname === "/api/sync/timeseries") {
       if (!env.DB) return json({ error: "sync_not_configured" }, 501, request);
       const vids = await env.DB.prepare("SELECT video_id, ts, title, views, likes, comments, shares, share_url FROM video_snapshots ORDER BY ts DESC LIMIT 500").all();
@@ -419,15 +554,16 @@ export default {
     return json({ error: "not_found" }, 404, request);
   },
 
-  /* ---------- Täglicher Cron: automatische Metric-Snapshots nach D1 ---------- */
+  /* ---------- Täglicher Cron: automatische Metric-Snapshots nach D1
+       (ALLE Videos via Cursor-Pagination, Sicherheitslimit VIDEO_CAP) ---------- */
   async scheduled(event, env, ctx) {
     const t = await freshTokens(env);
     if (!t) return;
     let user = null, videos = [];
     try { user = await ttUserInfo(t.access_token); } catch (e) {}
     try {
-      const d = await ttVideoList(t.access_token, null);
-      videos = (d.data && d.data.videos) || [];
+      const all = await ttAllVideos(t.access_token);
+      videos = all.videos;
     } catch (e) {}
     try {
       if (await snapshotToD1(env, user, videos)) {
