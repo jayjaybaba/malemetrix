@@ -1,6 +1,6 @@
 # Growth OS — Feature-Status
 
-Stand: 2026-07-20 · Legende: ✅ fertig & getestet · 🟡 benötigt Konfiguration · 🔴 blockiert durch externe Genehmigung · ⚪ bewusst nicht gebaut (Begründung)
+Stand: 2026-07-21 (v2 nach Security-/Architektur-Audit) · Legende: ✅ fertig & getestet · 🟡 benötigt Konfiguration · 🔴 blockiert durch externe Genehmigung · ⚪ bewusst nicht gebaut (Begründung)
 
 ## Foundation
 | Feature | Status |
@@ -51,12 +51,25 @@ Stand: 2026-07-20 · Legende: ✅ fertig & getestet · 🟡 benötigt Konfigurat
 ## TikTok-API
 | Feature | Status |
 |---|---|
-| OAuth-Worker (Authorize/Token/Refresh/Revoke, CSRF-State, Rate-Limit, Tokens nur in KV) | 🟡 Code fertig (`proxy/tiktok-oauth-worker.js`) — braucht TikTok-Developer-App + Worker-Deploy + `config.js`-Eintrag (Anleitung: GROWTH-OS.md §6) |
+| OAuth-Worker v2: Passwort-Login → kurzlebige Server-Session (12 h, KV), KEIN Secret im Frontend/Repo/URL, CSRF-immun via Custom-Header, State-Replay-Schutz, atomare Refresh-Rotation, Parallel-Refresh-Lock — 35 automatisierte Tests + Browser-Integrationstest | 🟡 Code fertig & getestet — braucht TikTok-Developer-App + Worker-Deploy + `apiBase` in config.js (GROWTH-OS.md §6) |
 | Profil + Account-Stats im Growth OS (Level 1) | 🟡 wie oben |
 | Eigene Videoliste per Display API (Level 2) | 🟡 wie oben + Scope `video.list` im App-Review |
 | Draft-Upload „An TikTok senden“ (Level 3) | 🔴 TikTok-Audit erforderlich — unauditierte Apps posten nur privat (offizielle Doku, geprüft 2026-07-20). UI zeigt das ehrlich an; kein Fake-Button. |
 | Direct Post (Level 4) | 🔴 wie Level 3 |
 | Creator-Rewards-Daten per API | ⚪ nicht möglich — TikTok bietet dafür keine öffentliche API; dauerhaft Studio-Import |
+
+## Phase 2 (v2 — Audit-Nachrüstung)
+| Feature | Status |
+|---|---|
+| Score-Stufenmodell 0–4: Daten-Gewicht wächst mit n (bis 60 %), Kalibrierung erhöht es weiter (bis 75 %); Stage + Gewichte an jeder Idee sichtbar | ✅ |
+| Geschlossener Feedback-Loop: Prognose wird bei READY/PUBLISHED/Verknüpfung automatisch eingefroren → Ergebnis-Vergleich → Kalibrierung wirkt auf künftige Scores zurück | ✅ |
+| Breakout-Detektor aus Snapshot-Velocity (lokal, ehrliche Mindest-Datenbasis) | ✅ |
+| API-Snapshot-Merge (Level 2): Videoliste per Display API als Snapshots in lokale Videos | ✅ (nach Worker-Setup) |
+| Schnell-Import Suchbegriffe (Bulk, Creator Search Insights/Google Trends abtippen) | ✅ |
+| Research-Radar via PubMed E-Utilities (offizielle freie API, serverseitig) | 🟡 nach Worker-Setup + Anmeldung |
+| Creator-Watchlist (§19, manuell — Lücke → Idee) | ✅ |
+| Cloud-Sync geräteübergreifend (D1, Push/Pull mit Bestätigung) | 🟡 Worker + D1-Binding (GROWTH-OS.md §6b) |
+| Tägliche Auto-Snapshots per Cron → D1-Zeitreihen (`schema.sql` v1) | 🟡 wie oben + Cron-Trigger |
 
 ## KI (optional)
 | Feature | Status |

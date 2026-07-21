@@ -63,16 +63,41 @@
      TIKTOK-ADAPTER (§5/§77) — spricht NUR mit dem eigenen Worker.
      Ohne konfigurierten Worker: Level 0 (Manual Mode).
      ====================================================================== */
+  /* Session-basiert (v2): Der Browser kennt KEIN Server-Secret. Login via
+     Admin-Passwort (nur Worker-Secret) → kurzlebige, widerrufbare Session
+     (12 h, serverseitig in KV). Custom-Header x-session ⇒ CSRF-immun. */
   var TT = {
     cfg: function () { return (window.MM_CONFIG && MM_CONFIG.growth && MM_CONFIG.growth.tiktok) || {}; },
     configured: function () { return !!(TT.cfg().apiBase); },
+    base: function () { return String(TT.cfg().apiBase || "").replace(/\/$/, ""); },
+    session: function () { try { return sessionStorage.getItem("mm_gos_tt_sess") || ""; } catch (e) { return ""; } },
+    setSession: function (s) { try { s ? sessionStorage.setItem("mm_gos_tt_sess", s) : sessionStorage.removeItem("mm_gos_tt_sess"); } catch (e) {} },
+    loggedIn: function () { return !!TT.session(); },
     status: null,
+    async api(path, opts) {
+      opts = opts || {};
+      var r = await fetch(TT.base() + path, {
+        method: opts.method || "GET",
+        headers: Object.assign({ "x-session": TT.session() }, opts.body ? { "content-type": "application/json" } : {}),
+        body: opts.body ? JSON.stringify(opts.body) : undefined
+      });
+      if (r.status === 401) { TT.setSession(""); throw new Error("Sitzung abgelaufen — bitte neu anmelden"); }
+      return r;
+    },
+    async login(password) {
+      var r = await fetch(TT.base() + "/auth/login", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ password: password })
+      });
+      var d = await r.json().catch(function () { return {}; });
+      if (!r.ok || !d.session) throw new Error(r.status === 429 ? "Zu viele Versuche — 10 Min warten" : "Passwort falsch");
+      TT.setSession(d.session);
+      G.log("tiktok", "Worker-Login erfolgreich");
+    },
     async fetchStatus() {
-      if (!TT.configured()) return null;
+      if (!TT.configured() || !TT.loggedIn()) return null;
       try {
-        var r = await fetch(TT.cfg().apiBase.replace(/\/$/, "") + "/api/status", {
-          headers: { "x-admin-key": TT.cfg().adminKey || "" }
-        });
+        var r = await TT.api("/api/status");
         if (!r.ok) throw new Error("HTTP " + r.status);
         TT.status = await r.json();
         return TT.status;
@@ -154,6 +179,13 @@
     renderPanel();
   }
 
+  /* Aktualisiert nur die Level-Anzeige im Topbar (ohne Panel-Neuaufbau,
+     damit laufende Eingaben in den Einstellungen nicht verloren gehen). */
+  function renderAppHeaderOnly() {
+    var el = root.querySelector(".gos-topbar .small");
+    if (el) { var lvl = TT.level(); el.textContent = "Level " + lvl + " · " + D.LEVELS[lvl].label; }
+  }
+
   function renderPanel() {
     var p = document.getElementById("gosPanel");
     if (tab === "dash") renderDash(p);
@@ -224,6 +256,17 @@
         '<p class="small muted" style="margin:0">' + esc(target.note) + '</p></div>';
     }
 
+    /* Current Breakout (§43) — aus lokalen Snapshot-Zeitreihen */
+    var bo = SC.breakouts();
+    if (bo.ready && bo.top.length) {
+      html += '<div class="card" style="margin-bottom:16px;border-color:var(--accent-line)"><span class="card-num">🚨 CURRENT BREAKOUT ' + chip("interne Berechnung aus Snapshots", "calc") + '</span>' +
+        bo.top.map(function (t) {
+          return '<p class="small" style="margin:8px 0 0"><strong>' + esc(t.video.title) + '</strong> — ' + esc(t.why) + '<br><span class="muted">→ Jetzt Folge-Angle produzieren (Deep Dive, Kommentar-Frage, Teil 2) — nicht kopieren, vertiefen.</span></p>';
+        }).join("") + '</div>';
+    } else if (!bo.ready) {
+      html += '<div class="card" style="margin-bottom:16px"><span class="card-num">BREAKOUT-RADAR</span><p class="small muted" style="margin:8px 0 0">Braucht mind. ' + bo.need + ' Videos mit je ≥ 2 Snapshots (aktuell ' + bo.n + '). Entsteht automatisch durch wiederholte CSV-Importe oder API-Snapshots.</p></div>';
+    }
+
     /* Today's Top Opportunities + Next Best Action */
     html += '<h3 class="h-card" style="margin-bottom:10px">Today’s Top Opportunities ' + chip("interne Berechnung", "calc") + '</h3>';
     if (!opps.top.length) {
@@ -292,11 +335,17 @@
   function rememberRecommendation(ideaId) {
     var idea = G.S.ideas().find(function (i) { return i.id === ideaId; });
     if (!idea) return;
-    var c = SC.composite(idea);
+    ensurePrediction(idea, "dashboard");
+  }
+  /* Prognose einfrieren (einmal pro Idee) — Grundlage der Kalibrierung. */
+  function ensurePrediction(idea, origin) {
     var recs = G.S.recs();
-    recs.push({ date: new Date().toISOString(), ideaId: ideaId, title: idea.title, composite: c.score, preset: G.S.settings().presetKey });
+    if (recs.some(function (r) { return r.ideaId === idea.id; })) return;
+    var c = SC.composite(idea);
+    if (c.score == null) return;
+    recs.push({ date: new Date().toISOString(), ideaId: idea.id, title: idea.title, composite: c.score, preset: G.S.settings().presetKey, origin: origin || "publish" });
     G.S.saveRecs(recs);
-    G.log("rec", "Empfehlung gemerkt: " + idea.title + " (Score " + c.score + ")");
+    G.log("rec", "Prognose eingefroren: " + idea.title + " (Score " + c.score + ")");
   }
 
   /* ======================================================================
@@ -311,6 +360,7 @@
       '<h3 class="h-card" style="margin:0">Videos ' + chip("MANUELLER IMPORT · LIVE", "manual") + '</h3>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
       '<label class="btn btn-primary btn-sm" style="cursor:pointer">📥 TikTok-Studio-CSV<input type="file" id="gosCsv" accept=".csv,text/csv" style="display:none"></label>' +
+      (TT.configured() && TT.loggedIn() ? '<button class="btn btn-dark btn-sm" id="gosApiSync">🔄 API-Snapshot</button>' : "") +
       '<button class="btn btn-dark btn-sm" id="gosNewVid">＋ Video manuell</button></div></div>' +
       '<p class="small muted" style="margin:0 0 14px">Export im TikTok Studio: Analytics → Daten herunterladen (CSV). Jeder Import wird als Snapshot gespeichert — so entsteht ein Verlauf pro Video.</p>';
 
@@ -336,6 +386,40 @@
     if (csv) csv.addEventListener("change", function (e) { if (e.target.files[0]) startImport(e.target.files[0]); });
     var nv = document.getElementById("gosNewVid");
     if (nv) nv.addEventListener("click", function () { state.detailVideo = "NEW"; renderPanel(); });
+    /* API-Snapshot (Level 2): Views/Likes der eigenen Videoliste als
+       Snapshot (source=api) in lokale Videos mergen — Match per share_url,
+       TikTok-ID oder Titel. Reward-Daten kommen weiterhin nur aus dem Studio. */
+    var as = document.getElementById("gosApiSync");
+    if (as) as.addEventListener("click", async function () {
+      as.disabled = true; as.textContent = "…";
+      try {
+        var r = await TT.api("/api/videos");
+        var d = await r.json();
+        if (!r.ok) throw new Error(d.error || "HTTP " + r.status);
+        var all = G.S.videos();
+        var matched = 0, unmatched = 0;
+        (d.videos || []).forEach(function (tv) {
+          var v = all.find(function (x) {
+            return (x.tiktokId && x.tiktokId === String(tv.id)) ||
+              (tv.share_url && x.url && x.url === tv.share_url) ||
+              (tv.title && x.title && x.title.trim() === String(tv.title).trim());
+          });
+          if (!v) { unmatched++; return; }
+          v.tiktokId = String(tv.id);
+          if (!v.url && tv.share_url) v.url = tv.share_url;
+          if (!v.lengthSec && tv.duration) v.lengthSec = tv.duration;
+          if (!v.postAt && tv.create_time) v.postAt = new Date(tv.create_time * 1000).toISOString();
+          v.snapshots = v.snapshots || [];
+          v.snapshots.push({ ts: new Date().toISOString(), source: "api", verified: true,
+            views: tv.view_count, likes: tv.like_count, comments: tv.comment_count, shares: tv.share_count });
+          matched++;
+        });
+        G.S.saveVideos(all);
+        G.log("tiktok", "API-Snapshot: " + matched + " gematcht, " + unmatched + " ohne lokales Video");
+        alert("API-Snapshot: " + matched + " Videos aktualisiert" + (unmatched ? ", " + unmatched + " TikTok-Videos ohne lokale Entsprechung (per CSV importieren oder manuell anlegen)" : "") + ".");
+        renderPanel();
+      } catch (e) { alert("Fehler: " + e.message); renderPanel(); }
+    });
     p.querySelectorAll("[data-detail]").forEach(function (b) {
       b.addEventListener("click", function () { state.detailVideo = b.dataset.detail; renderPanel(); });
     });
@@ -663,9 +747,12 @@
     /* --- Scores --- */
     html += '<div class="card" style="margin-top:14px"><span class="card-num">SCORES ' + chip("interne Berechnung", "calc") + '</span>';
     if (c.score != null) {
+      var st = SC.stageInfo(i);
       html += '<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin:10px 0 4px">' +
         '<div><span style="font-family:var(--font-display);font-size:2rem;font-weight:800" class="text-grad">' + c.score + '</span><span class="muted small"> /100 Opportunity</span></div>' +
-        confChip(c.confidence) + (dnp.flag ? chip("🔴 NICHT PRODUZIEREN", "blocked") : chip("Produzierbar", "live")) + '</div>';
+        confChip(c.confidence) + chip("Stage " + st.stage + "/4", st.stage >= 3 ? "live" : st.stage >= 1 ? "manual" : "calc") +
+        (dnp.flag ? chip("🔴 NICHT PRODUZIEREN", "blocked") : chip("Produzierbar", "live")) + '</div>' +
+        '<p class="small muted" style="margin:0 0 4px"><strong>Lernstufe:</strong> ' + esc(st.why) + '</p>';
       ["viral", "growth", "reward"].forEach(function (dim) {
         var s = c.scores[dim];
         html += '<p class="small" style="margin:6px 0 0"><strong>' + dim.toUpperCase() + ": " + (s.score != null ? s.score : "—") + '</strong> · <span class="muted">' + s.basis.map(esc).join(" · ") + '</span></p>';
@@ -763,6 +850,10 @@
     if (df && !df.hasAttribute("data-unset")) i.differentiation = parseInt(df.value, 10);
     var link = document.getElementById("idLink");
     if (link && link.value) i.videoId = link.value;
+    /* Feedback-Loop (§Audit-7): Beim Übergang in die Veröffentlichung wird die
+       Prognose EINGEFROREN — sonst gäbe es später nichts Ehrliches zu
+       kalibrieren (die Scores ändern sich ja mit der Datenlage weiter). */
+    if ((i.status === "PUBLISHED" || i.status === "READY" || i.videoId)) ensurePrediction(i);
     i.updated = new Date().toISOString();
     var all = G.S.ideas();
     var idx = all.findIndex(function (x) { return x.id === i.id; });
@@ -1039,7 +1130,24 @@
       '<div class="form-row"><div class="field"><label>MaleMetrix-Fit (0–100)</label><input id="soFit" type="number" min="0" max="100"></div>' +
       '<div class="field"><label>Reward-Potenzial (0–100)</label><input id="soReward" type="number" min="0" max="100"></div></div>' +
       '<div class="field"><label>Quelle der Einschätzung</label><input id="soSource" type="text" placeholder="z. B. Creator Search Insights 20.07."></div>' +
-      '<button class="btn btn-primary btn-sm" id="soAdd" style="margin-top:10px">Hinzufügen</button></div>';
+      '<button class="btn btn-primary btn-sm" id="soAdd" style="margin-top:10px">Hinzufügen</button></div>' +
+
+      /* Schnell-Capture: Creator Search Insights / Google Trends in Sekunden erfassen */
+      '<details class="card gos-details" style="margin-bottom:16px"><summary><strong>⚡ Schnell-Import (mehrere auf einmal)</strong> <span class="muted small">— aus Creator Search Insights / Google Trends abtippen oder einfügen</span></summary>' +
+      '<p class="small muted" style="margin:10px 0 6px">Eine Zeile pro Suchbegriff. Optional mit Werten: <code>keyword; demand; competition; fit; reward; cluster</code></p>' +
+      '<textarea id="soBulk" rows="5" style="width:100%" placeholder="testosteron zu niedrig symptome; 85; 40; 95; 80; Testosteron&#10;shbg wert&#10;creatin gehirn studie; 70"></textarea>' +
+      '<button class="btn btn-dark btn-sm" id="soBulkAdd" style="margin-top:8px">Zeilen importieren</button></details>' +
+
+      /* Research-Radar: PubMed (offizielle freie API, über den Worker) */
+      '<div class="card" style="margin-bottom:16px"><strong class="small">🔬 Research-Radar (PubMed, letzte 120 Tage)</strong> ' +
+      (TT.configured() && TT.loggedIn()
+        ? '<div class="form-row" style="margin-top:8px;align-items:flex-end"><div class="field" style="flex:1"><label>Thema (englische Suchbegriffe)</label><input id="rrQ" type="text" placeholder="z. B. testosterone sleep deprivation"></div>' +
+          '<button class="btn btn-dark btn-sm" id="rrGo" style="margin-bottom:2px">Suchen</button></div><div id="rrOut"></div>'
+        : '<p class="small muted" style="margin:6px 0 0">' + chip("KONFIGURATION ERFORDERLICH", "config") + ' Läuft über deinen Worker (offizielle PubMed-API, serverseitig). Nach Worker-Setup + Anmeldung (System-Tab) verfügbar — bis dahin bewusst kein Button.</p>') +
+      '</div>' +
+
+      /* Creator-/Competitor-Watchlist (§19) — Beobachten, nicht kopieren */
+      renderWatchlist();
 
     if (items.length) {
       html += '<div style="overflow-x:auto"><table class="gos-table"><thead><tr><th>Keyword</th><th>Cluster</th><th>Demand</th><th>Comp.</th><th>Fit</th><th>Reward</th><th>Opportunity</th><th></th></tr></thead><tbody>' +
@@ -1090,7 +1198,7 @@
         var s = G.S.search().find(function (x) { return x.id === b.dataset.toidea; });
         if (!s) return;
         var ideas = G.S.ideas();
-        var idea = newIdea({ title: s.keyword, topic: "", cluster: s.cluster });
+        var idea = newIdea({ title: s.keyword, topic: "", cluster: s.cluster, searchId: s.id });
         idea.factors.viral.momentum = s.demand != null ? Math.round(s.demand / 10) : undefined;
         idea.factors.reward.search = s.demand != null ? Math.round(s.demand / 10) : undefined;
         idea.competition = s.competition != null ? Math.round(s.competition / 10) : null;
@@ -1102,6 +1210,99 @@
       b.addEventListener("click", function () {
         G.S.saveSearch(G.S.search().filter(function (x) { return x.id !== b.dataset.delso; }));
         renderPanel();
+      });
+    });
+
+    /* Schnell-Import */
+    var bulk = document.getElementById("soBulkAdd");
+    if (bulk) bulk.addEventListener("click", function () {
+      var lines = document.getElementById("soBulk").value.split("\n").map(function (l) { return l.trim(); }).filter(Boolean);
+      if (!lines.length) return;
+      var list = G.S.search(), added = 0;
+      lines.forEach(function (l) {
+        var parts = l.split(";").map(function (x) { return x.trim(); });
+        var kw = parts[0];
+        if (!kw || list.some(function (s) { return s.keyword.toLowerCase() === kw.toLowerCase(); })) return;
+        var d = G.numRaw(parts[1]), cp = G.numRaw(parts[2]), fit = G.numRaw(parts[3]), rw = G.numRaw(parts[4]);
+        var vals = [d, cp != null ? 100 - cp : null, fit, rw].filter(function (x) { return x != null; });
+        list.push({ id: G.uid("s"), keyword: kw, cluster: parts[5] || "", demand: d, competition: cp, fit: fit, rewardPot: rw,
+          opportunity: vals.length ? Math.round(vals.reduce(function (a, b) { return a + b; }, 0) / vals.length) : null,
+          source: "Schnell-Import " + new Date().toLocaleDateString("de-DE"), ts: new Date().toISOString(), status: "open" });
+        added++;
+      });
+      G.S.saveSearch(list);
+      G.log("import", "Schnell-Import: " + added + " Suchbegriffe");
+      renderPanel();
+    });
+
+    /* PubMed Research-Radar */
+    var rr = document.getElementById("rrGo");
+    if (rr) rr.addEventListener("click", async function () {
+      var q = document.getElementById("rrQ").value.trim();
+      var out = document.getElementById("rrOut");
+      if (!q) return;
+      out.innerHTML = '<p class="small muted">Suche läuft …</p>';
+      try {
+        var r = await TT.api("/api/research?q=" + encodeURIComponent(q));
+        var d = await r.json();
+        if (!r.ok) throw new Error(d.error || "HTTP " + r.status);
+        out.innerHTML = d.results.length
+          ? '<ul class="small" style="margin:8px 0 0;padding-left:18px">' + d.results.map(function (x) {
+              return '<li><a href="' + esc(x.url) + '" target="_blank" rel="noopener">' + esc(x.title) + '</a> <span class="muted">(' + esc(x.date) + ')</span></li>';
+            }).join("") + '</ul><p class="small muted" style="margin:6px 0 0">' + srcChip("api") + ' Quelle: PubMed — für Study-Breakdown-Videos. Quellen im Skript notieren.</p>'
+          : '<p class="small muted" style="margin:8px 0 0">Keine aktuellen Treffer.</p>';
+      } catch (e) { out.innerHTML = '<p class="small" style="color:#e74c3c">Fehler: ' + esc(e.message) + '</p>'; }
+    });
+
+    bindWatchlist(p);
+  }
+
+  /* ---------- Watchlist (§19): beobachten, Lücken finden — nicht kopieren ---------- */
+  function renderWatchlist() {
+    var comps = G.S.competitors();
+    return '<div class="card"><strong class="small">👀 Creator-Watchlist</strong> ' + chip("Eingabe", "manual") +
+      '<p class="small muted" style="margin:6px 0 10px">Manuell beobachten (kein Scraping): Welche Frage bleibt offen? Was kann MaleMetrix messbarer erklären? Lücke → direkt als Idee.</p>' +
+      '<div class="form-row" style="align-items:flex-end"><div class="field"><label>Creator/Handle</label><input id="cwName" type="text" placeholder="@creator"></div>' +
+      '<div class="field"><label>Themen/Fokus</label><input id="cwFocus" type="text" placeholder="z. B. TRT, Longevity"></div>' +
+      '<button class="btn btn-dark btn-sm" id="cwAdd" style="margin-bottom:2px">＋</button></div>' +
+      (comps.length ? comps.map(function (c) {
+        return '<div class="gos-rule"><div style="flex:1;min-width:200px"><strong class="small">' + esc(c.name) + '</strong> <span class="small muted">' + esc(c.focus || "") + '</span>' +
+          '<input type="text" class="gos-visual-input" data-cwnote="' + c.id + '" placeholder="Beobachtung / offene Frage / Content-Lücke …" value="' + esc(c.note || "") + '"></div>' +
+          '<div style="white-space:nowrap"><button class="btn btn-dark btn-sm" data-cwidea="' + c.id + '">Lücke → Idee</button> ' +
+          '<button class="btn-link-del" data-cwdel="' + c.id + '" style="background:none;border:none;color:var(--muted-2);cursor:pointer;text-decoration:underline;font-size:0.75rem">löschen</button></div></div>';
+      }).join("") : '<p class="small muted" style="margin:4px 0 0">Noch keine Creator hinterlegt.</p>') + '</div>';
+  }
+  function bindWatchlist(p) {
+    var add = document.getElementById("cwAdd");
+    if (add) add.addEventListener("click", function () {
+      var name = document.getElementById("cwName").value.trim();
+      if (!name) return;
+      var list = G.S.competitors();
+      list.push({ id: G.uid("c"), name: name, focus: document.getElementById("cwFocus").value.trim(), note: "", added: new Date().toISOString() });
+      G.S.saveCompetitors(list);
+      renderPanel();
+    });
+    p.querySelectorAll("[data-cwnote]").forEach(function (inp) {
+      inp.addEventListener("change", function () {
+        var list = G.S.competitors();
+        var c = list.find(function (x) { return x.id === inp.dataset.cwnote; });
+        if (c) { c.note = inp.value; G.S.saveCompetitors(list); }
+      });
+    });
+    p.querySelectorAll("[data-cwdel]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        G.S.saveCompetitors(G.S.competitors().filter(function (x) { return x.id !== b.dataset.cwdel; }));
+        renderPanel();
+      });
+    });
+    p.querySelectorAll("[data-cwidea]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var c = G.S.competitors().find(function (x) { return x.id === b.dataset.cwidea; });
+        if (!c) return;
+        var ideas = G.S.ideas();
+        var idea = newIdea({ title: (c.note || "Lücke bei " + c.name), cluster: c.focus || "" });
+        ideas.push(idea); G.S.saveIdeas(ideas);
+        tab = "ideas"; state.editIdea = idea.id; renderApp();
       });
     });
   }
@@ -1202,23 +1403,35 @@
     var rules = G.S.rules();
     var html = "";
 
-    /* --- TikTok-Verbindung (§5/§77) --- */
+    /* --- TikTok-Verbindung (§5/§77, v2: Session-Login ohne Frontend-Secret) --- */
     html += '<div class="card" style="margin-bottom:16px"><h3 class="h-card" style="margin-bottom:4px">TikTok-Verbindung</h3>' +
-      '<p class="small" style="margin:0 0 10px">' + (TT.configured() ? chip("Worker konfiguriert", "config") : chip("🔴 Nicht verbunden — Level 0 · Manual Mode", "manual")) + '</p>' +
+      '<p class="small" style="margin:0 0 10px">' +
+      (!TT.configured() ? chip("🔴 Nicht verbunden — Level 0 · Manual Mode", "manual")
+        : !TT.loggedIn() ? chip("Worker konfiguriert — Anmeldung erforderlich", "config")
+        : chip("Angemeldet (Server-Session, 12 h)", "live")) + '</p>' +
       '<div id="ttStatus"></div>' +
       '<div style="overflow-x:auto;margin-top:10px"><table class="gos-table"><thead><tr><th>Level</th><th>Funktion</th><th>Status</th></tr></thead><tbody>' +
       D.LEVELS.map(function (l) {
         var active = TT.level() >= l.n;
         return '<tr><td class="mono">' + l.n + '</td><td>' + esc(l.label) + '<br><span class="small muted">' + esc(l.desc) + '</span></td>' +
           '<td>' + (l.n === 0 ? chip("LIVE", "live") : active ? chip("AKTIV", "live") : chip(esc(l.state), l.state.indexOf("EXTERNE") >= 0 ? "blocked" : "config")) + '</td></tr>';
-      }).join("") + '</tbody></table></div>' +
-      (TT.configured()
-        ? '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">' +
-          '<button class="btn btn-primary btn-sm" id="ttConnect">TikTok verbinden</button>' +
-          '<button class="btn btn-dark btn-sm" id="ttRefresh">Verbindung aktualisieren</button>' +
-          '<button class="btn btn-ghost btn-sm" id="ttDisconnect">Trennen</button></div>'
-        : '<p class="small muted" style="margin-top:12px">Die serverseitige OAuth-Anbindung ist fertig gebaut (<code>proxy/tiktok-oauth-worker.js</code>) und wartet auf: 1) TikTok-Developer-App (deine Freigabe), 2) Cloudflare-Worker-Deploy, 3) Eintrag von <code>apiBase</code>/<code>adminKey</code> in <code>js/config.js</code>. Schritt-für-Schritt: <code>GROWTH-OS.md</code>. Bis dahin gibt es hier bewusst keinen Verbinden-Button — keine Fake-Funktionen.</p>') +
-      '</div>';
+      }).join("") + '</tbody></table></div>';
+    if (!TT.configured()) {
+      html += '<p class="small muted" style="margin-top:12px">Die serverseitige OAuth-Anbindung ist fertig gebaut (<code>proxy/tiktok-oauth-worker.js</code>, sicherheitsgetestet) und wartet auf: 1) TikTok-Developer-App (deine Freigabe), 2) Cloudflare-Worker-Deploy, 3) Eintrag von <code>apiBase</code> in <code>js/config.js</code>. Das Admin-Passwort lebt nur als Worker-Secret — nie im Frontend. Schritt-für-Schritt: <code>GROWTH-OS.md</code>. Bis dahin gibt es hier bewusst keinen Verbinden-Button — keine Fake-Funktionen.</p>';
+    } else if (!TT.loggedIn()) {
+      html += '<div class="form-row" style="margin-top:12px;align-items:flex-end"><div class="field" style="flex:1"><label>Admin-Passwort (wird nur an deinen Worker gesendet, nie gespeichert)</label>' +
+        '<input type="password" id="ttPass" autocomplete="current-password"></div>' +
+        '<button class="btn btn-primary btn-sm" id="ttLogin" style="margin-bottom:2px">Anmelden</button></div>' +
+        '<p class="small" id="ttLoginErr" style="color:#e74c3c;min-height:16px;margin:4px 0 0"></p>';
+    } else {
+      html += '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">' +
+        '<button class="btn btn-primary btn-sm" id="ttConnect">TikTok verbinden</button>' +
+        '<button class="btn btn-dark btn-sm" id="ttRefresh">Verbindung aktualisieren</button>' +
+        '<button class="btn btn-ghost btn-sm" id="ttDisconnect">Trennen</button>' +
+        '<button class="btn btn-ghost btn-sm" id="ttLogout">Abmelden</button></div>' +
+        '<div id="ttSyncBox" style="margin-top:10px"></div>';
+    }
+    html += '</div>';
 
     /* --- Gewichtung (§10/§93) --- */
     var wActive = s.weights || (D.WEIGHT_PRESETS[s.presetKey] || D.WEIGHT_PRESETS.balanced).w;
@@ -1279,34 +1492,89 @@
 
     p.innerHTML = html;
 
-    /* TikTok bindings */
-    if (TT.configured()) {
+    /* TikTok bindings (v2: Session) */
+    var tl = document.getElementById("ttLogin");
+    if (tl) tl.addEventListener("click", async function () {
+      var errEl = document.getElementById("ttLoginErr");
+      try {
+        await TT.login(document.getElementById("ttPass").value);
+        renderPanel();
+      } catch (e) { errEl.textContent = e.message; }
+    });
+    if (TT.configured() && TT.loggedIn()) {
       var stBox = document.getElementById("ttStatus");
       stBox.innerHTML = '<p class="small muted">Status wird abgefragt …</p>';
       TT.fetchStatus().then(function (st) {
         if (!st || st.error) {
-          stBox.innerHTML = '<p class="small" style="color:#e74c3c">Worker nicht erreichbar: ' + esc(st && st.error || "unbekannt") + ' — Deploy/Key prüfen (GROWTH-OS.md → Troubleshooting).</p>';
-        } else if (st.connected) {
+          stBox.innerHTML = '<p class="small" style="color:#e74c3c">Worker nicht erreichbar: ' + esc(st && st.error || "unbekannt") + ' — Deploy prüfen (GROWTH-OS.md → Troubleshooting).</p>';
+          if (!TT.loggedIn()) renderPanel(); // Session war abgelaufen
+          return;
+        }
+        if (st.connected) {
           stBox.innerHTML = '<p class="small">🟢 <strong>' + esc(st.display_name || st.open_id) + '</strong>' +
             (st.stats ? ' · ' + G.fmtInt(st.stats.follower_count) + ' Follower · ' + G.fmtInt(st.stats.likes_count) + ' Likes · ' + G.fmtInt(st.stats.video_count) + ' Videos' : "") +
             ' · Scopes: ' + esc((st.scopes || []).join(", ")) + ' · Letzter Sync: ' + G.fmtDate(st.lastSync) + ' ' + srcChip("api") + '</p>';
-          renderApp();
         } else {
-          stBox.innerHTML = '<p class="small">🔴 Worker erreichbar, aber kein TikTok-Konto verbunden.</p>';
+          stBox.innerHTML = '<p class="small">🔴 ' + (st.reason === "token_expired_reconnect"
+            ? "Refresh-Token abgelaufen (365 Tage) — bitte neu verbinden."
+            : "Worker erreichbar, aber kein TikTok-Konto verbunden.") + '</p>';
         }
+        var sb = document.getElementById("ttSyncBox");
+        if (sb) {
+          sb.innerHTML = st.sync && st.sync.enabled
+            ? '<p class="small">☁️ <strong>Cloud-Sync (D1) aktiv</strong> · letzter Auto-Snapshot (Cron): ' + (st.sync.lastAutoSync ? G.fmtDate(st.sync.lastAutoSync) : "noch keiner") + '</p>' +
+              '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">' +
+              '<button class="btn btn-dark btn-sm" id="syncPush">Backup → Cloud</button>' +
+              '<button class="btn btn-dark btn-sm" id="syncPull">Cloud → dieses Gerät</button></div>'
+            : '<p class="small muted">☁️ Cloud-Sync: ' + chip("KONFIGURATION ERFORDERLICH", "config") + ' D1-Datenbank am Worker binden (GROWTH-OS.md §6b) — dann geräteübergreifendes Backup + tägliche Auto-Snapshots per Cron.</p>';
+          var sp = document.getElementById("syncPush");
+          if (sp) sp.addEventListener("click", async function () {
+            try {
+              var keys = ["videos", "ideas", "search", "missions", "rules", "recs", "settings"];
+              var payload = { app: "malemetrix-growth-os", version: 1, exportedAt: new Date().toISOString() };
+              keys.forEach(function (k) { payload[k] = G.S[k](); });
+              var r = await TT.api("/api/sync/push", { method: "POST", body: payload });
+              alert(r.ok ? "In die Cloud gesichert." : "Fehlgeschlagen (HTTP " + r.status + ")");
+            } catch (e) { alert("Fehler: " + e.message); }
+          });
+          var pl = document.getElementById("syncPull");
+          if (pl) pl.addEventListener("click", async function () {
+            try {
+              var r = await TT.api("/api/sync/pull");
+              var d = await r.json();
+              if (!d.data) { alert("Kein Cloud-Backup vorhanden."); return; }
+              if (!confirm("Cloud-Stand vom " + G.fmtDate(d.updatedAt) + " übernehmen? Lokale Daten dieses Geräts werden ersetzt.")) return;
+              ["videos", "ideas", "search", "missions", "rules", "recs", "settings"].forEach(function (k) {
+                if (d.data[k] != null) localStorage.setItem("mm_gos_" + k, JSON.stringify(d.data[k]));
+              });
+              G.log("sync", "Cloud-Pull übernommen (" + d.updatedAt + ")");
+              renderApp();
+            } catch (e) { alert("Fehler: " + e.message); }
+          });
+        }
+        renderAppHeaderOnly();
       });
       var tc = document.getElementById("ttConnect");
-      if (tc) tc.addEventListener("click", function () {
-        window.open(TT.cfg().apiBase.replace(/\/$/, "") + "/auth/start?key=" + encodeURIComponent(TT.cfg().adminKey || ""), "_blank");
+      if (tc) tc.addEventListener("click", async function () {
+        try {
+          var r = await TT.api("/auth/start", { method: "POST" });
+          var d = await r.json();
+          if (d.url) window.open(d.url, "_blank");
+          else alert("Start fehlgeschlagen.");
+        } catch (e) { alert("Fehler: " + e.message); renderPanel(); }
       });
       var tr = document.getElementById("ttRefresh");
       if (tr) tr.addEventListener("click", function () { renderPanel(); });
       var td = document.getElementById("ttDisconnect");
       if (td) td.addEventListener("click", async function () {
         if (!confirm("TikTok-Verbindung trennen (Token wird serverseitig widerrufen)?")) return;
-        try {
-          await fetch(TT.cfg().apiBase.replace(/\/$/, "") + "/api/disconnect", { method: "POST", headers: { "x-admin-key": TT.cfg().adminKey || "" } });
-        } catch (e) {}
+        try { await TT.api("/api/disconnect", { method: "POST" }); } catch (e) {}
+        renderPanel();
+      });
+      var to = document.getElementById("ttLogout");
+      if (to) to.addEventListener("click", async function () {
+        try { await TT.api("/auth/logout", { method: "POST" }); } catch (e) {}
+        TT.setSession("");
         renderPanel();
       });
     }

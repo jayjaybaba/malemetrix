@@ -30,6 +30,8 @@ window.GOS = (function () {
     saveIdeas: function (v) { return set("ideas", v); },
     search:   function () { return get("search", []); },
     saveSearch: function (v) { return set("search", v); },
+    competitors: function () { return get("competitors", []); },
+    saveCompetitors: function (v) { return set("competitors", v); },
     missions: function () { return get("missions", {}); },
     saveMissions: function (v) { return set("missions", v); },
     rules:    function () {
@@ -177,7 +179,7 @@ window.GOS = (function () {
 
   /* ---------- Datenexport / -löschung (DSGVO, §75) ---------- */
   function exportAll() {
-    var keys = ["videos", "ideas", "search", "missions", "rules", "recs", "settings", "log"];
+    var keys = ["videos", "ideas", "search", "competitors", "missions", "rules", "recs", "settings", "log"];
     var out = { exportedAt: new Date().toISOString(), app: "malemetrix-growth-os", version: 1 };
     keys.forEach(function (k) { out[k] = get(k, null); });
     var blob = new Blob([JSON.stringify(out, null, 2)], { type: "application/json" });
@@ -193,7 +195,7 @@ window.GOS = (function () {
       try {
         var d = JSON.parse(reader.result);
         if (d.app !== "malemetrix-growth-os") throw new Error("Kein Growth-OS-Backup");
-        ["videos", "ideas", "search", "missions", "rules", "recs", "settings"].forEach(function (k) {
+        ["videos", "ideas", "search", "competitors", "missions", "rules", "recs", "settings"].forEach(function (k) {
           if (d[k] != null) set(k, d[k]);
         });
         log("import", "Backup importiert");
@@ -203,7 +205,7 @@ window.GOS = (function () {
     reader.readAsText(file);
   }
   function deleteAll() {
-    ["videos", "ideas", "search", "missions", "rules", "recs", "settings", "log"].forEach(remove);
+    ["videos", "ideas", "search", "competitors", "missions", "rules", "recs", "settings", "log"].forEach(remove);
   }
 
   return {

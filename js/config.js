@@ -199,12 +199,12 @@ window.MM_CONFIG = {
 
     // TikTok-Anbindung über EIGENEN Cloudflare Worker (Code liegt fertig in
     // proxy/tiktok-oauth-worker.js). Solange leer: Level 0 (Manual Mode).
-    // apiBase:  z. B. "https://mm-tiktok.DEINACCOUNT.workers.dev"
-    // adminKey: derselbe Wert wie das Worker-Secret ADMIN_KEY
-    // Setup Schritt für Schritt: GROWTH-OS.md
+    // apiBase: z. B. "https://mm-tiktok.DEINACCOUNT.workers.dev"
+    // WICHTIG: Hier steht KEIN Secret. Das Admin-Passwort lebt ausschließlich
+    // als Worker-Secret (ADMIN_PASSWORD); die Anmeldung passiert im Growth OS
+    // (kurzlebige Server-Session). Setup Schritt für Schritt: GROWTH-OS.md
     tiktok: {
-      apiBase: "",
-      adminKey: ""
+      apiBase: ""
     },
 
     // Optionale KI-Unterstützung (Hook-/Skript-Entwürfe, klar als

@@ -43,47 +43,94 @@ window.GOS_SCORE = (function () {
     };
   }
 
-  /* Historien-Anpassung: Thema läuft messbar besser/schlechter als der
-     Account-Median => Score ±(max 10). Nur ab MIN_N vergleichbaren Videos. */
-  function historyAdjust(topic, dim) {
-    var comp = comparableVideos(topic);
-    if (comp.length < D.MIN_N) return { delta: 0, n: comp.length, basis: null };
-    var acc = accountMedians();
-    var ratio = null, label = "";
-    if (dim === "viral" && acc.views) {
-      ratio = G.median(comp.map(function (v) { return G.metric(v, "views"); })) / acc.views;
-      label = "Views vs. Account-Median";
-    } else if (dim === "growth" && acc.fpk) {
-      ratio = G.median(comp.map(G.followerPer1k)) / acc.fpk;
-      label = "Follower/1k Views vs. Account-Median";
-    } else if (dim === "reward" && acc.rpm) {
-      ratio = G.median(comp.map(G.rpm)) / acc.rpm;
-      label = "RPM vs. Account-Median";
-    }
-    if (ratio == null || !isFinite(ratio)) return { delta: 0, n: comp.length, basis: null };
-    var delta = Math.max(-10, Math.min(10, Math.round((ratio - 1) * 20)));
-    return { delta: delta, n: comp.length, basis: label + ": " + ratio.toFixed(2) + "×" };
-  }
+  /* ======================================================================
+     SCORE-EVOLUTION (Audit-Punkt 5): Das System hängt mit wachsender
+     Datenmenge immer WENIGER an der Selbsteinschätzung.
 
+     STAGE 0  nur Heuristik/Selbsteinschätzung (Cold Start)
+     STAGE 1  Account-Historie fließt ein (≥ MIN_N vergleichbare Videos)
+     STAGE 2  + Search-/Trend-Signal an der Idee verknüpft
+     STAGE 3  Performance-Modell: Daten-Gewicht wächst mit n (bis 60 %)
+     STAGE 4  + Kalibrierung: schlechte Trefferquote der eigenen Empfehlungen
+              verschiebt das Gewicht weiter Richtung Daten (bis 75 %)
+
+     Blend je Dimension:
+       score = (1 − wD) · Selbsteinschätzung + wD · Historien-Score
+       wD    = min(0.6, n · 0.05)  [+0.15 bei nachweislich schlechter
+               Kalibrierung, Cap 0.75]
+       Historien-Score = Perzentil des Themas unter allen eigenen Videos
+       (Viral: Views · Growth: Follower/1k · Reward: RPM), skaliert 0–100.
+     ====================================================================== */
+  function dimMetric(dim) {
+    return dim === "viral" ? function (v) { return G.metric(v, "views"); }
+      : dim === "growth" ? G.followerPer1k
+      : G.rpm;
+  }
+  function topicHistory(topic, dim) {
+    var fn = dimMetric(dim);
+    var all = G.S.videos().map(fn).filter(function (x) { return x != null && isFinite(x); });
+    var comp = comparableVideos(topic).map(fn).filter(function (x) { return x != null && isFinite(x); });
+    if (comp.length < D.MIN_N || all.length < D.MIN_N) return { n: comp.length, score: null };
+    var med = G.median(comp);
+    var below = all.filter(function (x) { return x <= med; }).length;
+    return { n: comp.length, score: Math.round((below / all.length) * 100), med: med };
+  }
+  function calibrationPenalty() {
+    var cal = calibration();
+    return (cal.ready && cal.hitRate < 0.5) ? 0.15 : 0;
+  }
+  function dataWeight(n) {
+    var w = Math.min(0.6, n * 0.05) + (n >= D.MIN_N ? calibrationPenalty() : 0);
+    return Math.min(0.75, w);
+  }
   function confidence(n) {
     if (n >= 8) return "HOCH";
     if (n >= D.MIN_N) return "MITTEL";
     return "NIEDRIG";
   }
 
-  /* ---------- Die drei Hauptscores einer Idee (§9) ---------- */
+  /* ---------- Die drei Hauptscores einer Idee (§9, geblendet) ---------- */
   function ideaScores(idea) {
     var out = {};
     ["viral", "growth", "reward"].forEach(function (dim) {
       var base = factorScore((idea.factors || {})[dim], D.FACTORS[dim]);
-      var hist = historyAdjust(idea.topic, dim);
-      var score = base.score == null ? null : Math.max(0, Math.min(100, base.score + hist.delta));
-      var basis = ["Selbsteinschätzung: " + base.answered + "/" + base.of + " Faktoren"];
-      if (hist.basis) basis.push(hist.n + " vergleichbare Videos · " + hist.basis + " → " + (hist.delta >= 0 ? "+" : "") + hist.delta);
-      else basis.push(hist.n < D.MIN_N ? "Historie: erst " + hist.n + "/" + D.MIN_N + " vergleichbare Videos — keine Anpassung" : "Historie: keine passende Metrik importiert");
-      out[dim] = { score: score, confidence: confidence(hist.n), basis: basis, histN: hist.n };
+      var hist = topicHistory(idea.topic, dim);
+      var score, basis;
+      if (base.score == null && hist.score == null) {
+        score = null;
+        basis = ["Noch keine Faktoren bewertet und keine Historie"];
+      } else if (hist.score == null) {
+        score = base.score;
+        basis = ["Selbsteinschätzung: " + base.answered + "/" + base.of + " Faktoren (Gewicht 100 %)",
+          "Historie: erst " + hist.n + "/" + D.MIN_N + " vergleichbare Videos"];
+      } else if (base.score == null) {
+        score = hist.score;
+        basis = ["Nur Historie (" + hist.n + " Videos, Themen-Perzentil " + hist.score + ")"];
+      } else {
+        var wD = dataWeight(hist.n);
+        score = Math.round((1 - wD) * base.score + wD * hist.score);
+        basis = [
+          "Selbsteinschätzung " + base.score + " (Gewicht " + Math.round((1 - wD) * 100) + " %, " + base.answered + "/" + base.of + " Faktoren)",
+          "Account-Historie " + hist.score + " (Gewicht " + Math.round(wD * 100) + " %, " + hist.n + " vergleichbare Videos, Themen-Perzentil)"
+        ];
+        if (calibrationPenalty() > 0) basis.push("Kalibrierung < 50 % Trefferquote → Daten-Gewicht erhöht");
+      }
+      out[dim] = { score: score == null ? null : Math.max(0, Math.min(100, score)), confidence: confidence(hist.n), basis: basis, histN: hist.n };
     });
     return out;
+  }
+
+  /* ---------- Stage-Anzeige (§Audit-5) ---------- */
+  function stageInfo(idea) {
+    var comp = comparableVideos(idea.topic || "");
+    var total = G.S.videos().filter(function (v) { return G.metric(v, "views") != null; }).length;
+    var cal = calibration();
+    var stage = 0, why = "Cold Start: nur Selbsteinschätzung";
+    if (comp.length >= D.MIN_N) { stage = 1; why = comp.length + " vergleichbare Videos fließen ein"; }
+    if (stage >= 1 && (idea.searchId || (idea.factors && idea.factors.viral && idea.factors.viral.momentum != null))) { stage = 2; why += " · Search-/Trend-Signal verknüpft"; }
+    if (total >= 15 && comp.length >= D.MIN_N) { stage = 3; why = "Daten-Gewicht " + Math.round(dataWeight(comp.length) * 100) + " % (" + comp.length + " vergleichbare, " + total + " gesamt)"; }
+    if (cal.ready) { stage = 4; why += " · Kalibrierung aktiv (" + Math.round(cal.hitRate * 100) + " % Trefferquote)"; }
+    return { stage: stage, why: why };
   }
 
   /* ---------- Composite Opportunity Score (§10) ---------- */
@@ -318,6 +365,30 @@ window.GOS_SCORE = (function () {
     };
   }
 
+  /* ---------- Breakout-Detektor (§43, aus lokalen Snapshot-Zeitreihen) ----------
+     Velocity = ΔViews / Tage zwischen den letzten beiden Snapshots eines Videos.
+     Breakout, wenn Velocity ≥ 3× Median-Velocity des Accounts (n ≥ MIN_N). */
+  function breakouts() {
+    var rows = [];
+    G.S.videos().forEach(function (v) {
+      var s = (v.snapshots || []).filter(function (x) { return x.views != null && x.ts; });
+      if (s.length < 2) return;
+      var a = s[s.length - 2], b = s[s.length - 1];
+      var days = Math.max(0.25, (new Date(b.ts) - new Date(a.ts)) / 864e5);
+      var vel = (b.views - a.views) / days;
+      if (vel > 0) rows.push({ video: v, velocity: vel, days: days, delta: b.views - a.views });
+    });
+    if (rows.length < D.MIN_N) return { ready: false, n: rows.length, need: D.MIN_N, top: [] };
+    var med = G.median(rows.map(function (r) { return r.velocity; }));
+    var top = rows.filter(function (r) { return med > 0 && r.velocity >= 3 * med; })
+      .sort(function (a, b) { return b.velocity - a.velocity; })
+      .map(function (r) {
+        return { video: r.video, velocity: r.velocity,
+          why: "+" + G.fmtInt(r.delta) + " Views in " + r.days.toFixed(1) + " Tagen (" + (r.velocity / med).toFixed(1) + "× Account-Median-Velocity)" };
+      });
+    return { ready: true, n: rows.length, med: med, top: top.slice(0, 3) };
+  }
+
   /* ---------- Regel-Frische (§95) ---------- */
   function staleRules() {
     return G.S.rules().filter(function (r) {
@@ -333,6 +404,7 @@ window.GOS_SCORE = (function () {
     periodSummary: periodSummary, qvDiagnosis: qvDiagnosis, postingTime: postingTime,
     predictedTier: predictedTier, actualTier: actualTier, calibration: calibration,
     topOpportunities: topOpportunities, targetStatus: targetStatus,
-    staleRules: staleRules, accountMedians: accountMedians, comparableVideos: comparableVideos
+    staleRules: staleRules, accountMedians: accountMedians, comparableVideos: comparableVideos,
+    stageInfo: stageInfo, breakouts: breakouts, dataWeight: dataWeight
   };
 })();
