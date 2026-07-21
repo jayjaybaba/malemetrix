@@ -234,7 +234,7 @@
     html += '<div class="card gos-banner">' +
       (TT.configured()
         ? '<span>🔌 TikTok-Worker konfiguriert — Verbindung unter <a href="#" data-goto="settings">System</a> prüfen.</span>'
-        : '<span>📥 <strong>Level 0 · Manual Mode:</strong> Alle Kennzahlen stammen aus TikTok-Studio-Importen und Eingaben. Die TikTok-API-Anbindung ist vorbereitet (siehe System → TikTok-Verbindung), benötigt aber Konfiguration + TikTok-Genehmigung.</span>') +
+        : '<span>📥 <strong>Level 0 · Manual Mode:</strong> Deine Kennzahlen trägst du pro Video selbst ein → <a href="#" data-goto="videos">Videos</a> → „Kennzahlen-Snapshot" (Views/Likes aus dem TikTok Studio ablesen, ein kurzes Formular). Das ist der Normalbetrieb — kein Setup, keine TikTok-Genehmigung nötig. Die automatische API-Anbindung ist optional (siehe System → TikTok-Verbindung).</span>') +
       "</div>";
 
     if (stale.length) {
@@ -1427,7 +1427,7 @@
     /* --- TikTok-Verbindung (§5/§77, v2: Session-Login ohne Frontend-Secret) --- */
     html += '<div class="card" style="margin-bottom:16px"><h3 class="h-card" style="margin-bottom:4px">TikTok-Verbindung</h3>' +
       '<p class="small" style="margin:0 0 10px">' +
-      (!TT.configured() ? chip("🔴 Nicht verbunden — Level 0 · Manual Mode", "manual")
+      (!TT.configured() ? chip("🟢 Level 0 · Manual Mode — aktiv", "live")
         : !TT.loggedIn() ? chip("Worker konfiguriert — Anmeldung erforderlich", "config")
         : chip("Angemeldet (Server-Session, 12 h)", "live")) + '</p>' +
       '<div id="ttStatus"></div>' +
@@ -1438,7 +1438,8 @@
           '<td>' + (l.n === 0 ? chip("LIVE", "live") : active ? chip("AKTIV", "live") : chip(esc(l.state), l.state.indexOf("EXTERNE") >= 0 ? "blocked" : "config")) + '</td></tr>';
       }).join("") + '</tbody></table></div>';
     if (!TT.configured()) {
-      html += '<p class="small muted" style="margin-top:12px">Die serverseitige OAuth-Anbindung ist fertig gebaut (<code>proxy/tiktok-oauth-worker.js</code>, sicherheitsgetestet) und wartet auf: 1) TikTok-Developer-App (deine Freigabe), 2) Cloudflare-Worker-Deploy, 3) Eintrag von <code>apiBase</code> in <code>js/config.js</code>. Das Admin-Passwort lebt nur als Worker-Secret — nie im Frontend. Schritt-für-Schritt: <code>GROWTH-OS.md</code>. Bis dahin gibt es hier bewusst keinen Verbinden-Button — keine Fake-Funktionen.</p>';
+      html += '<p class="small" style="margin-top:12px">✅ <strong>So arbeitest du gerade — und das reicht völlig:</strong> Deine Zahlen trägst du pro Video unter <a href="#" data-goto="videos">Videos</a> → „Kennzahlen-Snapshot" ein (Views/Likes/Follower aus dem TikTok Studio ablesen, ein kurzes Formular). Alle Auswertungen, Scores, Ideen und Missionen laufen damit vollständig. Kein Login, keine Cloudflare-Einrichtung, keine TikTok-Freigabe nötig.</p>' +
+        '<p class="small muted" style="margin-top:8px"><strong>Optional</strong> lässt sich das automatisieren (Zahlen laden sich selbst statt getippt): Der OAuth-Worker liegt fertig in <code>proxy/tiktok-oauth-worker.js</code>. Das setzt aber eine von TikTok freigegebene Developer-App voraus (App Review inkl. Demo-Video). Wer das will, trägt seine Worker-URL als <code>apiBase</code> in <code>js/config.js</code> ein — dann erscheint hier der Verbinden-Button. Anleitung: <code>GROWTH-OS.md</code>. Bis dahin bewusst kein toter Button — keine Fake-Funktionen.</p>';
     } else if (!TT.loggedIn()) {
       html += '<div class="form-row" style="margin-top:12px;align-items:flex-end"><div class="field" style="flex:1"><label>Admin-Passwort (wird nur an deinen Worker gesendet, nie gespeichert)</label>' +
         '<input type="password" id="ttPass" autocomplete="current-password"></div>' +
