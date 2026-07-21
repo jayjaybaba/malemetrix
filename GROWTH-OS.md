@@ -145,9 +145,15 @@ gespeichert** — 35 automatisierte Security-/Lifecycle-Tests, s. §6c).
 
 **Schritt für Schritt (Ural):**
 1. **TikTok-Developer-App:** developers.tiktok.com → *Manage apps* → *Connect an app*.
-   App-Name z. B. „MaleMetrix Growth OS“. Produkte hinzufügen: **Login Kit**.
-   Scopes beantragen: `user.info.basic`, `user.info.stats`, `video.list`.
-   → Nach App-Review kopieren: **Client Key** und **Client Secret**.
+   App-Name z. B. „MaleMetrix Growth OS“. **Zwei Produkte** hinzufügen
+   (beide nötig, verifiziert 2026-07-21): **Login Kit** (OAuth + Scope
+   `user.info.basic`) **und** **Display API** (Scopes `user.info.stats`
+   und `video.list` — nur damit liefert `/api/videos` echte Daten).
+   Beim Login Kit als Plattform **Web** wählen und die Redirect-URI setzen
+   (Wert steht nach dem Worker-Deploy fest — s. Schritt 3).
+   → Aus den App-Einstellungen kopieren: **Client Key** und **Client Secret**
+   (Secret geheim halten — nur per `wrangler secret put` setzen, nie ins
+   Repo/Frontend/Chat).
 2. **Cloudflare Worker:** (Konto auf dash.cloudflare.com, kostenloser Plan reicht)
    ```bash
    npm i -g wrangler && wrangler login
