@@ -188,6 +188,35 @@ window.MM_CONFIG = {
     durationMin: 45
   },
 
+  // --- Growth OS (interner Bereich /admin/growth/) --------------------------
+  // Alle Growth-OS-Nutzerdaten liegen NUR lokal im Browser. Hier stehen
+  // ausschließlich Endpunkte/Hashes — niemals Secrets oder Tokens.
+  growth: {
+    // Zugangscode-Hash (SHA-256 des normalisierten Codes, Großschreibung,
+    // ohne Leerzeichen). Standard = derselbe Code wie beim Protokoll.
+    // Neuen Hash erzeugen: node -e "console.log(require('crypto').createHash('sha256').update('DEINCODE').digest('hex'))"
+    accessHash: "",
+
+    // TikTok-Anbindung über EIGENEN Cloudflare Worker (Code liegt fertig in
+    // proxy/tiktok-oauth-worker.js). Solange leer: Level 0 (Manual Mode).
+    // apiBase:  z. B. "https://mm-tiktok.DEINACCOUNT.workers.dev"
+    // adminKey: derselbe Wert wie das Worker-Secret ADMIN_KEY
+    // Setup Schritt für Schritt: GROWTH-OS.md
+    tiktok: {
+      apiBase: "",
+      adminKey: ""
+    },
+
+    // Optionale KI-Unterstützung (Hook-/Skript-Entwürfe, klar als
+    // KI-VORSCHLAG markiert). Empfohlen: eigener Proxy-Endpoint statt
+    // API-Key im Browser (dieselbe Logik wie foodVision oben).
+    ai: {
+      endpoint: "",
+      apiKey: "",
+      model: "claude-sonnet-5"
+    }
+  },
+
   // --- Rechtliches ----------------------------------------------------------
   // Diese Angaben werden im Impressum & in Bestellbestätigungen verwendet.
   legal: {

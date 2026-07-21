@@ -1,0 +1,95 @@
+/* ==========================================================================
+   MaleMetrix Growth OS — Styles (nur im Admin-Bereich geladen, §82)
+   Nutzt die Design-Tokens der Hauptseite (style.css).
+   ========================================================================== */
+
+.gos-topbar {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.gos-tabs {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px;
+  border-bottom: 1px solid var(--line); padding-bottom: 10px;
+}
+.gos-tab {
+  background: none; border: 1px solid var(--line); border-radius: 8px;
+  color: var(--muted); padding: 8px 14px; cursor: pointer;
+  font-family: inherit; font-size: 0.88rem; min-height: 40px;
+}
+.gos-tab.active { color: var(--text); border-color: var(--accent); background: var(--accent-soft); }
+.gos-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.gos-panel { padding-bottom: 90px; }
+
+.gos-chip {
+  display: inline-block; font-size: 0.7rem; padding: 3px 8px;
+  border-radius: 20px; letter-spacing: 0.03em; vertical-align: middle;
+}
+.gos-banner { margin-bottom: 16px; border-color: var(--accent-line); font-size: 0.9rem; }
+
+.gos-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.gos-table th {
+  text-align: left; color: var(--muted-2); font-weight: 600;
+  font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 6px 8px; border-bottom: 1px solid var(--line);
+}
+.gos-table td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.gos-select { width: 100%; margin-top: 4px; font-size: 0.75rem; }
+
+.gos-idea-row {
+  display: flex; gap: 12px; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; margin-bottom: 8px; cursor: pointer; padding: 14px 18px;
+}
+.gos-idea-row:hover { border-color: var(--accent-line); }
+
+.gos-details summary { cursor: pointer; list-style: none; }
+.gos-details summary::-webkit-details-marker { display: none; }
+.gos-details summary::before { content: "▸ "; color: var(--accent); }
+.gos-details[open] summary::before { content: "▾ "; }
+
+.gos-slider-row { margin-top: 10px; }
+.gos-slider-row label { display: block; font-size: 0.82rem; margin-bottom: 2px; }
+.gos-slider-row input[type="range"] { flex: 1; accent-color: var(--accent); min-height: 28px; }
+
+.gos-hook { border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-top: 10px; }
+.gos-hook textarea, .gos-block textarea {
+  width: 100%; background: rgba(255,255,255,0.03); border: 1px solid var(--line);
+  border-radius: 8px; color: var(--text); padding: 8px 10px; font-family: inherit;
+  font-size: 0.88rem; resize: vertical;
+}
+.gos-checks { display: grid; gap: 2px; margin-top: 6px; }
+.gos-checks label { display: flex; gap: 6px; align-items: flex-start; color: var(--muted); }
+
+.gos-block { border-left: 3px solid var(--accent-line); padding: 8px 0 8px 14px; margin-top: 10px; }
+.gos-visual-input {
+  width: 100%; margin-top: 6px; background: none; border: 1px dashed var(--line);
+  border-radius: 8px; color: var(--muted); padding: 6px 10px; font-size: 0.8rem;
+}
+
+.gos-rule {
+  display: flex; gap: 12px; justify-content: space-between; align-items: flex-start;
+  flex-wrap: wrap; border-top: 1px solid var(--line); padding: 10px 0;
+}
+.gos-mission { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; cursor: pointer; }
+.gos-mission input { margin-top: 3px; min-width: 18px; min-height: 18px; }
+
+/* Mobile Quick Bar (§71) — echte Touch-Ziele, kein Desktop-Miniatur-UI */
+.gos-quickbar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+  display: none; gap: 2px; padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--bg, #07090d) 88%, transparent);
+  backdrop-filter: blur(12px); border-top: 1px solid var(--line);
+}
+.gos-quickbar button {
+  flex: 1; background: none; border: none; color: var(--muted);
+  font-size: 1.05rem; padding: 6px 2px; border-radius: 8px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 48px;
+}
+.gos-quickbar button span { font-size: 0.6rem; letter-spacing: 0.02em; }
+.gos-quickbar button.active { color: var(--accent); }
+
+@media (max-width: 720px) {
+  .gos-quickbar { display: flex; }
+  .gos-tabs { display: none; }
+  .gos-table { font-size: 0.78rem; }
+}
