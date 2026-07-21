@@ -252,7 +252,7 @@
         statBox(G.fmtInt(d30.views) + deltaStr(d30.views, d30p.views), "Views (30 T.)", d30.count + " Videos") +
         statBox(G.fmtEur(d30.rewardEur) + deltaStr(d30.rewardEur, d30p.rewardEur), "Rewards (30 T.)") +
         '</div>' +
-        '<p class="small muted" style="margin:0 0 18px">Zeitraum = Videos, die im Zeitraum veröffentlicht wurden; Werte = letzter importierter Stand. Vergleich: vorherige Periode.</p>';
+        '<p class="small muted" style="margin:0 0 18px">Zeitraum = Videos, die im Zeitraum veröffentlicht wurden; Werte = letzter importierter Stand. Vergleich: vorherige Periode — jüngere Videos hatten weniger Zeit zum Sammeln, Rückgänge daher konservativ interpretieren.</p>';
     }
 
     /* Target Mode */
@@ -345,15 +345,22 @@
     if (!idea) return;
     ensurePrediction(idea, "dashboard");
   }
-  /* Prognose einfrieren (einmal pro Idee) — Grundlage der Kalibrierung. */
+  /* Prognose einfrieren (einmal pro Idee) — Grundlage der Kalibrierung.
+     Anti-Leakage: Ist die Idee zum Einfrier-Zeitpunkt bereits mit einem
+     Video verknüpft, das Ergebnisdaten hat, wäre die „Prognose“ mit
+     Kenntnis des Ergebnisses berechnet (die Themen-Historie enthält das
+     Video selbst). Solche Retro-Prognosen werden markiert und zählen
+     NICHT in die Kalibrierungs-Trefferquote. */
   function ensurePrediction(idea, origin) {
     var recs = G.S.recs();
     if (recs.some(function (r) { return r.ideaId === idea.id; })) return;
     var c = SC.composite(idea);
     if (c.score == null) return;
-    recs.push({ date: new Date().toISOString(), ideaId: idea.id, title: idea.title, composite: c.score, preset: G.S.settings().presetKey, origin: origin || "publish" });
+    var linked = idea.videoId ? G.S.videos().find(function (v) { return v.id === idea.videoId; }) : null;
+    var retro = !!(linked && G.metric(linked, "views") != null);
+    recs.push({ date: new Date().toISOString(), ideaId: idea.id, title: idea.title, composite: c.score, preset: G.S.settings().presetKey, origin: origin || "publish", retro: retro });
     G.S.saveRecs(recs);
-    G.log("rec", "Prognose eingefroren: " + idea.title + " (Score " + c.score + ")");
+    G.log("rec", "Prognose eingefroren: " + idea.title + " (Score " + c.score + (retro ? ", retro — nicht kalibrierungsrelevant" : "") + ")");
   }
 
   /* ======================================================================
@@ -485,7 +492,7 @@
     var im = state.importData;
     if (im.map.indexOf("title") < 0) { document.getElementById("gosImportMsg").textContent = "Mindestens „Titel“ muss zugeordnet sein."; return; }
     var vids = G.S.videos();
-    var added = 0, updated = 0, skipped = 0;
+    var added = 0, updated = 0, skipped = 0, regressed = 0;
     im.rows.forEach(function (r) {
       var rec = {};
       im.map.forEach(function (f, i) { if (f) rec[f] = r[i]; });
@@ -496,7 +503,7 @@
       ["views", "likes", "comments", "shares", "saves", "followers", "qualifiedViews"].forEach(function (k) {
         var n = G.num(rec[k]); if (n != null) snap[k] = n;
       });
-      var rw = rec.rewardEur != null ? G.numRaw(String(rec.rewardEur).replace(/[€\s]/g, "").replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", ".")) : null;
+      var rw = G.num(rec.rewardEur);
       if (rw != null) snap.rewardEur = rw;
       if (rec.retention != null) { var rt = G.numRaw(String(rec.retention).replace("%", "").replace(",", ".")); if (rt != null) snap.retention = rt > 1 ? rt / 100 : rt; }
       if (rec.watchTimeSec != null) { var wt = G.num(rec.watchTimeSec); if (wt != null) snap.watchTimeSec = wt; }
@@ -507,6 +514,8 @@
       });
       if (existing) {
         existing.snapshots = existing.snapshots || [];
+        var prevViews = G.metric(existing, "views");
+        if (prevViews != null && snap.views != null && snap.views < prevViews) regressed++;
         existing.snapshots.push(snap);
         if (!existing.postAt && postAt) existing.postAt = postAt;
         if (!existing.lengthSec && G.num(rec.lengthSec) != null) existing.lengthSec = G.num(rec.lengthSec);
@@ -525,7 +534,9 @@
     G.log("import", "CSV: " + added + " neu, " + updated + " aktualisiert, " + skipped + " übersprungen");
     state.importData = null;
     renderPanel();
-    setTimeout(function () { alert("Import fertig: " + added + " neue Videos, " + updated + " aktualisiert (Snapshot angehängt), " + skipped + " Zeilen ohne Titel übersprungen.\n\nTipp: Öffne die neuen Videos und ergänze Thema/Format/Hook-Typ — davon lernt das System."); }, 50);
+    setTimeout(function () { alert("Import fertig: " + added + " neue Videos, " + updated + " aktualisiert (Snapshot angehängt), " + skipped + " Zeilen ohne Titel übersprungen." +
+      (regressed ? "\n\n⚠️ Bei " + regressed + " Video(s) liegen die neuen Views UNTER dem letzten Stand — vermutlich ein älterer Export. Kumulative Kennzahlen sinken nicht; prüfe das Export-Datum, sonst verfälscht es Verlauf und Breakout-Erkennung." : "") +
+      "\n\nTipp: Öffne die neuen Videos und ergänze Thema/Format/Hook-Typ — davon lernt das System."); }, 50);
   }
   function parseDateFlexible(s) {
     s = String(s).trim();

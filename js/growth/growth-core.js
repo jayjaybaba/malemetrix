@@ -71,7 +71,31 @@ window.GOS = (function () {
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
-  function num(x) { var n = parseFloat(String(x == null ? "" : x).replace(/\./g, "").replace(",", ".")); return isFinite(n) ? n : null; }
+  /* Locale-robuster Zahlen-Parser für Importe. TikTok-Studio-Exporte können
+     deutsch ("1.234,56") ODER englisch ("1,234.56") formatiert sein — der
+     alte Parser hätte englische Tausender ("1,234") still zu 1.234
+     verstümmelt (Faktor 1000!). Regeln:
+     - beide Trenner vorhanden: das rechtere Zeichen ist der Dezimaltrenner
+     - nur Kommas: reines Tausender-Muster (1,234,567) => Tausender,
+       sonst Dezimalkomma (92,5)
+     - nur Punkte: reines Tausender-Muster (1.234.567) => Tausender,
+       sonst Dezimalpunkt (7.5) */
+  function num(x) {
+    if (x == null) return null;
+    var s = String(x).trim().replace(/[€\s%]/g, "");
+    if (!s) return null;
+    var hasDot = s.indexOf(".") >= 0, hasComma = s.indexOf(",") >= 0;
+    if (hasDot && hasComma) {
+      if (s.lastIndexOf(",") > s.lastIndexOf(".")) s = s.replace(/\./g, "").replace(",", ".");
+      else s = s.replace(/,/g, "");
+    } else if (hasComma) {
+      s = /^-?\d{1,3}(,\d{3})+$/.test(s) ? s.replace(/,/g, "") : s.replace(",", ".");
+    } else if (hasDot) {
+      if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, "");
+    }
+    var n = parseFloat(s);
+    return isFinite(n) ? n : null;
+  }
   function numRaw(x) { var n = parseFloat(x); return isFinite(n) ? n : null; }
   function fmtInt(n) { return n == null ? "—" : Math.round(n).toLocaleString("de-DE"); }
   function fmtEur(n) { return n == null ? "—" : n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €"; }
@@ -88,14 +112,22 @@ window.GOS = (function () {
     return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
   }
 
-  /* ---------- Metrik-Zugriff: letzter Snapshot = aktueller Stand ---------- */
+  /* ---------- Metrik-Zugriff ----------
+     Snapshots sind PARTIELL (CSV hat andere Spalten als API-Sync oder ein
+     manueller Reward-Nachtrag). Deshalb gilt pro Kennzahl der JÜNGSTE
+     Snapshot, der diese Kennzahl enthält — sonst würde z. B. ein
+     API-Snapshot ohne Reward-Felder zuvor importierte Rewards in allen
+     KPIs auf „—“ zurücksetzen. */
   function lastSnap(video) {
     var s = video.snapshots || [];
     return s.length ? s[s.length - 1] : null;
   }
   function metric(video, key) {
-    var s = lastSnap(video);
-    return s && s[key] != null ? s[key] : null;
+    var s = video.snapshots || [];
+    for (var i = s.length - 1; i >= 0; i--) {
+      if (s[i][key] != null) return s[i][key];
+    }
+    return null;
   }
   /* Ableitungen (§30/§31/§32) — Quelle: interne Berechnung aus importierten Daten */
   function followerPer1k(v) {

@@ -322,7 +322,10 @@ window.GOS_SCORE = (function () {
     return w.norm >= 1.8 ? "TOP" : w.norm >= 0.8 ? "MITTEL" : "NIEDRIG";
   }
   function calibration() {
-    var recs = G.S.recs(), vids = G.S.videos();
+    /* Retro-Prognosen (nach Ergebnis eingefroren) sind ausgeschlossen —
+       sie würden die Trefferquote künstlich nach oben verzerren. */
+    var recs = G.S.recs().filter(function (r) { return !r.retro; });
+    var vids = G.S.videos();
     var done = [];
     recs.forEach(function (r) {
       var idea = G.S.ideas().find(function (i) { return i.id === r.ideaId; });
