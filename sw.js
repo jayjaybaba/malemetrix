@@ -3,7 +3,7 @@
    Strategie: Network-first mit Cache-Fallback (frische Inhalte, wenn online;
    letzte bekannte Version, wenn offline). Bei neuen Deploys VERSION erhöhen.
    ========================================================================== */
-const VERSION = "mm-v46";
+const VERSION = "mm-v47";
 const CORE = [
   "tracker.html", "dinner.html", "index.html",
   "css/fonts.css", "css/style.css",
