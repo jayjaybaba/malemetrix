@@ -204,7 +204,7 @@ window.MM_CONFIG = {
     // als Worker-Secret (ADMIN_PASSWORD); die Anmeldung passiert im Growth OS
     // (kurzlebige Server-Session). Setup Schritt für Schritt: GROWTH-OS.md
     tiktok: {
-      apiBase: ""
+      apiBase: "https://mm-tiktok.8dxmprn9zx.workers.dev"
     },
 
     // Optionale KI-Unterstützung (Hook-/Skript-Entwürfe, klar als
