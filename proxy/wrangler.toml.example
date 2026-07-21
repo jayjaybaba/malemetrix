@@ -1,0 +1,49 @@
+# MaleMetrix Growth OS — Worker-Konfiguration (VORLAGE)
+# ---------------------------------------------------------------------------
+# Diese Datei ist NUR eine Vorlage. Vor dem echten Deploy:
+#   cp wrangler.toml.example wrangler.toml
+# und die Platzhalter-IDs durch die eigenen Werte ersetzen.
+# Die echte wrangler.toml mit realen IDs NICHT ins öffentliche Repo committen.
+#
+# PFLICHT für einen funktionsfähigen Deploy:
+#   - KV-Binding TOKENS            (Sessions, OAuth-States, Rate-Limits, lastSync)
+#   - DO-Binding TOKENDO + Migration der Klasse TokenDO
+#     (stark konsistente Token-/Refresh-Serialisierung — ohne dieses Binding
+#      läuft nur der Best-Effort-KV-Fallback, der Refresh-Races über
+#      verschiedene PoPs NICHT garantiert verhindert)
+# OPTIONAL (Phase 2):
+#   - D1-Binding DB + Cron-Trigger (Cloud-Sync + tägliche Auto-Snapshots)
+#
+# Secrets werden NIE hier eingetragen, sondern ausschließlich per:
+#   wrangler secret put TT_CLIENT_KEY
+#   wrangler secret put TT_CLIENT_SECRET
+#   wrangler secret put ADMIN_PASSWORD
+
+name = "mm-tiktok"
+main = "tiktok-oauth-worker.js"
+compatibility_date = "2026-07-01"
+
+# --- PFLICHT: KV ---
+[[kv_namespaces]]
+binding = "TOKENS"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"        # aus: wrangler kv namespace create TOKENS
+
+# --- PFLICHT: Durable Object (Token-Koordinator) ---
+[[durable_objects.bindings]]
+name = "TOKENDO"
+class_name = "TokenDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["TokenDO"]
+
+# --- OPTIONAL: Phase 2 (Cloud-Sync + Auto-Snapshots) — auskommentiert lassen,
+#     bis D1 eingerichtet ist (wrangler d1 create mm-growth &&
+#     wrangler d1 execute mm-growth --file=schema.sql) ---
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "mm-growth"
+# database_id = "REPLACE_WITH_D1_DATABASE_ID"
+#
+# [triggers]
+# crons = ["0 5 * * *"]

@@ -39,37 +39,23 @@
      VideoList: https://open.tiktokapis.com/v2/video/list/
    Zusätzlich (offizielle, freie API): PubMed E-Utilities (Research-Radar).
 
-   SETUP (Details in GROWTH-OS.md):
-     wrangler kv namespace create TOKENS
+   SETUP (Details in GROWTH-OS.md §6):
+     WICHTIG: Dieser Kommentar ist KEINE Konfiguration — wrangler liest keine
+     Kommentare. Vor dem Deploy eine ECHTE wrangler.toml anlegen:
+       cp wrangler.toml.example wrangler.toml   # dann eigene IDs eintragen
+     Die wrangler.toml MUSS enthalten: KV-Binding TOKENS, DO-Binding TOKENDO
+     und die [[migrations]]-Deklaration der Klasse TokenDO (sonst läuft nur
+     der KV-Fallback ohne Serialisierungs-Garantie). D1 + Cron sind optional.
+     Die echte wrangler.toml (reale IDs) ist per .gitignore vom Repo
+     ausgeschlossen — versioniert ist nur die .example-Vorlage.
+
+     wrangler kv namespace create TOKENS      # ID in wrangler.toml eintragen
      wrangler secret put TT_CLIENT_KEY
      wrangler secret put TT_CLIENT_SECRET
-     wrangler secret put ADMIN_PASSWORD     # NUR hier — nie im Frontend
+     wrangler secret put ADMIN_PASSWORD       # NUR hier — nie im Frontend
      # optional (Phase 2 — zentrale Daten + tägliche Auto-Snapshots):
      wrangler d1 create mm-growth && wrangler d1 execute mm-growth --file=schema.sql
      wrangler deploy
-
-   wrangler.toml (Beispiel):
-     name = "mm-tiktok"
-     main = "tiktok-oauth-worker.js"
-     compatibility_date = "2026-07-01"
-     [[kv_namespaces]]
-     binding = "TOKENS"
-     id = "<kv-id>"
-     # Token-Koordinator (STARK konsistent — Pflicht für korrekte
-     # Refresh-Serialisierung über alle PoPs):
-     [[durable_objects.bindings]]
-     name = "TOKENDO"
-     class_name = "TokenDO"
-     [[migrations]]
-     tag = "v1"
-     new_sqlite_classes = ["TokenDO"]
-     # optional Phase 2:
-     # [[d1_databases]]
-     # binding = "DB"
-     # database_name = "mm-growth"
-     # database_id = "<d1-id>"
-     # [triggers]
-     # crons = ["0 5 * * *"]
    ========================================================================== */
 
 const TT_AUTH = "https://www.tiktok.com/v2/auth/authorize/";

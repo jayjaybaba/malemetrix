@@ -16,18 +16,27 @@ Aufruf: **`https://malemetrix.de/admin/growth/`** (noindex, robots-Disallow, Zug
         │     ├── js/growth/growth-scores.js  Scores, Learning, Analytics, Kalibrierung
         │     └── js/growth/growth-app.js     UI: Dashboard, Videos, Ideen, Suche, …
         │
-        └── proxy/tiktok-oauth-worker.js  Cloudflare Worker (NICHT deployt) für
-                                          TikTok OAuth + API — Tokens nur serverseitig
+        └── proxy/tiktok-oauth-worker.js  Cloudflare-Worker-CODE (liegt im Repo,
+            proxy/wrangler.toml.example   Deploy erfolgt separat durch Ural, §6)
+            proxy/schema.sql              — Tokens nur serverseitig
 ```
 
 **Grundsatzentscheidung (nach Code-Audit):** Die Website ist eine statische
 GitHub-Pages-Seite ohne Backend. Deshalb ist das Growth OS **local-first**
-gebaut: Alle Nutzerdaten (Videos, Kennzahlen, Ideen, Skripte, Einstellungen)
-liegen ausschließlich im `localStorage` des Geräts (Prefix `mm_gos_*`) —
-identisch zum bewährten Muster von Training-/Kalorien-Tracker. Im (öffentlichen)
-Repository liegen nur App-Code und Stammdaten, **niemals** Nutzerdaten, Tokens
-oder Secrets. Die TikTok-API-Anbindung läuft ausschließlich über einen eigenen
-Cloudflare Worker (Tokens in Workers KV, serverseitig).
+gebaut: Im Auslieferungszustand (vor jedem Cloudflare-Setup) liegen alle
+Nutzerdaten (Videos, Kennzahlen, Ideen, Skripte, Einstellungen)
+ausschließlich im `localStorage` des Geräts (Prefix `mm_gos_*`) — identisch
+zum bewährten Muster von Training-/Kalorien-Tracker. **Nach aktiviertem
+D1-Cloud-Sync (§6b) liegen gepushte Backups und Cron-Zeitreihen zusätzlich
+serverseitig in der eigenen D1-Datenbank** — das UI zeigt den jeweiligen
+Zustand an (§10). Im (öffentlichen) Repository liegen nur App-Code und
+Stammdaten, **niemals** Nutzerdaten, Tokens oder Secrets. Die
+TikTok-API-Anbindung läuft ausschließlich über einen eigenen Cloudflare
+Worker; das Token-Bundle liegt dort in einem Durable Object (`TokenDO`),
+Sessions/States/Rate-Limits in Workers KV — alles serverseitig.
+Der Worker ist **noch nicht deployt**: Der Code liegt fertig und getestet
+im Repo, das reale Deployment (Cloudflare-Konto, TikTok-App) macht Ural
+nach §6.
 
 **Warum kein „echtes“ Server-Login?** Auf einer statischen Public-Pages-Seite
 gibt es keinen Server, der Sessions prüfen könnte. Das Zugangs-Gate
@@ -143,14 +152,21 @@ gespeichert** — 35 automatisierte Security-/Lifecycle-Tests, s. §6c).
    ```bash
    npm i -g wrangler && wrangler login
    cd proxy
-   wrangler kv namespace create TOKENS      # ID in wrangler.toml eintragen
-   # wrangler.toml anlegen (Vorlage im Kopf von tiktok-oauth-worker.js)
+   cp wrangler.toml.example wrangler.toml   # ECHTE Konfig anlegen — die Vorlage
+                                            # allein reicht nicht, wrangler liest
+                                            # keine Kommentare aus dem Worker-Code
+   wrangler kv namespace create TOKENS      # ausgegebene ID in wrangler.toml
+                                            # bei REPLACE_WITH_KV_NAMESPACE_ID eintragen
+   # PFLICHT-Prüfung vor Deploy: wrangler.toml enthält KV-Binding TOKENS,
+   # DO-Binding TOKENDO UND die [[migrations]] mit new_sqlite_classes=["TokenDO"]
    wrangler secret put TT_CLIENT_KEY        # Wert: Client Key aus Schritt 1
    wrangler secret put TT_CLIENT_SECRET     # Wert: Client Secret aus Schritt 1
    wrangler secret put ADMIN_PASSWORD       # langes Zufallspasswort — NUR hier, nie im Repo/Frontend
    wrangler deploy
    ```
-   → Worker-URL notieren, z. B. `https://mm-tiktok.<name>.workers.dev`.
+   → Worker-URL aus der Deploy-Ausgabe notieren.
+   Hinweis: Die echte `wrangler.toml` (mit realen IDs) nicht ins öffentliche
+   Repo committen — nur die `.example`-Vorlage ist versioniert.
 3. **Redirect-URI** in der TikTok-App eintragen:
    `https://mm-tiktok.<name>.workers.dev/auth/callback`
 4. **`js/config.js`** → `growth.tiktok.apiBase = "https://mm-tiktok.<name>.workers.dev"`
@@ -180,8 +196,13 @@ gespeichert** — 35 automatisierte Security-/Lifecycle-Tests, s. §6c).
   (Workers KV ist eventual-consistent und kann das nicht garantieren;
   der frühere KV-Lock bleibt nur als dokumentierter Fallback, falls das
   DO-Binding fehlt.) `lastSync` liegt weiterhin in separatem KV-Key.
-  Das DO-Binding + die Migration stehen in der wrangler.toml-Vorlage im
-  Worker-Dateikopf — beim Setup einfach mit übernehmen.
+  **Wichtig:** Der Kommentarblock im Worker-Dateikopf ist nur eine
+  Vorlage — Kommentare werden von `wrangler deploy` NICHT gelesen.
+  Vor dem Deploy muss eine echte `proxy/wrangler.toml` existieren
+  (Kopie von `proxy/wrangler.toml.example`, eigene IDs eintragen) mit
+  KV-Binding `TOKENS`, DO-Binding `TOKENDO` **und** der
+  `TokenDO`-Migration. Ohne DO-Binding läuft nur der KV-Fallback ohne
+  Serialisierungs-Garantie.
 - **Rate-Limits:** Login 5/10 Min/IP, gesamt 120/10 Min/IP.
 - Optionale Zusatz-Härtung ohne Code: **Cloudflare Access** vor die
   Worker-Route legen (Zero-Trust-Login zusätzlich zur App-Session).
@@ -191,9 +212,10 @@ gespeichert** — 35 automatisierte Security-/Lifecycle-Tests, s. §6c).
 Gleicher Worker, plus D1 — kein zusätzlicher Anbieter:
 ```bash
 cd proxy
-wrangler d1 create mm-growth                       # database_id in wrangler.toml
+wrangler d1 create mm-growth                       # ausgegebene database_id notieren
 wrangler d1 execute mm-growth --file=schema.sql    # Migration v1
-# in wrangler.toml zusätzlich: [[d1_databases]] binding="DB" … und [triggers] crons=["0 5 * * *"]
+# in der echten wrangler.toml die auskommentierten Blöcke aus der .example
+# einkommentieren ([[d1_databases]] + [triggers]) und die database_id eintragen
 wrangler deploy
 ```
 Damit aktiv:
@@ -248,7 +270,7 @@ Bis dahin gilt: keine Secrets/Nutzerdaten im Repo (ist bereits erfüllt),
 | Token abgelaufen | Worker refresht automatisch; nach 365 Tagen Refresh-Ablauf neu verbinden |
 | CSV wird falsch gemappt | Mapping im Wizard manuell korrigieren (Dropdown je Spalte) |
 | Zahlen mit Punkt/Komma | Parser versteht `1.234` und `92,50` (deutsches Format) |
-| Daten weg | Growth-OS-Daten sind gerätegebunden — Backup regelmäßig exportieren (System → Daten) |
+| Daten weg | Ohne D1-Sync sind Growth-OS-Daten gerätegebunden — Backup regelmäßig exportieren; mit D1-Sync: „Cloud → dieses Gerät“ (System → Daten) |
 | Zugangscode ändern | Hash erzeugen (Kommando in `config.js`-Kommentar) → `growth.accessHash` |
 
 ## 10. Datenschutz (§75)
