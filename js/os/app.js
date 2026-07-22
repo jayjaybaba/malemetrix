@@ -970,6 +970,16 @@
     location.hash = "#today"; render();
   }
 
+  /* =========================== TEST HOOK (nur E2E/Unit) =========================== */
+  if (window.__MM_APP_TEST) {
+    MM._app = {
+      vLabs: vLabs, vLabMarker: vLabMarker, vLabEntry: vLabEntry, vLabBuilder: vLabBuilder,
+      vLabMonitor: vLabMonitor, vLabCompare: vLabCompare, vLabImport: vLabImport,
+      vToday: vToday, vPlan: vPlan, vProgress: vProgress,
+      strengthProgress: strengthProgress, nutritionAdjustCard: nutritionAdjustCard, unitOptionsFor: unitOptionsFor
+    };
+  }
+
   /* =========================== BOOT =========================== */
   skeleton();
   MM.account.onChange(render);
