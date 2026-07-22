@@ -225,7 +225,11 @@
   function bottleneck() { var b = S.get("c2_bottleneck", ""); return BOTTLENECKS[b] ? b : ""; }
   function setBottleneck(b, reason) { var prev = bottleneck(); S.set("c2_bottleneck", b); var h = S.get("c2_bn_history", []); h.push({ b: b, day: currentProgramDay(), reason: reason || "", from: prev || "" }); S.set("c2_bn_history", h); }
   function nutritionMode() { var n = S.get("c2_nutrition", "simple"); return NUTRI[n] ? n : "simple"; }
-  function strengthDays() { var d = S.get("c2_days", null); return (Array.isArray(d) && d.length) ? d : null; }
+  // Produktregel: exakt 3 oder 4 Krafttage. Alles andere ist ungültig.
+  function validDaysArr(d) { return Array.isArray(d) && d.length >= 3 && d.length <= 4 && d.every(function (x) { return typeof x === "number" && x >= 0 && x <= 6; }); }
+  function rawDays() { return S.get("c2_days", null); }
+  function strengthDays() { var d = rawDays(); return validDaysArr(d) ? d : null; } // ungültig → null → sicheres Basismuster
+  function daysNeedReview() { return personalized() && !validDaysArr(rawDays()); }
   function startDate() { return S.get("c2_start", ""); }
   function personalized() { return !!(goal() && bottleneck() && startDate()); }
   function scoreResult() { try { return S.get("check_result", null); } catch (e) { return null; } }
@@ -380,11 +384,13 @@
   function winMet(week, modeKey) {
     var wk = weekStats(week); var g = modeKey || modeAtDay(Math.min(84, week * 7)) || goal() || "recomp"; var m = MODES[g] || MODES.recomp;
     return m.win.map(function (w) {
-      var cur = 0, target = w.target;
-      if (w.key === "strength") { cur = wk.strength.done; target = Math.min(w.target, plannedInWeek(week, "strength") || w.target); }
-      else if (w.key === "engine") { cur = wk.engine.done; target = Math.min(w.target, plannedInWeek(week, "engine") || w.target); }
+      var cur = 0, target = w.target, label = tr(w.label);
+      // P5/P6 — Label und mathematisches Target MÜSSEN identisch sein: Strength/Engine dynamisch
+      // aus dem tatsächlichen Wochenplan (SSOT: dayTypeAt). Ein einziger eindeutiger Zielwert.
+      if (w.key === "strength") { cur = wk.strength.done; target = Math.min(w.target, plannedInWeek(week, "strength") || w.target); label = target + (EN() ? " strength sessions" : " Strength-Sessions"); }
+      else if (w.key === "engine") { cur = wk.engine.done; target = Math.min(w.target, plannedInWeek(week, "engine") || w.target); label = target + (EN() ? (target === 1 ? " engine session" : " engine sessions") : (target === 1 ? " Engine-Einheit" : " Engine-Einheiten")); }
       else if (w.key === "move") cur = wk.move; else if (w.key === "recover") cur = wk.recoverNights; else if (w.key === "nutrition") cur = wk.nutrition;
-      return { label: tr(w.label), key: w.key, target: target, cur: cur, hit: cur >= target };
+      return { label: label, key: w.key, target: target, cur: cur, hit: cur >= target };
     });
   }
   function consistency() {
@@ -707,7 +713,7 @@
     if (!obState.bottleneck) obState.bottleneck = bnr.bn || "";
     function opts(name, list, sel, multi) {
       return '<div class="c2-opts" role="group">' + list.map(function (o) {
-        var on = multi ? (obState[name].indexOf(o[0]) >= 0) : (sel === o[0]);
+        var on = multi ? obState[name].some(function (x) { return String(x) === String(o[0]); }) : (sel === o[0]);
         return '<button type="button" class="c2-opt ' + (on ? "sel" : "") + '" data-ob="' + name + '" data-val="' + o[0] + '" data-multi="' + (multi ? 1 : 0) + '" aria-pressed="' + on + '"><div><b>' + esc(o[1]) + '</b>' + (o[2] ? '<div class="c2-muted" style="margin-top:2px">' + esc(o[2]) + '</div>' : "") + '</div></button>';
       }).join("") + '</div>';
     }
@@ -724,22 +730,38 @@
     html += '<div class="q"><span>' + t("c2.q_nutri") + '</span>' + opts("nutrition", [["simple", tr(NUTRI.simple.label), tr(NUTRI.simple.card)], ["tracked", tr(NUTRI.tracked.label), tr(NUTRI.tracked.card)], ["precision", tr(NUTRI.precision.label), tr(NUTRI.precision.card)]], obState.nutrition) + '</div>';
 
     var wdN = EN() ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] : ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
-    html += '<div class="q"><span>' + t("c2.q_days") + '</span>' + opts("days", [1, 2, 3, 4, 5, 6, 0].map(function (d) { return [String(d), wdN[d], ""]; }), null, true) + '<p class="c2-muted" style="margin-top:6px">' + (EN() ? "Pick 3–4 realistic strength days. The rest fills with cardio, recovery and movement automatically." : "Wähle 3–4 realistische Kraft-Tage. Der Rest füllt sich automatisch mit Cardio, Recovery und Bewegung.") + '</p></div>';
+    html += '<div class="q"><span>' + t("c2.q_days") + '</span>' + opts("days", [1, 2, 3, 4, 5, 6, 0].map(function (d) { return [String(d), wdN[d], ""]; }), null, true) + '<p class="c2-muted" style="margin-top:6px">' + (EN() ? "Pick exactly 3 or 4 realistic strength days (min 3, max 4). The rest fills with cardio, recovery and movement automatically." : "Wähle genau 3 oder 4 realistische Kraft-Tage (min. 3, max. 4). Der Rest füllt sich automatisch mit Cardio, Recovery und Bewegung.") + '</p></div>';
 
     html += '<div class="q"><span>' + t("c2.q_start") + '</span>' + opts("start", [["today", t("c2.start_today"), ""], ["monday", t("c2.start_monday"), ""]], obState.start) + '</div>';
 
-    var ready = obState.goal && obState.bottleneck && obState.days.length >= 2;
+    var ready = obState.goal && obState.bottleneck && obState.days.length >= 3 && obState.days.length <= 4;
     html += '<div style="margin:26px 0 10px"><button type="button" class="c2-btn block" id="c2ObGo"' + (ready ? "" : " disabled") + '>' + t("c2.start_btn") + '</button></div><p class="c2-muted" style="text-align:center">' + t("c2.no_fake_ai") + '</p></div>';
     return html;
+  }
+
+  // P4 — Altdaten mit ungültiger Krafttage-Zahl (2 oder >4): einmalige Nutzerkorrektur erzwingen,
+  // ohne Programm/Historie zu löschen. Vergangenheit läuft bis zur Korrektur sicher auf dem Basismuster.
+  function renderDaysReview() {
+    var wdN = EN() ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] : ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+    var sel = validDaysArr(obState.days) ? obState.days : [1, 3, 5];
+    obState.days = sel.slice();
+    var ok = obState.days.length >= 3 && obState.days.length <= 4;
+    return '<div class="c2-ob"><span class="c2-greet">MALEMETRIX 12-WEEK SYSTEM</span><h2>' + (EN() ? "Training days need review" : "Krafttage prüfen") + '</h2>' +
+      '<p class="c2-sec-lead">' + (EN() ? "Your saved plan has an unsupported number of strength days. Pick exactly 3 or 4 — your progress, rechecks and history stay intact." : "Dein gespeicherter Plan hat eine nicht unterstützte Zahl an Krafttagen. Wähle genau 3 oder 4 — dein Fortschritt, deine Rechecks und deine Historie bleiben erhalten.") + '</p>' +
+      '<div class="q"><span>' + t("c2.q_days") + '</span><div class="c2-opts" role="group">' +
+      [1, 2, 3, 4, 5, 6, 0].map(function (d) { var on = obState.days.indexOf(d) >= 0; return '<button type="button" class="c2-opt ' + (on ? "sel" : "") + '" data-ob="days" data-val="' + d + '" data-multi="1" aria-pressed="' + on + '"><div><b>' + esc(wdN[d]) + '</b></div></button>'; }).join("") +
+      '</div><p class="c2-muted" style="margin-top:6px">' + (EN() ? "Min 3, max 4." : "Min. 3, max. 4.") + '</p></div>' +
+      '<div style="margin:20px 0 10px"><button type="button" class="c2-btn block" data-days-review' + (ok ? "" : " disabled") + '>' + (EN() ? "Save training days →" : "Krafttage speichern →") + '</button></div></div>';
   }
 
   /* ---------- Router ---------- */
   function render() {
     var html;
     if (!personalized()) html = renderOnboard();
+    else if (daysNeedReview()) html = renderDaysReview();
     else { html = navBar(); html += (view === "plan") ? renderPlan() : (view === "progress") ? renderProgress() : renderToday(); }
     mount.className = "c2"; mount.innerHTML = html;
-    var resetWrap = document.getElementById("courseReset"); if (resetWrap) resetWrap.style.display = personalized() ? "" : "none";
+    var resetWrap = document.getElementById("courseReset"); if (resetWrap) resetWrap.style.display = (personalized() && !daysNeedReview()) ? "" : "none";
   }
 
   /* ---------- Events ---------- */
@@ -758,13 +780,14 @@
         logLift(lk, wv, rv); MM.toast(EN() ? "Logged." : "Gespeichert."); render();
       } return; }
       var nu = t2.closest("[data-nutri]"); if (nu) { var nkv = nu.getAttribute("data-nutri"); if (NUTRI[nkv]) { S.set("c2_nutrition", nkv); MM.toast(EN() ? "Nutrition level updated." : "Ernährungs-Level aktualisiert."); render(); } return; }
+      if (t2.closest("[data-days-review]")) { if (!validDaysArr(obState.days)) { MM.toast(EN() ? "Pick 3 or 4 strength days." : "Wähle 3 oder 4 Krafttage."); return; } S.set("c2_days", obState.days.slice().sort(function (a, b) { return a - b; })); MM.toast(EN() ? "Training days saved." : "Krafttage gespeichert."); view = "today"; render(); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
       if (t2.closest("[data-pause]") || t2.closest("[data-resume]")) { togglePause(); render(); return; }
       if (t2.closest("[data-switch]")) { openSwitch(); return; }
       var rt = t2.closest("[data-reassess-take]"); if (rt) { var nb = rt.getAttribute("data-reassess-take"); setBottleneck(nb, "reassessment"); S.set("c2_reassess_" + currentWeek(), true); MM.toast(EN() ? "Bottleneck updated." : "Engpass aktualisiert."); render(); return; }
       if (t2.closest("[data-reassess-keep]")) { S.set("c2_reassess_" + currentWeek(), true); render(); return; }
-      var ob = t2.closest("[data-ob]"); if (ob) { var nm2 = ob.getAttribute("data-ob"); var val = ob.getAttribute("data-val"); if (ob.getAttribute("data-multi") === "1") { var arr = obState[nm2].slice(); var iv = parseInt(val, 10); var pos = arr.indexOf(iv); if (pos >= 0) arr.splice(pos, 1); else arr.push(iv); obState[nm2] = arr; } else obState[nm2] = val; render(); return; }
+      var ob = t2.closest("[data-ob]"); if (ob) { var nm2 = ob.getAttribute("data-ob"); var val = ob.getAttribute("data-val"); if (ob.getAttribute("data-multi") === "1") { var arr = obState[nm2].slice(); var iv = parseInt(val, 10); var pos = arr.indexOf(iv); if (pos >= 0) arr.splice(pos, 1); else { if (nm2 === "days" && arr.length >= 4) { MM.toast(EN() ? "Choose a maximum of 4 strength days. The remaining days are used for engine, movement and recovery." : "Wähle maximal 4 Krafttage. Die übrigen Tage brauchen wir für Engine, Bewegung und Recovery."); return; } arr.push(iv); } obState[nm2] = arr; } else obState[nm2] = val; render(); return; }
       if (t2.id === "c2ObGo" || t2.closest("#c2ObGo")) {
-        if (!(obState.goal && obState.bottleneck && obState.days.length >= 2)) return;
+        if (!(obState.goal && obState.bottleneck && obState.days.length >= 3 && obState.days.length <= 4)) { MM.toast(EN() ? "Pick 3 or 4 strength days to start." : "Wähle 3 oder 4 Krafttage, um zu starten."); return; }
         setGoal(obState.goal); S.set("c2_mode_history", [{ mode: obState.goal, day: 1, reason: "onboarding", from: "" }]); S.set("c2_bottleneck", obState.bottleneck); S.set("c2_bn_history", [{ b: obState.bottleneck, day: 1, reason: "onboarding", from: "" }]);
         S.set("c2_nutrition", obState.nutrition); S.set("c2_days", obState.days.slice().sort(function (a, b) { return a - b; }));
         S.set("c2_start", obState.start === "monday" ? nextMonday() : todayYmd());
@@ -817,7 +840,7 @@
   }
 
   /* Debug-Hook für deterministische Tests (kein Sicherheitsrisiko — lokales Programm) */
-  try { window.__C2 = { goalRecommend: goalRecommend, bnRecommend: bnRecommend, weekStats: weekStats, winMet: winMet, adjudicate: adjudicate, adherenceFor: adherenceFor, patternFor: patternFor, dayTypeAt: dayTypeAt, modeAtDay: modeAtDay, bottleneckAtDay: bottleneckAtDay, currentWeek: currentWeek, clampedDay: clampedDay, consistency: consistency, currentProgramDay: currentProgramDay, plannedInWeek: plannedInWeek, computeNextMove: computeNextMove, suggestBottleneck: suggestBottleneck, notStarted: notStarted, daysUntilStart: daysUntilStart, migrate: migrate, switchMode: switchMode }; } catch (e) {}
+  try { window.__C2 = { goalRecommend: goalRecommend, bnRecommend: bnRecommend, weekStats: weekStats, winMet: winMet, adjudicate: adjudicate, adherenceFor: adherenceFor, patternFor: patternFor, dayTypeAt: dayTypeAt, modeAtDay: modeAtDay, bottleneckAtDay: bottleneckAtDay, currentWeek: currentWeek, clampedDay: clampedDay, consistency: consistency, currentProgramDay: currentProgramDay, plannedInWeek: plannedInWeek, computeNextMove: computeNextMove, suggestBottleneck: suggestBottleneck, notStarted: notStarted, daysUntilStart: daysUntilStart, migrate: migrate, switchMode: switchMode, validDaysArr: validDaysArr, daysNeedReview: daysNeedReview, strengthDays: strengthDays }; } catch (e) {}
 
   /* =========================================================================
      GATE + BOOT
