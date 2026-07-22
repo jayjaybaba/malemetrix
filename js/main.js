@@ -307,21 +307,10 @@
   /* ---------- Theme / Sprache / Navigation ---------- */
 
   function setupChrome() {
-    // Theme aus Speicher (Bootstrap-Script im <head> setzt es bereits früh)
-    let theme = "dark";
-    try { theme = localStorage.getItem("mm_theme") || "dark"; } catch (e) {}
-    if (theme === "light") document.documentElement.setAttribute("data-theme", "light");
-
-    document.querySelectorAll(".theme-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const isLight = document.documentElement.getAttribute("data-theme") === "light";
-        const next = isLight ? "dark" : "light";
-        if (next === "light") document.documentElement.setAttribute("data-theme", "light");
-        else document.documentElement.removeAttribute("data-theme");
-        try { localStorage.setItem("mm_theme", next); } catch (e) {}
-        document.dispatchEvent(new CustomEvent("mm:themechange", { detail: { theme: next } }));
-      });
-    });
+    // MaleMetrix ist bewusst DARK-ONLY. Altlast bereinigen: eine evtl. früher
+    // gespeicherte Theme-Präferenz darf keinerlei Wirkung mehr haben.
+    try { localStorage.removeItem("mm_theme"); } catch (e) {}
+    document.documentElement.removeAttribute("data-theme");
 
     // Sprach-Umschalter
     const curLang = (window.MM && MM.i18n) ? MM.i18n.lang : "de";
@@ -370,6 +359,25 @@
       window.addEventListener("scroll", onScroll, { passive: true });
       onScroll();
     }
+
+    // Cinematic Ambient — sehr zurückhaltender Parallax der globalen Glow-Ebene.
+    // Nur Desktop + kein reduced-motion. rAF + passive Scroll, nur transform via CSS-Var.
+    try {
+      var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!reduce && window.innerWidth > 820) {
+        var ticking = false;
+        var applyPar = function () {
+          ticking = false;
+          var y = window.scrollY || window.pageYOffset || 0;
+          var py = Math.min(48, y * 0.045); // max ~48px Tiefe über die ganze Seite
+          document.documentElement.style.setProperty("--mm-py", py.toFixed(1) + "px");
+        };
+        window.addEventListener("scroll", function () {
+          if (!ticking) { ticking = true; requestAnimationFrame(applyPar); }
+        }, { passive: true });
+        applyPar();
+      }
+    } catch (e) {}
 
     // Mobile Navigation
     const toggle = document.getElementById("navToggle");

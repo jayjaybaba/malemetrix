@@ -7,8 +7,9 @@
   --bg-0: #07090d;
   --bg-1: #0b0e14;
   --bg-2: #10141c;
-  --card: #12161f;
-  --card-2: #171c28;
+  --card: rgba(19, 23, 32, 0.82);
+  --card-2: rgba(24, 29, 41, 0.86);
+  --card-solid: #12161f;
   --line: rgba(255, 255, 255, 0.08);
   --line-strong: rgba(255, 255, 255, 0.14);
   --text: #eef2f7;
@@ -129,14 +130,17 @@ h1, h2, h3, h4 {
   inset: 0 0 auto 0;
   z-index: 100;
   height: var(--header-h);
-  background: rgba(7, 9, 13, 0.78);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  background: rgba(7, 9, 13, 0.55);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
   border-bottom: 1px solid transparent;
-  transition: border-color 0.3s;
+  transition: background 0.35s ease, border-color 0.35s ease;
 }
 
-.site-header.scrolled { border-bottom-color: var(--line); }
+.site-header.scrolled {
+  background: rgba(8, 11, 16, 0.86);
+  border-bottom-color: var(--line);
+}
 
 .header-inner {
   height: var(--header-h);
@@ -1633,52 +1637,7 @@ input[type="range"]::-moz-range-thumb {
    LIGHT THEME
    ========================================================================== */
 
-:root[data-theme="light"] {
-  --bg-0: #eef1f7;
-  --bg-1: #ffffff;
-  --bg-2: #f1f4f9;
-  --card: #ffffff;
-  --card-2: #f7f9fc;
-  --line: rgba(13, 17, 23, 0.10);
-  --line-strong: rgba(13, 17, 23, 0.17);
-  --text: #0d1117;
-  --muted: #4d5a70;
-  --muted-2: #7e8aa0;
-  --accent: #1f6fe5;
-  --accent-2: #0a8bd6;
-  --accent-soft: rgba(31, 111, 229, 0.09);
-  --accent-line: rgba(31, 111, 229, 0.32);
-  --green: #0f9e78;
-  --green-soft: rgba(15, 158, 120, 0.10);
-  --amber: #c98a17;
-  --amber-soft: rgba(201, 138, 23, 0.12);
-  --red: #d9483f;
-  --red-soft: rgba(217, 72, 63, 0.09);
-  --shadow: 0 18px 50px rgba(20, 35, 70, 0.14);
-}
 
-:root[data-theme="light"] body { background: var(--bg-0); }
-:root[data-theme="light"] .site-header { background: rgba(255, 255, 255, 0.82); }
-:root[data-theme="light"] .hero-grid-bg {
-  background-image:
-    linear-gradient(rgba(13, 17, 23, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(13, 17, 23, 0.04) 1px, transparent 1px);
-}
-:root[data-theme="light"] .bar-track,
-:root[data-theme="light"] input[type="range"] { background: rgba(13, 17, 23, 0.08); }
-:root[data-theme="light"] .dash-card { background: linear-gradient(180deg, #ffffff, #f5f8fc); }
-:root[data-theme="light"] .score-ring .ring-bg { stroke: rgba(13, 17, 23, 0.08); }
-:root[data-theme="light"] .result-hero,
-:root[data-theme="light"] .price-card.featured { background: linear-gradient(180deg, rgba(31, 111, 229, 0.06), var(--card) 55%); }
-:root[data-theme="light"] .cta-band {
-  background: radial-gradient(ellipse 70% 110% at 50% -20%, rgba(31, 111, 229, 0.12), transparent 70%), var(--bg-1);
-}
-:root[data-theme="light"] .logo-mark,
-:root[data-theme="light"] .price-flag,
-:root[data-theme="light"] .product-badge:not(.neutral),
-:root[data-theme="light"] .cart-count { color: #fff; }
-:root[data-theme="light"] .btn-primary { color: #fff; }
-:root[data-theme="light"] .hero-badge .dot { box-shadow: 0 0 0 4px rgba(15, 158, 120, 0.18); }
 
 /* ==========================================================================
    HEADER CONTROLS (Sprache + Theme)
@@ -1707,8 +1666,6 @@ input[type="range"]::-moz-range-thumb {
 .lang-btn .lang-code { letter-spacing: 0.04em; }
 
 .theme-btn .sun { display: none; }
-:root[data-theme="light"] .theme-btn .sun { display: block; }
-:root[data-theme="light"] .theme-btn .moon { display: none; }
 
 /* Mehr-Dropdown */
 .nav-more { position: relative; }
@@ -2077,8 +2034,6 @@ input[type="range"]::-moz-range-thumb {
 .lp-hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--line); }
 .lp-hero-media { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0.28; }
 .lp-hero-media::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(7,9,13,0.35), rgba(7,9,13,0.9)); }
-:root[data-theme="light"] .lp-hero-media { opacity: 0.18; }
-:root[data-theme="light"] .lp-hero-media::after { background: linear-gradient(180deg, rgba(255,255,255,0.4), rgba(255,255,255,0.92)); }
 .lp-hero-inner { position: relative; max-width: 760px; margin: 0 auto; padding: 60px 22px 66px; text-align: center; }
 .lp-kicker { display: inline-block; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
 .lp-hero-inner h1 { font-size: clamp(1.9rem, 5vw, 2.9rem); line-height: 1.1; margin: 0 0 16px; }
@@ -2482,3 +2437,66 @@ input[type="range"]::-moz-range-thumb {
 .today-hint strong { color: #fff; }
 @media print { .today-hint { display: none; } }
 
+
+/* ==========================================================================
+   MALEMETRIX CINEMATIC AMBIENT — dark-only, global, continuous environment
+   Layer 0: body base (var(--bg-0)).  Layer 1: soft ambient glows (parallax).
+   Layer 2: fine technical grid (top-weighted mask).  Layer 4: micro grain.
+   Fixed behind all content; never intercepts pointer events.
+   ========================================================================== */
+:root { --mm-py: 0px; }
+
+/* Layer 1 — large ambient glows (the only layer that parallaxes) */
+body::before {
+  content: "";
+  position: fixed;
+  left: 0; right: 0; top: -14vh; height: 132vh;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(58% 42% at 80% 4%, rgba(46, 124, 246, 0.16), transparent 62%),
+    radial-gradient(48% 40% at 10% 26%, rgba(0, 194, 255, 0.075), transparent 60%),
+    radial-gradient(64% 52% at 52% 112%, rgba(40, 60, 120, 0.16), transparent 66%);
+  transform: translate3d(0, var(--mm-py), 0);
+  will-change: transform;
+}
+
+/* Layer 2 + 4 — technical grid + micro grain, top-weighted so the hero reads
+   strongest and long-form reading areas stay almost clean. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.28'/%3E%3C/svg%3E"),
+    linear-gradient(rgba(255, 255, 255, 0.026) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.026) 1px, transparent 1px);
+  background-size: 160px 160px, 64px 64px, 64px 64px;
+  opacity: 0.5;
+  -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.22) 42%, rgba(0,0,0,0.10) 100%);
+          mask-image: linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.22) 42%, rgba(0,0,0,0.10) 100%);
+}
+
+/* Ensure real content always sits above the ambient pseudo-layers */
+body > * { position: relative; z-index: 0; }
+
+/* Depth — soften big section fills so the ambient stays subtly visible instead
+   of every other section repainting a solid dark slab. */
+.section-alt { background: rgba(11, 14, 20, 0.55); }
+
+/* Micro grain must never appear in print, and the environment must not print. */
+@media print {
+  body::before, body::after { display: none !important; }
+}
+
+/* Motion off for reduced-motion users — ambient stays, parallax freezes. */
+@media (prefers-reduced-motion: reduce) {
+  body::before { transform: none !important; }
+}
+
+/* Mobile — no parallax (fixed-layer jank on iOS); background stays static. */
+@media (max-width: 820px) {
+  body::before { transform: none !important; }
+}
