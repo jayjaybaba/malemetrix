@@ -29,6 +29,10 @@
     },
     set(key, val) {
       try { localStorage.setItem("mm_" + key, JSON.stringify(val)); } catch (e) { /* voll/blockiert */ }
+      // Persistenz-Hook (keine Business-Logik): erlaubt dem Account-Adapter,
+      // relevante Änderungen local-first zu erkennen und danach in die Cloud zu
+      // syncen. Wirft nie und blockiert nie die eigentliche Aktion.
+      try { document.dispatchEvent(new CustomEvent("mm:store", { detail: { key: key } })); } catch (e) {}
     },
     remove(key) {
       try { localStorage.removeItem("mm_" + key); } catch (e) { /* noop */ }

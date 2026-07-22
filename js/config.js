@@ -80,13 +80,17 @@ window.MM_CONFIG = {
   siteUrl: "https://www.malemetrix.com",
 
   // --- My MaleMetrix Account (Supabase) -----------------------------------
-  // NUR die öffentlichen (anon/public) Werte hier eintragen. NIEMALS den
-  // service_role-Key oder ein anderes Geheimnis — die liegen ausschließlich
-  // serverseitig in Supabase. Solange beide Felder leer sind, läuft My
-  // MaleMetrix im lokalen Modus (nur dieses Gerät, ohne Cloud-Konto) und die
-  // Website funktioniert vollständig weiter. Setup: siehe SUPABASE.md.
-  supabaseUrl: "",       // z. B. "https://xxxxxxxx.supabase.co"
-  supabaseAnonKey: "",   // der öffentliche anon/public API-Key (kein Secret)
+  // NUR die ÖFFENTLICHEN Werte hier eintragen. NIEMALS den service_role- oder
+  // secret-Key — die liegen ausschließlich serverseitig in Supabase. Solange
+  // die Felder leer sind, läuft My MaleMetrix im lokalen Modus (nur dieses
+  // Gerät, ohne Cloud-Konto) und die Website funktioniert vollständig weiter.
+  // Setup + SQL + RLS: siehe SUPABASE.md.
+  supabaseUrl: "",                 // z. B. "https://xxxxxxxx.supabase.co"
+  // Aktuelles Modell: Publishable Key ("sb_publishable_..."). Ist clientseitig
+  // erlaubt. (Ältere Projekte nutzen den anon/public JWT — supabaseAnonKey als
+  // Fallback möglich, aber Publishable Key bevorzugen.)
+  supabasePublishableKey: "",      // z. B. "sb_publishable_..."
+  supabaseAnonKey: "",             // Legacy-Fallback (nur falls kein Publishable Key)
 
   // --- Dinner-Planer: Foto-Kalorienschätzung (KI) --------------------------
   // Mahlzeit fotografieren -> Claude schätzt Gericht, kcal & Protein.
