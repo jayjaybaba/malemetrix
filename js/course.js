@@ -261,16 +261,20 @@
   function pauseSince() { return S.get("c2_pause_since", ""); }
   function isPaused() { return !!pauseSince(); }
   function togglePause() {
-    if (isPaused()) { var since = new Date(pauseSince() + "T00:00:00"), now = new Date(todayYmd() + "T00:00:00"); var add = Math.max(0, Math.floor((now - since) / 86400000)); S.set("c2_paused_days", pausedDays() + add); S.del("c2_pause_since"); }
+    if (isPaused()) { var add = Math.max(0, diffDays(pauseSince(), todayYmd())); S.set("c2_paused_days", pausedDays() + add); S.del("c2_pause_since"); }
     else { S.set("c2_pause_since", todayYmd()); }
   }
 
   /* ---- Tages-/Wochenlogik ---- */
   function ymd(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
   function todayYmd() { return ymd(new Date()); }
-  function rawDayIndex() { var s = startDate(); if (!s) return 1; var ref = isPaused() ? pauseSince() : todayYmd(); var a = new Date(s + "T00:00:00"), b = new Date(ref + "T00:00:00"); return Math.max(1, Math.floor((b - a) / 86400000) + 1); }
-  function notStarted() { var s = startDate(); if (!s) return false; var a = new Date(s + "T00:00:00"), b = new Date(todayYmd() + "T00:00:00"); return b.getTime() < a.getTime(); }
-  function daysUntilStart() { var s = startDate(); if (!s) return 0; var a = new Date(s + "T00:00:00"), b = new Date(todayYmd() + "T00:00:00"); return Math.max(0, Math.round((a - b) / 86400000)); }
+  // P49 — DST-sicherer Tagesabstand: y/m/d als UTC-Mitternacht rechnen (UTC hat keine Sommerzeit),
+  // damit 23/25-Stunden-Tage keinen Program Day verschlucken/verdoppeln.
+  function parseYmdUTC(s) { var p = String(s || "").split("-"); return Date.UTC(+p[0], (+p[1] || 1) - 1, +p[2] || 1); }
+  function diffDays(a, b) { return Math.round((parseYmdUTC(b) - parseYmdUTC(a)) / 86400000); }
+  function rawDayIndex() { var s = startDate(); if (!s) return 1; var ref = isPaused() ? pauseSince() : todayYmd(); return Math.max(1, diffDays(s, ref) + 1); }
+  function notStarted() { var s = startDate(); if (!s) return false; return diffDays(s, todayYmd()) < 0; }
+  function daysUntilStart() { var s = startDate(); if (!s) return 0; return Math.max(0, diffDays(todayYmd(), s)); }
   function currentProgramDay() { return Math.max(1, rawDayIndex() - pausedDays()); }
   function programOver() { return currentProgramDay() > 84; }
   function clampedDay() { return Math.min(84, currentProgramDay()); }
@@ -355,8 +359,8 @@
 
   // P2 + P4 — echte Semantik: primary completion zählt zur jeweiligen Tagesart
   function weekStats(week) {
-    var res = { strength: { done: 0, planned: 0 }, engine: { done: 0, planned: 0 }, recover: { done: 0, planned: 0 }, move: 0, nutrition: 0, active: 0, days: 0 };
-    if (!startDate()) return res;
+    var res = { strength: { done: 0, planned: 0 }, engine: { done: 0, planned: 0 }, recover: { done: 0, planned: 0 }, move: 0, nutrition: 0, active: 0, days: 0, recoverNights: 0 };
+    if (!startDate() || notStarted()) return res;
     for (var i = 0; i < 7; i++) {
       var pd = (week - 1) * 7 + i + 1; if (pd > clampedDay()) break;
       var dt = dayTypeAt(pd);
@@ -402,16 +406,21 @@
   // (Strength + Engine) des jeweiligen Modus. So bekommt PERFORM mit 0 Engine KEIN ON TRACK.
   function adherenceFor(week, g) {
     var wk = weekStats(week); var m = MODES[g] || MODES.recomp;
-    function cur(key) { if (key === "strength") return wk.strength.done; if (key === "engine") return wk.engine.done; if (key === "move") return wk.move; if (key === "recover") return wk.recoverNights; if (key === "nutrition") return wk.nutrition; return 0; }
+    // P45/P46/P80 — Adhärenz NUR gegen vollständig verstrichene Tage messen. HEUTE zählt noch nicht
+    // als Miss (die Einheit kann noch kommen), eine zukünftige Freitagseinheit erst recht nicht.
+    // dueThrough = letzter voll abgeschlossener Programmtag.
+    var dueThrough = programOver() ? 84 : (clampedDay() - 1);
+    function dueCount(type) { var n = 0; for (var i = 0; i < 7; i++) { var pd = (week - 1) * 7 + i + 1; if (pd > dueThrough) break; if (dayTypeAt(pd) === type) n++; } return n; }
+    function doneCount(type) { var n = 0; for (var i = 0; i < 7; i++) { var pd = (week - 1) * 7 + i + 1; if (pd > dueThrough) break; if (dayTypeAt(pd) === type && dailyForDay(pd).p) n++; } return n; }
     var need = 0, got = 0, parts = [];
     m.win.forEach(function (w) {
       if (w.key === "strength" || w.key === "engine") {
-        var tgt = Math.min(w.target, plannedInWeek(week, w.key) || w.target);
+        var tgt = Math.min(w.target, dueCount(w.key));
         if (tgt <= 0) return;
-        var c = cur(w.key); need += tgt; got += Math.min(c, tgt); parts.push({ key: w.key, cur: c, target: tgt });
+        var c = doneCount(w.key); need += tgt; got += Math.min(c, tgt); parts.push({ key: w.key, cur: c, target: tgt });
       }
     });
-    return { adher: need ? got / need : 1, parts: parts, wk: wk };
+    return { adher: need ? got / need : 1, parts: parts, wk: wk, partial: (need === 0) };
   }
   function adjudicate(week, inp) {
     var lastPd = Math.min(84, week * 7);
@@ -419,6 +428,8 @@
     var A = adherenceFor(week, g); var st = A.wk;
     var adher = A.adher;
     if (inp.warning) return { code: "check", title: "CHECK FIRST", cls: "check", text: { de: "Du hast ein mögliches Warnsignal angegeben. Kläre das bitte zuerst ärztlich ab, bevor du die Belastung erhöhst. Das Programm läuft auf dem Fundament ruhig weiter.", en: "You reported a possible warning sign. Please get it checked medically before increasing load. The program continues gently on the fundamentals." } };
+    // P45/P46 — laufende Woche ohne bereits fällige Kern-Einheiten: nicht als schlechte Adhärenz werten.
+    if (A.partial && clampedDay() < week * 7) return { code: "inprogress", title: EN() ? "WEEK IN PROGRESS" : "WOCHE LÄUFT NOCH", cls: "ontrack", text: { de: "Diese Woche läuft noch — es waren noch keine Kern-Einheiten fällig. Werte am Ende der Programmwoche aus, dann ist das Urteil aussagekräftig. Bis dahin: einfach dranbleiben.", en: "This week is still running — no core sessions were due yet. Evaluate at the end of the program week for a meaningful verdict. Until then: just keep going." }, partial: true };
     if (adher < 0.7) {
       var labelOf = function (k) { return k === "strength" ? (EN() ? "strength" : "Kraft") : (EN() ? "engine" : "Cardio"); };
       var shortParts = A.parts.filter(function (p) { return p.cur < p.target; }).map(function (p) { return p.cur + "/" + p.target + " " + labelOf(p.key); });
@@ -437,7 +448,8 @@
   }
 
   /* ---- Bottleneck Reassessment (P7) ---- */
-  function reassessDue() { var w = currentWeek(); if (w !== 4 && w !== 8 && w !== 12) return false; return !S.get("c2_reassess_" + w, false); }
+  // P81 — Reassessment erst ab der Mitte der Checkpoint-Woche (genug gelaufene Tage), nicht am ersten Tag.
+  function reassessDue() { var w = currentWeek(); if (w !== 4 && w !== 8 && w !== 12) return false; if (clampedDay() < (w - 1) * 7 + 4) return false; return !S.get("c2_reassess_" + w, false); }
   function suggestBottleneck() {
     // aus Recheck-Daten: was hat sich verbessert, was steht?
     var cur = bottleneck();
@@ -589,6 +601,9 @@
       '<button type="button" class="c2-btn ghost" data-pause>' + (isPaused() ? t("c2.resume") : t("c2.pause")) + '</button>' +
       '<button type="button" class="c2-btn ghost" data-switch>' + t("c2.switch_mode") + '</button></div>' +
       (modeHistory().length ? '<p class="c2-muted" style="margin-top:8px">' + (EN() ? "Mode history: " : "Modus-Verlauf: ") + modeHistory().map(function (h) { return esc(MODES[h.mode] ? MODES[h.mode].label : h.mode) + " (Tag " + h.day + ")"; }).join(" → ") + '</p>' : "") +
+      // P22 — Ernährungs-Level jederzeit wechselbar, ohne Programm-Reset
+      '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--c2-line)"><span class="k">' + (EN() ? "Nutrition level" : "Ernährungs-Level") + '</span><div class="c2-opts" role="group" style="margin-top:6px">' +
+      Object.keys(NUTRI).map(function (nk) { var on = nutritionMode() === nk; return '<button type="button" class="c2-opt ' + (on ? "sel" : "") + '" data-nutri="' + nk + '" aria-pressed="' + on + '"><div><b>' + esc(tr(NUTRI[nk].label)) + '</b></div></button>'; }).join("") + '</div></div>' +
       '</div>';
     return html;
   }
@@ -659,7 +674,8 @@
     }
     if (g === "build") {
       if (whtr != null && whtr > 0.58) return { label: "RECOMP / CUT", text: { de: "WHtR " + whtr.toFixed(2) + " ist zu hoch — nicht automatisch PERFORM. Erst Körperfett kontrollieren (RECOMP/CUT).", en: "WHtR " + whtr.toFixed(2) + " is too high — not automatically PERFORM. Control body fat first (RECOMP/CUT)." } };
-      if (whtr == null && waistDelta != null && waistDelta > 2) return { label: "RECOMP / CUT", text: { de: "Taille ist zu stark gestiegen (+" + waistDelta.toFixed(1) + " cm) — nicht automatisch PERFORM. Erst Körperfett kontrollieren (RECOMP/CUT).", en: "Waist rose too much (+" + waistDelta.toFixed(1) + " cm) — not automatically PERFORM. Control body fat first (RECOMP/CUT)." } };
+      // Große Taillenzunahme = Fettaufbau überholt Muskelaufbau → nicht automatisch PERFORM, auch bei noch ok WHtR.
+      if (waistDelta != null && waistDelta > 3) return { label: "RECOMP / CUT", text: { de: "Taille ist zu stark gestiegen (+" + waistDelta.toFixed(1) + " cm) — der Aufbau lief zu „schmutzig“. Nicht automatisch PERFORM: erst Körperfett kontrollieren (RECOMP/CUT).", en: "Waist rose too much (+" + waistDelta.toFixed(1) + " cm) — the build ran too “dirty”. Not automatically PERFORM: control body fat first (RECOMP/CUT)." } };
       return { label: "PERFORM", text: { de: "Sauber aufgebaut" + (whtr != null ? " (WHtR " + whtr.toFixed(2) + " unter Kontrolle)" : "") + " — jetzt Kraft UND Motor gleichzeitig für echte Leistungsfähigkeit.", en: "Built cleanly" + (whtr != null ? " (WHtR " + whtr.toFixed(2) + " under control)" : "") + " — now strength AND engine together for real capacity." } };
     }
     return { label: EN() ? "NEW CYCLE" : "NEUER ZYKLUS", text: { de: "Starker Stand — nächster Zyklus mit deinem dann größten Engpass.", en: "Strong position — next cycle targeting your then-biggest bottleneck." } };
@@ -736,7 +752,12 @@
       if (t2.closest("[data-startnow]")) { S.set("c2_start", todayYmd()); MM.toast(EN() ? "Started today." : "Heute gestartet."); render(); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
       var mn = t2.closest("[data-min]"); if (mn) { S.set("c2_min_" + todayYmd(), mn.getAttribute("data-min") === "1"); render(); return; }
       if (t2.closest("[data-shift]")) { shiftToday(); MM.toast(EN() ? "Shifted to tomorrow." : "Auf morgen verschoben."); render(); return; }
-      var ls = t2.closest("[data-liftsave]"); if (ls) { var lk = ls.getAttribute("data-liftsave"); var lw = document.getElementById("lift_" + lk + "_w"); var lr = document.getElementById("lift_" + lk + "_r"); if (lw && lr && lw.value && lr.value) { logLift(lk, lw.value, lr.value); MM.toast(EN() ? "Logged." : "Gespeichert."); render(); } return; }
+      var ls = t2.closest("[data-liftsave]"); if (ls) { var lk = ls.getAttribute("data-liftsave"); var lw = document.getElementById("lift_" + lk + "_w"); var lr = document.getElementById("lift_" + lk + "_r"); if (lw && lr && lw.value !== "" && lr.value !== "") {
+        var wv = parseFloat(String(lw.value).replace(",", ".")), rv = parseInt(lr.value, 10);
+        if (isNaN(wv) || isNaN(rv) || wv < 0 || wv > 500 || rv < 1 || rv > 100) { MM.toast(EN() ? "Enter a realistic weight (0–500 kg) and reps (1–100)." : "Bitte realistisches Gewicht (0–500 kg) und Wdh. (1–100) eingeben."); return; }
+        logLift(lk, wv, rv); MM.toast(EN() ? "Logged." : "Gespeichert."); render();
+      } return; }
+      var nu = t2.closest("[data-nutri]"); if (nu) { var nkv = nu.getAttribute("data-nutri"); if (NUTRI[nkv]) { S.set("c2_nutrition", nkv); MM.toast(EN() ? "Nutrition level updated." : "Ernährungs-Level aktualisiert."); render(); } return; }
       if (t2.closest("[data-pause]") || t2.closest("[data-resume]")) { togglePause(); render(); return; }
       if (t2.closest("[data-switch]")) { openSwitch(); return; }
       var rt = t2.closest("[data-reassess-take]"); if (rt) { var nb = rt.getAttribute("data-reassess-take"); setBottleneck(nb, "reassessment"); S.set("c2_reassess_" + currentWeek(), true); MM.toast(EN() ? "Bottleneck updated." : "Engpass aktualisiert."); render(); return; }
@@ -761,8 +782,19 @@
     });
     var reset = document.getElementById("courseReset");
     if (reset && !reset._c2) { reset._c2 = true; reset.addEventListener("click", function () {
-      if (!confirm(EN() ? "Reset program? Goal, bottleneck, start date, days and daily checks are cleared. Recheck values are kept." : "Programm zurücksetzen? Ziel, Engpass, Startdatum, Tage und tägliche Häkchen werden gelöscht. Recheck-Werte bleiben erhalten.")) return;
-      ["c2_goal", "c2_bottleneck", "c2_bn_history", "c2_start", "c2_nutrition", "c2_days", "c2_daily", "c2_pulse", "c2_view", "c2_dayswap", "c2_pause_since", "c2_paused_days", "c2_mode_history"].forEach(function (k) { S.del(k); });
+      // P52/P53/P101 — Neustart = neuer Zyklus. Alte Rechecks dürfen NICHT die Baseline des
+      // neuen Zyklus werden. Wir archivieren den alten Zyklus und starten mit sauberer Baseline.
+      if (!confirm(EN() ? "Start a new 12-week cycle? Goal, bottleneck, start date, days, daily checks AND the recheck baseline (W0–W12) are cleared for a fresh cycle. Your previous cycle is archived — it will not be mixed into the new one." : "Neuen 12-Wochen-Zyklus starten? Ziel, Engpass, Startdatum, Tage, tägliche Häkchen UND die Recheck-Baseline (W0–W12) werden für einen frischen Zyklus zurückgesetzt. Dein bisheriger Zyklus wird archiviert — er wird nicht mit dem neuen vermischt.")) return;
+      try {
+        var rc = rechecks();
+        if ((goal() || bottleneck() || Object.keys(rc).length) ) {
+          var arch = S.get("c2_archive", []); if (!Array.isArray(arch)) arch = [];
+          arch.push({ ended: todayYmd(), goal: goal(), bottleneck: bottleneck(), rechecks: rc, modeHistory: S.get("c2_mode_history", []), consistency: consistency() });
+          if (arch.length > 12) arch = arch.slice(arch.length - 12);
+          S.set("c2_archive", arch);
+        }
+      } catch (e) {}
+      ["c2_goal", "c2_bottleneck", "c2_bn_history", "c2_start", "c2_nutrition", "c2_days", "c2_daily", "c2_pulse", "c2_view", "c2_dayswap", "c2_pause_since", "c2_paused_days", "c2_mode_history", "c2_lifts", "course_rechecks"].forEach(function (k) { S.del(k); });
       ["c2_reassess_4", "c2_reassess_8", "c2_reassess_12"].forEach(function (k) { S.del(k); });
       obState = { goal: "", bottleneck: "", start: "today", nutrition: "simple", days: [1, 3, 5] };
       view = "today"; render(); window.scrollTo({ top: 0, behavior: "smooth" });
