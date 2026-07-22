@@ -57,6 +57,7 @@
 <script src="../js/shop-data.js"></script>
 <script src="../js/i18n.js"></script>
 <script src="../js/main.js"></script>
+<script src="../js/account.js"></script>
 <script src="../js/affiliates.js"></script>
 <script>
 (function () {
@@ -105,12 +106,12 @@
     }, { passive: true });
   }
   /* Der Code ist der Entschlüsselungsschlüssel — falscher Code ⇒ Fehler. */
-  async function attempt(code, silent) {
+  async function attempt(code, silent, noPersist) {
     var c = MM.vault.norm(code);
     if (!c) { if (!silent) { err.style.display = "block"; input.focus(); } return false; }
     try {
       var html = await MM.vault.open("protoVault", c);
-      try { localStorage.setItem(STORE, c); } catch (e) {}
+      if (!noPersist) { try { localStorage.setItem(STORE, c); } catch (e) {} }
       show(html);
       return true;
     } catch (e) {
@@ -127,7 +128,17 @@
       }
       var saved = "";
       try { saved = localStorage.getItem(STORE) || ""; } catch (e) {}
-      if (saved) await attempt(saved, true);
+      if (saved && await attempt(saved, true)) return;
+      /* Account-Bridge: Konto mit protocol-Entitlement erhält serverseitig
+         autorisiertes Schlüsselmaterial — regulärer Vault-Decrypt, Material
+         wird nicht persistiert. Legacy-Code bleibt der lokale Fallback. */
+      if (window.MM && MM.account && MM.account.whenReady) {
+        await MM.account.whenReady();
+        if (MM.account.hasAccess("protocol")) {
+          var acc = await MM.account.resolveProductAccess("protocol");
+          if (acc && acc.state === "authorized" && acc.material) await attempt(acc.material, true, true);
+        }
+      }
     } catch (e) { /* Gate bleibt sichtbar */ }
   })();
   if (btn) btn.addEventListener("click", function () { attempt(input.value); });

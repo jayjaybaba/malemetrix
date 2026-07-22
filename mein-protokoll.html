@@ -167,11 +167,31 @@
       }
     }
 
+    // Konto & Daten: Sync-Status, Export, Löschung (Datenrechte)
+    var SYNC_TXT={synced:"Gespeichert ✓",pending:"Sync ausstehend",saving:"Speichert…",offline:"Offline — lokal gespeichert",error:"Sync wird automatisch erneut versucht","local":"Nur dieses Gerät","n/a":""};
+    html+='<div class="card" style="margin-top:16px"><span class="small muted" style="text-transform:uppercase;letter-spacing:.1em;font-size:.7rem">Konto &amp; Daten</span>'+
+      (snap.state==="signed_in"?'<p class="small muted" style="margin:8px 0 10px">Status: '+esc(SYNC_TXT[d.sync]||"")+'</p>':'<p class="small muted" style="margin:8px 0 10px">'+esc(SYNC_TXT["local"])+'</p>')+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+      '<button id="mmExport" class="btn btn-sm" style="background:transparent;border:1px solid var(--line);color:var(--muted)">Meine Daten exportieren (JSON)</button>'+
+      (snap.state==="signed_in"?'<button id="mmDelete" class="btn btn-sm" style="background:transparent;border:1px solid var(--line);color:var(--muted)">Konto löschen</button>':'')+
+      '</div><p id="mmAcctMsg" class="small muted" style="display:none;margin-top:8px"></p></div>';
+
     if(snap.state==="local"){
       html+='<p class="small muted" style="text-align:center;margin-top:22px">Dieses Gerät nutzt My MaleMetrix lokal. Das geräteübergreifende Konto wird demnächst aktiviert — deine Daten bleiben erhalten.</p>';
     }
 
     host.innerHTML=html;
+    var ex=document.getElementById("mmExport"); if(ex)ex.addEventListener("click",function(){MM.account.exportMyData().then(function(data){var blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="my-malemetrix-export.json";a.click();setTimeout(function(){URL.revokeObjectURL(a.href);},2000);});});
+    var del=document.getElementById("mmDelete"); if(del)del.addEventListener("click",function(){
+      if(!confirm("Konto endgültig löschen? Alle Cloud-Daten (Profil, Scores, Programm-Zyklen, Zugänge) werden entfernt. Das kann nicht rückgängig gemacht werden."))return;
+      if(!confirm("Wirklich sicher? Letzte Bestätigung."))return;
+      del.disabled=true;
+      MM.account.requestAccountDeletion().then(function(r){
+        var m=document.getElementById("mmAcctMsg");m.style.display="block";
+        if(r.ok){ if(confirm("Konto gelöscht. Auch die lokalen MaleMetrix-Daten auf DIESEM Gerät entfernen?")){MM.account.clearLocalData();} location.reload(); }
+        else { m.textContent=r.message||"Löschung derzeit nicht verfügbar."; del.disabled=false; }
+      });
+    });
     var out=document.getElementById("mmOut"); if(out)out.addEventListener("click",function(){MM.account.signOut();});
     var imp=document.getElementById("mmImport"); if(imp)imp.addEventListener("click",function(){imp.disabled=true;imp.textContent="Übernehme…";MM.account.importLocalData().then(function(r){var m=document.getElementById("mmImportMsg");m.style.display="block";m.textContent=r.ok?"Vollständig übernommen. Deine lokalen Daten bleiben als Backup.":((r.status&&r.status.state==="partial")?"Teilweise übernommen — bitte erneut versuchen.":(r.message||"Fehlgeschlagen — bitte erneut versuchen."));setTimeout(render,900);});});
     var cb=document.getElementById("mmClaimBtn"); if(cb)cb.addEventListener("click",function(){var v=document.getElementById("mmClaim").value;var m=document.getElementById("mmClaimMsg");cb.disabled=true;MM.account.claimAccessCode(v).then(function(r){m.style.display="block";m.style.color=r.ok?"var(--green,#3ddc84)":"var(--amber,#f5a623)";m.textContent=r.ok?"Zugang aktiviert.":(r.message||"Code nicht erkannt.");cb.disabled=false;if(r.ok){if(MM.track)MM.track("claim_access",{});setTimeout(render,700);}});});

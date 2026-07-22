@@ -171,9 +171,9 @@
   /* =========================================================================
      ZUGANG (Vault)
      ========================================================================= */
-  async function tryCode(code) {
+  async function tryCode(code, noPersist) {
     var c = norm(code); if (!c || !window.MM || !MM.vault) return false;
-    try { var js = await MM.vault.open("courseVault", c); (0, eval)(js); DATA = window.MM_COURSE || DATA; S.set("course_code", c); return true; } catch (e) { return false; }
+    try { var js = await MM.vault.open("courseVault", c); (0, eval)(js); DATA = window.MM_COURSE || DATA; if (!noPersist) S.set("course_code", c); return true; } catch (e) { return false; }
   }
 
   /* =========================================================================
@@ -858,6 +858,19 @@
     var urlCode = ""; try { urlCode = norm(new URLSearchParams(location.search).get("code") || ""); } catch (e) {}
     if (urlCode && await tryCode(urlCode)) { history.replaceState(null, "", location.pathname); showContent(); return; }
     var saved = S.get("course_code", ""); if (saved && await tryCode(saved)) { showContent(); return; }
+    // Account-Bridge (nur Zugriff/Persistenz, keine Programmlogik): ein Konto
+    // mit twelve_week-Entitlement bekommt serverseitig autorisiertes
+    // Schlüsselmaterial — der Vault wird regulär entschlüsselt, das Material
+    // wird nicht in localStorage persistiert. Legacy-Codes bleiben Fallback.
+    try {
+      if (window.MM && MM.account && MM.account.whenReady) {
+        await MM.account.whenReady();
+        if (MM.account.hasAccess("twelve_week")) {
+          var acc = await MM.account.resolveProductAccess("twelve_week");
+          if (acc && acc.state === "authorized" && acc.material && await tryCode(acc.material, true)) { showContent(); return; }
+        }
+      }
+    } catch (e) {}
     showGate();
   })();
 })();

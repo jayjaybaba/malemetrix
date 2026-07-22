@@ -4,22 +4,28 @@ The account layer (`js/account.js`) is fully implemented but **inert until you
 create a Supabase project and paste its public values into `js/config.js`**.
 Until then the site runs in **local mode** (this-device-only) and nothing breaks.
 
-Nothing here is a secret. Only the project URL and the **publishable** key ever
-touch the browser. The `service_role` / secret key must **never** be committed
-or shipped — RLS + `security definer` RPCs are the only server-side write paths.
+Nothing in this repo is a secret. Only the project URL and the **publishable**
+key ever touch the browser. The `service_role`/secret key and the product vault
+keys live **only** in Supabase (Edge Function secrets) — never in Git, never in
+any client asset.
+
+The authoritative, executable schema lives in **`supabase/migrations/`**
+(ordered, idempotent). The deployable Edge Functions live in
+**`supabase/functions/`**. This document is the runbook; the SQL files are the
+source of truth.
 
 ---
 
 ## 1. Create the project
 supabase.com → New project. From Project Settings → API copy the **Project URL**
-and the **Publishable key** (`sb_publishable_...`). Do **not** copy the secret /
+and the **Publishable key** (`sb_publishable_...`). Never copy the secret /
 `service_role` key anywhere client-side.
 
 ## 2. Paste the public values into `js/config.js`
 ```js
 supabaseUrl:            "https://YOURREF.supabase.co",
-supabasePublishableKey: "sb_publishable_....",   // preferred (current model)
-// supabaseAnonKey:     "eyJ..."                 // only if the project has no publishable key
+supabasePublishableKey: "sb_publishable_....",   // preferred (current key model)
+// supabaseAnonKey:     "eyJ..."                 // legacy fallback only
 ```
 Leave empty to stay in local mode.
 
@@ -30,135 +36,77 @@ Leave empty to stay in local mode.
   (+ `http://localhost:8199/mein-protokoll.html` for local dev).
 - Google/Apple later — the frontend already routes through `MM.account.signIn()`.
 
-## 4. Schema + RLS (SQL editor)
-```sql
-create table if not exists public.profiles (
-  user_id uuid primary key references auth.users(id) on delete cascade,
-  first_name text, language text default 'de', timezone text,
-  created_at timestamptz default now(), updated_at timestamptz default now()
-);
-create table if not exists public.entitlements (
-  id bigint generated always as identity primary key,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  product_key text not null,           -- protocol | twelve_week | advanced_library | coaching
-  status text not null default 'active', source text,
-  granted_at timestamptz default now(), expires_at timestamptz,
-  unique (user_id, product_key)
-);
-create table if not exists public.score_results (
-  id bigint generated always as identity primary key,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  source_id text, score_total int, mode text, bottleneck text, result jsonb,
-  created_at timestamptz default now(), unique (user_id, source_id)
-);
-create table if not exists public.program_cycles (
-  id bigint generated always as identity primary key,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  source_id text, start_date date, status text default 'active',
-  mode text, bottleneck text, current_day int,
-  state jsonb, state_version int default 0,          -- P1-5 conflict resolution
-  created_at timestamptz default now(), updated_at timestamptz default now(),
-  unique (user_id, source_id)
-);
+## 4. Apply the migrations
+With the Supabase CLI: `supabase db push` — or paste the two files from
+`supabase/migrations/` into the SQL editor **in order**:
 
--- HARDENED access codes (P1-7/P1-8): high-entropy, revocable, usage-capped.
--- Do NOT seed guessable/shared legacy codes here as permanent account grants.
-create table if not exists public.access_codes (
-  code text primary key,                             -- store a HASH in production; high-entropy token
-  product_keys text[] not null default array['protocol','twelve_week'],
-  max_uses int default 1, used int default 0,
-  claimed_by uuid, claimed_at timestamptz,
-  active boolean default true                         -- set false to revoke
-);
+1. `20260722000001_init.sql` — profiles, entitlements, score_results (history),
+   program_cycles (lifecycle `active|completed|archived`, `state_version`),
+   hashed `access_codes`, all `user_id` indexes, RLS `TO authenticated` with
+   non-null-uid checks, **partial unique index enforcing ONE active cycle per
+   user**, `handle_new_user` trigger.
+2. `20260722000002_claim_rpc.sql` — `claim_access_code`: **hashed** token claim
+   (sha256 server-side; plaintext token is never stored), authenticated-only,
+   usage-capped (`max_uses`), revocable (`active=false`), generic error.
 
--- Indexes on every user_id (P1-14)
-create index if not exists idx_ent_user   on public.entitlements(user_id);
-create index if not exists idx_score_user on public.score_results(user_id);
-create index if not exists idx_cycle_user on public.program_cycles(user_id);
+These exact files pass an adversarial RLS test suite against real PostgreSQL 15
+(user isolation, cross-user read/write denial, anon denial, no client
+entitlement inserts, claim edge cases, one-active-cycle invariant).
 
-alter table public.profiles       enable row level security;
-alter table public.entitlements   enable row level security;
-alter table public.score_results  enable row level security;
-alter table public.program_cycles enable row level security;
-alter table public.access_codes   enable row level security;   -- NO policies => never client-readable
-
--- Policies scoped explicitly TO authenticated with a non-null uid check (P1-14)
-create policy "own profile" on public.profiles for all to authenticated
-  using ((select auth.uid()) is not null and (select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
-create policy "own ent read" on public.entitlements for select to authenticated
-  using ((select auth.uid()) is not null and (select auth.uid()) = user_id);
-create policy "own score" on public.score_results for all to authenticated
-  using ((select auth.uid()) is not null and (select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
-create policy "own cycles" on public.program_cycles for all to authenticated
-  using ((select auth.uid()) is not null and (select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
--- entitlements are INSERTed only by the RPC / a future payment webhook — no client write policy.
-
-create or replace function public.handle_new_user() returns trigger
-language plpgsql security definer set search_path = '' as $$
-begin
-  insert into public.profiles (user_id) values (new.id) on conflict do nothing;
-  return new;
-end; $$;
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created after insert on auth.users
-  for each row execute function public.handle_new_user();
-
--- CLAIM: authenticated only, uid non-null, usage-capped, revocable, no info leak (P1-15)
-create or replace function public.claim_access_code(code text)
-returns void language plpgsql security definer set search_path = '' as $$
-declare rec public.access_codes; k text; uid uuid := (select auth.uid());
-begin
-  if uid is null then raise exception 'not_authenticated'; end if;
-  select * into rec from public.access_codes
-    where access_codes.code = upper(trim(claim_access_code.code))
-      and active and used < max_uses for update;
-  if rec.code is null then raise exception 'invalid_code'; end if;   -- generic; no detail leak
-  update public.access_codes set used = used + 1, claimed_by = uid, claimed_at = now()
-    where access_codes.code = rec.code;
-  foreach k in array rec.product_keys loop
-    insert into public.entitlements(user_id, product_key, source)
-    values (uid, k, 'code') on conflict (user_id, product_key) do nothing;
-  end loop;
-end; $$;
-revoke all on function public.claim_access_code(text) from public, anon;
-grant execute on function public.claim_access_code(text) to authenticated;
+## 5. Deploy the Edge Functions + secrets
+```bash
+supabase functions deploy resolve-product-access
+supabase functions deploy delete-account
+supabase secrets set PROTOCOL_VAULT_KEY=<the protocol vault code>
+supabase secrets set TWELVE_WEEK_VAULT_KEY=<the 12-week vault code>
+supabase secrets set SERVICE_ROLE_KEY=<service role key>   # delete-account only
 ```
+- **resolve-product-access**: verifies the caller's JWT, checks an active,
+  unexpired entitlement for the requested `product_key` under RLS, and only then
+  returns the vault key material over HTTPS. The material is held in memory on
+  the client (never localStorage, never logged, never in a URL).
+  *Honest scope:* the browser must ultimately receive decryption material to
+  decrypt client-side content — this is authorized delivery, not DRM.
+- **delete-account**: authenticated + explicit confirmation → deletes the auth
+  user via the service role (rows cascade). The client then offers intentional
+  local-data cleanup — never before server confirmation.
 
-## 5. Seed access / test entitlements (server-side only, dev)
+## 6. Seed claim tokens (server-side only)
 ```sql
--- one-time, high-entropy claim token (NOT a shared legacy code):
-insert into public.access_codes(code, product_keys, max_uses)
-values (upper('MM-'||encode(gen_random_bytes(9),'hex')), array['protocol','twelve_week'], 1);
--- direct grant for a known user:
-insert into public.entitlements(user_id, product_key) values ('<uuid>','twelve_week')
-  on conflict do nothing;
+-- Generate a high-entropy one-time token; store ONLY its hash. Note the
+-- returned plaintext down once — it is not stored anywhere.
+with tok as (select 'MM-'||encode(gen_random_bytes(9),'hex') as t)
+insert into public.access_codes(code_hash, product_keys, max_uses)
+select encode(extensions.digest(upper(t),'sha256'),'hex'),
+       array['protocol','twelve_week'], 1 from tok
+returning (select upper(t) from tok) as plaintext_token;
 ```
-> **Legacy vault codes** (e.g. the shared `URAL`) keep their **existing local
-> vault unlock** (AES-GCM decrypt) but are intentionally **not** seeded as
-> permanent account entitlements — that path is guessable and unbounded.
+Claim tokens are **not** vault keys: a token proves a purchase once and grants
+the entitlement; the vault key decrypts content and is delivered only via
+`resolve-product-access`. Legacy shared vault codes keep their existing local
+unlock (AES-GCM decrypt on the device) but are intentionally never seeded as
+account claim tokens — that path is guessable and unbounded.
 
-## 6. Rate limiting (P1-8)
-Supabase Auth already rate-limits OTP sends. For `claim_access_code`, the
-`max_uses` cap + high-entropy tokens remove brute-force value. If you want a
-hard per-IP limit, add an Edge Function in front of the RPC (documented, not
-required for correctness here).
+## 7. Rate limiting
+Supabase Auth rate-limits OTP sends. Claim brute-force has no value against
+hashed, high-entropy, usage-capped tokens. A hard per-IP limit would need an
+Edge Function in front of the RPC — documented, not required for correctness.
 
-## 7. Tracker cloud — DEFERRED to Phase 3 (P1-9, honest)
-There is **no** `tracker_*` table and `importLocalData()` does **not** import
-tracker data. The dashboard/migration UI reflects this — it never claims
-"tracker imported." Tracker stays local until Phase 3 adds a `tracker_state`
-table with the same RLS pattern.
+## 8. Tracker cloud — DEFERRED to Phase 3 (honest)
+No `tracker_*` table exists and `importLocalData()` does not touch tracker
+data; the UI says so. Phase 3 adds a `tracker_state` domain via
+`MM.account.registerDomain("tracker", adapter)` — same dirty-queue/sync engine,
+no account-layer rewrite.
 
-## 8. Data rights
-- **Export:** `select` the four tables by `auth.uid()` → JSON (read model already
-  assembled by `getDashboardState`). One-click UI: not built this phase.
-- **Delete account:** intended `delete_my_account()` `security definer` RPC
-  (delete the four tables' rows for `auth.uid()`, then the `auth.users` row).
-  **Not implemented this phase — documented blocker.**
+## 9. Data rights
+- **Export**: implemented — `MM.account.exportMyData()` (dashboard button)
+  downloads profile, entitlement metadata, score history and program cycles as
+  JSON. No secrets, no tokens, no vault material.
+- **Delete**: implemented client-side + deployable `delete-account` function
+  (above). Until the function is deployed, the UI reports deletion as
+  unavailable — it is never faked.
 
-## 9. Payments (later)
-A server-side Stripe webhook (secret key server-only) inserts into `entitlements`.
-The client never grants access — `hasAccess()` only reads it. No client change needed.
+## 10. Payments (later)
+A server-side Stripe webhook (service key server-only) inserts into
+`entitlements`. The client never grants access — `hasAccess()` and
+`resolve-product-access` only read it. No client change needed.
