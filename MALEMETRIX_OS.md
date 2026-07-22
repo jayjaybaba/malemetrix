@@ -17,14 +17,20 @@ MaleMetrix does the integration — the user never combines tools in his head.
 | STACK | support intelligently (value-based, remove low-value) |
 | TRACK | measure execution (generic metrics, tracker) |
 | PROGRESS | show change (Start→Now, photos, cycles, interpretation) |
+| LABS | turn lab data into context (biomarker intelligence, not a spreadsheet) |
 | LEARN | explain why (Protokoll, Library, Enhanced Center) |
 
 ## Code
 ```
 js/os/os-core.js   MM.os      — Graph, metrics, events, actions/Today/NBA,
                                 baseline, photos (IndexedDB), context modes, ICS
-js/os/engines.js   MM.engines — transformation, nutrition, training, stack,
-                                progress interpretation (pure + data)
+js/os/engines.js   MM.engines — transformation, nutrition, training, stack
+                                (reads lab flags), progress interpretation
+js/os/labs.js      MM.labs    — biomarker intelligence: marker KB (40+ markers),
+                                unit normalization (original retained), append-
+                                only panels/results, trends+status, context
+                                engine, priorities, recheck, blood-test builder,
+                                enhanced monitoring, import review, stack context
 js/os/app.js                  — app shell (#today/#plan/#track/#progress/#learn
                                 /#baseline/#pathway/#transform/#workout)
 css/os.css                    — OS visual system (coordinate motif, components)
@@ -65,8 +71,17 @@ versioned rows in the generic `os_state` table (migration 0003), same
 dirty-queue/retry/backoff/hydration rules as program/score. Local-first;
 offline never loses work. Photos intentionally NOT synced.
 
+## Labs sync (Phase 4)
+Lab records sync as three OWN os_state domain rows (`labpanels`/`labresults`/
+`labnotes`), registered with `{append:true}` → conflict resolution is a UNION by
+`id` (`mergeById`), never last-write-wins, so concurrent offline appends never
+lose history. RLS via `os_state` policy (own rows only) + ON DELETE CASCADE.
+Migration `0004` additionally ships dedicated `lab_panels`/`lab_results`/
+`lab_notes` tables (full RLS + dupe guard) as the prepared structured path.
+Events carry only marker_id/status/date — never raw biomarker values (privacy).
+
 ## Future modules (contract)
-tracker · nutrition-logging · stack-adherence · labs · calendar · reminders:
+tracker · nutrition-logging · stack-adherence · calendar · reminders:
 each = local-first store key + `registerStateDomain` (+ optional engine).
 No account-layer rewrite needed. Wearables/push/food-AI = external services,
 documented, never faked.
