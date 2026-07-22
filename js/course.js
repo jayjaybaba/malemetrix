@@ -193,6 +193,28 @@
       if (oldMode && MODES[oldMode] && !S.get("c2_goal", "")) S.set("c2_goal", oldMode);
       S.set("c2_ver", 2);
     }
+    if (v < 3) {
+      // v3: c2_daily wird program-day-keyed ("d<pd>") statt kalenderdatum-keyed.
+      // Das macht die Vergangenheit pausenfest (Pause verschiebt keine Historie mehr).
+      var dd = S.get("c2_daily", null);
+      var sd0 = S.get("c2_start", "");
+      if (dd && typeof dd === "object" && sd0) {
+        try {
+          var start0 = new Date(sd0 + "T00:00:00");
+          var pd0 = S.get("c2_paused_days", 0) || 0;
+          var conv = {};
+          Object.keys(dd).forEach(function (k) {
+            if (/^d\d+$/.test(k)) { conv[k] = dd[k]; return; } // bereits program-day-keyed
+            var dt = new Date(k + "T00:00:00");
+            if (isNaN(dt.getTime())) return; // ungültiger Key → verwerfen
+            var pd = Math.round((dt - start0) / 86400000) + 1 - pd0;
+            if (pd >= 1) conv["d" + pd] = dd[k];
+          });
+          S.set("c2_daily", conv);
+        } catch (e) {}
+      }
+      S.set("c2_ver", 3);
+    }
   }
 
   /* =========================================================================
@@ -208,6 +230,7 @@
   function personalized() { return !!(goal() && bottleneck() && startDate()); }
   function scoreResult() { try { return S.get("check_result", null); } catch (e) { return null; } }
   function redFlags() { var r = scoreResult(); return (r && Array.isArray(r.flags)) ? r.flags : []; }
+  function heightCm() { var r = scoreResult(); if (r && r.answers && r.answers.height != null) { var h = parseFloat(r.answers.height); if (!isNaN(h) && h > 50 && h < 260) return h; } return null; }
 
   // P1 — Single Source of Truth: MM_CHECK.goalDecision
   function goalRecommend() {
@@ -226,9 +249,12 @@
     return { bn: "", src: "" };
   }
 
-  /* ---- Mode-History (P11) ---- */
-  function modeHistory() { return S.get("c2_mode_history", []); }
+  /* ---- Mode-History (P11) — echte Historie, Vergangenheit immutabel ---- */
+  function modeHistory() { var h = S.get("c2_mode_history", []); if (!h.length && goal()) { h = [{ mode: goal(), day: 1 }]; S.set("c2_mode_history", h); } return h; }
   function switchMode(newMode) { if (!MODES[newMode] || newMode === goal()) return; var h = modeHistory(); h.push({ mode: newMode, day: currentProgramDay(), from: goal() }); S.set("c2_mode_history", h); setGoal(newMode); }
+  function modeAtDay(pd) { var h = modeHistory(); var m = goal() || "recomp"; for (var i = 0; i < h.length; i++) { if (h[i].day <= pd && MODES[h[i].mode]) m = h[i].mode; } return MODES[m] ? m : "recomp"; }
+  function bnHistory() { var h = S.get("c2_bn_history", []); if (!h.length && bottleneck()) { h = [{ b: bottleneck(), day: 1 }]; S.set("c2_bn_history", h); } return h; }
+  function bottleneckAtDay(pd) { var h = bnHistory(); var b = bottleneck() || "recovery"; for (var i = 0; i < h.length; i++) { if (h[i].day <= pd && BOTTLENECKS[h[i].b]) b = h[i].b; } return BOTTLENECKS[b] ? b : "recovery"; }
 
   /* ---- Pause (P10) ---- */
   function pausedDays() { return S.get("c2_paused_days", 0) || 0; }
@@ -243,6 +269,8 @@
   function ymd(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
   function todayYmd() { return ymd(new Date()); }
   function rawDayIndex() { var s = startDate(); if (!s) return 1; var ref = isPaused() ? pauseSince() : todayYmd(); var a = new Date(s + "T00:00:00"), b = new Date(ref + "T00:00:00"); return Math.max(1, Math.floor((b - a) / 86400000) + 1); }
+  function notStarted() { var s = startDate(); if (!s) return false; var a = new Date(s + "T00:00:00"), b = new Date(todayYmd() + "T00:00:00"); return b.getTime() < a.getTime(); }
+  function daysUntilStart() { var s = startDate(); if (!s) return 0; var a = new Date(s + "T00:00:00"), b = new Date(todayYmd() + "T00:00:00"); return Math.max(0, Math.round((a - b) / 86400000)); }
   function currentProgramDay() { return Math.max(1, rawDayIndex() - pausedDays()); }
   function programOver() { return currentProgramDay() > 84; }
   function clampedDay() { return Math.min(84, currentProgramDay()); }
@@ -250,8 +278,8 @@
   function phaseOf(week) { for (var i = 0; i < PHASES.length; i++) if (week >= PHASES[i].weeks[0] && week <= PHASES[i].weeks[1]) return PHASES[i]; return PHASES[0]; }
 
   // P6 + P8 — Goal × Bottleneck × Phase × verfügbare Kraft-Tage → 7-Tage-Muster (Index 0=So..6=Sa NICHT; hier program-day-basiert 0..6)
-  function patternFor(mode, week) {
-    var m = MODES[mode] || MODES.recomp; var b = bottleneck();
+  function patternFor(mode, week, bn) {
+    var m = MODES[mode] || MODES.recomp; var b = BOTTLENECKS[bn] ? bn : (bottleneck() || "recovery");
     var p;
     var sd = strengthDays();
     if (sd) {
@@ -304,7 +332,9 @@
   function dayOverrides() { return S.get("c2_dayswap", {}) || {}; }
   function dayTypeAt(programDay) {
     var week = Math.min(12, Math.max(1, Math.ceil(programDay / 7)));
-    var pat = patternFor(goal() || "recomp", week);
+    var mode = modeAtDay(programDay);
+    var bn = bottleneckAtDay(programDay);
+    var pat = patternFor(mode, week, bn);
     var base = pat[(programDay - 1) % 7];
     var ov = dayOverrides()["d" + programDay]; return ov || base;
   }
@@ -315,12 +345,13 @@
     ov["d" + d] = b; ov["d" + (d + 1)] = a; S.set("c2_dayswap", ov);
   }
 
-  /* ---- Daily Completion (P2) ---- */
+  /* ---- Daily Completion (P2) — program-day-keyed ("d<pd>"), pausenfest ---- */
   function dailyAll() { return S.get("c2_daily", {}) || {}; }
-  function dailyFor(dateStr) { var a = dailyAll(); return a[dateStr] || {}; }
-  function setDaily(dateStr, key, val) { var a = dailyAll(); a[dateStr] = a[dateStr] || {}; if (val) a[dateStr][key] = true; else delete a[dateStr][key]; S.set("c2_daily", a); }
-  function setEnergy(dateStr, v) { var a = dailyAll(); a[dateStr] = a[dateStr] || {}; a[dateStr].energy = v; S.set("c2_daily", a); }
-  function dateOfProgramDay(pd) { var s = startDate(); if (!s) return null; var start = new Date(s + "T00:00:00"); return new Date(start.getTime() + (pd - 1 + pausedDays()) * 86400000); }
+  function dailyForDay(pd) { var a = dailyAll(); return a["d" + pd] || {}; }
+  function setDailyDay(pd, key, val) { var a = dailyAll(); var kk = "d" + pd; a[kk] = a[kk] || {}; if (val) a[kk][key] = true; else delete a[kk][key]; S.set("c2_daily", a); }
+  function setEnergyDay(pd, v) { var a = dailyAll(); var kk = "d" + pd; a[kk] = a[kk] || {}; a[kk].energy = v; S.set("c2_daily", a); }
+  // Volle Wochenplanung (unabhängig von elapsed) — für Win-Targets, die zum Split passen
+  function plannedInWeek(week, type) { var n = 0; for (var i = 0; i < 7; i++) { var pd = (week - 1) * 7 + i + 1; if (pd > 84) break; if (dayTypeAt(pd) === type) n++; } return n; }
 
   // P2 + P4 — echte Semantik: primary completion zählt zur jeweiligen Tagesart
   function weekStats(week) {
@@ -330,31 +361,32 @@
       var pd = (week - 1) * 7 + i + 1; if (pd > clampedDay()) break;
       var dt = dayTypeAt(pd);
       if (dt === "strength") res.strength.planned++; else if (dt === "engine") res.engine.planned++; else if (dt === "recover") res.recover.planned++;
-      var date = dateOfProgramDay(pd); if (!date) break;
-      var rec = dailyFor(ymd(date)); res.days++;
+      var rec = dailyForDay(pd); res.days++;
       if (rec.p) { // Hauptaufgabe erledigt → zählt zur Tagesart
         if (dt === "strength") res.strength.done++; else if (dt === "engine") res.engine.done++; else if (dt === "recover" || dt === "reset" || dt === "mobility") res.recover.done++; else if (dt === "move") res.move++;
       }
       if (rec.move) res.move++;
       if (rec.nutrition) res.nutrition++;
-      if (rec.recover) res.recover.done += 0; // Schlaf-Check separat unten
       if (rec.recover) res.recoverNights = (res.recoverNights || 0) + 1;
       if (rec.p || rec.move || rec.recover) res.active++;
     }
     res.recoverNights = res.recoverNights || 0;
     return res;
   }
-  function winMet(week) {
-    var wk = weekStats(week); var m = MODES[goal() || "recomp"];
+  function winMet(week, modeKey) {
+    var wk = weekStats(week); var g = modeKey || modeAtDay(Math.min(84, week * 7)) || goal() || "recomp"; var m = MODES[g] || MODES.recomp;
     return m.win.map(function (w) {
-      var cur = 0;
-      if (w.key === "strength") cur = wk.strength.done; else if (w.key === "engine") cur = wk.engine.done; else if (w.key === "move") cur = wk.move; else if (w.key === "recover") cur = wk.recoverNights; else if (w.key === "nutrition") cur = wk.nutrition;
-      return { label: tr(w.label), target: w.target, cur: cur, hit: cur >= w.target };
+      var cur = 0, target = w.target;
+      if (w.key === "strength") { cur = wk.strength.done; target = Math.min(w.target, plannedInWeek(week, "strength") || w.target); }
+      else if (w.key === "engine") { cur = wk.engine.done; target = Math.min(w.target, plannedInWeek(week, "engine") || w.target); }
+      else if (w.key === "move") cur = wk.move; else if (w.key === "recover") cur = wk.recoverNights; else if (w.key === "nutrition") cur = wk.nutrition;
+      return { label: tr(w.label), key: w.key, target: target, cur: cur, hit: cur >= target };
     });
   }
   function consistency() {
-    var a = dailyAll(); var elapsed = clampedDay(); var active = 0; if (!startDate()) return { active: 0, elapsed: 0, pct: 0 };
-    for (var pd = 1; pd <= elapsed; pd++) { var date = dateOfProgramDay(pd); if (!date) break; var rec = a[ymd(date)] || {}; if (rec.p || rec.move || rec.recover) active++; }
+    var elapsed = clampedDay(); var active = 0; if (!startDate()) return { active: 0, elapsed: 0, pct: 0 };
+    if (notStarted()) return { active: 0, elapsed: 0, pct: 0 };
+    for (var pd = 1; pd <= elapsed; pd++) { var rec = dailyForDay(pd); if (rec.p || rec.move || rec.recover) active++; }
     return { active: active, elapsed: elapsed, pct: elapsed ? Math.round(active / elapsed * 100) : 0 };
   }
 
@@ -366,15 +398,36 @@
   /* ---- Weekly Pulse + Adjustment (P4, P20) ---- */
   function pulses() { return S.get("c2_pulse", {}) || {}; }
   function savePulse(week, obj) { var p = pulses(); p[week] = obj; S.set("c2_pulse", p); }
+  // Mode-spezifische Adhärenz: anteilig über die trainingsrelevanten Win-Bedingungen
+  // (Strength + Engine) des jeweiligen Modus. So bekommt PERFORM mit 0 Engine KEIN ON TRACK.
+  function adherenceFor(week, g) {
+    var wk = weekStats(week); var m = MODES[g] || MODES.recomp;
+    function cur(key) { if (key === "strength") return wk.strength.done; if (key === "engine") return wk.engine.done; if (key === "move") return wk.move; if (key === "recover") return wk.recoverNights; if (key === "nutrition") return wk.nutrition; return 0; }
+    var need = 0, got = 0, parts = [];
+    m.win.forEach(function (w) {
+      if (w.key === "strength" || w.key === "engine") {
+        var tgt = Math.min(w.target, plannedInWeek(week, w.key) || w.target);
+        if (tgt <= 0) return;
+        var c = cur(w.key); need += tgt; got += Math.min(c, tgt); parts.push({ key: w.key, cur: c, target: tgt });
+      }
+    });
+    return { adher: need ? got / need : 1, parts: parts, wk: wk };
+  }
   function adjudicate(week, inp) {
-    var st = weekStats(week);
-    var plannedStrength = st.strength.planned || 1;
-    var adher = st.strength.done / plannedStrength;
+    var lastPd = Math.min(84, week * 7);
+    var g = modeAtDay(lastPd);
+    var A = adherenceFor(week, g); var st = A.wk;
+    var adher = A.adher;
     if (inp.warning) return { code: "check", title: "CHECK FIRST", cls: "check", text: { de: "Du hast ein mögliches Warnsignal angegeben. Kläre das bitte zuerst ärztlich ab, bevor du die Belastung erhöhst. Das Programm läuft auf dem Fundament ruhig weiter.", en: "You reported a possible warning sign. Please get it checked medically before increasing load. The program continues gently on the fundamentals." } };
-    if (adher < 0.7) return { code: "exec", title: "EXECUTION FIRST", cls: "exec", text: { de: "Dein Plan ist wahrscheinlich noch nicht das Problem. Deine Umsetzung war diese Woche nicht konstant genug (" + st.strength.done + "/" + plannedStrength + " geplante Krafteinheiten). Wir halten die Strategie stabil und fokussieren Umsetzung.", en: "Your plan is probably not the problem. Execution wasn’t consistent enough this week (" + st.strength.done + "/" + plannedStrength + " planned strength sessions). We keep the strategy and focus on execution." } };
-    if (inp.energy && inp.energy <= 3 && inp.sleep === "schlecht") return { code: "recover", title: "RECOVERY FIRST", cls: "recover", text: { de: "Adhärenz ist gut, aber Energie und Schlaf sind unten. Mehr Belastung wäre jetzt nicht mehr Fortschritt. Diese Woche: eine Einheit rausnehmen oder leichter, Schlaf priorisieren.", en: "Adherence is good but energy and sleep are low. More load wouldn’t be more progress now. This week: drop or ease one session, prioritize sleep." } };
+    if (adher < 0.7) {
+      var labelOf = function (k) { return k === "strength" ? (EN() ? "strength" : "Kraft") : (EN() ? "engine" : "Cardio"); };
+      var shortParts = A.parts.filter(function (p) { return p.cur < p.target; }).map(function (p) { return p.cur + "/" + p.target + " " + labelOf(p.key); });
+      var detail = shortParts.length ? shortParts.join(", ") : (st.strength.done + "/" + (st.strength.planned || 0) + (EN() ? " strength" : " Kraft"));
+      return { code: "exec", title: "EXECUTION FIRST", cls: "exec", text: { de: "Dein Plan ist wahrscheinlich noch nicht das Problem. In " + MODES[g].label + " zählt vor allem die Trainingsumsetzung, und die war diese Woche nicht konstant genug (" + detail + "). Wir halten die Strategie stabil und fokussieren Umsetzung — nicht mehr Plan, sondern mehr Durchführung.", en: "Your plan is probably not the problem. In " + MODES[g].label + " it’s training execution that counts, and it wasn’t consistent enough this week (" + detail + "). We keep the strategy and focus on execution — not a new plan, just more follow-through." } };
+    }
+    if (inp.energy && inp.energy <= 3 && inp.sleep === "schlecht") return { code: "recover", title: "RECOVERY FIRST", cls: "recover", text: { de: "Adhärenz ist gut (Training läuft), aber Energie und Schlaf sind unten. Mehr Belastung wäre jetzt nicht mehr Fortschritt. Diese Woche: eine Einheit rausnehmen oder leichter, Schlaf priorisieren.", en: "Adherence is good (training is on), but energy and sleep are low. More load wouldn’t be more progress now. This week: drop or ease one session, prioritize sleep." } };
     // Trend statt Einzelwert (P20)
-    var g = goal(); var prev = pulses()[week - 1];
+    var prev = pulses()[week - 1];
     var waistTrend = null;
     if (inp.waist && prev && prev.inp && prev.inp.waist) waistTrend = parseFloat(inp.waist) - parseFloat(prev.inp.waist);
     var stagnant = (waistTrend != null && Math.abs(waistTrend) < 0.3);
@@ -415,14 +468,29 @@
   }
   function pausedBanner() { return isPaused() ? '<div class="c2-verdict recover" style="margin-bottom:14px"><h3>⏸ ' + esc(t("c2.paused_banner")) + '</h3><button type="button" class="c2-btn" data-resume>' + esc(t("c2.resume")) + '</button></div>' : ""; }
 
+  function renderUpcoming() {
+    var n = daysUntilStart(); var name = (S.get("unlock_name", "") || "").split(" ")[0];
+    var when = new Date(startDate() + "T00:00:00");
+    var wdN = EN() ? ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] : ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+    var dt0 = DAY[dayTypeAt(1)];
+    return phaseBar() + '<div class="c2-today">' +
+      '<span class="c2-greet">' + (name ? esc(name.toUpperCase()) + " — " : "") + (EN() ? "READY TO START" : "STARTKLAR") + '</span>' +
+      '<div class="c2-daybig"><h1>' + (n === 1 ? (EN() ? "Starts tomorrow" : "Start morgen") : (EN() ? "Starts in " + n + " days" : "Start in " + n + " Tagen")) + '</h1><span>' + esc(wdN[when.getDay()]) + ', ' + esc(startDate()) + '</span></div>' +
+      '<div class="c2-card2"><span class="k">' + (EN() ? "Your day 1" : "Dein Tag 1") + ' · ' + esc(tr(dt0.label)) + '</span><p>' + esc(tr(dt0.full)) + '</p><p class="c2-muted" style="margin-top:8px">' + (EN() ? "Nothing to log yet — daily tracking opens on your start date. Use the time to prep (kitchen, schedule, gym bag)." : "Noch nichts abzuhaken — das Tages-Tracking öffnet an deinem Startdatum. Nutze die Zeit zur Vorbereitung (Küche, Kalender, Gym-Tasche).") + '</p></div>' +
+      '<div style="margin:14px 0;display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="c2-btn ghost" data-startnow>' + (EN() ? "Start today instead" : "Doch heute starten") + '</button><button type="button" class="c2-btn ghost" data-view="plan">' + t("c2.plan") + ' →</button></div>' +
+      '</div>';
+  }
   function renderToday() {
+    if (notStarted()) return renderUpcoming();
     if (programOver()) return renderReport(true);
+    var todayPd = clampedDay();
     var dt = DAY[dayTypeToday()], g = goal(), mode = MODES[g], week = currentWeek(), ph = phaseOf(week);
-    var date = todayYmd(), rec = dailyFor(date);
+    var date = todayYmd(), rec = dailyForDay(todayPd);
     var showMin = S.get("c2_min_" + date, false);
     var name = (S.get("unlock_name", "") || "").split(" ")[0];
     var wk = weekStats(week);
     var wins = winMet(week);
+    var primary = DAY[dayTypeToday()];
 
     var html = pausedBanner() + phaseBar() +
       '<div class="c2-today">' +
@@ -439,8 +507,8 @@
       '</div></div>' +
       (dayTypeToday() === "strength" ? renderProgression() : "") +
       '<div class="c2-daily" role="group" aria-label="Daily completion">' +
-      [["p", "🏋️", "c2.train"], ["move", "🚶", "c2.move"], ["nutrition", "🍳", "c2.nutrition"], ["recover", "😴", "c2.recover"]].map(function (c) {
-        return '<button type="button" class="c2-check ' + (rec[c[0]] ? "done" : "") + '" data-check="' + c[0] + '" aria-pressed="' + (!!rec[c[0]]) + '"><span class="ic">' + c[1] + '</span><span class="lb">' + t(c[2]) + '</span></button>';
+      [["p", primary.icon, tr(primary.label)], ["move", "🚶", t("c2.move")], ["nutrition", "🍳", t("c2.nutrition")], ["recover", "😴", t("c2.recover")]].map(function (c) {
+        return '<button type="button" class="c2-check ' + (rec[c[0]] ? "done" : "") + '" data-check="' + c[0] + '" aria-pressed="' + (!!rec[c[0]]) + '"><span class="ic">' + esc(c[1]) + '</span><span class="lb">' + esc(c[2]) + '</span></button>';
       }).join("") + '</div>' +
       '<div class="c2-energy"><label for="c2en">' + t("c2.energy_today") + '</label><input id="c2en" type="range" min="1" max="5" value="' + (rec.energy || 3) + '" data-energy><span id="c2eVal">' + (rec.energy || 3) + '/5</span></div>' +
       '</div>' +
@@ -566,10 +634,34 @@
 
   function computeNextMove(g) {
     var rc = rechecks(); var waistB = latestRecheck("waist"); var waist0 = rc.w0 && rc.w0.waist;
-    var waistDelta = (waistB && waist0 != null && waist0 !== "" && !isNaN(parseFloat(waistB.val)) && !isNaN(parseFloat(waist0))) ? (parseFloat(waistB.val) - parseFloat(waist0)) : null;
-    if (g === "cut") { if (waistDelta != null && waistDelta < -2) return { label: "RECOMP", text: { de: "Fett ist deutlich runter, Kraft solide — jetzt Form & Muskel ausbauen, ohne aggressives Defizit.", en: "Fat clearly down, strength solid — now build shape & muscle without an aggressive deficit." } }; return { label: "CUT / RECOMP", text: { de: "Wenn die Taille noch deutlich erhöht ist: weiter CUT. Sonst Übergang zu RECOMP.", en: "If waist is still clearly elevated: continue CUT. Otherwise transition to RECOMP." } }; }
-    if (g === "recomp") { if (waistDelta != null && waistDelta > -0.5) return { label: "CUT", text: { de: "Taille kaum bewegt — ein klarer CUT-Block kann jetzt mehr bringen als weiter RECOMP.", en: "Waist barely moved — a clear CUT block may now beat more RECOMP." } }; return { label: "BUILD", text: { de: "Basis steht, Taille runter — jetzt gezielt Muskel & Kraft mit leanem Überschuss.", en: "Base is set, waist down — now build muscle & strength with a lean surplus." } }; }
-    if (g === "build") { if (waistDelta != null && waistDelta > 2) return { label: "RECOMP / CUT", text: { de: "Taille ist zu stark gestiegen — nicht automatisch PERFORM. Erst Körperfett kontrollieren (RECOMP/CUT).", en: "Waist rose too much — not automatically PERFORM. Control body fat first (RECOMP/CUT)." } }; return { label: "PERFORM", text: { de: "Sauber aufgebaut — jetzt Kraft UND Motor gleichzeitig für echte Leistungsfähigkeit.", en: "Built cleanly — now strength AND engine together for real capacity." } }; }
+    var latestW = (waistB && !isNaN(parseFloat(waistB.val))) ? parseFloat(waistB.val) : null;
+    var startW = (waist0 != null && waist0 !== "" && !isNaN(parseFloat(waist0))) ? parseFloat(waist0) : null;
+    var waistDelta = (latestW != null && startW != null) ? (latestW - startW) : null;
+    var h = heightCm();
+    var whtr = (latestW != null && h) ? (latestW / h) : null; // 0.50 gesund · 0.53 erhöht · 0.58 hoch
+    // Absolute Lage schlägt reine Delta-Interpretation (medizinisch belastbarer)
+    if (g === "cut") {
+      if (whtr != null) {
+        if (whtr > 0.53) return { label: "CUT", text: { de: "Deine Taille im Verhältnis zur Körpergröße (WHtR " + whtr.toFixed(2) + ") ist noch erhöht — bleib im CUT, bis sie klar unter 0,53 liegt. Kraft dabei halten.", en: "Your waist-to-height (WHtR " + whtr.toFixed(2) + ") is still elevated — stay in CUT until it’s clearly under 0.53. Keep strength meanwhile." } };
+        return { label: "RECOMP", text: { de: "WHtR " + whtr.toFixed(2) + " ist im gesunden Bereich und Kraft steht — jetzt Form & Muskel ausbauen (RECOMP), kein aggressives Defizit mehr.", en: "WHtR " + whtr.toFixed(2) + " is in the healthy range and strength holds — now build shape & muscle (RECOMP), no more aggressive deficit." } };
+      }
+      if (waistDelta != null && waistDelta < -2) return { label: "RECOMP", text: { de: "Fett ist deutlich runter (" + waistDelta.toFixed(1) + " cm Taille), Kraft solide — jetzt Form & Muskel ausbauen, ohne aggressives Defizit.", en: "Fat clearly down (" + waistDelta.toFixed(1) + " cm waist), strength solid — now build shape & muscle without an aggressive deficit." } };
+      return { label: "CUT / RECOMP", text: { de: "Wenn die Taille noch deutlich erhöht ist: weiter CUT. Sonst Übergang zu RECOMP. (Trag deine Taille im Recheck ein, dann wird das exakt.)", en: "If waist is still clearly elevated: continue CUT. Otherwise transition to RECOMP. (Enter your waist in the recheck to make this exact.)" } };
+    }
+    if (g === "recomp") {
+      if (whtr != null) {
+        if (whtr > 0.53) return { label: "CUT", text: { de: "WHtR " + whtr.toFixed(2) + " ist noch erhöht — ein klarer CUT-Block bringt jetzt mehr als weiter RECOMP.", en: "WHtR " + whtr.toFixed(2) + " is still elevated — a clear CUT block now beats more RECOMP." } };
+        if (whtr <= 0.50) return { label: "BUILD", text: { de: "WHtR " + whtr.toFixed(2) + " ist schlank — jetzt gezielt Muskel & Kraft mit leanem Überschuss (BUILD).", en: "WHtR " + whtr.toFixed(2) + " is lean — now build muscle & strength with a lean surplus (BUILD)." } };
+        return { label: "BUILD / RECOMP", text: { de: "WHtR " + whtr.toFixed(2) + " ist solide — Richtung BUILD, wenn die Kraft weiter steigt; sonst RECOMP halten.", en: "WHtR " + whtr.toFixed(2) + " is solid — lean toward BUILD if strength keeps rising; otherwise hold RECOMP." } };
+      }
+      if (waistDelta != null && waistDelta > -0.5) return { label: "CUT", text: { de: "Taille kaum bewegt — ein klarer CUT-Block kann jetzt mehr bringen als weiter RECOMP.", en: "Waist barely moved — a clear CUT block may now beat more RECOMP." } };
+      return { label: "BUILD", text: { de: "Basis steht, Taille runter — jetzt gezielt Muskel & Kraft mit leanem Überschuss.", en: "Base is set, waist down — now build muscle & strength with a lean surplus." } };
+    }
+    if (g === "build") {
+      if (whtr != null && whtr > 0.58) return { label: "RECOMP / CUT", text: { de: "WHtR " + whtr.toFixed(2) + " ist zu hoch — nicht automatisch PERFORM. Erst Körperfett kontrollieren (RECOMP/CUT).", en: "WHtR " + whtr.toFixed(2) + " is too high — not automatically PERFORM. Control body fat first (RECOMP/CUT)." } };
+      if (whtr == null && waistDelta != null && waistDelta > 2) return { label: "RECOMP / CUT", text: { de: "Taille ist zu stark gestiegen (+" + waistDelta.toFixed(1) + " cm) — nicht automatisch PERFORM. Erst Körperfett kontrollieren (RECOMP/CUT).", en: "Waist rose too much (+" + waistDelta.toFixed(1) + " cm) — not automatically PERFORM. Control body fat first (RECOMP/CUT)." } };
+      return { label: "PERFORM", text: { de: "Sauber aufgebaut" + (whtr != null ? " (WHtR " + whtr.toFixed(2) + " unter Kontrolle)" : "") + " — jetzt Kraft UND Motor gleichzeitig für echte Leistungsfähigkeit.", en: "Built cleanly" + (whtr != null ? " (WHtR " + whtr.toFixed(2) + " under control)" : "") + " — now strength AND engine together for real capacity." } };
+    }
     return { label: EN() ? "NEW CYCLE" : "NEUER ZYKLUS", text: { de: "Starker Stand — nächster Zyklus mit deinem dann größten Engpass.", en: "Strong position — next cycle targeting your then-biggest bottleneck." } };
   }
 
@@ -598,7 +690,7 @@
     if (!obState.goal) obState.goal = rec.mode || "";
     if (!obState.bottleneck) obState.bottleneck = bnr.bn || "";
     function opts(name, list, sel, multi) {
-      return '<div class="c2-opts" role="' + (multi ? "group" : "radiogroup") + '">' + list.map(function (o) {
+      return '<div class="c2-opts" role="group">' + list.map(function (o) {
         var on = multi ? (obState[name].indexOf(o[0]) >= 0) : (sel === o[0]);
         return '<button type="button" class="c2-opt ' + (on ? "sel" : "") + '" data-ob="' + name + '" data-val="' + o[0] + '" data-multi="' + (multi ? 1 : 0) + '" aria-pressed="' + on + '"><div><b>' + esc(o[1]) + '</b>' + (o[2] ? '<div class="c2-muted" style="margin-top:2px">' + esc(o[2]) + '</div>' : "") + '</div></button>';
       }).join("") + '</div>';
@@ -607,7 +699,7 @@
 
     if (redFlags().length) { html += '<div class="c2-verdict check" style="margin:10px 0"><h3>⚕️ CHECK FIRST</h3><p>' + (EN() ? "Your score answers include possible warning signs. Please get them checked medically before an aggressive performance start. The program runs on the fundamentals meanwhile — no diagnosis, no medication advice." : "Deine Score-Antworten enthalten mögliche Warnzeichen. Bitte kläre sie ärztlich ab, bevor du aggressiv startest. Das Programm läuft parallel auf dem Fundament — keine Diagnose, kein Medikamentenrat.") + '</p></div>'; }
 
-    if (rec.mode && rec.src === "score") { html += '<div class="c2-reco"><span class="k">' + t("c2.from_score") + '</span><p style="margin-top:4px"><b style="color:#fff">' + t("c2.why_mode") + '</b> ' + (EN() ? "We recommend " : "Wir empfehlen ") + '<b style="color:#fff">' + esc(MODES[rec.mode].label) + '</b>' + (bnr.bn ? ' · ' + t("c2.bottleneck") + ' <b style="color:#fff">' + esc(BOTTLENECKS[bnr.bn].label) + '</b>' : "") + '.</p>' + (rec.reason ? '<p style="margin-top:6px">' + esc(rec.reason) + '</p>' : "") + '<p class="c2-muted" style="margin-top:6px">' + (EN() ? "You can override below." : "Du kannst das unten überschreiben.") + '</p></div>'; }
+    if (rec.mode && rec.src === "score") { html += '<div class="c2-reco"><span class="k">' + t("c2.from_score") + '</span><p style="margin-top:4px"><b style="color:#fff">' + t("c2.why_mode") + '</b> ' + (EN() ? "We recommend " : "Wir empfehlen ") + '<b style="color:#fff">' + esc(MODES[rec.mode].label) + '</b>' + (bnr.bn ? ' · ' + t("c2.bottleneck") + ' <b style="color:#fff">' + esc(BOTTLENECKS[bnr.bn].label) + '</b>' : "") + '.</p>' + (rec.reason && !EN() ? '<p style="margin-top:6px">' + esc(rec.reason) + '</p>' : (EN() && rec.reason ? '<p style="margin-top:6px">' + (EN() ? "This is derived from your MaleMetrix Score answers (body composition, strength, recovery and goal) — not a fabricated analysis." : "") + '</p>' : "")) + '<p class="c2-muted" style="margin-top:6px">' + (EN() ? "You can override below." : "Du kannst das unten überschreiben.") + '</p></div>'; }
 
     html += '<div class="q"><span>' + t("c2.q_goal") + '</span>' + opts("goal", [["cut", "CUT — " + (EN() ? "Lose fat" : "Fett runter"), EN() ? "Clearly reduce body fat, protect strength." : "Deutlicheres Körperfett runter, Kraft schützen."], ["recomp", "RECOMP — " + (EN() ? "Lose fat + gain muscle" : "Fett runter + Muskel rauf"), EN() ? "Normal weight / belly, little muscle, skinny-fat — shape over scale." : "Normal-/Bauchansatz, wenig Muskel, „skinny fat“ — Form statt Waage."], ["build", "BUILD — " + (EN() ? "Muscle & strength" : "Muskel & Kraft"), EN() ? "Lean, low body fat, want to build (lean)." : "Schlank, niedriger Körperfettanteil, willst aufbauen (lean)."], ["perform", "PERFORM — " + (EN() ? "Stronger & fitter" : "stärker & fitter"), EN() ? "Good base, want strength + endurance + capacity." : "Gute Basis, willst Kraft + Ausdauer + Belastbarkeit."]], obState.goal) + '</div>';
 
@@ -640,7 +732,8 @@
     mount.addEventListener("click", function (e) {
       var t2 = e.target;
       var nav = t2.closest("[data-view]"); if (nav) { setView(nav.getAttribute("data-view")); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
-      var chk = t2.closest("[data-check]"); if (chk) { var k = chk.getAttribute("data-check"); var d = todayYmd(); var cur = dailyFor(d)[k]; setDaily(d, k, !cur); chk.classList.toggle("done", !cur); chk.setAttribute("aria-pressed", String(!cur)); return; }
+      var chk = t2.closest("[data-check]"); if (chk) { var k = chk.getAttribute("data-check"); var pd = clampedDay(); var cur = dailyForDay(pd)[k]; setDailyDay(pd, k, !cur); chk.classList.toggle("done", !cur); chk.setAttribute("aria-pressed", String(!cur)); return; }
+      if (t2.closest("[data-startnow]")) { S.set("c2_start", todayYmd()); MM.toast(EN() ? "Started today." : "Heute gestartet."); render(); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
       var mn = t2.closest("[data-min]"); if (mn) { S.set("c2_min_" + todayYmd(), mn.getAttribute("data-min") === "1"); render(); return; }
       if (t2.closest("[data-shift]")) { shiftToday(); MM.toast(EN() ? "Shifted to tomorrow." : "Auf morgen verschoben."); render(); return; }
       var ls = t2.closest("[data-liftsave]"); if (ls) { var lk = ls.getAttribute("data-liftsave"); var lw = document.getElementById("lift_" + lk + "_w"); var lr = document.getElementById("lift_" + lk + "_r"); if (lw && lr && lw.value && lr.value) { logLift(lk, lw.value, lr.value); MM.toast(EN() ? "Logged." : "Gespeichert."); render(); } return; }
@@ -651,7 +744,7 @@
       var ob = t2.closest("[data-ob]"); if (ob) { var nm2 = ob.getAttribute("data-ob"); var val = ob.getAttribute("data-val"); if (ob.getAttribute("data-multi") === "1") { var arr = obState[nm2].slice(); var iv = parseInt(val, 10); var pos = arr.indexOf(iv); if (pos >= 0) arr.splice(pos, 1); else arr.push(iv); obState[nm2] = arr; } else obState[nm2] = val; render(); return; }
       if (t2.id === "c2ObGo" || t2.closest("#c2ObGo")) {
         if (!(obState.goal && obState.bottleneck && obState.days.length >= 2)) return;
-        setGoal(obState.goal); S.set("c2_bottleneck", obState.bottleneck); S.set("c2_bn_history", [{ b: obState.bottleneck, day: 1, reason: "onboarding", from: "" }]);
+        setGoal(obState.goal); S.set("c2_mode_history", [{ mode: obState.goal, day: 1, reason: "onboarding", from: "" }]); S.set("c2_bottleneck", obState.bottleneck); S.set("c2_bn_history", [{ b: obState.bottleneck, day: 1, reason: "onboarding", from: "" }]);
         S.set("c2_nutrition", obState.nutrition); S.set("c2_days", obState.days.slice().sort(function (a, b) { return a - b; }));
         S.set("c2_start", obState.start === "monday" ? nextMonday() : todayYmd());
         if (MM.track) MM.track("course_onboarded", { goal: obState.goal, bottleneck: obState.bottleneck });
@@ -663,7 +756,7 @@
     });
     mount.addEventListener("input", function (e) {
       var t2 = e.target;
-      if (t2.hasAttribute && t2.hasAttribute("data-energy")) { setEnergy(todayYmd(), Number(t2.value)); var lbl = document.getElementById("c2eVal"); if (lbl) lbl.textContent = t2.value + "/5"; return; }
+      if (t2.hasAttribute && t2.hasAttribute("data-energy")) { setEnergyDay(clampedDay(), Number(t2.value)); var lbl = document.getElementById("c2eVal"); if (lbl) lbl.textContent = t2.value + "/5"; return; }
       if (t2.classList && t2.classList.contains("c2-rc")) { var rc = rechecks(); var cp = t2.getAttribute("data-cp"); if (!rc[cp]) rc[cp] = {}; rc[cp][t2.getAttribute("data-m")] = t2.value; S.set("course_rechecks", rc); return; }
     });
     var reset = document.getElementById("courseReset");
@@ -692,7 +785,7 @@
   }
 
   /* Debug-Hook für deterministische Tests (kein Sicherheitsrisiko — lokales Programm) */
-  try { window.__C2 = { goalRecommend: goalRecommend, bnRecommend: bnRecommend, weekStats: weekStats, winMet: winMet, adjudicate: adjudicate, patternFor: patternFor, dayTypeAt: dayTypeAt, currentWeek: currentWeek, clampedDay: clampedDay, consistency: consistency, currentProgramDay: currentProgramDay, migrate: migrate }; } catch (e) {}
+  try { window.__C2 = { goalRecommend: goalRecommend, bnRecommend: bnRecommend, weekStats: weekStats, winMet: winMet, adjudicate: adjudicate, adherenceFor: adherenceFor, patternFor: patternFor, dayTypeAt: dayTypeAt, modeAtDay: modeAtDay, bottleneckAtDay: bottleneckAtDay, currentWeek: currentWeek, clampedDay: clampedDay, consistency: consistency, currentProgramDay: currentProgramDay, plannedInWeek: plannedInWeek, computeNextMove: computeNextMove, suggestBottleneck: suggestBottleneck, notStarted: notStarted, daysUntilStart: daysUntilStart, migrate: migrate, switchMode: switchMode }; } catch (e) {}
 
   /* =========================================================================
      GATE + BOOT
