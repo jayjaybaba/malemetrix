@@ -57,7 +57,7 @@
 
   /* ---------- Kopf / Deckblatt ---------- */
   html += '<div class="r-head"><div class="r-logo">Male<span>Metrix</span></div>' +
-    '<div class="r-meta">PERFORMANCE-REPORT<br>' + dateStr + '<br>malemetrix.de</div></div>';
+    '<div class="r-meta">PERFORMANCE-REPORT<br>' + dateStr + '<br>malemetrix.com</div></div>';
 
   html += '<h1 class="r-title">Dein persönlicher MaleMetrix Report</h1>' +
     '<p class="r-sub">Lifestyle-Analyse auf Basis deines MaleMetrix Score — Training, Ernährung, Schlaf, Blutwerte-Struktur und Umsetzung.</p>';
@@ -232,7 +232,7 @@
       '<p style="margin-top:6px">' + rec.why + '</p>' +
       (rec.kind === 'medical'
         ? '<p style="margin-top:8px;font-size:0.85rem">Kläre die oben markierten Punkte zuerst ärztlich. Danach unterstützt dich MaleMetrix bei Struktur und Umsetzung.</p>'
-        : '<p style="margin-top:8px;font-size:0.9rem"><strong>' + rec.primary.label + '</strong>' + (rec.kind === 'coaching' ? ' — kostenloses Analysegespräch: <strong>malemetrix.de/termin</strong>' : ' — <strong>malemetrix.de/protokoll</strong>') + '</p>') +
+        : '<p style="margin-top:8px;font-size:0.9rem"><strong>' + rec.primary.label + '</strong>' + (rec.kind === 'coaching' ? ' — kostenloses Analysegespräch: <strong>malemetrix.com/termin</strong>' : ' — <strong>malemetrix.com/protokoll</strong>') + '</p>') +
       '</div></div>';
   })();
 

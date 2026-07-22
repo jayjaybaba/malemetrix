@@ -24,7 +24,7 @@ export default {
       origin === "null" || origin === ""; // file:// beim lokalen Testen
 
     const cors = {
-      "Access-Control-Allow-Origin": allowed && origin ? origin : "https://malemetrix.de",
+      "Access-Control-Allow-Origin": allowed && origin ? origin : "https://www.malemetrix.com",
       "Access-Control-Allow-Methods": "POST, OPTIONS",
       "Access-Control-Allow-Headers": "content-type",
       "Access-Control-Max-Age": "86400",

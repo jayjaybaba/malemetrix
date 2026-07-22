@@ -189,7 +189,7 @@
     if (!act.any) {
       return '<div class="card today-card"><div class="today-kick">' + T("DEIN TAGESZIEL", "TODAY'S GOAL") + '</div>' +
         '<h3 class="h-card" style="margin:6px 0 4px">🚶 ' + min + '–' + (min + 5) + ' min ' + T("Bewegung", "movement") + '</h3>' +
-        '<p class="muted" style="margin-bottom:16px">' + T("Gehen, Mobility, Core oder Eigengewicht — Hauptsache, die Kette reißt nicht. Kein Null-Tag.", "Walk, mobility, core or bodyweight — just don't break the chain. No zero days.") + '</p>' +
+        '<p class="muted" style="margin-bottom:16px">' + T("Gehen, Mobility, Core oder Eigengewicht — jeder Tag zählt. Auch Recovery ist ein Tag.", "Walk, mobility, core or bodyweight — every day counts. Recovery is a day too.") + '</p>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap" id="dailyChips">' +
         [20, 25, 30, 40].map(m => '<button class="btn btn-dark btn-sm" data-dmin="' + m + '">✓ ' + m + ' min</button>').join("") +
         '</div></div>';

@@ -617,7 +617,7 @@
       html += '<div class="sc-bar"><span class="sc-bar-label">' + (C.moduleNamesShort[k] || nm(k)) + '</span>' +
         '<span class="sc-bar-track"><span class="sc-bar-fill ' + levelClass(r.scores[k]) + '" style="width:' + Math.max(r.scores[k], 4) + '%"></span></span></div>';
     });
-    html += '</div><div class="sc-foot">malemetrix.de · kostenloser Score</div></div>' +
+    html += '</div><div class="sc-foot">malemetrix.com · kostenloser Score</div></div>' +
       '<p class="small muted" style="margin-top:10px;text-align:center">Screenshot machen und teilen — oder unten „Score kopieren".</p>';
 
     /* ---------- Aktionen ---------- */

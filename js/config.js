@@ -77,7 +77,7 @@ window.MM_CONFIG = {
   // --- Domain / SEO --------------------------------------------------------
   // Deine endgültige Domain (für Canonical-URLs & Sitemap). Falls du eine
   // andere Domain nutzt, hier und in sitemap.xml + den OG-Tags anpassen.
-  siteUrl: "https://malemetrix.de",
+  siteUrl: "https://www.malemetrix.com",
 
   // --- Dinner-Planer: Foto-Kalorienschätzung (KI) --------------------------
   // Mahlzeit fotografieren -> Claude schätzt Gericht, kcal & Protein.
@@ -115,11 +115,11 @@ window.MM_CONFIG = {
   // Plausible ist cookielos und DSGVO-freundlich (kein Cookie-Banner nötig).
   // 1. Kostenpflichtig/Trial: Konto auf plausible.io, Domain hinzufügen.
   //    (Oder self-hosted / Umami als Alternative.)
-  // 2. Deine Domain unten eintragen, z. B. "malemetrix.de".
+  // 2. Deine Domain unten eintragen, z. B. "www.malemetrix.com".
   // Solange leer, werden Events nur lokal gezählt (im Browser, für dich
   // sichtbar über MM.funnel() in der Konsole) und nirgendwo hingesendet.
   analytics: {
-    plausibleDomain: "",   // z. B. "malemetrix.de"
+    plausibleDomain: "",   // z. B. "www.malemetrix.com"
     plausibleSrc: "https://plausible.io/js/script.tagged-events.js"
   },
 

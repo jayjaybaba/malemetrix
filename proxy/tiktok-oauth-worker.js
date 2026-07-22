@@ -66,8 +66,8 @@ const TT_VIDEOS = "https://open.tiktokapis.com/v2/video/list/";
 const SCOPES = "user.info.basic,user.info.stats,video.list"; // minimal
 
 const ALLOWED_ORIGINS = [
-  "https://malemetrix.de",
-  "https://www.malemetrix.de",
+  "https://www.malemetrix.com",
+  "https://www.malemetrix.com",
   "https://jayjaybaba.github.io"
 ];
 const SESSION_TTL = 43200; // 12 h

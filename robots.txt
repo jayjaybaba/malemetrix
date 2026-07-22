@@ -9,4 +9,4 @@ Disallow: /impressum.html
 Disallow: /datenschutz.html
 Disallow: /agb.html
 
-Sitemap: https://malemetrix.de/sitemap.xml
+Sitemap: https://www.malemetrix.com/sitemap.xml

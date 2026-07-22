@@ -54,7 +54,7 @@
     return '<div class="ebook-cover" style="' + style + '">' +
       kicker +
       '<div class="cov-title"' + titleStyle + '>' + esc(tr(b.title)) + '</div>' +
-      '<div class="cov-brand">malemetrix.de</div>' +
+      '<div class="cov-brand">malemetrix.com</div>' +
       '</div>';
   }
 

@@ -337,18 +337,22 @@
       if (t) t.textContent = T("cart.title", "Warenkorb");
     });
 
-    // "Mehr"-Dropdown
-    const moreToggle = document.querySelector(".nav-more-toggle");
-    const moreMenu = document.querySelector(".nav-more-menu");
-    if (moreToggle && moreMenu) {
-      moreToggle.addEventListener("click", (e) => {
+    // Dropdown-Menüs (Knowledge / About) — mehrere möglich
+    const dropdowns = document.querySelectorAll(".nav-more");
+    dropdowns.forEach((dd) => {
+      const tog = dd.querySelector(".nav-more-toggle");
+      const menu = dd.querySelector(".nav-more-menu");
+      if (!tog || !menu) return;
+      tog.addEventListener("click", (e) => {
         e.stopPropagation();
-        moreMenu.classList.toggle("open");
+        // andere offene Menüs schließen
+        dropdowns.forEach((o) => { if (o !== dd) { const m = o.querySelector(".nav-more-menu"); if (m) m.classList.remove("open"); } });
+        menu.classList.toggle("open");
       });
-      document.addEventListener("click", (e) => {
-        if (!e.target.closest(".nav-more")) moreMenu.classList.remove("open");
-      });
-    }
+    });
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".nav-more")) dropdowns.forEach((dd) => { const m = dd.querySelector(".nav-more-menu"); if (m) m.classList.remove("open"); });
+    });
 
     // Aktive Nav-Markierung nach Dateiname
     const file = (location.pathname.split("/").pop() || "index.html") || "index.html";
