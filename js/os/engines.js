@@ -256,14 +256,27 @@
     { id: "multivit", name: "Multivitamin (Standarddiät)", tier: "low_value", evidence: "MODERATE_NEGATIVE", value: 1, cost: 2, timing: "—", why: "Bei vernünftiger Ernährung meist überflüssig — gezielte Einzelstoffe schlagen die Gießkanne.", goals: [] }
   ];
   function stackStrategy(g) {
-    // g: {mode, pathway, budget('essential'|'optimal'|'maximal'), current[](Namen), sleepBad}
+    // g: {mode, pathway, budget('essential'|'optimal'|'maximal'), current[](Namen),
+    //     sleepBad, labFlags[]}  — labFlags aus MM.labs.stackContext():
+    //     {supp, action:'avoid'|'hold'|'consider', text}. Labs VERORDNEN nicht,
+    //     sie modulieren nur: 'avoid' schließt aus, 'hold' markiert (nicht blind
+    //     hochdosieren), 'consider' hebt Priorität leicht.
     var budget = g.budget || "optimal";
+    var labFlags = Array.isArray(g.labFlags) ? g.labFlags : [];
+    function flagFor(id) { return labFlags.filter(function (f) { return f.supp === id; })[0] || null; }
     var take = SUPPS.filter(function (s) { return s.tier !== "low_value"; })
       .filter(function (s) { return s.goals.indexOf("all") >= 0 || s.goals.indexOf(g.mode) >= 0; })
-      .sort(function (a, b) { return b.value - a.value || a.cost - b.cost; });
+      .filter(function (s) { var f = flagFor(s.id); return !(f && f.action === "avoid"); })   // Labs sagen „nicht“
+      .sort(function (a, b) {
+        var fa = flagFor(a.id), fb = flagFor(b.id);
+        var pa = (fa && fa.action === "consider") ? 1 : 0, pb = (fb && fb.action === "consider") ? 1 : 0;
+        return (pb - pa) || (b.value - a.value) || (a.cost - b.cost);
+      });
     var n = budget === "essential" ? 3 : budget === "optimal" ? 6 : take.length;
     var chosen = take.slice(0, n);
-    if (g.sleepBad && !chosen.some(function (s) { return s.id === "magnesium"; })) { var mg = SUPPS.find(function (s) { return s.id === "magnesium"; }); if (mg) chosen.push(mg); }
+    // Lab-Notizen an die gewählten Items hängen (z. B. Vitamin D ausreichend → nicht eskalieren)
+    chosen = chosen.map(function (s) { var f = flagFor(s.id); return f ? Object.assign({}, s, { labNote: f.text, labAction: f.action }) : s; });
+    if (g.sleepBad && !chosen.some(function (s) { return s.id === "magnesium"; })) { var mgf = flagFor("magnesium"); if (!(mgf && mgf.action === "hold")) { var mg = SUPPS.find(function (s) { return s.id === "magnesium"; }); if (mg) chosen.push(mg); } }
     // MAXIMAL ≠ alles: abnehmender Grenznutzen wird explizit gemacht
     var diminishing = budget === "maximal" ? "Ab hier ist der Grenznutzen klein: alles unterhalb von Kreatin/Protein/Omega-3/Vitamin D bewegt wenige Prozent — Training, Essen und Schlaf bewegen den Rest." : "";
     // Low-Value-Entfernung gegen den aktuellen Stack des Nutzers

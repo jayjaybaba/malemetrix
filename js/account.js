@@ -373,10 +373,21 @@
      gespeichert (user_id + domain unique) und mit derselben Konfliktregel wie das
      Programm hydratisiert: Cloud überschreibt nur, wenn strikt neuer UND lokal
      seit letztem Sync unverändert. Keine Business-Logik hier — nur Persistenz. */
-  var OS_DOMAINS = {};   // name -> { key }  (key = mm_-Store-Key, Wert beliebiges JSON)
-  function registerStateDomain(name, storeKey) {
-    OS_DOMAINS[name] = { key: storeKey };
+  var OS_DOMAINS = {};   // name -> { key, append }  (key = mm_-Store-Key, Wert beliebiges JSON)
+  // opts.append: true → APPEND-ORIENTIERTE Domain (z. B. Labs). Statt Last-Write-
+  // Wins wird bei Konflikt per Element-ID (Feld `id`) vereinigt — keine Historie
+  // geht verloren, wenn zwei Geräte offline je einen Datensatz anhängen (P§71).
+  function registerStateDomain(name, storeKey, opts) {
+    OS_DOMAINS[name] = { key: storeKey, append: !!(opts && opts.append) };
     registerDomain(name, { flush: function () { return flushOsDomain(name); } });
+  }
+  // Union zweier Arrays nach `id` (spätere `updated`/Vorkommen gewinnt pro id).
+  function mergeById(localArr, cloudArr) {
+    if (!Array.isArray(localArr) || !Array.isArray(cloudArr)) return Array.isArray(localArr) ? localArr : cloudArr;
+    var byId = {}; var order = [];
+    function take(arr) { arr.forEach(function (it) { if (!it || it.id == null) { var k = "_anon_" + order.length; byId[k] = it; order.push(k); return; } if (byId[it.id] == null) order.push(it.id); var prev = byId[it.id]; byId[it.id] = (prev && prev.updated && it.updated && prev.updated > it.updated) ? prev : (prev && !it.updated ? prev : it); }); }
+    take(cloudArr); take(localArr);   // lokal nach cloud → gleiche id: lokaler (ggf. neuerer) Stand gewinnt sofern updated passt
+    return order.map(function (k) { return byId[k]; });
   }
   function osVer(name, kind) { return S.get("os_" + kind + "_" + name, kind === "synced" ? -1 : 0) || (kind === "synced" ? -1 : 0); }
   function bumpOsVer(name) { var v = osVer(name, "ver") + 1; S.setRaw("os_ver_" + name, v); return v; }
@@ -398,6 +409,14 @@
         var cloudVer = row.state_version || 0, localVer = osVer(row.domain, "ver"), localSynced = osVer(row.domain, "synced");
         var localHas = S.get(d.key, null) != null;
         if (!localHas) { S.setRaw(d.key, row.state); S.setRaw("os_ver_" + row.domain, cloudVer); S.setRaw("os_synced_" + row.domain, cloudVer); }
+        else if (d.append) {
+          // APPEND-MERGE: nie Historie verlieren. Cloud + lokal per id vereinen.
+          var merged = mergeById(S.get(d.key, []), Array.isArray(row.state) ? row.state : []);
+          var localLen = (S.get(d.key, []) || []).length, cloudLen = (Array.isArray(row.state) ? row.state.length : 0);
+          S.setRaw(d.key, merged);
+          if (merged.length > cloudLen) markDirty(row.domain);   // lokal hatte etwas, das die Cloud nicht kannte → Upload
+          if (merged.length > localLen) { S.setRaw("os_ver_" + row.domain, Math.max(cloudVer, localVer)); }  // Cloud hatte Neues → als gesehen markieren
+        }
         else if (cloudVer > localVer && localVer <= localSynced) { S.setRaw(d.key, row.state); S.setRaw("os_ver_" + row.domain, cloudVer); S.setRaw("os_synced_" + row.domain, cloudVer); }
         else if (localVer > localSynced) markDirty(row.domain);
       });

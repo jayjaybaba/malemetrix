@@ -256,6 +256,15 @@
     var d = (window.MM && MM.account) ? MM.account.getDashboardState() : {};
     var bn = (d && d.bottleneck) || getP("goals.bottleneck", "");
     var notNow = [];
+    // LAB-FOLLOW-UP darf NBA nur übernehmen, wenn wirklich etwas Materielles
+    // vorliegt: kritischer (quellenbasierter) Wert. Sonst NIE — Labs sollen
+    // nicht jeden Tag dominieren. Recheck-Fälligkeit läuft über Today-Signale.
+    if (window.MM && MM.labs && MM.labs.priorities) {
+      var lp = MM.labs.priorities(1)[0];
+      if (lp && lp.trend && lp.trend.crit) {
+        return { primary: { id: "lab:" + lp.marker_id, domain: "labs", type: "lab_followup", label: "Laborwert ärztlich prüfen", detail: lp.name + " — " + lp.reason, deepLink: "#labmarker?m=" + lp.marker_id }, notNow: ["Trainingsvolumen erhöhen, bevor das geklärt ist"] };
+      }
+    }
     if (!open.length) return { primary: null, notNow: ["Alles Wichtige ist erledigt. Kein Grund, künstlich mehr draufzupacken."] };
     // Score je Aktion: Basis = 10 - priority; Engpass-Bonus; Recovery-Schutz.
     var scored = open.map(function (a) {

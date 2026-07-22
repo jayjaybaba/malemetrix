@@ -1314,9 +1314,10 @@
   // Sync-Domains registrieren (append-orientiert; Konfliktmodell siehe account.js)
   try {
     if (MM.account && MM.account.registerStateDomain) {
-      MM.account.registerStateDomain("labpanels", "lab_panels");
-      MM.account.registerStateDomain("labresults", "lab_results");
-      MM.account.registerStateDomain("labnotes", "lab_notes");
+      // append:true → Historie wird bei Geräte-Konflikt vereinigt, nie überschrieben (§71).
+      MM.account.registerStateDomain("labpanels", "lab_panels", { append: true });
+      MM.account.registerStateDomain("labresults", "lab_results", { append: true });
+      MM.account.registerStateDomain("labnotes", "lab_notes", { append: true });
     }
   } catch (e) {}
 })();
