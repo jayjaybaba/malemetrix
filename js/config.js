@@ -79,6 +79,15 @@ window.MM_CONFIG = {
   // andere Domain nutzt, hier und in sitemap.xml + den OG-Tags anpassen.
   siteUrl: "https://www.malemetrix.com",
 
+  // --- My MaleMetrix Account (Supabase) -----------------------------------
+  // NUR die öffentlichen (anon/public) Werte hier eintragen. NIEMALS den
+  // service_role-Key oder ein anderes Geheimnis — die liegen ausschließlich
+  // serverseitig in Supabase. Solange beide Felder leer sind, läuft My
+  // MaleMetrix im lokalen Modus (nur dieses Gerät, ohne Cloud-Konto) und die
+  // Website funktioniert vollständig weiter. Setup: siehe SUPABASE.md.
+  supabaseUrl: "",       // z. B. "https://xxxxxxxx.supabase.co"
+  supabaseAnonKey: "",   // der öffentliche anon/public API-Key (kein Secret)
+
   // --- Dinner-Planer: Foto-Kalorienschätzung (KI) --------------------------
   // Mahlzeit fotografieren -> Claude schätzt Gericht, kcal & Protein.
   // AKTIVIEREN (5 Minuten, Copy-Paste): Anleitung in proxy/README.md —
