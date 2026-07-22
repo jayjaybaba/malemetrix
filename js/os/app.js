@@ -176,6 +176,26 @@
   }
 
   /* =========================== PLAN =========================== */
+  // WEEKLY-PULSE-ADAPTATION (Phase 3.1): die Anpassungs-Engine wird mit echten
+  // Trends (rollende Ø), echter Programm-Adhärenz und dem letzten Weekly Pulse
+  // gefüttert — vorher existierte der Container ohne Inhalt.
+  function nutritionAdjustCard(d) {
+    var p = (d && d.program) || {};
+    var wt = OS.metricTrend("weight", 7), wat = OS.metricTrend("waist", 7);
+    var pulses = MM.store.get("c2_pulse", {}) || {};
+    var lastPulse = null;
+    Object.keys(pulses).sort(function (a, b) { return (+a) - (+b); }).forEach(function (w) { if (pulses[w] && pulses[w].inp) lastPulse = pulses[w].inp; });
+    var adj = E.nutritionAdjust({
+      mode: d.mode || "recomp",
+      weightTrend: wt ? wt.delta : null,
+      waistTrend: wat ? wat.delta : null,
+      adherencePct: (p.active && !p.notStarted) ? p.consistency : null,
+      energyLow: !!(lastPulse && lastPulse.energy != null && lastPulse.energy <= 3),
+      sleepBad: !!(lastPulse && lastPulse.sleep === "schlecht")
+    });
+    return '<div class="os-adjust os-adjust-' + esc(adj.code) + '"><span class="tag">WEEKLY PULSE → NUTRITION</span><b>' + esc(adj.title) + '</b><p>' + esc(adj.text) + '</p>' +
+      (wt ? '<p class="small muted" style="margin:6px 0 0">Basis: 7-Tage-Gewichtstrend ' + (wt.delta > 0 ? "+" : "") + wt.delta + ' kg' + (wat ? ' · Taille ' + (wat.delta > 0 ? "+" : "") + wat.delta + ' cm' : '') + (p.consistency != null ? ' · Umsetzung ' + p.consistency + ' %' : '') + '</p>' : '<p class="small muted" style="margin:6px 0 0">Mehr Messpunkte = belastbarere Anpassung. Gewicht regelmäßig in Track loggen.</p>') + '</div>';
+  }
   function vPlan() {
     var d = MM.account.getDashboardState();
     var prof = OS.profile();
@@ -197,7 +217,7 @@
         }).join("") + '</div>' +
         '<p class="small muted">Tagessumme Beispiel: ' + day.totals.kcal + ' kcal · ' + day.totals.p + ' g Protein</p>' +
         '<button class="os-ghost" id="npShop">Einkaufsliste anzeigen</button><div id="npShopOut"></div>' +
-        '<div id="npAdjust" style="margin-top:12px"></div>');
+        '<div id="npAdjust" style="margin-top:12px">' + nutritionAdjustCard(d) + '</div>');
     } else {
       html += '<div class="card"><span class="tag">NUTRITION OS</span><p class="muted" style="margin:8px 0 12px">Jeder Modus braucht Zahlen: Energie, Protein, Beispieltag. Aus deinen vorhandenen Daten — nichts wird doppelt gefragt.</p>' +
         (OS.latestMetric("weight") && OS.getP("identity.height", null) ? '<button id="npCreate" class="btn btn-primary btn-sm">Nutrition-Plan erstellen →</button>' :
@@ -280,24 +300,42 @@
   }
 
   /* =========================== PROGRESS =========================== */
+  // ECHTE Kraftdaten (Phase 3.1): Ø-e1RM-Veränderung (Epley) über alle Übungen
+  // mit ≥2 geloggten Einheiten — aus os_workout_logs, keine Platzhalter.
+  function strengthProgress() {
+    var logs = MM.store.get("os_workout_logs", {}) || {};
+    var pcts = [], lifts = [];
+    Object.keys(logs).forEach(function (ex) {
+      if (ex === "_sessions") return;
+      var h = logs[ex]; if (!Array.isArray(h) || h.length < 2) return;
+      function best(e) { return (e.sets || []).reduce(function (m, s) { return Math.max(m, s.w * (1 + s.r / 30)); }, 0); }
+      var a = best(h[0]), b = best(h[h.length - 1]);
+      if (a > 0 && b > 0) { pcts.push((b - a) / a * 100); lifts.push({ ex: ex, from: Math.round(a), to: Math.round(b) }); }
+    });
+    if (!pcts.length) return null;
+    return { pct: Math.round(pcts.reduce(function (a, b) { return a + b; }, 0) / pcts.length * 10) / 10, lifts: lifts };
+  }
   function vProgress() {
     var d = MM.account.getDashboardState();
     var b = OS.baseline() || {};
     var w0 = OS.firstMetric("weight"), wN = OS.latestMetric("weight");
     var wa0 = OS.firstMetric("waist"), waN = OS.latestMetric("waist");
     var p = d.program || {};
+    var sp = strengthProgress();
     function row(l, a, bv) { return '<div class="os-cmp-row"><span>' + esc(l) + '</span><b>' + esc(a != null ? a : "—") + '</b><i>→</i><b class="now">' + esc(bv != null ? bv : "—") + '</b></div>'; }
     var interp = E.interpretProgress({
       weightDelta: (w0 && wN) ? wN.value - w0.value : null,
       waistDelta: (wa0 && waN) ? waN.value - wa0.value : null,
-      strengthPct: null,
+      strengthPct: sp ? sp.pct : null,
       executionPct: p.consistency != null ? p.consistency : null
     });
     var html = sec("Start → Jetzt",
       '<div class="os-cmp">' + row("Score", b.score || (d.hasScore ? "—" : null), d.hasScore ? d.score : "—") +
       row("Gewicht", w0 ? w0.value + " kg" : null, wN ? wN.value + " kg" : null) +
       row("Taille", wa0 ? wa0.value + " cm" : null, waN ? waN.value + " cm" : null) +
+      (sp ? row("Kraft (Ø e1RM)", "Start", (sp.pct > 0 ? "+" : "") + sp.pct + " %") : "") +
       row("Execution", "—", p.consistency != null ? p.consistency + " %" : "—") + '</div>' +
+      (sp ? '<p class="small muted" style="margin:4px 0 10px">' + sp.lifts.slice(0, 4).map(function (l) { return esc((E.EXDB[l.ex] ? E.EXDB[l.ex].name : l.ex)) + " " + l.from + "→" + l.to; }).join(" · ") + ' (geschätztes 1RM, Epley)</p>' : "") +
       '<div class="os-interp">' + interp.map(function (t) { return '<p>' + esc(t) + '</p>'; }).join("") + '</div>');
     // Fotos-Vergleich (async nachgeladen)
     html += '<div class="card" id="osPhotoCmp"><span class="tag">FOTOS · WOCHE 0 vs. JETZT</span><div class="os-photocmp" id="osPhotoSlots"><p class="small muted">Prüfe Fotos…</p></div></div>';

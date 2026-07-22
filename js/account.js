@@ -522,17 +522,23 @@
         backend.select("profiles", { eq: { user_id: uid }, single: true }),
         backend.select("entitlements", { eq: { user_id: uid } }),
         backend.select("score_results", { eq: { user_id: uid } }),
-        backend.select("program_cycles", { eq: { user_id: uid } })
+        backend.select("program_cycles", { eq: { user_id: uid } }),
+        backend.select("os_state", { eq: { user_id: uid } })
       ]).then(function (r) {
         base.profile = r[0].data || null;
         base.entitlements = (r[1].data || []).map(function (e) { return { product_key: e.product_key, status: e.status, granted_at: e.granted_at }; });
         base.score_history = r[2].data || [];
         base.program_cycles = r[3].data || [];
+        base.os_state = {}; ((r[4] && r[4].data) || []).forEach(function (row) { base.os_state[row.domain] = row.state; });
+        // Vollständigkeit: lokale OS-Domains, die (noch) keine Cloud-Zeile haben.
+        Object.keys(OS_DOMAINS).forEach(function (n) { if (base.os_state[n] == null) { var v = S.get(OS_DOMAINS[n].key, null); if (v != null) base.os_state[n] = v; } });
         return base;
       });
     }
     base.score = localScore();
     base.program_state = collectProgramState();
+    base.os_state = {};
+    Object.keys(OS_DOMAINS).forEach(function (n) { var v = S.get(OS_DOMAINS[n].key, null); if (v != null) base.os_state[n] = v; });
     return Promise.resolve(base);
   }
   function requestAccountDeletion() {

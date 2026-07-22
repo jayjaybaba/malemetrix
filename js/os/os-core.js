@@ -204,6 +204,8 @@
     // Log begrenzen (letzte 60 Tage)
     var keys = Object.keys(st).sort(); while (keys.length > 60) { delete st[keys.shift()]; }
     S.set("os_actions", st);
+    // Loop schließen: Abhaken IST das Log-Ereignis der jeweiligen Domain.
+    if (id.indexOf("nutrition:") === 0) emit("MEAL_LOGGED", { action: id });
   }
 
   // Aggregiert Programm + Nutrition + Movement + Recovery + Stack zu 3–5
@@ -322,6 +324,8 @@
       MM.account.registerStateDomain("osstack", "os_stack");
       MM.account.registerStateDomain("osactions", "os_actions");
       MM.account.registerStateDomain("ostransform", "os_transformation");
+      // Phase 3.1 Close-the-Loop: Workout-Logs (echte Kraftdaten) reisen mit.
+      MM.account.registerStateDomain("osworkouts", "os_workout_logs");
     }
   } catch (e) {}
 })();
