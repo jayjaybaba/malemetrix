@@ -143,3 +143,37 @@
   .c2-grid2{grid-template-columns:1fr}
   .c2-nav button{font-size:.74rem}
 }
+
+/* ---- Audit-Fix-Pass: Button-Resets (a11y P19) ---- */
+.c2-check,.c2-opt{font:inherit;text-align:left;width:100%}
+.c2-check{appearance:none;-webkit-appearance:none}
+.c2 button{font-family:inherit}
+.c2 :focus-visible{outline:2px solid var(--c2-cyan);outline-offset:2px;border-radius:8px}
+.c2-opt[aria-pressed]{align-items:center}
+
+/* ---- Recheck: Tabelle desktop, Karten mobile (P18) ---- */
+.c2-recheck{margin-top:4px}
+.c2-rc-table{width:100%;border-collapse:separate;border-spacing:0;font-size:.82rem}
+.c2-rc-table th,.c2-rc-table td{padding:6px;text-align:left;border-bottom:1px solid var(--c2-line)}
+.c2-rc-table thead th{font-family:var(--c2-mono);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--c2-mut)}
+.c2-rc-table td:first-child{color:var(--c2-ink2)}
+.c2-rc{width:100%;min-width:56px;padding:7px;background:var(--c2-bg);border:1px solid var(--c2-line);border-radius:6px;color:#fff;font-size:.85rem}
+@media (max-width:620px){
+  .c2-rc-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  .c2-rc-table,.c2-rc-table tbody,.c2-rc-table tr,.c2-rc-table td{display:block;width:100%}
+  .c2-rc-table tr{margin-bottom:14px;border:1px solid var(--c2-line);border-radius:12px;background:var(--c2-card);padding:6px 12px}
+  .c2-rc-table td{border-bottom:1px solid var(--c2-line);display:flex;align-items:center;gap:10px;padding:8px 0}
+  .c2-rc-table td:last-child{border-bottom:0}
+  .c2-rc-table td:first-child{font-weight:700;color:#fff;border-bottom:2px solid var(--c2-line2);padding-top:2px}
+  .c2-rc-table td::before{content:attr(data-label);flex:0 0 42%;font-family:var(--c2-mono);font-size:.62rem;letter-spacing:.05em;text-transform:uppercase;color:var(--c2-mut)}
+  .c2-rc-table td:first-child::before{content:""}
+}
+
+/* ---- Progression (P12) ---- */
+.c2-lift{padding:10px 0;border-top:1px solid var(--c2-line)}
+.c2-lift:first-of-type{border-top:0}
+.c2-lift-h{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.c2-lift-in{display:flex;align-items:center;gap:8px;margin-top:8px}
+.c2-lift-in input{width:80px;padding:9px 10px;background:var(--c2-bg);border:1px solid var(--c2-line2);border-radius:9px;color:#fff;font-size:.9rem}
+.c2-lift-in span{color:var(--c2-mut)}
+.c2-lift-in .c2-btn{padding:9px 14px}
