@@ -184,3 +184,34 @@
     text-transform:uppercase;color:var(--p2-mut);text-align:left;flex:0 0 40%}
   .p2table tbody tr:nth-child(even) td{background:transparent}
 }
+
+/* ---------- Shell-Integration: Dark-Reading-Surface (nur wenn .p2root da ist) ---------- */
+body:has(.p2root){background:#05070b}
+.doc-wrap:has(.p2root){background:#05070b}
+.doc-paper:has(.p2root),
+#protoContent.doc-paper:has(.p2root){
+  background:transparent!important;border:0!important;box-shadow:none!important;
+  padding:0!important;max-width:none!important;color:var(--p2-ink)}
+.p2root{max-width:920px;margin:0 auto}
+
+/* ---------- TOC ---------- */
+.p2toc{margin:8px 0 10px;padding:22px 24px;border-radius:16px;background:var(--p2-bg2);border:1px solid var(--p2-line)}
+.p2toc .p2kicker{margin-bottom:12px}
+.p2toc ol{list-style:none;counter-reset:t;margin:0;padding:0;
+  display:grid;grid-template-columns:repeat(2,1fr);gap:2px 22px}
+.p2toc li{counter-increment:t;border-top:1px solid var(--p2-line)}
+.p2toc li a{display:flex;gap:12px;align-items:baseline;padding:10px 2px;border-bottom:0;color:var(--p2-ink2);font-size:.94rem}
+.p2toc li a::before{content:counter(t,decimal-leading-zero);font-family:var(--p2-mono);font-size:.74rem;color:var(--p2-blue2);flex:0 0 auto}
+.p2toc li a:hover{color:#fff}
+
+/* ---------- Footer ---------- */
+.p2footer{margin-top:36px;padding-top:26px;border-top:1px solid var(--p2-line2)}
+.p2footer h3{margin-top:0}
+.p2footer h4{color:var(--p2-mut);margin:22px 0 8px}
+.p2disclaimer{font-size:.86rem;color:var(--p2-ink2);background:var(--p2-bg2);border:1px solid var(--p2-line);
+  border-left:3px solid var(--p2-amber);border-radius:12px;padding:14px 16px}
+.p2src{columns:2;column-gap:26px;list-style:none;padding:0;margin:0;font-size:.78rem;color:var(--p2-mut)}
+.p2src li{break-inside:avoid;padding:3px 0;border-bottom:1px solid var(--p2-line)}
+.p2src-note{font-size:.84rem;color:var(--p2-mut)}
+.p2brand{margin-top:22px;font-family:var(--p2-mono);font-size:.72rem;letter-spacing:.14em;color:var(--p2-mut);text-transform:uppercase}
+@media (max-width:720px){ .p2toc ol{grid-template-columns:1fr} .p2src{columns:1} }
