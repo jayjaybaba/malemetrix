@@ -8,6 +8,7 @@
   <meta name="robots" content="noindex">
   <link rel="stylesheet" href="css/fonts.css">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/os.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%232e7cf6'/><stop offset='1' stop-color='%2300c2ff'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='url(%23g)'/><path d='M8 23V9.5l8 7 8-7V23' fill='none' stroke='white' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/><circle cx='8' cy='9.5' r='2.2' fill='white'/><circle cx='24' cy='9.5' r='2.2' fill='white'/><circle cx='16' cy='16.5' r='1.9' fill='%23bfe9ff'/></svg>">
   <link rel="canonical" href="https://www.malemetrix.com/mein-protokoll.html">
   <meta name="theme-color" content="#07090d">
@@ -73,142 +74,8 @@
 <script src="js/main.js"></script>
 <script src="js/check-data.js"></script>
 <script src="js/account.js"></script>
-<script>
-/* My MaleMetrix Dashboard — rein präsentationsschicht über MM.account.
-   Liest Score + Programm-State (nur lesend), rendert Today/Status/Sections,
-   Sign-in (falls Cloud konfiguriert), Migration und Code-Claim. */
-(function () {
-  "use strict";
-  var host = document.getElementById("mmDash");
-  if (!host || !window.MM || !MM.account) return;
-  function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c];}); }
-  var MODE={cut:"CUT",recomp:"RECOMP",build:"BUILD",perform:"PERFORM"};
-  var BN={recovery:"Recovery",engine:"Engine",body:"Body",strength:"Strength",metabolic:"Metabolic",lifestyle:"Lifestyle",medical:"Medical Check"};
-  var PHASE={1:"Build the Base",2:"Build Capacity",3:"Push Performance",4:"Lock it in"};
-
-  function skeleton(){ host.innerHTML='<div class="card" style="max-width:640px;margin:40px auto;text-align:center;color:var(--muted)">My MaleMetrix wird geladen…</div>'; }
-
-  function signInScreen(){
-    host.innerHTML=
-      '<div class="section-head center" style="margin-top:24px"><span class="eyebrow">My MaleMetrix</span>'+
-      '<h1 class="h-display" style="font-size:2rem">Willkommen zurück</h1>'+
-      '<p class="lead">Melde dich mit deiner E-Mail an — wir schicken dir einen Magic Link, kein Passwort nötig.</p></div>'+
-      '<div class="card" style="max-width:420px;margin:0 auto">'+
-        '<label class="small" style="display:block;margin-bottom:6px;color:var(--muted)">E-Mail</label>'+
-        '<input id="mmEmail" type="email" inputmode="email" autocomplete="email" placeholder="du@beispiel.de" style="width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;font-size:1rem;background:rgba(127,127,127,0.06);color:var(--text);margin-bottom:12px">'+
-        '<button id="mmGo" class="btn btn-primary btn-block">Weiter →</button>'+
-        '<p id="mmAuthMsg" class="small" style="margin-top:12px;display:none"></p>'+
-      '</div>';
-    var em=document.getElementById("mmEmail"),go=document.getElementById("mmGo"),m=document.getElementById("mmAuthMsg");
-    function submit(){ var v=(em.value||"").trim(); if(!/.+@.+\..+/.test(v)){em.focus();return;} go.disabled=true;go.textContent="Sende…";
-      MM.account.signIn(v).then(function(res){ m.style.display="block"; m.style.color=res.ok?"var(--green,#3ddc84)":"var(--amber,#f5a623)"; m.textContent=res.message||(res.ok?"Magic Link gesendet.":"Fehler."); go.disabled=false;go.textContent="Weiter →"; if(res.ok&&MM.track)MM.track("login_started",{}); }); }
-    go.addEventListener("click",submit); em.addEventListener("keydown",function(e){if(e.key==="Enter")submit();});
-  }
-
-  function tile(label,val,sub){ return '<div class="card" style="padding:16px;text-align:center"><div class="small muted" style="letter-spacing:.08em;text-transform:uppercase;font-size:.66rem">'+esc(label)+'</div><div style="font-size:1.5rem;font-weight:700;margin-top:4px">'+esc(val)+'</div>'+(sub?'<div class="small muted" style="margin-top:2px">'+esc(sub)+'</div>':'')+'</div>'; }
-  function primaryCard(kicker,title,sub,href,cta){ return '<div class="card" style="border-color:var(--accent-line);background:var(--accent-soft);margin-bottom:18px"><span class="small muted" style="text-transform:uppercase;letter-spacing:.1em;font-size:.7rem">'+esc(kicker)+'</span><h1 class="h-display" style="font-size:1.6rem;margin:6px 0 2px">'+esc(title)+'</h1><p class="muted" style="margin:0 0 14px">'+esc(sub)+'</p><a href="'+href+'" class="btn btn-primary">'+esc(cta)+'</a></div>'; }
-  function navCard(href,title,desc,enabled){ return '<a class="card" href="'+(enabled?href:"protokoll.html")+'" style="display:block;text-decoration:none;'+(enabled?"":"opacity:.62")+'"><h2 class="h-card" style="margin:0 0 6px">'+esc(title)+(enabled?"":' <span class="small" style="color:var(--muted-2)">· gesperrt</span>')+'</h2><p class="small muted" style="margin:0">'+esc(desc)+'</p></a>'; }
-
-  function dashboard(snap){
-    var d=MM.account.getDashboardState();
-    var name=d.name?(", "+d.name.toUpperCase()):"";
-    var hour=new Date().getHours(); var greet=hour<11?"Guten Morgen":hour<18?"Guten Tag":"Guten Abend";
-    var p=d.program, html="";
-
-    html+='<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin:20px 0 6px">'+
-      '<span class="eyebrow" style="margin:0">My MaleMetrix</span>'+
-      (snap.state==="signed_in"?'<button id="mmOut" class="btn btn-sm" style="background:transparent;border:1px solid var(--line);color:var(--muted)">Abmelden</button>':'')+'</div>';
-
-    if(d.access.twelve_week && p && p.active && !p.notStarted && !p.over){
-      html+='<div class="card" style="border-color:var(--accent-line);background:linear-gradient(180deg,rgba(46,124,246,0.08),var(--card) 60%);margin-bottom:18px">'+
-        '<span class="small muted" style="text-transform:uppercase;letter-spacing:.1em;font-size:.7rem">'+esc(greet)+esc(name)+'</span>'+
-        '<h1 class="h-display" style="font-size:1.7rem;margin:6px 0 2px">Woche '+p.week+' · Tag '+p.day+'</h1>'+
-        '<p class="muted" style="margin:0 0 14px">Phase '+p.phase+' · '+esc(PHASE[p.phase])+' — Modus <strong style="color:var(--text)">'+esc(MODE[d.mode]||d.mode||"")+'</strong> · Engpass <strong style="color:var(--text)">'+esc(BN[d.bottleneck]||d.bottleneck||"—")+'</strong></p>'+
-        '<a href="kurs-programm.html" class="btn btn-primary" data-track="program_continue">Heute fortsetzen →</a></div>';
-      html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:22px">'+
-        (d.hasScore?tile("Score",d.score+" / 100"):"")+tile("Programm","W "+p.week+" / 12")+
-        tile("Consistency",p.consistency+" %",p.active_days+" aktive Tage")+
-        (p.nextReviewDays!=null?tile("Nächstes Review",p.nextReviewDays+" Tage"):"")+'</div>';
-    } else if(d.access.twelve_week && p && p.notStarted){
-      html+=primaryCard(greet+name,"Dein 12-Week System ist startklar","Dein Programm beginnt am gewählten Startdatum.","kurs-programm.html","Programm öffnen →");
-    } else if(d.access.twelve_week){
-      html+=primaryCard(greet+name,"Dein 12-Week System ist bereit","Richte dein System in zwei Minuten ein.","kurs-programm.html","Programm starten →");
-    } else if(d.hasScore){
-      html+='<div class="card" style="border-color:var(--accent-line);background:var(--accent-soft);margin-bottom:18px">'+
-        '<span class="small muted" style="text-transform:uppercase;letter-spacing:.1em;font-size:.7rem">'+esc(greet)+esc(name)+'</span>'+
-        '<h1 class="h-display" style="font-size:1.6rem;margin:6px 0 2px">Dein Engpass: '+esc(d.bottleneckName||BN[d.bottleneck]||"—")+'</h1>'+
-        '<p class="muted" style="margin:0 0 14px">Empfohlener Modus: <strong style="color:var(--text)">'+esc(MODE[d.mode]||d.mode||"—")+'</strong>. Das 12-Week System führt dich Schritt für Schritt.</p>'+
-        '<a href="protokoll.html" class="btn btn-primary">Dein System aufbauen →</a></div>';
-    } else {
-      html+='<div class="card" style="border-color:var(--accent-line);background:var(--accent-soft);margin-bottom:18px;text-align:center">'+
-        '<h1 class="h-display" style="font-size:1.6rem;margin:0 0 8px">Dein System beginnt mit einer Baseline</h1>'+
-        '<p class="muted" style="margin:0 0 16px">Mach den kostenlosen MaleMetrix Score — er findet deinen größten Engpass und empfiehlt deinen Modus.</p>'+
-        '<a href="check.html" class="btn btn-primary">MaleMetrix Score starten →</a></div>';
-    }
-
-    html+='<div class="grid-2">'+
-      navCard("kurs-programm.html","12-Week System",d.access.twelve_week?"Deine tägliche Umsetzung — Today, Weekly Pulse, Rechecks.":"Im Protokoll enthalten.",d.access.twelve_week)+
-      navCard("ebooks/protokoll.html","DAS PROTOKOLL",d.access.protocol?"Das Referenzwerk — verstehe, warum es funktioniert.":"Als Referenzwerk erhältlich.",d.access.protocol)+
-      navCard("tracker.html","Tracker","Dein Measurement Layer — Training, Cardio, Schlaf, Körperdaten.",true)+
-      navCard("ebooks.html","Library","Deep Dives zu Body, Engine, Recovery, Hormonen und Health.",true)+'</div>';
-
-    if(!d.access.twelve_week){
-      html+='<div class="card" style="margin-top:16px">'+
-        '<p class="small" style="margin:0 0 8px;font-weight:600">Du hast bereits einen Zugangscode?</p>'+
-        '<div style="display:flex;gap:8px;flex-wrap:wrap"><input id="mmClaim" type="text" placeholder="Zugangscode" autocomplete="off" spellcheck="false" style="flex:1;min-width:180px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(127,127,127,0.06);color:var(--text);letter-spacing:1px"><button id="mmClaimBtn" class="btn btn-primary btn-sm">Zugang aktivieren</button></div>'+
-        '<p id="mmClaimMsg" class="small" style="display:none;margin-top:8px"></p></div>';
-    }
-
-    if(snap.state==="signed_in"){
-      var inv=MM.account.localInventory();
-      var ms=MM.account.migrationStatus();
-      if((inv.score||inv.program) && ms.state!=="complete"){
-        html='<div class="card" style="border-color:var(--accent-line);background:var(--accent-soft);margin:20px 0"><p style="font-weight:600;margin:0 0 8px">Daten auf diesem Gerät gefunden'+(ms.state==="partial"?" — teilweise übernommen":"")+'</p><ul class="small" style="margin:0 0 12px;padding-left:18px;color:var(--muted)">'+(inv.score?'<li>Score — '+(ms.score?"übernommen ✓":"gefunden")+'</li>':'')+(inv.program?'<li>12-Week Fortschritt — '+(ms.program?"übernommen ✓":"gefunden")+'</li>':'')+'</ul><button id="mmImport" class="btn btn-primary btn-sm">'+(ms.state==="partial"?"Erneut versuchen":"In meinen Account übernehmen")+'</button><p id="mmImportMsg" class="small" style="display:none;margin-top:8px;color:var(--muted)"></p><p class="small muted" style="margin:10px 0 0">Tracker-Daten bleiben vorerst lokal und werden in einer folgenden Phase synchronisiert. Deine lokalen Daten bleiben als Backup erhalten.</p></div>'+html;
-      }
-    }
-
-    // Konto & Daten: Sync-Status, Export, Löschung (Datenrechte)
-    var SYNC_TXT={synced:"Gespeichert ✓",pending:"Sync ausstehend",saving:"Speichert…",offline:"Offline — lokal gespeichert",error:"Sync wird automatisch erneut versucht","local":"Nur dieses Gerät","n/a":""};
-    html+='<div class="card" style="margin-top:16px"><span class="small muted" style="text-transform:uppercase;letter-spacing:.1em;font-size:.7rem">Konto &amp; Daten</span>'+
-      (snap.state==="signed_in"?'<p class="small muted" style="margin:8px 0 10px">Status: '+esc(SYNC_TXT[d.sync]||"")+'</p>':'<p class="small muted" style="margin:8px 0 10px">'+esc(SYNC_TXT["local"])+'</p>')+
-      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-      '<button id="mmExport" class="btn btn-sm" style="background:transparent;border:1px solid var(--line);color:var(--muted)">Meine Daten exportieren (JSON)</button>'+
-      (snap.state==="signed_in"?'<button id="mmDelete" class="btn btn-sm" style="background:transparent;border:1px solid var(--line);color:var(--muted)">Konto löschen</button>':'')+
-      '</div><p id="mmAcctMsg" class="small muted" style="display:none;margin-top:8px"></p></div>';
-
-    if(snap.state==="local"){
-      html+='<p class="small muted" style="text-align:center;margin-top:22px">Dieses Gerät nutzt My MaleMetrix lokal. Das geräteübergreifende Konto wird demnächst aktiviert — deine Daten bleiben erhalten.</p>';
-    }
-
-    host.innerHTML=html;
-    var ex=document.getElementById("mmExport"); if(ex)ex.addEventListener("click",function(){MM.account.exportMyData().then(function(data){var blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="my-malemetrix-export.json";a.click();setTimeout(function(){URL.revokeObjectURL(a.href);},2000);});});
-    var del=document.getElementById("mmDelete"); if(del)del.addEventListener("click",function(){
-      if(!confirm("Konto endgültig löschen? Alle Cloud-Daten (Profil, Scores, Programm-Zyklen, Zugänge) werden entfernt. Das kann nicht rückgängig gemacht werden."))return;
-      if(!confirm("Wirklich sicher? Letzte Bestätigung."))return;
-      del.disabled=true;
-      MM.account.requestAccountDeletion().then(function(r){
-        var m=document.getElementById("mmAcctMsg");m.style.display="block";
-        if(r.ok){ if(confirm("Konto gelöscht. Auch die lokalen MaleMetrix-Daten auf DIESEM Gerät entfernen?")){MM.account.clearLocalData();} location.reload(); }
-        else { m.textContent=r.message||"Löschung derzeit nicht verfügbar."; del.disabled=false; }
-      });
-    });
-    var out=document.getElementById("mmOut"); if(out)out.addEventListener("click",function(){MM.account.signOut();});
-    var imp=document.getElementById("mmImport"); if(imp)imp.addEventListener("click",function(){imp.disabled=true;imp.textContent="Übernehme…";MM.account.importLocalData().then(function(r){var m=document.getElementById("mmImportMsg");m.style.display="block";m.textContent=r.ok?"Vollständig übernommen. Deine lokalen Daten bleiben als Backup.":((r.status&&r.status.state==="partial")?"Teilweise übernommen — bitte erneut versuchen.":(r.message||"Fehlgeschlagen — bitte erneut versuchen."));setTimeout(render,900);});});
-    var cb=document.getElementById("mmClaimBtn"); if(cb)cb.addEventListener("click",function(){var v=document.getElementById("mmClaim").value;var m=document.getElementById("mmClaimMsg");cb.disabled=true;MM.account.claimAccessCode(v).then(function(r){m.style.display="block";m.style.color=r.ok?"var(--green,#3ddc84)":"var(--amber,#f5a623)";m.textContent=r.ok?"Zugang aktiviert.":(r.message||"Code nicht erkannt.");cb.disabled=false;if(r.ok){if(MM.track)MM.track("claim_access",{});setTimeout(render,700);}});});
-  }
-
-  function render(){
-    var snap=MM.account.snapshot();
-    if(snap.state==="loading"){skeleton();return;}
-    if(snap.configured && snap.state==="signed_out"){signInScreen();return;}
-    dashboard(snap);
-  }
-
-  skeleton();
-  MM.account.onChange(render);
-  MM.account.init().then(render).catch(render);
-  if(MM.track)MM.track("dashboard_open",{});
-})();
-</script>
+<script src="js/os/os-core.js"></script>
+<script src="js/os/engines.js"></script>
+<script src="js/os/app.js"></script>
 </body>
 </html>

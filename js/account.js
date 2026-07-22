@@ -148,8 +148,8 @@
   /* ================= BACKENDS ================= */
   function makeTestBackend() {
     var C = window.__MM_TEST_CLOUD;
-    C.tables = C.tables || {}; ["profiles", "entitlements", "score_results", "program_cycles"].forEach(function (t) { C.tables[t] = C.tables[t] || []; });
-    function rows(t) { return C.tables[t]; }
+    C.tables = C.tables || {}; ["profiles", "entitlements", "score_results", "program_cycles", "os_state"].forEach(function (t) { C.tables[t] = C.tables[t] || []; });
+    function rows(t) { C.tables[t] = C.tables[t] || []; return C.tables[t]; }
     return {
       kind: "test",
       getSession: function () { return Promise.resolve(C.user || null); },
@@ -367,6 +367,46 @@
   registerDomain("program", { flush: function (meta) { return saveProgramState(meta); } });
   registerDomain("profile", { flush: function () { return Promise.resolve({ ok: true }); } });
 
+  /* ---------- GENERISCHE OS-STATE-DOMAINS (MaleMetrix OS / Phase-3-Vertrag) ----------
+     Jede OS-Domain (osprofile, nutrition, training, stack, progress, …) hat einen
+     localStorage-Key, wird versioniert in EINE generische Cloud-Tabelle os_state
+     gespeichert (user_id + domain unique) und mit derselben Konfliktregel wie das
+     Programm hydratisiert: Cloud überschreibt nur, wenn strikt neuer UND lokal
+     seit letztem Sync unverändert. Keine Business-Logik hier — nur Persistenz. */
+  var OS_DOMAINS = {};   // name -> { key }  (key = mm_-Store-Key, Wert beliebiges JSON)
+  function registerStateDomain(name, storeKey) {
+    OS_DOMAINS[name] = { key: storeKey };
+    registerDomain(name, { flush: function () { return flushOsDomain(name); } });
+  }
+  function osVer(name, kind) { return S.get("os_" + kind + "_" + name, kind === "synced" ? -1 : 0) || (kind === "synced" ? -1 : 0); }
+  function bumpOsVer(name) { var v = osVer(name, "ver") + 1; S.setRaw("os_ver_" + name, v); return v; }
+  function flushOsDomain(name) {
+    if (!backend || !_user) return Promise.resolve({ ok: false, code: "no_cloud" });
+    var d = OS_DOMAINS[name]; if (!d) return Promise.resolve({ ok: true });
+    var state = S.get(d.key, null);
+    if (state == null) return Promise.resolve({ ok: true, code: "empty" });
+    var ver = bumpOsVer(name);
+    return backend.upsert("os_state", { user_id: _user.id, domain: name, state: state, state_version: ver, updated_at: nowStamp() }, "user_id,domain")
+      .then(function (x) { if (x.error) return { ok: false, message: x.error.message }; S.setRaw("os_synced_" + name, ver); return { ok: true }; });
+  }
+  function hydrateOsDomains() {
+    if (!backend || !_user) return Promise.resolve();
+    return backend.select("os_state", { eq: { user_id: _user.id } }).then(function (r) {
+      if (r.error || !r.data) return;
+      (r.data || []).forEach(function (row) {
+        var d = OS_DOMAINS[row.domain]; if (!d) return;
+        var cloudVer = row.state_version || 0, localVer = osVer(row.domain, "ver"), localSynced = osVer(row.domain, "synced");
+        var localHas = S.get(d.key, null) != null;
+        if (!localHas) { S.setRaw(d.key, row.state); S.setRaw("os_ver_" + row.domain, cloudVer); S.setRaw("os_synced_" + row.domain, cloudVer); }
+        else if (cloudVer > localVer && localVer <= localSynced) { S.setRaw(d.key, row.state); S.setRaw("os_ver_" + row.domain, cloudVer); S.setRaw("os_synced_" + row.domain, cloudVer); }
+        else if (localVer > localSynced) markDirty(row.domain);
+      });
+      // Domains mit lokalem Stand, aber ohne Cloud-Zeile → Upload einreihen
+      var seen = (r.data || []).map(function (row) { return row.domain; });
+      Object.keys(OS_DOMAINS).forEach(function (n) { if (seen.indexOf(n) < 0 && S.get(OS_DOMAINS[n].key, null) != null) markDirty(n); });
+    }).catch(function () {});
+  }
+
   /* ================= CLOUD READ MODEL + HYDRATION ================= */
   function loadAccountState() {
     if (!backend || !_user) return Promise.resolve();
@@ -518,6 +558,7 @@
   function afterAuth() {
     return loadAccountState().then(function () {
       hydrateFromCloud();
+      hydrateOsDomains();
       setState("signed_in");
       scheduleFlush(300);                                                    // Retry-Trigger: auth ready (P1-26)
       return api.snapshot();
@@ -529,6 +570,7 @@
     var isProg = key.indexOf("c2_") === 0 || key === "course_rechecks";
     var isMeta = /^(c2_state_version|c2_synced_version)$/.test(key) || PROG_LOCAL_ONLY.some(function (re) { return re.test(key); });
     if (key === "check_result") { markDirty("score"); return; }
+    for (var dn in OS_DOMAINS) { if (OS_DOMAINS[dn].key === key) { markDirty(dn); return; } }
     if (isProg && !isMeta) {
       // Reset-Signatur: Kern-Keys werden ENTFERNT → Cloud-Zyklus muss archiviert werden.
       if (op === "remove" && (key === "c2_goal" || key === "c2_start")) markDirty("program", { resetSeen: true });
@@ -596,6 +638,7 @@
     clearLocalData: clearLocalData,
     getSyncStatus: getSyncStatus,
     registerDomain: registerDomain,                                          // Phase-3-Vertrag (tracker/nutrition/stack/…)
+    registerStateDomain: registerStateDomain,                                // OS-Domains: name + mm_-Store-Key
     flushNow: function () { return flushDirty(); },
 
     signIn: function (email) {

@@ -1,19 +1,56 @@
 {
-  "name": "MaleMetrix — Training & Kalorien",
+  "name": "My MaleMetrix — Personal Performance OS",
   "short_name": "MaleMetrix",
-  "description": "Gym-Tracker mit Wochenplan, Kalorien-Tracker mit Makros und das komplette MaleMetrix-System — läuft offline, ohne Konto.",
+  "description": "Dein persönliches Performance-Betriebssystem: Today, Programm, Training, Nutrition, Progress — offline-fähig, lokal-first.",
   "lang": "de",
-  "start_url": "tracker.html?source=pwa",
+  "start_url": "mein-protokoll.html?source=pwa#today",
   "scope": "./",
   "display": "standalone",
   "background_color": "#07090d",
   "theme_color": "#07090d",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ],
   "shortcuts": [
-    { "name": "Training starten", "url": "tracker.html?source=pwa", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Kalorien tracken", "url": "dinner.html?source=pwa", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+    {
+      "name": "Today",
+      "url": "mein-protokoll.html?source=pwa#today",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Workout",
+      "url": "mein-protokoll.html?source=pwa#workout",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Track",
+      "url": "mein-protokoll.html?source=pwa#track",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
   ]
 }
