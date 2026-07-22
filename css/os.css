@@ -421,3 +421,10 @@
   .lab-cmprow .u { display: none; }
   .lab-revrow { grid-template-columns: 1.2fr 0.7fr 0.6fr 24px; }
 }
+
+.lab-review-sum { border-color: rgba(0,194,255,0.25) !important; }
+.lab-rev-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
+.lab-rev-grid > div { text-align: center; border: 1px solid var(--line); border-radius: 10px; padding: 10px 4px; background: rgba(0,0,0,0.15); }
+.lab-rev-grid b { display: block; font-size: 1.4rem; color: #fff; font-family: var(--font-head, inherit); }
+.lab-rev-grid span { font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted-2); }
+@media (max-width: 420px) { .lab-rev-grid { grid-template-columns: repeat(2, 1fr); } }

@@ -479,6 +479,20 @@
       return html;
     }
 
+    // YOUR LAB REVIEW — Ein-Blick-Synthese (§85), print-freundlich.
+    var cats0 = labs.categorySummary();
+    var totImproving = cats0.reduce(function (a, g) { return a + g.improving; }, 0);
+    var totWatch = cats0.reduce(function (a, g) { return a + g.worsening + g.followup + g.outside; }, 0);
+    var comp0 = labs.completeness();
+    var due0 = labs.dueRechecks();
+    html += '<div class="card lab-review-sum"><span class="tag">YOUR LAB REVIEW</span>' +
+      '<div class="lab-rev-grid">' +
+      '<div><b>' + totImproving + '</b><span>verbessert</span></div>' +
+      '<div><b>' + totWatch + '</b><span>zu beobachten</span></div>' +
+      '<div><b>' + comp0.missing.length + '</b><span>Kontext fehlt</span></div>' +
+      '<div><b>' + due0.length + '</b><span>Recheck fällig</span></div>' +
+      '</div><p class="small muted" style="margin:8px 0 0">Momentaufnahme deiner Biologie — Details unten. (Drucken/als PDF speichern über den Browser.)</p></div>';
+
     // TOP 3 PRIORITÄTEN
     var prios = labs.priorities(3);
     if (prios.length) {
