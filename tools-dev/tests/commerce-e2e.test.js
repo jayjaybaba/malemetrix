@@ -141,10 +141,12 @@ group("Contract · { ok, data } wird zentral entpackt");
 /* ===== 9) CORS: Preflight sauber, sonst blockt der Browser den POST ===== */
 group("CORS · OPTIONS-Preflight + CORS-Header auf allen Antworten");
 (function () {
-  ok(/access-control-allow-origin/.test(edge), "CORS-Header definiert (access-control-allow-origin)");
-  ok(/access-control-allow-headers[^]*authorization[^]*x-client-info/.test(edge.replace(/\n/g, " ")), "erlaubt authorization + x-client-info (supabase-js Header)");
-  ok(/req\.method === "OPTIONS"[\s\S]{0,80}status: 204[\s\S]{0,20}headers: CORS/.test(edge), "OPTIONS ⇒ 204 mit CORS-Headern (Preflight besteht)");
-  ok(/headers: \{ "content-type": "application\/json", \.\.\.CORS \}/.test(edge), "json()-Antworten tragen CORS-Header");
+  // Seit P10 kommt CORS aus _shared/edge.mjs (Allowlist, per-Request-Echo).
+  var sharedEdge = read("supabase/functions/_shared/edge.mjs");
+  ok(/access-control-allow-origin/.test(sharedEdge), "CORS-Header definiert (access-control-allow-origin, _shared)");
+  ok(/access-control-allow-headers[^]*authorization[^]*x-client-info/.test(sharedEdge.replace(/\n/g, " ")), "erlaubt authorization + x-client-info (supabase-js Header)");
+  ok(/status: 204/.test(sharedEdge) && /preflight\(CORS\)/.test(edgeIndex), "OPTIONS ⇒ 204 mit CORS-Headern (Preflight besteht)");
+  ok(/jsonResponse\(data, status, CORS\)/.test(edgeIndex), "json()-Antworten tragen CORS-Header");
 })();
 
 /* ===== 10) Präzise, sichere Fehlercodes (Recovery-Diagnose) ===== */
@@ -173,7 +175,7 @@ group("Auth · getUser(jwt) mit Service-Role, keine ungeprüften Claims");
   // Genau EIN Service-Role-Client (Dublette entfernt), an Subscription-Handler übergeben
   var svc = (edge.match(/createClient\(/g) || []).length;
   ok(svc === 1, "genau eine createClient-Erzeugung (Dublette vereinheitlicht) — ist " + svc);
-  ok(/handleSubscriptionEvent\(body, user, service\)/.test(edge), "Subscription-Handler bekommt den geteilten service-Client");
+  ok(/handleSubscriptionEvent\(body, user, service, json\)/.test(edge), "Subscription-Handler bekommt den geteilten service-Client");
   // Service-Role-Key wird nie serialisiert: nicht INNERHALB eines json({...})-
   // Objekts und nie in einer console.-Zeile (der Guard `!SR_KEY` steht VOR
   // json( und ist damit kein Leak).
@@ -202,7 +204,7 @@ group("resolve-product-access · autoritative Auth + user-scoped Entitlement");
   var rpa = read("supabase/functions/resolve-product-access/index.ts");
   ok(!/Deno\.env\.get\("SUPABASE_ANON_KEY"\)/.test(rpa), "liest SUPABASE_ANON_KEY nicht mehr");
   ok(/service\.auth\.getUser\(jwt\)/.test(rpa), "validiert Bearer-Token explizit via Service-Role");
-  ok(/error: "auth_missing"/.test(rpa) && /error: "auth_invalid_token"/.test(rpa), "konkrete Auth-Codes (auth_missing/auth_invalid_token)");
+  ok(/auth_missing/.test(read("supabase/functions/_shared/edge.mjs")) && /requireUser\(/.test(rpa), "konkrete Auth-Codes (auth_missing/auth_invalid_token via _shared)");
   ok(/\.eq\("user_id", uid\)/.test(rpa), "Entitlement-Query strikt auf validierten user_id gefiltert (Service-Role umgeht RLS)");
   ok(!/JSON\.stringify\(\{[^}]*material[^}]*\}[\s\S]*console/.test(rpa) && /Never log the material|material/.test(rpa), "Schlüsselmaterial wird nicht geloggt");
 })();

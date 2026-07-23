@@ -212,7 +212,9 @@ group("Commerce · Client vergibt nie Zugriff, Idempotenz insert-first, keine Pl
   ok(/commerce_events/.test(fn) && fn.indexOf("commerce_events") < fn.indexOf('from("orders")'), "Idempotenz-Event wird VOR Order/Entitlement geschrieben (insert-first)");
   ok(/23505|duplicate/i.test(fn), "Replay (unique violation) wird erkannt und vergibt nichts doppelt");
   ok(/order\.status !== "COMPLETED"/.test(fn) && /cap\.status !== "COMPLETED"/.test(fn), "Server prüft Order- UND Capture-Status direkt bei PayPal");
-  ok(/paidCents < minCents/.test(fn), "Betragsprüfung gegen bekannte Produktpreise");
+  // P10: Preisprüfung lebt im unit-getesteten Fulfillment-Kern und ist EXAKT
+  var p10fulfill = fs.readFileSync(path.join(ROOT, "supabase/functions/mm-commerce/fulfillment.mjs"), "utf8");
+  ok(/capture\.amountCents !== v\.expectedCents/.test(p10fulfill), "Betragsprüfung gegen bekannte Produktpreise (exakt, fulfillment.mjs)");
   ok(/SERVICE_ROLE/.test(fn), "Entitlement-Schreibpfad läuft über Service-Role (nie Client)");
   var mig = fs.readFileSync(path.join(ROOT, "supabase/migrations/20260723000007_phase8_commerce.sql"), "utf8");
   ok(/unique \(provider, event_id\)/.test(mig), "DB erzwingt unique(provider,event_id)");

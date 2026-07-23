@@ -22,3 +22,20 @@ verify_jwt = false
 # strikt auf user_id des validierten Nutzers.
 [functions.resolve-product-access]
 verify_jwt = false
+
+# mm-ai + delete-account: identischer ES256-Fall (P10/P0.6). Beide Handler
+# validieren den Bearer-Token selbst über service.auth.getUser(jwt) —
+# verify_jwt=false macht sie NICHT öffentlich, es verlagert die (mit ES256
+# funktionierende) Prüfung in den Handler. Auth-Muster: _shared/edge.mjs.
+[functions.mm-ai]
+verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = false
+
+# send-brief wird NICHT vom Browser mit User-JWT aufgerufen, sondern vom
+# Scheduler (pg_cron/extern) mit x-scheduler-secret. Ohne verify_jwt=false
+# würde die Platform-Ebene jeden Scheduler-Call ablehnen. Der Handler lehnt
+# alles ohne korrektes SCHEDULER_SECRET mit 403 ab.
+[functions.send-brief]
+verify_jwt = false

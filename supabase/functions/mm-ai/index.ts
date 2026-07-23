@@ -4,11 +4,14 @@
 // STATUS: CODE COMPLETE · CONFIG REQUIRED (Secrets + Deploy — siehe AI.md).
 //   supabase secrets set ANTHROPIC_API_KEY=...   (oder OPENAI_API_KEY)
 //   supabase functions deploy mm-ai
-// Sicherheit: verlangt authentifizierte Session (verify_jwt), Rate-Limit pro
-// Nutzer, Payload-Validierung, minimaler Kontext, keine Secrets in Antwort.
+// Sicherheit: Auth IM HANDLER (ES256-kompatibel, P0.6: Bearer →
+// service.auth.getUser(jwt), verify_jwt=false in config.toml), CORS-Allowlist
+// (P0.7), Rate-Limit pro Nutzer, Payload-Validierung, minimaler Kontext,
+// keine Secrets in Antwort.
 // Die KI ist NIE Quelle der Wahrheit — der Client validiert zusätzlich (§9).
 // ============================================================================
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsHeaders, jsonResponse, preflight, requireUser } from "../_shared/edge.mjs";
 
 const RATE_LIMIT_PER_HOUR = 30;
 const MAX_BODY_BYTES = 32_000;
@@ -31,21 +34,26 @@ REGELN (nicht verhandelbar):
 - Unsicherheit benennen statt kaschieren. Fehlt Wissen oder Datenlage: sag es.`;
 
 Deno.serve(async (req) => {
+  const cors = corsHeaders(req.headers.get("origin") || "");
+  const json = (obj: unknown, status = 200) => jsonResponse(obj, status, cors);
   try {
+    if (req.method === "OPTIONS") return preflight(cors);
     if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
     const raw = await req.text();
     if (raw.length > MAX_BODY_BYTES) return json({ error: "payload_too_large" }, 413);
     const body = JSON.parse(raw);
 
-    // --- Auth: Nutzer-JWT verifizieren (kein anonymer Zugriff) ---
-    const supa = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
+    // --- Auth IM HANDLER (P0.6): Bearer explizit validieren, ES256-sicher.
+    // Der frühere ANON_KEY-Client + getUser() ohne Token liefert in diesem
+    // Projekt (Publishable Keys) keinen User → war ein 401-Blindgänger. ---
+    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
+      auth: { persistSession: false, autoRefreshToken: false },
     });
-    const { data: { user }, error: authErr } = await supa.auth.getUser();
-    if (authErr || !user) return json({ error: "unauthorized" }, 401);
+    const authRes = await requireUser(req, admin, cors);
+    if (authRes.errorResponse) return authRes.errorResponse;
+    const user = authRes.user;
 
     // --- Rate-Limit pro Nutzer (ai_request_log, RLS: service-only) ---
-    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const oneHourAgo = new Date(Date.now() - 3600_000).toISOString();
     const { count } = await admin.from("ai_request_log").select("id", { count: "exact", head: true })
       .eq("user_id", user.id).gte("created_at", oneHourAgo);
@@ -97,7 +105,3 @@ Deno.serve(async (req) => {
     return json({ error: "internal", detail: String((e as Error)?.message ?? e).slice(0, 200) }, 500);
   }
 });
-
-function json(obj: unknown, status = 200) {
-  return new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json" } });
-}

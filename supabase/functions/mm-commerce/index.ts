@@ -18,22 +18,17 @@
 // ============================================================================
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { fulfillVerifiedCapture, PRODUCTS, validateProducts } from "./fulfillment.mjs";
+import { corsHeaders, jsonResponse, preflight } from "../_shared/edge.mjs";
 
-// CORS: die Funktion wird vom Browser (www.malemetrix.com) cross-origin
+// CORS (P0.7): die Funktion wird vom Browser (www.malemetrix.com) cross-origin
 // aufgerufen. supabase-js sendet authorization + x-client-info + apikey →
 // der Browser macht einen Preflight (OPTIONS). Ohne diese Header schlägt der
 // Preflight fehl und der eigentliche POST wird NIE gesendet (Symptom:
 // "function_error" ohne lesbaren Server-Body). Deshalb: jede Antwort trägt
-// CORS-Header und OPTIONS wird sauber mit 204 beantwortet.
-const CORS: Record<string, string> = {
-  "access-control-allow-origin": "*",
-  "access-control-allow-methods": "POST, OPTIONS",
-  "access-control-allow-headers": "authorization, x-client-info, apikey, content-type",
-  "access-control-max-age": "86400",
-};
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json", ...CORS } });
-}
+// CORS-Header und OPTIONS wird mit 204 beantwortet. Seit P10: Allowlist
+// (www + Apex) statt Wildcard — _shared/edge.mjs. Die Header werden PRO
+// Request berechnet (Origin-Echo), nie in Modul-State gehalten (Race-frei).
+type JsonFn = (data: unknown, status?: number) => Response;
 
 async function paypalToken(base: string, id: string, secret: string): Promise<string | null> {
   const r = await fetch(base + "/v1/oauth2/token", {
@@ -68,7 +63,7 @@ function billingNext(state: string, event: string): string {
   return t.to as string;
 }
 
-async function handleSubscriptionEvent(body: any, user: any, service: any): Promise<Response> {
+async function handleSubscriptionEvent(body: any, user: any, service: any, json: JsonFn): Promise<Response> {
   const provider = String(body.provider || "");
   const eventId = String(body.eventId || "");
   const eventType = String(body.eventType || "");
@@ -106,10 +101,12 @@ async function handleSubscriptionEvent(body: any, user: any, service: any): Prom
 }
 
 Deno.serve(async (req) => {
+  const CORS = corsHeaders(req.headers.get("origin") || "");
+  const json: JsonFn = (data, status = 200) => jsonResponse(data, status, CORS);
   try {
     // CORS-Preflight zuerst — MUSS 2xx + CORS-Header liefern, sonst blockt
     // der Browser den nachfolgenden POST (Root Cause des function_error).
-    if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
+    if (req.method === "OPTIONS") return preflight(CORS);
     if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
     const body = await req.json();
 
@@ -147,7 +144,7 @@ Deno.serve(async (req) => {
 
     // --- Abo-Webhook (§10–§12): deterministische Zustandsmaschine, idempotent ---
     if (body.action === "subscription_event") {
-      return await handleSubscriptionEvent(body, user, service);
+      return await handleSubscriptionEvent(body, user, service, json);
     }
 
     if (body.action !== "verify_paypal" || typeof body.paypalOrderId !== "string") {
