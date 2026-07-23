@@ -38,6 +38,7 @@
   };
   function OS() { return MM.os; }
   function E() { return MM.engines; }
+  function IN() { return (window.MM && MM.intelligence) ? MM.intelligence : null; }
   function acct() { return (window.MM && MM.account) ? MM.account : null; }
   function dash() { var a = acct(); return a ? a.getDashboardState() : { program: { active: false }, access: {} }; }
 
@@ -156,10 +157,13 @@
   };
   function overlays() { var o = S.get("os_overlays", []); return Array.isArray(o) ? o : []; }
   function saveOverlays(list) { S.set("os_overlays", list); }
-  function activeOverlay(ymd) {
+  function activeOverlays(ymd) {
     ymd = ymd || todayYmd();
-    var list = overlays().filter(function (o) { return o.start <= ymd && ymd <= o.end && !o.endedEarly; });
-    return list.length ? list[list.length - 1] : null;   // jüngstes Overlay gewinnt
+    return overlays().filter(function (o) { return o.start <= ymd && ymd <= o.end && !o.endedEarly; });
+  }
+  function activeOverlay(ymd) {
+    var list = activeOverlays(ymd);
+    return list.length ? list[list.length - 1] : null;   // jüngstes Overlay für Anzeige
   }
   function startOverlay(o) {
     if (!OVERLAYS[o.mode]) return null;
@@ -377,21 +381,144 @@
   function ackComeback() { S.set("os_comeback_ack", todayYmd()); }
 
   /* =========================================================================
-     DECISION LEDGER — Entscheidung → beobachten → Review → keep/revert.
+     DECISION LEDGER — FASSADE über dem EINEN kanonischen Ledger.
+     Owner der Entscheidungsbedeutung: MM.intelligence.memory (intel_decisions).
+     MM.exec erzeugt Follow-up-Aktionen, zeigt Review-Fälligkeit und wendet
+     bestätigte Änderungen an — führt aber KEIN zweites Decision-Store.
+     Der frühere Phase-6-Store (os_decisions) wird einmalig, idempotent
+     migriert. Legacy-Pfad bleibt nur als Fallback ohne Intelligence-Layer.
      ========================================================================= */
-  function decisions() { var d = S.get("os_decisions", []); return Array.isArray(d) ? d : []; }
-  function saveDecisions(d) { S.set("os_decisions", d); }
+  function legacyDecisions() { var d = S.get("os_decisions", []); return Array.isArray(d) ? d : []; }
+  function fromIntel(d) {
+    return {
+      id: d.id, domain: d.domain, what: d.title, why: d.reason, date: d.date,
+      reviewDate: d.review_date,
+      status: d.status === "open" ? "open" : ((d.outcome && d.outcome.verdict) || d.status),
+      confidence: d.confidence, evidence: d.evidence || [],
+      oldState: d.old_state, newState: d.new_state, appliedState: d.applied_state
+    };
+  }
+  function migrateLegacyDecisions() {
+    var I = IN(); if (!I || !I.memory) return false;
+    if (S.get("os_decisions_migrated", false)) return true;
+    var legacy = legacyDecisions();
+    if (legacy.length) {
+      var l = I.memory.ledger();
+      var seen = {}; l.forEach(function (d) { if (d.legacy_id) seen[d.legacy_id] = 1; });
+      legacy.forEach(function (d) {
+        if (seen[d.id]) return;
+        I.memory.recordDecision({ domain: d.domain || "general", title: d.what || "", reason: d.why || "", reviewInDays: 14, source: "exec-migrated", date: d.date });
+        var all = I.memory.ledger(); var e = all[all.length - 1];
+        e.legacy_id = d.id;
+        if (d.date) e.date = d.date;
+        if (d.reviewDate) e.review_date = d.reviewDate;
+        if (d.status && d.status !== "open") { e.status = "reviewed"; e.outcome = { verdict: d.status, note: d.outcomeNote || "" }; e.reviewedAt = d.closedAt || todayYmd(); }
+        S.set("intel_decisions", all);
+      });
+    }
+    S.set("os_decisions_migrated", true);
+    return true;
+  }
+  // Beobachtete Reaktion für Response Memory (§12) — beim Review-Schließen.
+  function observedNow() {
+    try {
+      var wt = OS().metricTrend("weight", 15), wa = OS().metricTrend("waist", 14);
+      return { weightDelta: wt ? wt.delta : null, waistDelta: wa ? wa.delta : null, windowDays: 14 };
+    } catch (e) { return null; }
+  }
+  function decisions() {
+    var I = IN();
+    if (I && I.memory && migrateLegacyDecisions()) return I.memory.ledger().map(fromIntel);
+    return legacyDecisions();
+  }
   function addDecision(dec) {
+    var I = IN();
+    if (I && I.memory && migrateLegacyDecisions()) {
+      var e = I.memory.recordDecision({ domain: dec.domain || "general", title: dec.what, reason: dec.why || "", evidence: dec.evidence || [], reviewInDays: dec.reviewInDays != null ? dec.reviewInDays : 14, type: dec.type || "change", old_state: dec.oldState != null ? dec.oldState : null, new_state: dec.newState != null ? dec.newState : null, source: dec.source || "exec" });
+      return fromIntel(e);
+    }
     var entry = { id: uid(), domain: dec.domain || "general", what: dec.what, why: dec.why || "", date: todayYmd(), reviewDate: addDays(todayYmd(), dec.reviewInDays != null ? dec.reviewInDays : 14), status: "open" };
-    var d = decisions(); d.push(entry); if (d.length > 100) d = d.slice(d.length - 100);
-    saveDecisions(d);
+    var d = legacyDecisions(); d.push(entry); if (d.length > 100) d = d.slice(d.length - 100);
+    S.set("os_decisions", d);
     return entry;
   }
-  function dueDecisions(ymd) { ymd = ymd || todayYmd(); return decisions().filter(function (d) { return d.status === "open" && d.reviewDate <= ymd; }); }
+  function dueDecisions(ymd) {
+    ymd = ymd || todayYmd();
+    var I = IN();
+    if (I && I.memory && migrateLegacyDecisions()) return I.memory.decisionsDueForReview().filter(function (d) { return d.review_date <= ymd; }).map(fromIntel);
+    return legacyDecisions().filter(function (d) { return d.status === "open" && d.reviewDate <= ymd; });
+  }
   function closeDecision(id, outcome, note) {
-    var d = decisions();
+    var I = IN();
+    if (I && I.memory && migrateLegacyDecisions()) {
+      I.memory.reviewDecision(id, { verdict: outcome, note: note || "" }, observedNow());
+      return;
+    }
+    var d = legacyDecisions();
     d.forEach(function (x) { if (x.id === id && x.status === "open") { x.status = outcome; x.outcomeNote = note || ""; x.closedAt = todayYmd(); } });
-    saveDecisions(d);
+    S.set("os_decisions", d);
+  }
+
+  /* =========================================================================
+     INTELLIGENCE → EXECUTION: Vorschläge (Proposal-Contract §21/§22).
+     Intelligence schlägt vor · Nutzer bestätigt · Execution wendet an ·
+     Ledger dokumentiert (old/new/applied) · Review wird terminiert.
+     KEINE stille Mutation. Ablehnen = 7 Tage Cooldown (lokal).
+     ========================================================================= */
+  function proposalState() { return S.get("os_proposal_state", {}) || {}; }
+  function proposalDismissed(key) {
+    var st = proposalState()[key];
+    return !!(st && st.dismissedAt && diffDays(st.dismissedAt, todayYmd()) < 7);
+  }
+  function dismissProposal(key) { var st = proposalState(); st[key] = { dismissedAt: todayYmd() }; S.set("os_proposal_state", st); }
+  function buildProposal(idec) {
+    if (!idec || !idec.primary) return null;
+    var p = idec.primary;
+    if (p.type !== "change" && p.type !== "check") return null;
+    // Nur ANWENDBARE Zustandsänderungen werden Bestätigungs-Karten:
+    // Nutrition mit Engine-Code oder ein Check (z. B. Monitoring-Review).
+    // Recovery-/Execution-Guidance läuft über Fokus/WARUM/Not-Now — sonst
+    // widersprächen sich Overlay-Anpassung und Vorschlag am selben Tag (§34/§35).
+    if (p.type === "change" && !(p.domain === "nutrition" && p.code)) return null;
+    var key = p.domain + ":" + (p.code || p.title);
+    if (proposalDismissed(key)) return null;
+    // Kein Doppel-Vorschlag, solange in der Domäne eine offene Entscheidung läuft.
+    var open = decisions().some(function (d) { return d.status === "open" && d.domain === p.domain; });
+    if (open) return null;
+    return { key: key, domain: p.domain, type: p.type, code: p.code || null, oldKcal: p.oldKcal || null, newKcal: p.newKcal || null, title: p.title, reason: p.reason, evidence: p.evidence || [], reviewInDays: idec.reviewInDays || 14, oneVariable: !!idec.oneVariable, deepLink: p.deepLink || null };
+  }
+  function applyProposal(prop) {
+    if (!prop) return null;
+    var oldState = null, newState = null;
+    // Deterministische Anwendung je Domäne — Ausführung gehört MM.exec.
+    if (prop.domain === "nutrition" && prop.code) {
+      var np = S.get("os_nutrition_plan", null);
+      if (np && np.kcal) {
+        oldState = np.kcal + " kcal";
+        // Deterministisch aus der Engine (newKcal) — Fallback nur, wenn der
+        // Vorschlag ohne Engine-Zahl kam (z. B. Simulator-Route).
+        var nk = prop.newKcal != null ? prop.newKcal
+          : prop.code === "adjust_down" ? Math.round(np.kcal * 0.92 / 10) * 10
+          : prop.code === "adjust_up" ? np.kcal + 175 : np.kcal;
+        if (nk !== np.kcal) {
+          np.kcal = nk; np.kcalRange = [nk - 150, nk + 150];
+          np.carbs = Math.max(0, Math.round((nk - np.protein * 4 - np.fat * 9) / 4));
+          S.set("os_nutrition_plan", np);
+          newState = nk + " kcal";
+        }
+      }
+    }
+    var dec = addDecision({ domain: prop.domain, what: prop.title, why: prop.reason, evidence: prop.evidence, reviewInDays: prop.reviewInDays, type: prop.type, oldState: oldState, newState: newState, source: "today-proposal" });
+    // applied_state im kanonischen Ledger dokumentieren.
+    var I = IN();
+    if (I && I.memory && newState != null) {
+      var l = I.memory.ledger();
+      l.forEach(function (d) { if (d.id === dec.id) { d.applied_state = newState; d.appliedAt = todayYmd(); } });
+      S.set("intel_decisions", l);
+    }
+    try { OS().emit("DECISION_APPLIED", { id: dec.id, domain: prop.domain }); } catch (e) {}
+    track("proposal_accept", { d: prop.domain });
+    return dec;
   }
 
   /* =========================================================================
@@ -537,15 +664,20 @@
     var target = E().progressionTarget(last ? last.sets : null, sl.reps);
     return { name: sl.name, last: last, target: target };
   }
+  // Gestapelte Overlays wirken GEMEINSAM: Equipment-Substitution von jedem
+  // Equipment-Overlay, Kompression auf das kleinste Zeitbudget aller Overlays.
+  // (Beispiel §34: „weniger Zeit“ + „schlecht geschlafen“ am selben Tag.)
   function sessionForDay(ymd, overlay, baseSession) {
     var base = baseSession || currentSession(); if (!base) return null;
     var s = base;
-    var o = overlay || activeOverlay(ymd);
-    if (o && (o.mode === "no_gym" || o.mode === "travel" || o.mode === "vacation")) {
-      var loc = (o.mods && o.mods.location) || (o.mode === "no_gym" ? "home_none" : "hotel_gym");
-      s = substituteSession(base, loc) || base;
-    }
-    if (o && o.mods && o.mods.minutes) { var c = compressSession(s, o.mods.minutes); if (c) s = c; }
+    var list = overlay ? [overlay] : activeOverlays(ymd);
+    var loc = null, minutes = null;
+    list.forEach(function (o) {
+      if (o.mode === "no_gym" || o.mode === "travel" || o.mode === "vacation") loc = (o.mods && o.mods.location) || (o.mode === "no_gym" ? "home_none" : "hotel_gym");
+      if (o.mods && o.mods.minutes) minutes = minutes == null ? o.mods.minutes : Math.min(minutes, o.mods.minutes);
+    });
+    if (loc) s = substituteSession(s, loc) || s;
+    if (minutes) { var c = compressSession(s, minutes); if (c) s = c; }
     return s;
   }
   function buildDay(ymd) {
@@ -561,7 +693,7 @@
     var actions = [];
     var isToday = ymd === todayYmd();
     var trainDone = pd != null ? !!dailyRec(pd).p : false;
-    var session = sessionForDay(ymd, overlay);
+    var session = sessionForDay(ymd);   // ALLE aktiven Overlays wirken (gestapelt), nicht nur das jüngste
     var estMin = session ? (session.estMin || estimateSessionMin(session)) : 60;
 
     function act(a) { a.status = a.done ? "done" : "open"; actions.push(a); return a; }
@@ -628,6 +760,22 @@
       act({ id: "stack:" + ymd, domain: "stack", type: "routine", title: "Stack-Routine", detail: stack.items.slice(0, 3).map(function (i) { return i.name; }).join(" · "), date: ymd, time: null, durationMin: 0, priority: 7, flexibility: "anytime", source: "stack", deepLink: "#plan", done: OS().actionDone("stack:" + ymd, ymd) });
     }
 
+    // EXPERIMENT → TODAY (§25): genau EINE Aktion pro laufendem Experiment.
+    try {
+      var I5 = IN();
+      if (I5 && I5.experiments && !pf.minimumMode) {
+        var running = I5.experiments.active();
+        if (running.length) {
+          var ex5 = running[0];
+          act({ id: "experiment:" + ex5.id + ":" + ymd, domain: "experiment", type: "experiment", title: ex5.change || ex5.title, detail: "Experiment · bis " + (ex5.endDate || "?"), date: ymd, time: null, durationMin: 0, priority: 5, flexibility: "anytime", source: "experiment", deepLink: "#experiments", done: OS().actionDone("experiment:" + ex5.id + ":" + ymd, ymd) });
+        }
+        var expDue = I5.experiments.dueForReview();
+        if (expDue.length) {
+          act({ id: "expreview:" + expDue[0].id, domain: "experiment", type: "experiment_review", title: "Experiment auswerten", detail: expDue[0].title, date: ymd, time: null, durationMin: 3, priority: 3, flexibility: "anytime", source: "experiment", deepLink: "#experiments", done: false });
+        }
+      }
+    } catch (e) {}
+
     // ATTENTION BUDGET: max 6 Aktionen, im Focus-/Minimum-Mode 3
     var cap = pf.minimumMode || pf.density === "focus" ? 3 : 6;
     actions = actions.slice(0, cap);
@@ -645,11 +793,25 @@
     anchors.push({ time: pf.bedtime, title: "WIND DOWN", sub: "Schlaf-Ziel", ref: "sleep:" + ymd, done: OS().actionDone("sleep:" + ymd, ymd) });
     anchors.sort(function (a, b) { return hmToMin(a.time) - hmToMin(b.time); });
 
+    /* ---- INTELLIGENCE-ARBITRIERUNG (§9): Priorität denkt MM.intelligence,
+       Machbarkeit entscheidet MM.exec — EIN Ergebnis, nie zwei NBAs. ---- */
+    var intel = null;
+    if (isToday) {
+      try {
+        var I6 = IN();
+        if (I6 && I6.decision && I6.buildContext) {
+          var ictx = I6.buildContext();
+          intel = { ctx: ictx, dec: I6.decision.decide(ictx), waiting: I6.decision.waitingForData(ictx) };
+          try { I6.decision.trackBottleneck(ictx); } catch (e) {}
+        }
+      } catch (e) { intel = null; }
+    }
+
     /* ---- NBA 2.0 — genau EINE primäre, max. zwei sekundäre, mit WARUM ---- */
     var open = actions.filter(function (a) { return !a.done; });
     var missed = isToday ? missedThisWeek().filter(function (m) { return !m.handled; }) : [];
     var nba = { primary: null, secondary: [], why: [], missed: missed };
-    var bn = d.bottleneck || "";
+    var bn = intel ? intel.dec.bottleneck.domain : (d.bottleneck || "");
     if (open.length || missed.length) {
       var scored = open.map(function (a) {
         var s = 20 - a.priority * 2;
@@ -659,8 +821,9 @@
         if ((a.type === "workout" || a.type === "makeup_workout")) s += 7;          // Programm ist das Rückgrat
         if (overlay && overlay.mode === "low_recovery" && a.domain === "recovery") s += 6;
         if (bn === "recovery" && a.domain === "recovery") s += 3;
-        if ((bn === "body" || bn === "metabolic") && a.domain === "nutrition") s += 3;
-        if ((bn === "strength" || bn === "lifestyle") && a.domain === "training") s += 2;
+        if ((bn === "body" || bn === "metabolic" || bn === "nutrition") && a.domain === "nutrition") s += 3;
+        if ((bn === "strength" || bn === "lifestyle" || bn === "training" || bn === "execution") && a.domain === "training") s += 2;
+        if (bn === "medical" && a.domain === "labs") s += 5;
         // Timing: Aktion mit Zeitfenster, das bald schließt, steigt
         if (a.time && isToday) { var dt = hmToMin(a.time) - hmToMin(nowHM()); if (dt >= -30 && dt <= 120) s += 4; }
         return { a: a, s: s };
@@ -676,7 +839,9 @@
           if (last) { var h = diffDays(last, ymd) * 24; nba.why.push(h >= 48 ? h + " h seit der letzten Kraft-Einheit — Muskulatur ist erholt." : "Letzte Einheit vor " + h + " h — heute bewusst auf Ziel, nicht darüber."); }
           else nba.why.push("Erste Einheit dieser Woche — der wichtigste Termin des Tages.");
           if (overlay && overlay.mode === "low_recovery") nba.why.push("Low-Recovery-Modus: Session halten, Progression nicht erzwingen.");
+          else if (intel && intel.dec.bottleneck.domain === "recovery") nba.why.push("Recovery ist laut Datenlage dein Limiter — Session auf Ziel, keine neuen Bestwerte erzwingen.");
           else nba.why.push("Kein Konflikt mit höherer Priorität.");
+          if (intel && intel.dec.bottleneck.evidence && intel.dec.bottleneck.evidence.length && pf.density === "expert") nba.why.push("Datenlage: " + intel.dec.bottleneck.evidence[0] + " (Konfidenz " + intel.dec.bottleneck.confidencePct + "%).");
           var ml = mainLiftInfo(session);
           if (ml && ml.last) nba.lift = { name: ml.name, last: ml.last.sets.map(function (x) { return x.w + "×" + x.r; }).join(" / "), target: ml.target.text };
           else if (ml) nba.lift = { name: ml.name, last: null, target: ml.target.text };
@@ -689,11 +854,17 @@
       }
     }
 
-    /* ---- NOT NOW — was gerade bewusst NICHT der Hebel ist ---- */
-    var notNow = [];
-    if (bn === "recovery") notNow = ["Mehr Supplements", "Mehr Cardio-Volumen", "Programm wechseln"];
-    else if (bn === "body" || bn === "metabolic") notNow = ["Neues Supplement", "Noch ein Trainingsplan", "Kalorien im Tagesrhythmus ändern"];
+    /* ---- NOT NOW — Intelligence besitzt die Bedeutung, Fallback bleibt lokal ---- */
+    var notNow;
+    if (intel && intel.dec.notNow && intel.dec.notNow.length) notNow = intel.dec.notNow;
+    else if (bn === "recovery") notNow = ["Mehr Supplements", "Mehr Cardio-Volumen", "Programm wechseln"];
+    else if (bn === "body" || bn === "metabolic" || bn === "nutrition") notNow = ["Neues Supplement", "Noch ein Trainingsplan", "Kalorien im Tagesrhythmus ändern"];
     else notNow = ["Mehr gleichzeitig ändern", "Neue Tools suchen"];
+
+    /* ---- INTELLIGENCE-ERGEBNIS für die Experience-Schicht ---- */
+    var proposal = intel ? buildProposal(intel.dec) : null;
+    var waiting = intel && intel.waiting && intel.waiting.length && !proposal ? intel.waiting : null;
+    var intelVerdict = intel ? (intel.dec.primary && intel.dec.primary.type === "keep" ? "KEEP" : intel.dec.primary ? intel.dec.primary.type.toUpperCase() : null) : null;
 
     return {
       date: ymd, isToday: isToday, programDay: pd, dayType: dtype, week: p.week || null,
@@ -702,7 +873,10 @@
       insight: isToday ? currentInsight() : null,
       comeback: isToday ? comebackState() : null,
       restDay: p.active && pd != null && (dtype === "recover" || dtype === "reset"),
-      nothingUrgent: !nba.primary && !missed.length
+      nothingUrgent: !nba.primary && !missed.length,
+      // Intelligence-Schicht (null, wenn MM.intelligence nicht geladen ist)
+      proposal: proposal, waiting: waiting, intelVerdict: intelVerdict,
+      bottleneck: intel ? { domain: intel.dec.bottleneck.domain, confidencePct: intel.dec.bottleneck.confidencePct, evidence: intel.dec.bottleneck.evidence } : null
     };
   }
 
@@ -908,22 +1082,38 @@
   /* =========================================================================
      MORNING BRIEF / EVENING CLOSE
      ========================================================================= */
+  // MORNING BRIEF — EIN Contract (§11): Intelligence liefert Fokus/Watch/
+  // Rationale, Execution liefert Zeitplan/Aktion/Dauer. Kein zweiter Generator.
   function brief() {
     var d = dash(); var p = d.program || {};
     var day = buildDay(todayYmd());
     var np = S.get("os_nutrition_plan", null);
     var bn = d.bottleneck || "";
     var focus = bn === "recovery" ? "Schlaf vor " + prefs().bedtime + "." : bn === "engine" ? "Heute " + prefs().stepTarget + " Schritte wirklich erreichen." : bn === "body" || bn === "metabolic" ? "Proteinziel treffen — der Rest folgt." : bn === "lifestyle" ? "Nur die EINE primäre Aktion. Nicht mehr." : "Progression sauber loggen.";
+    var watch = day.insight ? day.insight.text : null;
+    var confidence = null;
+    try {
+      var I7 = IN();
+      if (I7 && I7.review && I7.review.morningBrief) {
+        var mb = I7.review.morningBrief();
+        if (mb.priority) focus = mb.priority;
+        if (mb.watch && mb.watch !== "Nichts.") watch = watch ? watch + " · " + mb.watch : mb.watch;
+        else if (!watch) watch = null;
+      }
+      if (day.bottleneck) confidence = day.bottleneck.confidencePct;
+    } catch (e) {}
     return {
       dayLabel: p.active && !p.notStarted && !p.over ? "WOCHE " + p.week + " · TAG " + p.day : null,
       overlay: day.overlay,
       primary: day.nba.primary,
       lift: day.nba.lift || null,
+      anchors: day.anchors,
       nutrition: np ? { kcal: np.kcal, protein: np.protein } : null,
       focus: focus,
-      watch: day.insight ? day.insight.text : null,
+      watch: watch,
       nextReview: p.nextReviewDays != null ? p.nextReviewDays : null,
-      restDay: day.restDay
+      restDay: day.restDay,
+      confidence: confidence
     };
   }
 
@@ -1064,8 +1254,11 @@
     reminderPrefs: reminderPrefs, setReminderPrefs: setReminderPrefs, eligibleReminders: eligibleReminders, tick: tick, dismissReminder: dismissReminder, requestNotifyPermission: requestNotifyPermission, notificationText: notificationText, inQuietHours: inQuietHours,
     // Brief & Close
     brief: brief, closeDay: closeDay, dayLog: dayLog, isDayClosed: isDayClosed, consistency28: consistency28,
-    // Decisions
+    // Decisions (Fassade über kanonischem intel_decisions-Ledger)
     decisions: decisions, addDecision: addDecision, dueDecisions: dueDecisions, closeDecision: closeDecision,
+    migrateLegacyDecisions: migrateLegacyDecisions,
+    // Intelligence → Execution Proposals
+    buildProposal: buildProposal, applyProposal: applyProposal, dismissProposal: dismissProposal,
     // Insights & Comeback
     currentInsight: currentInsight, ackInsight: ackInsight, comebackState: comebackState, ackComeback: ackComeback, absenceDays: absenceDays,
     // Nutrition Execution

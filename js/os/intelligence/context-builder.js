@@ -159,14 +159,32 @@
     } catch (e) { return { available: false, markers: 0 }; }
   }
 
-  /* ---------- ADHÄRENZ / EXECUTION ---------- */
+  /* ---------- ADHÄRENZ / EXECUTION ----------
+     Liest die ECHTE Ausführungsrealität aus MM.exec-State (Phase 6):
+     Reschedules, Kontext-Overlays, Tages-Snapshots. Der Digital Twin und das
+     Weekly Review interpretieren damit reale Disruption statt Theorie. */
   function executionContext(prog) {
-    return {
+    var base = {
       available: !!(prog && prog.active && !prog.notStarted),
       consistency: prog ? prog.consistency : null,
       activeDays: prog ? prog.active_days : null,
-      week: prog ? prog.week : null, day: prog ? prog.day : null, phase: prog ? prog.phase : null
+      week: prog ? prog.week : null, day: prog ? prog.day : null, phase: prog ? prog.phase : null,
+      overlaysActive: [], disruptions28: 0, reschedules28: 0, makeupsDone28: 0, daysClosed28: 0, consistency28: null
     };
+    try {
+      var t = U().todayYmd();
+      function recent(ymd) { return ymd && U().daysBetween(ymd, t) <= 28 && U().daysBetween(ymd, t) >= 0; }
+      var ov = get("os_overlays", []) || [];
+      base.overlaysActive = ov.filter(function (o) { return o.start <= t && t <= o.end && !o.endedEarly; }).map(function (o) { return o.mode; });
+      base.disruptions28 = ov.filter(function (o) { return recent(o.start); }).length;
+      var rs = get("os_reschedules", []) || [];
+      base.reschedules28 = rs.filter(function (r) { return recent(String(r.created || "").slice(0, 10)); }).length;
+      base.makeupsDone28 = rs.filter(function (r) { return r.done && recent(String(r.doneAt || r.created || "").slice(0, 10)); }).length;
+      var dl = get("os_daylog", {}) || {};
+      base.daysClosed28 = Object.keys(dl).filter(recent).length;
+      if (window.MM && MM.exec && MM.exec.consistency28) { var c = MM.exec.consistency28(); if (c) base.consistency28 = c; }
+    } catch (e) {}
+    return base;
   }
 
   /* ---------- MISSING DATA (was fehlt für bessere Entscheidungen) ---------- */

@@ -211,15 +211,24 @@
     // 2) Contradiction mit hoher Severity → auflösen.
     contradictions(ctx).forEach(function (c) { if (c.severity === "high") cands.push({ type: "change", domain: "plan", urgency: 4, impact: 4, confidence: 3, reversible: true, title: c.title, reason: c.text, evidence: ["Widerspruch im System"] }); });
 
-    // 3) Nutrition-Adjust (deterministische Engine).
+    // 3) Nutrition-Adjust (deterministische Engine, kanonische Signatur).
+    // metricTrend(15) misst Δ über ~2 Wochen → auf Δ/Woche normiert.
     if (ctx.nutrition.hasPlan && EN() && EN().nutritionAdjust) {
       var adj = EN().nutritionAdjust({
-        mode: ctx.goal.mode, weightTrend: ctx.body.weightTrend15, waistTrend: ctx.body.waistTrend14,
-        adherencePct: ctx.execution.consistency, energyLow: ctx.recovery.lastEnergy != null && ctx.recovery.lastEnergy <= 3, sleepBad: ctx.recovery.lastSleepQuality === "schlecht"
+        mode: ctx.goal.mode, weightKg: ctx.body.weight,
+        weightTrend: ctx.body.weightTrend15 != null ? I.util.round(ctx.body.weightTrend15 / 2.14, 2) : null,
+        waistTrend: ctx.body.waistTrend14 != null ? I.util.round(ctx.body.waistTrend14 / 2, 2) : null,
+        adherencePct: ctx.execution.consistency,
+        energyLow: ctx.recovery.lastEnergy != null && ctx.recovery.lastEnergy <= 3,
+        sleepBad: ctx.recovery.lastSleepQuality === "schlecht",
+        strengthStalled: ctx.training.available && ctx.training.avgE1rmPct != null && ctx.training.avgE1rmPct <= 0.5,
+        kcalTarget: ctx.nutrition.kcal
       });
       if (adj.code !== "keep") {
         var isChange = /adjust/.test(adj.code);
-        cands.push({ type: isChange ? "change" : "watch", domain: "nutrition", urgency: 3, impact: isChange ? 4 : 2, confidence: ctx.execution.consistency != null ? 3 : 2, reversible: true, title: adj.title, reason: adj.text, evidence: buildNutriEvidence(ctx), deepLink: "#plan" });
+        // code + old/newKcal werden mitgegeben, damit MM.exec die Änderung
+        // DETERMINISTISCH aus der Engine anwendet — nie Freitext-Parsing.
+        cands.push({ type: isChange ? "change" : "watch", domain: "nutrition", code: adj.code, oldKcal: adj.oldKcal || null, newKcal: adj.newKcal || null, urgency: 3, impact: isChange ? 4 : 2, confidence: ctx.execution.consistency != null ? 3 : 2, reversible: true, title: adj.title, reason: adj.text, evidence: buildNutriEvidence(ctx), deepLink: "#plan" });
       }
     }
 
@@ -263,6 +272,28 @@
 
   function signed(v) { return v == null ? "—" : (v > 0 ? "+" : "") + I.util.round(v, 1); }
 
+  /* ---------- WAITING FOR DATA (§30/§31) ----------
+     First-class-Zustand: eine Entscheidung ist absehbar, aber die Datenlage
+     trägt sie noch nicht. Bis dahin gilt explizit: KEEP PLAN. Verhindert
+     Optimierungs-Churn aus dünnen Daten. */
+  function waitingForData(ctx) {
+    ctx = ctx || I.buildContext();
+    var out = [];
+    var pts = ctx.body.points || 0;
+    var needPts = 6;
+    if (ctx.nutrition.hasPlan && (pts < needPts || ctx.body.weightTrend15 == null)) {
+      var needs = [];
+      if (pts < needPts) needs.push((needPts - pts) + " weitere Wiegung" + (needPts - pts > 1 ? "en" : ""));
+      else needs.push("Wiegungen über ≥2 Wochen (rollender Trend braucht Vorlauf)");
+      if (ctx.body.waistTrend14 == null) needs.push("eine aktuelle Taillenmessung");
+      out.push({ decision: "Kalorien-Entscheidung", needs: needs, until: "Bis dahin: KEEP PLAN — keine Anpassung aus dünnen Daten." });
+    }
+    if (ctx.training.available && ctx.training.sessions < 3 && ctx.training.hasPlan) {
+      out.push({ decision: "Trainings-/Plateau-Bewertung", needs: [(3 - ctx.training.sessions) + " weitere geloggte Session(s)"], until: "Bis dahin: Plan unverändert ausführen." });
+    }
+    return out;
+  }
+
   /* ---------- MINIMUM VIABLE DAY (§75) ---------- */
   function minimumViableDay(ctx) {
     ctx = ctx || I.buildContext();
@@ -277,7 +308,7 @@
   I.decision = {
     decide: decide, bottleneck2: bottleneck2, trackBottleneck: trackBottleneck, bottleneckHistory: bottleneckHistory,
     leverage: leverage, stopDoing: stopDoing, contradictions: contradictions, planConsistency: planConsistency,
-    minimumViableDay: minimumViableDay, BN_DOMAINS: BN_DOMAINS
+    minimumViableDay: minimumViableDay, waitingForData: waitingForData, BN_DOMAINS: BN_DOMAINS
   };
   try { if (MM.account && MM.account.registerStateDomain) MM.account.registerStateDomain("intelbnhist", "intel_bottleneck_hist", { append: true }); } catch (e) {}
 })();
