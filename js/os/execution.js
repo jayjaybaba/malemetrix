@@ -107,6 +107,9 @@
     return p;
   }
   function dayTypeAt(pd) {
+    // SSOT seit Phase 3.1: MM.programView (paritätsgetestet gegen course.js).
+    // Der lokale Spiegel bleibt nur als Fallback für Umgebungen ohne program-view.
+    try { if (window.MM && MM.programView && MM.programView.available()) return MM.programView.dayTypeAt(pd); } catch (e) {}
     if (!progStart()) return null;
     var week = Math.min(12, Math.max(1, Math.ceil(pd / 7)));
     var pat = patternFor(modeAtDay(pd), week, bnAtDay(pd));
@@ -217,6 +220,19 @@
      ========================================================================= */
   function currentSession() {
     var tp = S.get("os_training_plan", null); if (!tp || !tp.sessions || !tp.sessions.length) return null;
+    // Phase 3.1-Semantik: Session-Zuordnung folgt dem PLAN (n-ter Kraftslot →
+    // Template n der Rotation), nicht einem lokalen Completion-Zähler.
+    try {
+      var pv = (window.MM && MM.programView) ? MM.programView : null;
+      if (pv && pv.available()) {
+        var st = pv.state();
+        if (!st.notStarted && !st.over) {
+          var target = pv.dayTypeAt(st.day) === "strength" ? st.day : null;
+          if (target == null) { for (var d2 = st.day + 1; d2 <= Math.min(84, st.day + 7); d2++) { if (pv.dayTypeAt(d2) === "strength") { target = d2; break; } } }
+          if (target != null) { var seq = pv.strengthIndexUpTo(target); return tp.sessions[(seq - 1) % tp.sessions.length]; }
+        }
+      }
+    } catch (e) {}
     var logs = S.get("os_workout_logs", {}) || {};
     var count = (logs._sessions || []).length;
     return tp.sessions[count % tp.sessions.length];
@@ -322,7 +338,8 @@
     saveReschedules(r);
     // Erledigung zählt auf den ZIELTAG (heutigen Programm-Tag) — eine Quelle (c2_daily),
     // der verpasste Tag bleibt in der Historie verpasst (keine Umschreibung).
-    if (hit && hit.toPd) { try { OS().completeProgramDay(hit.toPd); } catch (e) {} }
+    // requireStrength:false — der Zieltag ist bewusst KEIN geplanter Krafttag.
+    if (hit && hit.toPd) { try { OS().completeProgramDay(hit.toPd, { requireStrength: false, sessionId: "makeup:" + hit.id }); } catch (e) {} }
     return hit;
   }
 
@@ -380,14 +397,18 @@
   /* =========================================================================
      NUTRITION EXECUTION — Food-Log, Rest des Tages, WAS KANN ICH JETZT ESSEN?
      ========================================================================= */
-  function foodLog(ymd) { var f = S.get("os_foodlog", {}) || {}; return f[ymd || todayYmd()] || []; }
+  // SSOT seit Phase 3.1: os_nutrition_log gehört MM.os (nutritionLog/logFood).
+  // MM.exec delegiert — EIN Food-Log, viele Leser. Fallback nur ohne os-core-API.
+  function foodLog(ymd) {
+    try { if (OS() && OS().nutritionLog) return OS().nutritionLog()[ymd || todayYmd()] || []; } catch (e) {}
+    var f = S.get("os_nutrition_log", {}) || {}; return f[ymd || todayYmd()] || [];
+  }
   function logFood(protein, kcal, label) {
-    var f = S.get("os_foodlog", {}) || {}; var d = todayYmd();
-    f[d] = f[d] || [];
-    f[d].push({ p: Math.max(0, Math.round(protein || 0)), kcal: Math.max(0, Math.round(kcal || 0)), label: label || "", at: nowHM() });
-    var keys = Object.keys(f).sort(); while (keys.length > 45) delete f[keys.shift()];
-    S.set("os_foodlog", f);
-    try { OS().emit("MEAL_LOGGED", { p: protein }); } catch (e) {}
+    var entry = { name: label || "Eintrag", kcal: Math.max(0, Math.round(kcal || 0)), p: Math.max(0, Math.round(protein || 0)), source: "exec" };
+    try { if (OS() && OS().logFood) { OS().logFood(entry); return; } } catch (e) {}
+    var f = S.get("os_nutrition_log", {}) || {}; var d = todayYmd();
+    f[d] = f[d] || []; f[d].push(Object.assign({ at: new Date().toISOString() }, entry));
+    S.set("os_nutrition_log", f);
   }
   function remaining(ymd) {
     var np = S.get("os_nutrition_plan", null); if (!np) return null;
@@ -516,8 +537,8 @@
     var target = E().progressionTarget(last ? last.sets : null, sl.reps);
     return { name: sl.name, last: last, target: target };
   }
-  function sessionForDay(ymd, overlay) {
-    var base = currentSession(); if (!base) return null;
+  function sessionForDay(ymd, overlay, baseSession) {
+    var base = baseSession || currentSession(); if (!base) return null;
     var s = base;
     var o = overlay || activeOverlay(ymd);
     if (o && (o.mode === "no_gym" || o.mode === "travel" || o.mode === "vacation")) {
@@ -570,8 +591,17 @@
       act({ id: "decision:" + dec.id, domain: "decision", type: "decision_review", title: "Entscheidung prüfen", detail: dec.what, date: ymd, time: null, durationMin: 2, priority: 2, flexibility: "anytime", source: "ledger", deepLink: "#today", done: false, decisionId: dec.id });
     });
 
-    // WEEKLY REVIEW — letzter Tag der Programmwoche
-    if (p.active && !p.notStarted && !p.over && pd != null && pd % 7 === 0) {
+    // WEEKLY REVIEW / RECHECK / LAB-RECHECK — Phase-3.1/4-Reminder als Aktionen
+    // (EINE Quelle: MM.os.reminders; Fallback: letzter Tag der Programmwoche).
+    var coreRems = [];
+    try { if (isToday && OS().reminders) coreRems = OS().reminders(); } catch (e) {}
+    if (coreRems.length) {
+      coreRems.forEach(function (r) {
+        if (r.type === "workout") return;   // Training ist oben bereits die Aktion
+        var link = r.type === "lab_recheck" ? "labor.html" : r.type === "measurement" ? "#track" : "kurs-programm.html";
+        act({ id: "corerem:" + r.type, domain: r.type === "lab_recheck" ? "labs" : r.type === "measurement" ? "measurement" : "review", type: r.type + "_due", title: r.type === "pulse" ? "Weekly Pulse" : r.type === "recheck" ? "Recheck fällig" : r.type === "lab_recheck" ? "Lab-Recheck" : "Messung auffrischen", detail: r.text, date: ymd, time: null, durationMin: 3, priority: r.urgent ? 2 : 5, flexibility: "anytime", source: "os", deepLink: link, done: false, urgent: !!r.urgent });
+      });
+    } else if (p.active && !p.notStarted && !p.over && pd != null && pd % 7 === 0) {
       act({ id: "review:w" + p.week, domain: "review", type: "weekly_review", title: "Weekly Review · Woche " + p.week, detail: "Woche bewerten, nächste Woche planen — 3 Minuten", date: ymd, time: null, durationMin: 3, priority: 2, flexibility: "anytime", source: "program", deepLink: "kurs-programm.html", done: false });
     }
 
@@ -625,6 +655,7 @@
         var s = 20 - a.priority * 2;
         if (a.type === "decision_review") s += 6;                                   // offene Schleifen schließen
         if (a.type === "weekly_review") s += 5;
+        if (a.urgent && /_due$/.test(a.type)) s += 12;                              // fälliger Pulse/Recheck überstimmt alles (§57)
         if ((a.type === "workout" || a.type === "makeup_workout")) s += 7;          // Programm ist das Rückgrat
         if (overlay && overlay.mode === "low_recovery" && a.domain === "recovery") s += 6;
         if (bn === "recovery" && a.domain === "recovery") s += 3;
@@ -1045,18 +1076,9 @@
     pushStatus: pushStatus, subscribePush: subscribePush
   };
 
-  // Sync-Registrierung der neuen Execution-Domains (versioniert, local-first).
-  // os_reminder_state + os_push_subscription bleiben bewusst GERÄTE-LOKAL
-  // (Notifications sind ein Geräte-Zustand, kein Account-Zustand).
-  try {
-    if (MM.account && MM.account.registerStateDomain) {
-      MM.account.registerStateDomain("osoverlays", "os_overlays");
-      MM.account.registerStateDomain("osreschedules", "os_reschedules");
-      MM.account.registerStateDomain("osdecisions", "os_decisions");
-      MM.account.registerStateDomain("osdaylog", "os_daylog");
-      MM.account.registerStateDomain("osfoodlog", "os_foodlog");
-      MM.account.registerStateDomain("osreminderprefs", "os_reminder_prefs");
-      MM.account.registerStateDomain("osworkoutlogs", "os_workout_logs");
-    }
-  } catch (e) {}
+  // Sync-Registrierung: die Phase-6-Domains (os_overlays, os_reschedules,
+  // os_decisions, os_daylog, os_reminder_prefs) stehen im SYNC_DOMAINS-Inventar
+  // von os-core und werden dort registriert — EIN Inventar, keine Doppelung.
+  // os_reminder_state / os_push_subscription / os_workout_draft bleiben bewusst
+  // GERÄTE-LOKAL (Notification-/Resume-Zustand ist Geräte-Zustand).
 })();

@@ -85,9 +85,20 @@ many readers.
 | Calendar | internal events + honest ICS (training/makeup/review/measure ONLY, floating local time, DTEND); week planner + week load; two-way sync NOT faked |
 | Push | local notifications while app open; server push = architecture + migration 0004, **CONFIG REQUIRED** (see PUSH.md) |
 
-Invariant tests: `node tools-dev/test-execution.mjs` (57 assertions —
+Integration with Phase 3.1/4 (merge of `0a711c2`): day types come from
+`MM.programView` (execution.js keeps a parity-tested fallback mirror);
+food logging delegates to `MM.os.logFood`/`os_nutrition_log` (one log);
+session selection is plan-derived (n-th strength slot → template n);
+overdue Weekly Pulse / Recheck / Lab-Recheck flow into NBA 2.0 as
+override-priority actions; makeup completion uses
+`completeProgramDay(day, {requireStrength:false})`. The old context chips
+and the dayswap-based reschedule card are superseded by overlays +
+"Mein Tag hat sich geändert" (past days are never re-typed).
+
+Invariant tests: `node tools-dev/test-execution.mjs` (59 assertions —
 one-completion, no history rewrites, reminder honesty, calendar honesty,
-overlay expiry, snapshot immutability, ledger loop, dayType mirror).
+overlay expiry, snapshot immutability, ledger loop, mirror↔programView
+parity, pulse-override).
 
 ## Future modules (contract)
 tracker · nutrition-logging · stack-adherence · labs · wearables:

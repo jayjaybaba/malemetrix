@@ -533,6 +533,10 @@
     }
     base.score = localScore();
     base.program_state = collectProgramState();
+    // §97 — OS-Zustand vollständig exportieren (Workout-/Food-Logs, Zyklen,
+    // Anpassungshistorie, Stack, Labs …): alle registrierten Domain-Keys.
+    base.os_state = {};
+    for (var dn in OS_DOMAINS) { var v = S.get(OS_DOMAINS[dn].key, null); if (v != null) base.os_state[OS_DOMAINS[dn].key] = v; }
     return Promise.resolve(base);
   }
   function requestAccountDeletion() {
@@ -639,6 +643,17 @@
     getSyncStatus: getSyncStatus,
     registerDomain: registerDomain,                                          // Phase-3-Vertrag (tracker/nutrition/stack/…)
     registerStateDomain: registerStateDomain,                                // OS-Domains: name + mm_-Store-Key
+    // §96 — Sync-Inventar: registrierte Domains + Programm-Keys + bewusste
+    // Local-Only-Klassen, damit ein automatisierter Test JEDEN mm_-Key prüfen kann.
+    syncInventory: function () {
+      var domains = {}; for (var n in OS_DOMAINS) domains[n] = OS_DOMAINS[n].key;
+      return {
+        domains: domains,
+        programKeys: PROG_KEYS_STATIC.slice(),
+        programDynamic: ["^c2_reassess_\\d+$"],
+        localOnly: ["^c2_min_", "^c2_view$", "^os_ver_", "^os_synced_", "^account_sync$", "^account_access_validation$", "^account_entitlements$", "^funnel", "^os_events$", "^check_history$", "^check_draft$", "^course_code$", "^unlock_name$", "^lang$", "^consent", "^theme$"]
+      };
+    },
     flushNow: function () { return flushDirty(); },
 
     signIn: function (email) {

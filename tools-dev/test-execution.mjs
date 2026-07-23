@@ -70,11 +70,22 @@ ctx.MM = sandboxWindow.MM;
 ctx.globalThis = ctx;
 vm.createContext(ctx);
 
-for (const f of ["js/os/os-core.js", "js/os/engines.js", "js/os/execution.js"]) {
+for (const f of ["js/os/program-view.js", "js/os/os-core.js", "js/os/engines.js", "js/os/execution.js"]) {
   vm.runInContext(readFileSync(join(root, f), "utf8"), ctx, { filename: f });
 }
 const MM = sandboxWindow.MM;
 const X = MM.exec, E = MM.engines, OS = MM.os;
+
+// Zweiter Kontext OHNE program-view: prüft den Fallback-Spiegel in execution.js
+// auf Parität mit MM.programView (gleicher Store, gleiche Keys).
+const sandboxWindow2 = { MM: { store, account: fakeAccount, toast() {}, track() {} }, addEventListener() {} };
+const ctx2 = Object.assign({}, ctx, { window: sandboxWindow2, MM: sandboxWindow2.MM });
+ctx2.globalThis = ctx2;
+vm.createContext(ctx2);
+for (const f of ["js/os/os-core.js", "js/os/engines.js", "js/os/execution.js"]) {
+  vm.runInContext(readFileSync(join(root, f), "utf8"), ctx2, { filename: f + "#noPV" });
+}
+const X2 = sandboxWindow2.MM.exec;
 
 /* ---------- Mini-Assert ---------- */
 let pass = 0, fail = 0;
@@ -92,6 +103,7 @@ function setupProgram() {
   store.set("c2_goal", "recomp");
   store.set("c2_bottleneck", "body");
   store.set("c2_days", [startWd, (startWd + 2) % 7, (startWd + 4) % 7].sort((a, b) => a - b));
+  store.set("c2_pulse", { 1: { done: true } });   // Woche-1-Pulse erledigt — sonst überstimmt er (korrekt, §57) das Training als NBA
   store.set("os_nutrition_plan", { kcal: 2600, kcalRange: [2450, 2750], protein: 180, fat: 78, carbs: 280 });
   const plan = E.buildTrainingPlan({ daysPerWeek: 3, minutes: 60, location: "gym", priority: "balanced", experience: "novice" });
   store.set("os_training_plan", plan);
@@ -105,6 +117,12 @@ ok(X.dayTypeAt(2) !== "strength" && X.dayTypeAt(4) !== "strength", "Zwischentage
 ok(X.dayTypeAt(10) === "strength", "Heute (Tag 10) ist Krafttag");
 ok(X.programDayForDate(TODAY) === 10, "programDayForDate(heute) = 10");
 ok(X.dateForProgramDay(10) === TODAY, "dateForProgramDay(10) = heute");
+{
+  // PARITÄT: Fallback-Spiegel (execution.js ohne programView) ↔ MM.programView
+  let drift = 0;
+  for (let pd = 1; pd <= 84; pd++) { if (X.dayTypeAt(pd) !== X2.dayTypeAt(pd)) drift++; }
+  ok(drift === 0, "Fallback-Spiegel ↔ programView: 0 Drift über 84 Tage");
+}
 
 /* ================= D — Kompression ================= */
 section("D · Time Compression erhält Hierarchie");
@@ -166,6 +184,11 @@ section("NBA 2.0 · buildDay");
   const tAct = day2.actions.find(a => a.id === "train:d10");
   ok(tAct && tAct.done === true, "Ein Abschluss aktualisiert die Today-Aktion (One Completion)");
   ok(!day2.nba.primary || day2.nba.primary.type !== "workout", "Erledigte Session ist nie wieder NBA");
+  // §57 (Phase 3.1 ∩ Phase 6): überfälliger Weekly Pulse überstimmt Training
+  store.set("c2_pulse", {});
+  const day3 = X.buildDay(TODAY);
+  ok(day3.nba.primary && day3.nba.primary.type === "pulse_due", "Überfälliger Pulse überstimmt alles als NBA (§57)");
+  store.set("c2_pulse", { 1: { done: true } });
 }
 
 /* ================= C — Reminder Engine ================= */
