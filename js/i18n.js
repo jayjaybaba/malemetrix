@@ -47,6 +47,7 @@
     "foot.ebooks":  { de: "Ebooks", en: "Ebooks" },
     "foot.blood":   { de: "Blutwerte verstehen", en: "Understand Blood Values" },
     "foot.about":   { de: "Über MaleMetrix", en: "About MaleMetrix" },
+    "foot.trust":   { de: "Vertrauen & Methodik", en: "Trust & Methodology" },
     "foot.faq":     { de: "FAQ", en: "FAQ" },
     "foot.booking": { de: "Analysegespräch", en: "Free Consultation" },
     "foot.contact": { de: "Kontakt", en: "Contact" },

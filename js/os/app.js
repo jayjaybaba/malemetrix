@@ -200,7 +200,12 @@
 
       // NEXT BEST ACTION 2.0 — eine primäre, max. zwei sekundäre, echtes WARUM
       if (day.nothingUrgent && !day.restDay) {
-        html += '<div class="os-nba os-quiet"><span class="tag">HEUTE</span><b>Nichts braucht eine Korrektur.</b><p class="muted">Alles Wichtige ist erledigt oder auf Kurs. Stabilität ist das Feature — nicht Stillstand.</p></div>';
+        // KEEP als Premium-Output (§70): souverän NICHTS ändern — mit Reassess-Datum.
+        var reCons = X.consistency28();
+        var reWhy = [];
+        try { var tj = MM.intelligence && MM.intelligence.foresight ? MM.intelligence.foresight.trajectory() : null; if (tj && tj.status === "WITHIN") reWhy.push("Gewichtstrend im Erwartungsband"); } catch (e) {}
+        if (reCons && reCons.planned > 0 && (reCons.done / reCons.planned) >= 0.8) reWhy.push("Umsetzung " + Math.round(reCons.done / reCons.planned * 100) + " %");
+        html += '<div class="os-nba os-quiet"><span class="tag">HEUTE · KEEP</span><b>Ändere heute nichts.</b><p class="muted">' + (reWhy.length ? esc(reWhy.join(" · ")) + ". " : "") + 'Eine Änderung jetzt würde nur Rauschen hinzufügen. Stabilität ist das Feature — neu bewerten in ' + (p.nextReviewDays != null ? p.nextReviewDays : 7) + ' Tagen.</p></div>';
       } else if (day.restDay && !day.nba.primary) {
         html += '<div class="os-nba os-quiet"><span class="tag">RECOVERY DAY</span><b>Erholung ist Teil des Programms.</b><p class="muted">' + esc(X.prefs().stepTarget) + ' Schritte · Protein halten · Schlaf vor ' + esc(X.prefs().bedtime) + '. Kein künstliches „Mehr“.</p></div>';
       } else {
@@ -213,6 +218,8 @@
         html += '<div class="intel-decision intel-tone-watch os-proposal"><div class="hd"><span class="verdict">' + (pr.type === "check" ? "CHECK FIRST" : "VORSCHLAG") + '</span>' + (day.bottleneck ? '<span class="bn">Limiter: ' + esc((MM.intelligence ? MM.intelligence.LABELS.BN[day.bottleneck.domain] : day.bottleneck.domain) || day.bottleneck.domain) + ' · ' + day.bottleneck.confidencePct + '%</span>' : '') + '</div>' +
           '<b class="ttl">' + esc(pr.title) + '</b><p class="rsn">' + esc(pr.reason) + '</p>' +
           (pr.evidence.length ? '<div class="ev"><span>BASIEREND AUF</span>' + pr.evidence.map(function (e2) { return '<i>' + esc(e2) + '</i>'; }).join("") + '</div>' : '') +
+          // Falsifizierbarkeit (§68): erwartetes Signal + Reassess-Kriterium sichtbar.
+          (pr.expectedSignal ? '<div class="os-falsify"><div class="fx"><span>ERWARTET</span><p>' + esc(pr.expectedSignal) + '</p></div><div class="fx"><span>NEU BEWERTEN WENN</span><p>' + esc(pr.reassessIf || "") + '</p></div></div>' : '') +
           (pr.oneVariable ? '<p class="onevar">↳ EINE Variable ändern — alles andere konstant halten.</p>' : '') +
           '<div class="ctl" style="display:flex;gap:8px;margin-top:10px">' +
           (pr.type === "change" ? '<button class="btn btn-primary btn-sm" data-propapply>Übernehmen ✓</button>' : (pr.deepLink ? '<a class="btn btn-primary btn-sm" href="' + esc(pr.deepLink) + '">Ansehen →</a>' : '')) +

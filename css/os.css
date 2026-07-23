@@ -737,3 +737,8 @@
 .os-cite .cst { font-family: var(--font-mono, monospace); font-size: 0.6rem; letter-spacing: 0.12em; color: var(--green, #3ddc84); }
 .os-cite a { font-size: 0.74rem; color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
 .os-cite a:hover { color: var(--accent-2, #00c2ff); }
+/* Phase 9 — Falsifizierbarkeit im Vorschlag (§68) */
+.os-falsify { display: grid; gap: 8px; margin: 10px 0 4px; }
+.os-falsify .fx { border-left: 2px solid var(--line); padding-left: 10px; }
+.os-falsify .fx span { display: block; font-family: var(--font-mono, monospace); font-size: 0.6rem; letter-spacing: 0.12em; color: var(--muted-2); }
+.os-falsify .fx p { margin: 2px 0 0; font-size: 0.82rem; color: var(--muted); }

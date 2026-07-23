@@ -485,7 +485,21 @@
     // Kein Doppel-Vorschlag, solange in der Domäne eine offene Entscheidung läuft.
     var open = decisions().some(function (d) { return d.status === "open" && d.domain === p.domain; });
     if (open) return null;
-    return { key: key, domain: p.domain, type: p.type, code: p.code || null, oldKcal: p.oldKcal || null, newKcal: p.newKcal || null, title: p.title, reason: p.reason, evidence: p.evidence || [], reviewInDays: idec.reviewInDays || 14, oneVariable: !!idec.oneVariable, deepLink: p.deepLink || null };
+    // Falsifizierbarkeit (§68): jede Änderung definiert erwartetes Signal,
+    // Zeithorizont und Reassess-Kriterium — macht die Empfehlung überprüfbar.
+    var fals = falsifiability(p, idec);
+    return { key: key, domain: p.domain, type: p.type, code: p.code || null, oldKcal: p.oldKcal || null, newKcal: p.newKcal || null, title: p.title, reason: p.reason, evidence: p.evidence || [], reviewInDays: idec.reviewInDays || 14, oneVariable: !!idec.oneVariable, deepLink: p.deepLink || null,
+      expectedSignal: fals.expected, reassessIf: fals.reassess, horizonDays: idec.reviewInDays || 14, provenance: (idec.bottleneck && idec.bottleneck.evidence) ? idec.bottleneck.evidence : null };
+  }
+  // Deterministische Falsifizierbarkeits-Kriterien pro Vorschlagstyp.
+  function falsifiability(p, idec) {
+    var horizon = (idec && idec.reviewInDays) || 14;
+    if (p.domain === "nutrition" && p.newKcal != null && p.oldKcal != null) {
+      var up = p.newKcal > p.oldKcal;
+      if (up) return { expected: "Gewichtstrend bewegt sich innerhalb von " + horizon + " Tagen in den Aufbau-Korridor deines Modus.", reassess: "Taille steigt schnell OHNE Kraftzuwachs — dann war der Überschuss zu hoch." };
+      return { expected: "Gewichtstrend nimmt über " + horizon + " Tage im Zielkorridor ab (0,5–1 %/Woche).", reassess: "Kraft fällt spürbar oder der Trend kippt zu schnell — dann Defizit lockern." };
+    }
+    return { expected: "Messbares Signal im Engpass-Bereich innerhalb von " + horizon + " Tagen.", reassess: "Kein Signal oder gegenläufiger Trend bis zum Review — dann zurücknehmen." };
   }
   function applyProposal(prop) {
     if (!prop) return null;

@@ -13,6 +13,7 @@
   <url><loc>https://www.malemetrix.com/shop.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://www.malemetrix.com/blutwerte.html</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://www.malemetrix.com/ueber.html</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://www.malemetrix.com/trust.html</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://www.malemetrix.com/faq.html</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://www.malemetrix.com/kontakt.html</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>
   <url><loc>https://www.malemetrix.com/termin.html</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
