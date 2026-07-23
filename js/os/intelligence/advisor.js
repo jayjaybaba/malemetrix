@@ -264,12 +264,51 @@
   /* =======================================================================
      ANSWER (deterministisch, synchron) — immer verfügbar.
      ======================================================================= */
+  /* ---------- PERSONAL HISTORY (§14) — Antworten aus Ledger/Memory/Logs ---------- */
+  function historyAnswer(q, ctx) {
+    var mem = I.memory; if (!mem) return null;
+    var ql = q.toLowerCase();
+    // "Wann haben wir zuletzt Kalorien geändert?" / "Was ist danach passiert?"
+    if (/wann .*(kalorien|energie|kcal).*(geändert|erhöht|gesenkt)|letzte.*(kalorien|kcal).*änderung|last .*calorie/i.test(ql) || /was (ist|war) (danach|dann) passiert|what happened after/i.test(ql)) {
+      var decs = mem.ledger().filter(function (d) { return d.domain === "nutrition"; });
+      if (!decs.length) return { answer: "Wir haben in deinem Ledger noch keine Kalorien-Entscheidung — es gab also nichts zu ändern.", whatISee: [], whatItMeans: [], whatIdDo: [], whatNotToChange: [], evidence: ["ledger"], reassess: null };
+      var last = decs[decs.length - 1];
+      var resp = mem.responses().filter(function (r) { return r.decision_id === last.id; })[0];
+      var seen = ["Entscheidung: „" + last.title + "“ am " + last.date + (last.old_state ? " (" + last.old_state + " → " + (last.applied_state || last.new_state) + ")" : "")];
+      var means = [];
+      if (resp && resp.observed) {
+        var ob = resp.observed;
+        means.push("Beobachtete Reaktion (" + (ob.windowDays || 14) + " Tage): " + (ob.weightDelta != null ? "Gewicht " + (ob.weightDelta > 0 ? "+" : "") + ob.weightDelta + " kg" : "Gewichtsreaktion nicht erfasst") + (ob.waistDelta != null ? " · Taille " + (ob.waistDelta > 0 ? "+" : "") + ob.waistDelta + " cm" : "") + " — beobachtet, keine bewiesene Ursache.");
+      } else if (last.status === "open") {
+        means.push("Die Entscheidung ist noch in Beobachtung — Review am " + last.review_date + ".");
+      } else if (last.outcome) {
+        means.push("Review-Ergebnis: " + (last.outcome.verdict || last.status) + (last.outcome.note ? " („" + last.outcome.note + "“)" : "") + ".");
+      }
+      return { answer: "Zuletzt geändert am " + last.date + ": " + last.title + ".", whatISee: seen, whatItMeans: means, whatIdDo: last.status === "open" ? ["Bis zum Review am " + last.review_date + " nichts weiter ändern — eine Variable."] : [], whatNotToChange: ["Keine zweite Änderung auf eine noch unbewertete stapeln."], evidence: ["ledger", "memory.responses"], reassess: last.status === "open" ? "Am " + last.review_date + " vergleicht MaleMetrix die tatsächliche Reaktion." : null };
+    }
+    // "Wie oft verpasse ich Mittwoch?" — Ausführungsmuster aus MM.exec-Realität.
+    var wdM = ql.match(/wie oft .*(montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)/);
+    if (wdM && MM.exec) {
+      var WD = { sonntag: 0, montag: 1, dienstag: 2, mittwoch: 3, donnerstag: 4, freitag: 5, samstag: 6 };
+      var target = WD[wdM[1]];
+      var logs = MM.store ? MM.store.get("os_workout_logs", {}) : {};
+      var sess = (logs._sessions || []);
+      var onDay = sess.filter(function (s) { return new Date(s.date + "T12:00:00").getDay() === target; }).length;
+      var resched = (MM.exec.reschedules() || []).filter(function (r) { return r.fromDate && new Date(r.fromDate + "T12:00:00").getDay() === target; }).length;
+      return { answer: resched > 0 ? "Am " + wdM[1].charAt(0).toUpperCase() + wdM[1].slice(1) + " wurden " + resched + " geplante Einheiten verschoben; " + onDay + " Sessions wurden an diesem Wochentag absolviert." : "Bisher " + onDay + " Sessions an diesem Wochentag, keine dokumentierten Verschiebungen.", whatISee: [], whatItMeans: resched >= 2 ? ["Dieses Zeitfenster ist wiederholt unzuverlässig — ein Kandidat für ein anderes Standard-Fenster."] : [], whatIdDo: resched >= 2 ? ["Standard-Trainingsfenster für diesen Tag ändern (Einstellungen) — MaleMetrix schlägt das auch im Wochen-Autopilot vor."] : [], whatNotToChange: [], evidence: ["execution.reschedules", "training.sessions"], reassess: null };
+    }
+    return null;
+  }
+
   function answer(question, ctx) {
     var clean = sanitizeQuestion(question);
     ctx = ctx || I.buildContext();
     var t = tools(ctx);
-    var handlerKey = routeHandler(clean.text);
-    var out = HANDLERS[handlerKey](t);
+    // Persönliche Historie hat Vorrang vor generischen Handlern (§14).
+    var hist = historyAnswer(clean.text, ctx);
+    var out, handlerKey;
+    if (hist) { out = hist; handlerKey = "history"; }
+    else { handlerKey = routeHandler(clean.text); out = HANDLERS[handlerKey](t); }
     out.topic = handlerKey;
     out.question = clean.text;
     out.boundaryNote = boundaryNote(clean, ctx, handlerKey);
@@ -278,6 +317,14 @@
     out.generatedAt = ctx.builtAt;
     // Evidence-Trace in menschenlesbare Quellen übersetzen.
     out.basedOn = (out.evidence || []).map(prettyEvidence).filter(function (x, i, a) { return x && a.indexOf(x) === i; });
+    // WISSEN getrennt von NUTZERDATEN zitieren (§38): Knowledge-Objekte + Evidenzlage.
+    try {
+      if (I.knowledge) {
+        out.knowledge = I.knowledge.retrieve(clean.text, ctx, 2).map(function (r) {
+          return { id: r.object.id, title: r.object.title, evidence: (r.object.claims[0] || {}).evidence_type || "—", stale: r.stale, reviewedAt: r.object.reviewedAt };
+        });
+      }
+    } catch (e) { out.knowledge = []; }
     return out;
   }
   function boundaryNote(clean, ctx, topic) {
@@ -308,6 +355,14 @@
 
   function answerAsync(question, ctx) {
     var base = answer(question, ctx);   // deterministischer Kern IMMER zuerst
+    // Phase 7: MM.ai (server-seitige Edge Function) als Standard-Provider —
+    // validiert, gecacht, mit deterministischem Fallback (§9/§20/§179).
+    if (!_provider && window.MM && MM.ai && MM.ai.configured()) {
+      return MM.ai.ask({ task: "ADVISOR_REASONING", question: question, ctx: ctx }).then(function (res) {
+        if (res.ok) { base.prose = res.text; base.provider = "mm-ai:" + (res.model || "server"); }
+        return base;   // deterministischer Contract bleibt maßgeblich
+      });
+    }
     if (!_provider) return Promise.resolve(base);
     // Nur budgetierten, relevanten Kontext an den Provider geben (§5, §99).
     var payload = {

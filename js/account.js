@@ -225,6 +225,12 @@
       deleteAccount: function () {
         return client.functions.invoke("delete-account", { body: { confirm: true } })
           .then(function (r) { return { data: r.data, error: r.error }; });
+      },
+      // Phase 7: generischer, authentifizierter Edge-Function-Aufruf (JWT via SDK).
+      // Für MM.ai (mm-ai) u. a. — Secrets bleiben ausschließlich serverseitig.
+      invokeFunction: function (name, body) {
+        return client.functions.invoke(name, { body: body || {} })
+          .then(function (r) { return { data: r.data, error: r.error }; });
       }
     };
   }
@@ -639,6 +645,16 @@
     claimAccessCode: claimAccessCode,
     exportMyData: exportMyData,
     requestAccountDeletion: requestAccountDeletion,
+    // Phase 7 — MM.ai u. a.: authentifizierter Edge-Function-Aufruf; ehrlich
+    // "no_cloud", wenn kein Backend/keine Session (kein Fake-Provider).
+    invokeFunction: function (name, body) {
+      if (!backend || !backend.invokeFunction) return Promise.resolve({ ok: false, code: "no_cloud" });
+      if (!_user) return Promise.resolve({ ok: false, code: "not_signed_in" });
+      return backend.invokeFunction(name, body).then(function (r) {
+        if (r.error) return { ok: false, code: "function_error", error: String(r.error && r.error.message || r.error) };
+        return { ok: true, data: r.data };
+      }).catch(function (e) { return { ok: false, code: "network", error: String(e && e.message || e) }; });
+    },
     clearLocalData: clearLocalData,
     getSyncStatus: getSyncStatus,
     registerDomain: registerDomain,                                          // Phase-3-Vertrag (tracker/nutrition/stack/…)
