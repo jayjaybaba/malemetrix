@@ -614,11 +614,31 @@
       medication: OS.getP("health.medication", false),
       vitDAdequate: labCtx.flags.vitDAdequate, ironHigh: labCtx.flags.ironHigh
     });
+    // §13 — TRIAGE des aktuellen Stacks (der Wow-Moment): behalte/optional/streiche.
+    var curText = OS.getP("stack.currentText", "") || (OS.baseline() || {}).stackText || "";
+    var triage = curText ? E.analyzeCurrentStack(curText, { mode: d.mode || "recomp", proteinCovered: OS.getP("nutrition.proteinCovered", false), fishTwiceWeek: OS.getP("nutrition.fishTwiceWeek", false), summerSun: OS.getP("lifestyle.summerSun", false), vitDAdequate: labCtx.flags.vitDAdequate, medication: OS.getP("health.medication", false) }) : null;
+    if (triage && triage.total > 0) {
+      var triRow = function (arr, cls, label) { return arr.length ? '<div class="os-tri-group os-tri-' + cls + '"><span class="tl">' + label + ' · ' + arr.length + '</span>' + arr.map(function (i) { return '<div class="it"><b>' + esc(i.name) + '</b><span>' + esc(i.why) + '</span>' + (i.savesMo ? '<i class="sv">−' + i.savesMo + ' €/Mon.</i>' : '') + '</div>'; }).join("") + '</div>' : ''; };
+      html += sec("Dein Stack — ehrlich sortiert",
+        '<div class="os-triage"><p class="hd">' + esc(triage.summary) + (triage.monthlySaved ? ' <b>Spart ~' + triage.monthlySaved + ' €/Monat.</b>' : '') + '</p>' +
+        triRow(triage.keep, "keep", "BEHALTEN") + triRow(triage.optional, "opt", "OPTIONAL") + triRow(triage.remove, "rm", "STREICHEN") +
+        (triage.unknown.length ? '<div class="os-tri-group os-tri-unk"><span class="tl">NICHT BEWERTBAR · ' + triage.unknown.length + '</span>' + triage.unknown.map(function (u) { return '<div class="it"><b>' + esc(u.input) + '</b><span>' + esc(u.note || "Nicht im Katalog — MaleMetrix bewertet nur, was es belastbar kennt.") + '</span></div>'; }).join("") + '</div>' : '') +
+        (triage.dupes.length ? '<p class="small muted" style="margin-top:8px">Mögliche Dopplung: ' + triage.dupes.map(esc).join(", ") + '.</p>' : '') +
+        '<p class="small muted" style="margin-top:6px">Mehr Supplemente ≠ besser. MaleMetrix streicht aktiv, statt Produkte hinzuzufügen.</p></div>');
+    }
     html += sec("Stack · wertbasiert, nicht maximal",
       '<div class="os-budget">' + ["essential", "optimal", "maximal"].map(function (b) { return '<button class="os-chip ' + (budget === b && !budgetEuro ? "sel" : "") + '" data-budget="' + b + '">' + b.toUpperCase() + '</button>'; }).join("") +
       '<label class="os-chip os-chk" style="margin-left:6px">€/Monat: <input id="stEuro" type="number" inputmode="numeric" value="' + (budgetEuro || "") + '" placeholder="60" style="width:56px;background:transparent;border:0;color:inherit;border-bottom:1px solid var(--line)"></label><button class="os-ghost" id="stEuroGo">Budget anwenden</button></div>' +
       (strat.costPlan ? '<div class="os-costplan"><div class="row"><span>KERN</span><b>' + strat.costPlan.coreCost + ' €/Mon. — ' + strat.costPlan.core.map(esc).join(", ") + '</b></div>' + (strat.costPlan.nextBest.length ? '<div class="row"><span>NÄCHSTE ERGÄNZUNG</span><b>' + strat.costPlan.nextBest.map(function (n) { return esc(n.name) + " (+" + n.addMo + " €)"; }).join(" · ") + '</b></div>' : '') + (strat.costPlan.lowReturn.length ? '<div class="row low"><span>GERINGER ERTRAG</span><b>' + strat.costPlan.lowReturn.map(function (n) { return esc(n.name) + " (+" + n.addMo + " €)"; }).join(" · ") + '</b></div>' : '') + '</div>' : '') +
-      '<div class="os-stack">' + strat.items.map(function (s) { return '<div class="os-supp"><div class="hd"><b>' + esc(s.name) + '</b><span class="ev ev-' + s.evidence.toLowerCase() + '">' + esc(s.evidence) + '</span></div><p>' + esc(s.why) + '</p><span class="tm">' + esc(s.timing) + ' · ~' + s.costMo + ' €/Mon.</span></div>'; }).join("") + '</div>' +
+      (strat.tiers ? ["ESSENTIAL", "OPTIMAL", "ADVANCED"].map(function (lvl) {
+        var arr = strat.tiers[lvl] || []; if (!arr.length) return "";
+        return '<div class="os-stacktier"><span class="stl">' + lvl + '</span><div class="os-stack">' + arr.map(function (s) {
+          return '<div class="os-supp"><div class="hd"><b>' + esc(s.name) + '</b><span class="ev ev-' + s.evidence.toLowerCase() + '">' + esc(s.evidence) + '</span></div><p>' + esc(s.why) + '</p>' +
+            (s.magnitude ? '<p class="mag">Effektgröße: ' + esc(s.magnitude) + '</p>' : '') +
+            (s.monitor ? '<p class="mon">Monitoring: ' + esc(s.monitor) + '</p>' : '') +
+            '<span class="tm">' + esc(s.timing) + ' · ~' + s.costMo + ' €/Mon. · Aufwand: ' + esc(s.complexity || "niedrig") + '</span></div>';
+        }).join("") + '</div></div>';
+      }).join("") : '') +
       (strat.conflicts.length ? '<div class="os-conflicts"><span class="tag">CONTEXT CHECK</span>' + strat.conflicts.map(function (c) { return '<p>' + esc(c) + '</p>'; }).join("") + '</div>' : '') +
       (strat.skipped.length ? '<div class="os-skipped"><span class="tag">BEWUSST NICHT EMPFOHLEN</span>' + strat.skipped.map(function (s) { return '<p><b>' + esc(s.name) + '</b> — ' + esc(s.why) + '</p>'; }).join("") + '</div>' : '') +
       (strat.remove.length ? '<div class="os-remove"><span class="tag">STREICHEN — SPART GELD, KOSTET NICHTS</span>' + strat.remove.map(function (s) { return '<p><b>' + esc(s.name) + '</b> — ' + esc(s.why) + '</p>'; }).join("") + '</div>' : '') +

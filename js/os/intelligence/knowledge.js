@@ -19,7 +19,7 @@
   if (!window.MM) window.MM = {};
   var I = MM.intelligence = MM.intelligence || {};
 
-  var KV = 2;                 // Knowledge-Graph-Version (Phase 9: Quellen aufgelöst; Snapshots referenzieren die Version zum Entscheidungszeitpunkt, §30)
+  var KV = 3;                 // Knowledge-Graph-Version (Phase 9.6: weitere Quellen aufgelöst; Snapshots referenzieren die Version zum Entscheidungszeitpunkt, §30)
   var STALE_DAYS = 365;
   var REVIEWED = "2026-07-23"; // Redaktionsstand dieses Builds
 
@@ -39,7 +39,9 @@
     kreider_2017: { title: "ISSN position stand: safety and efficacy of creatine supplementation in exercise, sport, and medicine", authors: "Kreider RB, et al.", year: 2017, venue: "J Int Soc Sports Nutr 14:18", doi: "10.1186/s12970-017-0173-z", url: "https://jissn.biomedcentral.com/articles/10.1186/s12970-017-0173-z", source_type: "POSITION_STAND", last_reviewed: REVIEWED },
     esc_eas_2019: { title: "2019 ESC/EAS Guidelines for the management of dyslipidaemias", authors: "Mach F, et al.", year: 2020, venue: "Eur Heart J 41(1):111–188", doi: "10.1093/eurheartj/ehz455", url: "https://academic.oup.com/eurheartj/article/41/1/111/5556353", source_type: "GUIDELINE", last_reviewed: REVIEWED },
     step1_2021: { title: "Once-Weekly Semaglutide in Adults with Overweight or Obesity (STEP 1)", authors: "Wilding JPH, et al.", year: 2021, venue: "N Engl J Med 384:989–1002", doi: "10.1056/NEJMoa2032183", url: "https://www.nejm.org/doi/full/10.1056/NEJMoa2032183", source_type: "RCT", last_reviewed: REVIEWED },
-    bhasin_2018: { title: "Testosterone Therapy in Men With Hypogonadism: An Endocrine Society Clinical Practice Guideline", authors: "Bhasin S, et al.", year: 2018, venue: "J Clin Endocrinol Metab 103(5):1715–1744", doi: "10.1210/jc.2018-00229", url: "https://academic.oup.com/jcem/article/103/5/1715/4939465", source_type: "GUIDELINE", last_reviewed: REVIEWED }
+    bhasin_2018: { title: "Testosterone Therapy in Men With Hypogonadism: An Endocrine Society Clinical Practice Guideline", authors: "Bhasin S, et al.", year: 2018, venue: "J Clin Endocrinol Metab 103(5):1715–1744", doi: "10.1210/jc.2018-00229", url: "https://academic.oup.com/jcem/article/103/5/1715/4939465", source_type: "GUIDELINE", last_reviewed: REVIEWED },
+    schoenfeld_2017: { title: "Dose-response relationship between weekly resistance training volume and increases in muscle mass: A systematic review and meta-analysis", authors: "Schoenfeld BJ, Ogborn D, Krieger JW", year: 2017, venue: "J Sports Sci 35(11):1073–1082", doi: "10.1080/02640414.2016.1210197", url: "https://www.tandfonline.com/doi/full/10.1080/02640414.2016.1210197", source_type: "META_ANALYSIS", last_reviewed: REVIEWED },
+    watson_2015: { title: "Recommended Amount of Sleep for a Healthy Adult: A Joint Consensus Statement of the AASM and Sleep Research Society", authors: "Watson NF, et al.", year: 2015, venue: "J Clin Sleep Med 11(6):591–592", doi: "10.5664/jcsm.4758", url: "https://jcsm.aasm.org/doi/10.5664/jcsm.4758", source_type: "CONSENSUS", last_reviewed: REVIEWED }
   };
   function source(id) { return SOURCES[id] || null; }
   // Evidenz-Publikations-Gate (§29): ein Objekt ist nur PUBLISHED, wenn seine
@@ -78,7 +80,7 @@
       C("pl2", "Bei <70 % Umsetzung ist der Plan selten das Problem (Execution First).", "REAL_WORLD_LIMITED")
     ], related: ["energy_balance", "recovery_sleep"] }),
     K({ id: "hypertrophy_volume", slug: "volumen", title: "Trainingsvolumen & Hypertrophie", domain: "training", summary: "~10–20 harte Sätze pro Muskel/Woche decken die meisten ab; Progression + Nähe zum Muskelversagen (RIR 0–3) sind die Treiber. Mehr Volumen ohne Erholung baut nichts auf.", goals: ["build", "recomp"], claims: [
-      C("hv1", "Hypertrophie steigt mit Volumen bis zu einem individuellen Erholungslimit (Dosis-Wirkungs-Kurve mit Plateau).", "STRONG"),
+      C("hv1", "Hypertrophie steigt mit Volumen bis zu einem individuellen Erholungslimit (Dosis-Wirkungs-Kurve mit Plateau).", "STRONG", { source_ids: ["schoenfeld_2017"], context: "Schoenfeld 2017 (Meta-Analyse, 15 Studien): graded Dosis-Wirkung, Schwelle ~10 harte Sätze/Muskel/Woche für nahezu maximale Hypertrophie." }),
       C("hv2", "Sätze nahe am Versagen (RIR 0–3) sind effektiver als weit entfernte.", "MODERATE"),
       C("hv3", "Double Progression (erst Wdh., dann Last) ist eine robuste Real-World-Progressionsregel.", "REAL_WORLD_LIMITED")
     ], related: ["recovery_sleep", "plateau"] }),
@@ -88,11 +90,11 @@
       C("cr3", "Bei gesunden Nieren ist Langzeit-Einnahme (3–5 g) nicht nephrotoxisch.", "MODERATE", { source_ids: ["kreider_2017"], limitations: "Vorbestehende Nierenerkrankung: ärztlich abklären. ISSN: bis 30 g/Tag über 5 Jahre in Studien gut verträglich." })
     ], related: ["kidney_markers"] }),
     K({ id: "omega3", slug: "omega-3", title: "Omega-3 (EPA/DHA)", domain: "stack", summary: "Kardiometabolische Basis, besonders bei wenig Fischkonsum. Triglycerid-senkend in relevanter Dosis.", markers: ["triglycerides"], claims: [
-      C("o31", "EPA/DHA senken Triglyceride dosisabhängig.", "STRONG"),
+      C("o31", "EPA/DHA senken Triglyceride dosisabhängig.", "STRONG", { source_ids: ["esc_eas_2019"], context: "2019 ESC/EAS: Omega-3 in relevanter Dosis als triglyceridsenkende Option." }),
       C("o32", "Harte Endpunkt-Effekte (Ereignisse) sind gemischt belegt — Basis, kein Wundermittel.", "MODERATE")
     ] }),
     K({ id: "recovery_sleep", slug: "schlaf", title: "Schlaf & Trainingserholung", domain: "recovery", summary: "Unter ~6,5 h chronisch: schlechtere Kraftentwicklung, Appetitregulation und Glukosetoleranz. Konstante Bettzeit schlägt Einzeloptimierungen.", goals: ["build", "cut", "recomp", "perform"], interventions: ["sleep_window", "caffeine_cutoff"], claims: [
-      C("sl1", "Chronischer Schlafmangel reduziert Muskelproteinsynthese und Trainingsleistung.", "STRONG"),
+      C("sl1", "Chronischer Schlafmangel reduziert Muskelproteinsynthese und Trainingsleistung.", "STRONG", { source_ids: ["watson_2015"], context: "AASM/SRS-Konsens (Watson 2015): ≥7 h/Nacht für Gesundheit nötig; ≤6 h reichen nicht — Basis für die Schlaf-Guardrail." }),
       C("sl2", "Schlafrestriktion verschiebt Gewichtsverlust von Fett zu fettfreier Masse.", "MODERATE"),
       C("sl3", "Koffein nach ~14 Uhr verschlechtert bei sensiblen Personen messbar die Schlafarchitektur.", "MODERATE")
     ], related: ["plateau", "hypertrophy_volume"] }),

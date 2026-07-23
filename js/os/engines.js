@@ -515,20 +515,36 @@
 
   /* ======================= STACK INTELLIGENCE ======================= */
   // costMo: grobe Monatskosten in € (Marktüblich, Stand 2026 — Orientierung).
+  // tier → Anzeige-Ebene (§2): foundation=ESSENTIAL, goal=OPTIMAL, optional=ADVANCED.
+  // aliases: robuste Erkennung von Freitext-Eingaben des Nutzers.
+  // magnitude/complexity/makesUnnecessary: für die 2.0-Karte (§2/§13).
   var SUPPS = [
-    { id: "creatine", name: "Kreatin Monohydrat", tier: "foundation", evidence: "STRONG", value: 5, cost: 1, costMo: 6, timing: "täglich 3–5 g, Zeitpunkt egal", why: "Am besten belegtes Supplement für Kraft & Muskelmasse. Billig, sicher, wirksam.", goals: ["build", "recomp", "cut", "perform"] },
-    { id: "protein", name: "Whey/Casein (bei Proteinlücke)", tier: "foundation", evidence: "STRONG", value: 5, cost: 2, costMo: 22, timing: "als Mahlzeitbaustein", why: "Kein Muss — aber der billigste Weg, das Proteinziel real zu treffen.", goals: ["build", "recomp", "cut", "perform"], skipIf: { proteinCovered: "Dein Proteinziel ist laut Logging bereits über echte Mahlzeiten gedeckt — Pulver ist dann optional." } },
-    { id: "omega3", name: "Omega-3 (EPA/DHA)", tier: "foundation", evidence: "MODERATE", value: 4, cost: 2, costMo: 12, timing: "1–2 g EPA+DHA mit Mahlzeit", why: "Kardiometabolische Basis, besonders bei wenig Fisch.", goals: ["all"], skipIf: { fishTwiceWeek: "Du isst ≥2× Fisch pro Woche — Omega-3-Supplementierung ist dann meist verzichtbar." } },
-    { id: "vitd", name: "Vitamin D3", tier: "foundation", evidence: "MODERATE", value: 4, cost: 1, costMo: 4, timing: "1000–2000 IE mit Fett", why: "Häufiger Mangel in DE — sinnvoll ohne Sonne, ideal per Blutwert steuern.", goals: ["all"], skipIf: { summerSun: "Viel Sonnenexposition im Sommer — dann eher Blutwert prüfen statt pauschal supplementieren." } },
-    { id: "caffeine", name: "Koffein (gezielt)", tier: "goal", evidence: "STRONG", value: 4, cost: 1, costMo: 5, timing: "3–6 mg/kg 45 min vor Training, nicht nach 14 Uhr", why: "Akute Leistung + Fokus. Schlaf hat trotzdem Vorrang.", goals: ["build", "perform", "cut"], conflict: { sleepBad: "Bei schlechtem Schlaf ist zusätzliches Koffein kontraproduktiv — erst Schlaf, dann Stimulanzien.", highCaffeine: "Du liegst bereits hoch im Tageskoffein — mehr bringt keine Leistung, kostet aber Schlafqualität." } },
-    { id: "citrulline", name: "Citrullin-Malat", tier: "optional", evidence: "MODERATE", value: 3, cost: 2, costMo: 14, timing: "6–8 g pre", why: "Moderater Pump/Volumen-Effekt — nice-to-have, kein Fundament.", goals: ["build", "perform"] },
-    { id: "magnesium", name: "Magnesium (abends)", tier: "optional", evidence: "MODERATE", value: 3, cost: 1, costMo: 6, timing: "200–400 mg abends", why: "Sinnvoll bei Krämpfen/schlechtem Schlaf — kein Wundermittel.", goals: ["all"] },
-    { id: "ashwagandha", name: "Ashwagandha", tier: "optional", evidence: "EMERGING", value: 2, cost: 2, costMo: 10, timing: "300–600 mg abends", why: "Kann Stress/Schlaf leicht verbessern — Datenlage gemischt, Qualität schwankt.", goals: ["all"], conflict: { medication: "Wechselwirkungen mit Schilddrüsen-/Sedativa-Medikation sind beschrieben — mit Arzt/Apotheke klären." } },
-    { id: "bcaa", name: "BCAA/EAA (bei genug Protein)", tier: "low_value", evidence: "STRONG_NEGATIVE", value: 0, cost: 2, costMo: 18, timing: "—", why: "Wer sein Proteinziel isst, verbrennt hier Geld. Streichen.", goals: [] },
-    { id: "tbooster", name: "„Testo-Booster“ (Tribulus & Co.)", tier: "low_value", evidence: "STRONG_NEGATIVE", value: 0, cost: 3, costMo: 25, timing: "—", why: "Kein relevanter Effekt auf Testosteron in brauchbaren Studien. Streichen.", goals: [] },
-    { id: "fatburner", name: "„Fatburner“-Komplexe", tier: "low_value", evidence: "STRONG_NEGATIVE", value: 0, cost: 3, costMo: 30, timing: "—", why: "Teures Koffein mit Marketing. Das Defizit macht die Arbeit.", goals: [] },
-    { id: "multivit", name: "Multivitamin (Standarddiät)", tier: "low_value", evidence: "MODERATE_NEGATIVE", value: 1, cost: 2, costMo: 8, timing: "—", why: "Bei vernünftiger Ernährung meist überflüssig — gezielte Einzelstoffe schlagen die Gießkanne.", goals: [] }
+    { id: "creatine", name: "Kreatin Monohydrat", tier: "foundation", evidence: "STRONG", value: 5, cost: 1, costMo: 6, timing: "täglich 3–5 g, Zeitpunkt egal", why: "Am besten belegtes Supplement für Kraft & Muskelmasse. Billig, sicher, wirksam.", goals: ["build", "recomp", "cut", "perform"], aliases: ["kreatin", "creatin", "creatine", "monohydrat"], magnitude: "Klein aber real: einige Prozent mehr Kraft/Leistung + etwas fettfreie Masse über Wochen.", complexity: "trivial", monitor: "Erhöht Serum-Kreatinin ohne Nierenschaden — für die Lab-Interpretation wissen." },
+    { id: "protein", name: "Whey/Casein (bei Proteinlücke)", tier: "foundation", evidence: "STRONG", value: 5, cost: 2, costMo: 22, timing: "als Mahlzeitbaustein", why: "Kein Muss — aber der billigste Weg, das Proteinziel real zu treffen.", goals: ["build", "recomp", "cut", "perform"], aliases: ["whey", "casein", "protein", "eiweiß", "eiweiss", "isolat"], magnitude: "Indirekt: schließt die Proteinlücke, die Muskelaufbau limitiert.", complexity: "trivial", makesUnnecessary: "Sobald du dein Proteinziel über echte Mahlzeiten triffst.", skipIf: { proteinCovered: "Dein Proteinziel ist laut Logging bereits über echte Mahlzeiten gedeckt — Pulver ist dann optional." } },
+    { id: "omega3", name: "Omega-3 (EPA/DHA)", tier: "foundation", evidence: "MODERATE", value: 4, cost: 2, costMo: 12, timing: "1–2 g EPA+DHA mit Mahlzeit", why: "Kardiometabolische Basis, besonders bei wenig Fisch.", goals: ["all"], aliases: ["omega", "omega-3", "omega3", "fischöl", "fischoel", "epa", "dha", "fish oil"], magnitude: "Triglycerid-senkend dosisabhängig; harte Endpunkte gemischt — Basis, kein Hebel.", complexity: "trivial", makesUnnecessary: "≥2× fetter Fisch pro Woche.", skipIf: { fishTwiceWeek: "Du isst ≥2× Fisch pro Woche — Omega-3-Supplementierung ist dann meist verzichtbar." } },
+    { id: "vitd", name: "Vitamin D3", tier: "foundation", evidence: "MODERATE", value: 4, cost: 1, costMo: 4, timing: "1000–2000 IE mit Fett", why: "Häufiger Mangel in DE — sinnvoll ohne Sonne, ideal per Blutwert steuern.", goals: ["all"], aliases: ["vitamin d", "vitd", "d3", "cholecalciferol"], magnitude: "Relevant nur bei echtem Mangel — dann spürbar, sonst nahe null.", complexity: "trivial", makesUnnecessary: "Ausreichender 25-OH-D-Laborwert oder viel Sommersonne.", skipIf: { summerSun: "Viel Sonnenexposition im Sommer — dann eher Blutwert prüfen statt pauschal supplementieren." } },
+    { id: "caffeine", name: "Koffein (gezielt)", tier: "goal", evidence: "STRONG", value: 4, cost: 1, costMo: 5, timing: "3–6 mg/kg 45 min vor Training, nicht nach 14 Uhr", why: "Akute Leistung + Fokus. Schlaf hat trotzdem Vorrang.", goals: ["build", "perform", "cut"], aliases: ["koffein", "caffeine", "pre-workout", "preworkout", "pre workout"], magnitude: "Akut messbar: mehr Wiederholungen/Leistung an dem Tag — kein Aufbaueffekt.", complexity: "niedrig", monitor: "Schlaf hat Vorrang — Timing beachten.", conflict: { sleepBad: "Bei schlechtem Schlaf ist zusätzliches Koffein kontraproduktiv — erst Schlaf, dann Stimulanzien.", highCaffeine: "Du liegst bereits hoch im Tageskoffein — mehr bringt keine Leistung, kostet aber Schlafqualität." } },
+    { id: "citrulline", name: "Citrullin-Malat", tier: "optional", evidence: "MODERATE", value: 3, cost: 2, costMo: 14, timing: "6–8 g pre", why: "Moderater Pump/Volumen-Effekt — nice-to-have, kein Fundament.", goals: ["build", "perform"], aliases: ["citrullin", "citrulline", "malat"], magnitude: "Klein: etwas mehr Pump/Volumen, marginaler Leistungseffekt.", complexity: "niedrig" },
+    { id: "magnesium", name: "Magnesium (abends)", tier: "optional", evidence: "MODERATE", value: 3, cost: 1, costMo: 6, timing: "200–400 mg abends", why: "Sinnvoll bei Krämpfen/schlechtem Schlaf — kein Wundermittel.", goals: ["all"], aliases: ["magnesium", "magnesiumcitrat", "magnesium glycinat"], magnitude: "Klein, v. a. bei Mangel/Krämpfen — kein Schlafwundermittel.", complexity: "trivial" },
+    { id: "ashwagandha", name: "Ashwagandha", tier: "optional", evidence: "EMERGING", value: 2, cost: 2, costMo: 10, timing: "300–600 mg abends", why: "Kann Stress/Schlaf leicht verbessern — Datenlage gemischt, Qualität schwankt.", goals: ["all"], aliases: ["ashwagandha", "ksm-66", "withania"], magnitude: "Unsicher: leichte Stress-/Schlaf-Effekte in einigen Studien.", complexity: "niedrig", conflict: { medication: "Wechselwirkungen mit Schilddrüsen-/Sedativa-Medikation sind beschrieben — mit Arzt/Apotheke klären." } },
+    { id: "bcaa", name: "BCAA/EAA (bei genug Protein)", tier: "low_value", evidence: "STRONG_NEGATIVE", value: 0, cost: 2, costMo: 18, timing: "—", why: "Wer sein Proteinziel isst, verbrennt hier Geld. Streichen.", goals: [], aliases: ["bcaa", "eaa", "aminosäuren", "aminos", "amino"], magnitude: "Bei ausreichend Protein: kein zusätzlicher Effekt.", makesUnnecessary: "Ein gedecktes Proteinziel (fast immer der Fall)." },
+    { id: "tbooster", name: "„Testo-Booster“ (Tribulus & Co.)", tier: "low_value", evidence: "STRONG_NEGATIVE", value: 0, cost: 3, costMo: 25, timing: "—", why: "Kein relevanter Effekt auf Testosteron in brauchbaren Studien. Streichen.", goals: [], aliases: ["tribulus", "testo booster", "testobooster", "testo-booster", "booster", "d-asparaginsäure", "daa", "fadogia", "tongkat"], magnitude: "Kein messbarer Testosteron-Effekt.", makesUnnecessary: "Immer — Schlaf/Körperfett/Krafttraining sind die echten Hebel." },
+    { id: "fatburner", name: "„Fatburner“-Komplexe", tier: "low_value", evidence: "STRONG_NEGATIVE", value: 0, cost: 3, costMo: 30, timing: "—", why: "Teures Koffein mit Marketing. Das Defizit macht die Arbeit.", goals: [], aliases: ["fatburner", "fat burner", "l-carnitin", "carnitin", "cla", "thermogen"], magnitude: "Über den Koffeinanteil hinaus: nahe null.", makesUnnecessary: "Ein Kaloriendefizit (das die eigentliche Arbeit macht)." },
+    { id: "multivit", name: "Multivitamin (Standarddiät)", tier: "low_value", evidence: "MODERATE_NEGATIVE", value: 1, cost: 2, costMo: 8, timing: "—", why: "Bei vernünftiger Ernährung meist überflüssig — gezielte Einzelstoffe schlagen die Gießkanne.", goals: [], aliases: ["multivitamin", "multivit", "multi", "a-z"], magnitude: "Gering bei vernünftiger Ernährung; Dopplungsrisiko mit Einzelstoffen.", makesUnnecessary: "Eine abwechslungsreiche Ernährung + gezielte Einzelstoffe (D, Omega-3)." },
+    { id: "zinc", name: "Zink", tier: "optional", evidence: "MODERATE", value: 2, cost: 1, costMo: 4, timing: "10–25 mg, nicht dauerhaft hochdosiert", why: "Nur bei Mangel/hohem Bedarf sinnvoll — nicht dauerhaft blind hochdosieren (Kupfer-Balance).", goals: ["all"], aliases: ["zink", "zinc"], magnitude: "Relevant nur bei Mangel.", complexity: "niedrig", monitor: "Dauerhaft hohe Dosen stören die Kupferaufnahme." }
   ];
+  // Robustes Matching eines Freitext-Tokens auf ein SUPP-Objekt.
+  function matchSupp(token) {
+    var t = String(token || "").toLowerCase().trim();
+    if (!t) return null;
+    for (var i = 0; i < SUPPS.length; i++) {
+      var s = SUPPS[i];
+      if (t === s.id) return s;
+      var al = s.aliases || [];
+      for (var j = 0; j < al.length; j++) { if (t.indexOf(al[j]) >= 0 || al[j].indexOf(t) >= 0) return s; }
+    }
+    return null;
+  }
   function stackStrategy(g) {
     // g: {mode, pathway, budget('essential'|'optimal'|'maximal'), budgetEuro?,
     //     current[], sleepBad, fishTwiceWeek, summerSun, highCaffeine,
@@ -577,7 +593,52 @@
       else if (/Mahlzeit|Fett/.test(s.timing)) schedule.with_food.push(s.name);
       else schedule.morning.push(s.name);
     });
-    return { budget: budget, items: chosen, remove: remove, skipped: skipped, conflicts: conflicts, costPlan: costPlan, diminishing: diminishing, schedule: schedule };
+    // §2 — Ebenen-Gruppierung der Empfehlung: ESSENTIAL / OPTIMAL / ADVANCED.
+    var TIER_LABEL = { foundation: "ESSENTIAL", goal: "OPTIMAL", optional: "ADVANCED" };
+    var tiers = { ESSENTIAL: [], OPTIMAL: [], ADVANCED: [] };
+    chosen.forEach(function (s) { var lbl = TIER_LABEL[s.tier] || "ADVANCED"; tiers[lbl].push(s); });
+    return { budget: budget, items: chosen, tiers: tiers, remove: remove, skipped: skipped, conflicts: conflicts, costPlan: costPlan, diminishing: diminishing, schedule: schedule };
+  }
+
+  /* §2/§13 — TRIAGE des AKTUELLEN Stacks des Nutzers: KEEP / OPTIONAL / REMOVE.
+     Der Wow-Moment: „Du nimmst 11 — behalte 4, optional 2, streiche 5, hier warum."
+     Reduziert bewusst, statt Produkte hinzuzufügen. Unbekanntes wird ehrlich als
+     UNKNOWN markiert (nicht bewertbar), nie stillschweigend empfohlen. */
+  function analyzeCurrentStack(currentText, g) {
+    g = g || {};
+    var tokens = (Array.isArray(currentText) ? currentText : String(currentText || "").split(/[,;\n]+/))
+      .map(function (x) { return String(x).trim(); }).filter(Boolean);
+    var keep = [], optional = [], remove = [], unknown = [], seen = {};
+    var counts = {};
+    tokens.forEach(function (tok) {
+      var s = matchSupp(tok);
+      if (!s) { unknown.push({ input: tok }); return; }
+      counts[s.id] = (counts[s.id] || 0) + 1;
+      if (seen[s.id]) return; seen[s.id] = true;
+      var goalFit = s.goals.indexOf("all") >= 0 || s.goals.indexOf(g.mode) >= 0;
+      // Kontext-Abwertung: gedecktes Protein / genug Fisch / ausreichend Vit-D.
+      var madeUnnecessary = (s.id === "protein" && g.proteinCovered) || (s.id === "omega3" && g.fishTwiceWeek) || (s.id === "vitd" && (g.summerSun || g.vitDAdequate));
+      if (s.tier === "low_value") {
+        remove.push({ id: s.id, name: s.name, why: s.why, value: s.magnitude || "Geringer/kein zusätzlicher Nutzen.", savesMo: s.costMo, unnecessary: s.makesUnnecessary || null });
+      } else if (madeUnnecessary) {
+        optional.push({ id: s.id, name: s.name, why: (s.makesUnnecessary ? "Optional geworden: " + s.makesUnnecessary : "Kontextabhängig optional."), evidence: s.evidence, magnitude: s.magnitude });
+      } else if (s.tier === "foundation" && goalFit) {
+        keep.push({ id: s.id, name: s.name, why: s.why, evidence: s.evidence, magnitude: s.magnitude });
+      } else if (goalFit) {
+        optional.push({ id: s.id, name: s.name, why: s.why, evidence: s.evidence, magnitude: s.magnitude });
+      } else {
+        optional.push({ id: s.id, name: s.name, why: "Für dein aktuelles Ziel (" + (g.mode || "—") + ") nicht vorrangig — nicht falsch, aber nicht der Hebel.", evidence: s.evidence, magnitude: s.magnitude });
+      }
+    });
+    // Dopplungen im eingegebenen Stack (z. B. 2× Koffeinquelle, Multi + Einzelstoff).
+    var dupes = Object.keys(counts).filter(function (id) { return counts[id] > 1; }).map(function (id) { var s = SUPPS.find(function (x) { return x.id === id; }); return s ? s.name : id; });
+    if (g.medication) unknown.push({ input: "(Medikation angegeben)", note: "Supplement-Wechselwirkungen mit Arzt/Apotheke klären — wir bewerten das bewusst nicht automatisch." });
+    return {
+      total: tokens.length, keep: keep, optional: optional, remove: remove, unknown: unknown,
+      dupes: dupes,
+      summary: "Du nimmst " + tokens.length + ". Behalte " + keep.length + ", optional " + optional.length + ", streiche " + remove.length + (unknown.length ? ", " + unknown.length + " nicht bewertbar" : "") + ".",
+      monthlySaved: remove.reduce(function (a, r) { return a + (r.savesMo || 0); }, 0)
+    };
   }
 
   /* ---- ENHANCED (§53/§54/§55) — Klassen-Education, KEINE Dosierungen ---- */
@@ -675,7 +736,7 @@
     buildTrainingPlan: buildTrainingPlan, weeklyVolume: weeklyVolume, EXPERIENCE: EXPERIENCE, limitationSwap: limitationSwap,
     progressionTarget: progressionTarget, progressionPlan: progressionPlan, plateauCheck: plateauCheck, EXDB: EXDB,
     e1rm: e1rm, bestE1rm: bestE1rm, strengthTrend: strengthTrend, detectPRs: detectPRs, BENCHMARKS: BENCHMARKS,
-    stackStrategy: stackStrategy, SUPPS: SUPPS, ENHANCED_FRAMEWORK: ENHANCED_FRAMEWORK,
+    stackStrategy: stackStrategy, analyzeCurrentStack: analyzeCurrentStack, matchSupp: matchSupp, SUPPS: SUPPS, ENHANCED_FRAMEWORK: ENHANCED_FRAMEWORK,
     interpretProgress: interpretProgress, observePatterns: observePatterns, nextCycleRecommendation: nextCycleRecommendation
   };
 })();

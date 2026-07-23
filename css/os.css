@@ -742,3 +742,19 @@
 .os-falsify .fx { border-left: 2px solid var(--line); padding-left: 10px; }
 .os-falsify .fx span { display: block; font-family: var(--font-mono, monospace); font-size: 0.6rem; letter-spacing: 0.12em; color: var(--muted-2); }
 .os-falsify .fx p { margin: 2px 0 0; font-size: 0.82rem; color: var(--muted); }
+/* Phase 9.6 — Stack Builder 2.0: Triage + Ebenen */
+.os-triage .hd { margin: 0 0 12px; font-size: 0.95rem; color: var(--text); }
+.os-triage .hd b { color: var(--green, #3ddc84); }
+.os-tri-group { border-left: 3px solid var(--line); border-radius: 10px; padding: 8px 12px; margin-bottom: 8px; background: rgba(10,13,19,0.4); }
+.os-tri-group .tl { font-family: var(--font-mono, monospace); font-size: 0.62rem; letter-spacing: 0.12em; color: var(--muted-2); }
+.os-tri-group .it { margin-top: 6px; }
+.os-tri-group .it b { display: block; color: var(--text); font-size: 0.9rem; }
+.os-tri-group .it span { color: var(--muted); font-size: 0.8rem; }
+.os-tri-group .it .sv { color: var(--green, #3ddc84); font-size: 0.75rem; font-style: normal; }
+.os-tri-keep { border-left-color: var(--green, #3ddc84); }
+.os-tri-opt { border-left-color: var(--accent-2, #00c2ff); }
+.os-tri-rm { border-left-color: var(--amber, #f5a623); }
+.os-tri-unk { border-left-color: rgba(255,255,255,0.2); }
+.os-stacktier { margin-bottom: 10px; }
+.os-stacktier .stl { display: block; font-family: var(--font-mono, monospace); font-size: 0.64rem; letter-spacing: 0.14em; color: var(--accent-2, #00c2ff); margin-bottom: 6px; }
+.os-supp .mag, .os-supp .mon { margin: 4px 0 0; font-size: 0.78rem; color: var(--muted-2); }

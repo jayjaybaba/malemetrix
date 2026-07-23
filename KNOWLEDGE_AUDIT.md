@@ -14,9 +14,12 @@ REVIEWED und tragen öffentlich KEIN Zitat.
 | trt_context | REVIEWED | Bhasin 2018, JCEM |
 | glp1_context | REVIEWED | Wilding/STEP-1 2021, NEJM (10.1056/NEJMoa2032183) |
 | apob_lipids | REVIEWED | Mach/ESC-EAS 2019, Eur Heart J (10.1093/eurheartj/ehz455) |
-| energy_balance, plateau, hypertrophy_volume, omega3, recovery_sleep, glucose_hba1c, kidney_markers, liver_markers, hematocrit_ctx, enhanced_monitoring, fatloss_rate, supplement_evidence | REVIEWED | — (kuratiert, Quelle noch nicht aufgelöst) |
+| hypertrophy_volume | REVIEWED | Schoenfeld 2017, J Sports Sci (10.1080/02640414.2016.1210197) — Kern-Claim belegt |
+| recovery_sleep | REVIEWED | Watson 2015, AASM/SRS Konsens (10.5664/jcsm.4758) |
+| omega3 | REVIEWED | Mach/ESC-EAS 2019 (Triglyceride) |
+| energy_balance, plateau, glucose_hba1c, kidney_markers, liver_markers, hematocrit_ctx, enhanced_monitoring, fatloss_rate, supplement_evidence | REVIEWED | — (kuratiert, Quelle noch nicht aufgelöst) |
 
-**Deckung:** 2 PUBLISHED · 16 REVIEWED · 5 verifizierte Quellen.
+**Deckung:** 2 PUBLISHED · 16 REVIEWED · **7 verifizierte Quellen** (Phase 9.6: +Schoenfeld 2017, +Watson 2015).
 
 ## Publikations-Gate (§29)
 
