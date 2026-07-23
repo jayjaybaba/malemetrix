@@ -27,23 +27,6 @@
 
   window.MM_PRODUCTS = [
 
-    /* ---------- Interner E2E-Test (NICHT im Shop sichtbar) ----------
-       Nur über checkout.html?e2e=mm1 erreichbar. Prüft den echten
-       PayPal-LIVE-Pfad für exakt 1,00 € mit isoliertem e2e_test-
-       Entitlement. Serverseitig exakt verifiziert (mm-commerce). */
-    {
-      id: "mm-e2e-test",
-      name: "MALEMETRIX E2E TEST",
-      cat: "digital", catLabel: "Interner Test · kein Produkt",
-      price: 1.00,
-      digital: true,
-      hidden: true,
-      emoji: "🧪",
-      desc: "Interner End-to-End-Test des Live-Checkouts. Kein echtes Produkt — bitte nicht kaufen.",
-      details: ["Interner technischer Test des Zahlungswegs (1,00 €)."],
-      svg: visual('<text x="200" y="135" font-family="monospace" font-size="22" font-weight="bold" fill="#eef2f7" text-anchor="middle">E2E TEST</text>')
-    },
-
     /* ---------- Digital ---------- */
     {
       id: "protokoll",

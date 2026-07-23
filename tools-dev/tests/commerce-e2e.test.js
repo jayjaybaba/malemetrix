@@ -1,9 +1,10 @@
 /* ==========================================================================
-   MALEMETRIX — E2E-Testprodukt-Zusicherungen (kontrollierter 1-€-Livetest)
-   Statisch geprüft: Client- und Server-Preis stimmen überein, DAS PROTOKOLL
-   bleibt exakt 49 € / 4900 Cent, das Testprodukt ist versteckt, isoliert und
-   nur über den bewussten Testparameter erreichbar. Kein generischer
-   Preis-Override existiert.
+   MALEMETRIX — Commerce-Robustheit + Auth (nach abgeschlossenem 1-€-Livetest)
+   Der kontrollierte E2E-Testpfad (1-€-Testprodukt + ?e2e/?recover) ist nach
+   erfolgreichem Livetest vollständig zurückgebaut. Diese Suite sichert den
+   PRODUKTIVEN Zahlungsweg ab: DAS PROTOKOLL bleibt exakt 49 €, kein Client-
+   Preis, PayPal-Server-Verifikation, Idempotenz, iOS-Recovery, CORS,
+   autoritative Auth (ES256/verify_jwt) — und dass der Testpfad wirklich weg ist.
    Ausführen:  node tools-dev/tests/commerce-e2e.test.js
    ========================================================================== */
 "use strict";
@@ -28,15 +29,14 @@ group("DAS PROTOKOLL · 49 € unangetastet");
   ok(/"protokoll":\s*\["protocol",\s*"twelve_week"\]/.test(edge), "Server: protokoll-Entitlements unverändert");
 })();
 
-/* ===== 2) Testprodukt: Client/Server-Parität exakt 1,00 € ===== */
-group("E2E-Testprodukt · 1,00 € Parität + Isolation");
+/* ===== 2) E2E-Testpfad vollständig zurückgebaut ===== */
+group("Teardown · 1-€-Testpfad vollständig entfernt");
 (function () {
-  ok(/id:\s*"mm-e2e-test"[\s\S]{0,200}price:\s*1\.00/.test(shopData), "Client: mm-e2e-test price 1.00");
-  ok(/"mm-e2e-test":\s*100/.test(edge), "Server: mm-e2e-test 100 Cent");
-  ok(/"mm-e2e-test":\s*\["e2e_test"\]/.test(edge), "Server: vergibt NUR e2e_test-Entitlement");
-  ok(/productIds\.includes\("mm-e2e-test"\)/.test(edge) && /productIds\.length !== 1/.test(edge),
-    "Server: Testprodukt nicht mit echten Produkten kombinierbar");
-  ok(/paidCents !== 100/.test(edge), "Server: EXAKT 100 Cent erzwungen (nicht nur Mindestbetrag)");
+  ok(shopData.indexOf("mm-e2e-test") === -1, "Client: kein Testprodukt mehr in shop-data.js");
+  ok(checkout.indexOf("mm-e2e-test") === -1 && !/get\("e2e"\)|get\("recover"\)/.test(checkout), "Client: kein e2e/recover-Testpfad mehr in checkout.js");
+  ok(edge.indexOf("mm-e2e-test") === -1 && edge.indexOf("e2e_test") === -1, "Server: keine Testprodukt-Whitelist/Isolation mehr");
+  // Nur noch echte Produkte in der Server-Whitelist
+  ok(/PRODUCT_KEYS[\s\S]*?"protokoll"[\s\S]*?\};/.test(edge) && !/e2e/.test(edge.split("KNOWN_PRICES_CENTS")[0].split("PRODUCT_KEYS")[1] || ""), "Server-Whitelist enthält nur echte Produkte");
 })();
 
 /* ===== 3) Kein generischer Preis-Override ===== */
@@ -49,30 +49,16 @@ group("Sicherheit · Server glaubt nie dem Client-Preis");
   ok(/commerce_events/.test(edge) && /23505/.test(edge), "Idempotenz über commerce_events (unique) intakt");
 })();
 
-/* ===== 4) Sichtbarkeit + Zugang nur über bewussten Testpfad ===== */
-group("Sichtbarkeit · versteckt im Shop, Seed nur per ?e2e=mm1");
-(function () {
-  ok(/id:\s*"mm-e2e-test"[\s\S]{0,400}hidden:\s*true/.test(shopData), "Produkt trägt hidden:true");
-  ok(/filter\(p => !p\.hidden/.test(shopJs), "Shop-Grid filtert hidden-Produkte aus");
-  ok(/get\("e2e"\) === "mm1"/.test(checkout), "Checkout-Seed nur bei exaktem Parameter e2e=mm1");
-  ok(/\[\{ id: "mm-e2e-test", qty: 1 \}\]/.test(checkout), "Seed setzt GENAU 1× Testprodukt (Total = 1,00 €)");
-  // Kein normaler Shop-Link auf das Testprodukt
-  var pub = ["index.html", "shop.html", "ebooks.html", "coaching.html"].map(read).join("");
-  ok(pub.indexOf("mm-e2e-test") === -1, "kein öffentlicher Link/Verweis auf das Testprodukt");
-})();
-
-/* ===== 5) Reload-/Kontextverlust-Robustheit (iOS Safari) ===== */
-group("Recovery · Pending-State überlebt Reload, kein Doppel-Seed");
+/* ===== 5) Reload-/Kontextverlust-Robustheit (iOS Safari) — echte Käufe ===== */
+group("Recovery · Pending-State überlebt Reload (produktiv)");
 (function () {
   ok(/savePending\(\{\s*paypalOrderId: ppOrderId/.test(checkout), "Pending-State wird in createOrder VOR der Freigabe gespeichert");
   ok(/captureId/.test(checkout) && /pd\.captureId = capId/.test(checkout), "Capture-ID wird nach onApprove ergänzt");
-  ok(/get\("e2e"\) === "mm1" && !getPending\(\)/.test(checkout), "e2e-Seed NUR ohne ausstehende Zahlung (kein Warenkorb-Reset beim Rücksprung)");
   ok(/if \(bootPending && \(bootPending\.paypalOrderId \|\| bootPending\.captureId\)\)/.test(checkout), "Boot: ausstehende Zahlung ⇒ Recovery statt neuem Checkout");
   ok(/Zahlung wird bestätigt/.test(checkout), "Recovery-UX: „Zahlung wird bestätigt …“");
   ok(/NICHT erneut bezahlen/.test(checkout), "UX warnt explizit vor Doppelzahlung");
   ok(/id="retryVerify"/.test(checkout) && !/retryVerify[\s\S]{0,400}order\.create/.test(checkout), "Wiederholungs-Button prüft nur — löst nie neue Zahlung aus");
   ok(/\.then\(\(r\) => \{\s*if \(fnOk\(r\)\)[\s\S]{0,400}renderVerifyIssue\(fnCode\(r\)\)/.test(checkout), "Verifikationsfehler ⇒ KEINE falsche Erfolgsseite");
-  ok(/get\("recover"\)/.test(checkout) && /\^?\[A-Za-z0-9\\\-_\]\{8,40\}/.test(checkout), "Manuelle Recovery-URL (?recover=ID) mit ID-Validierung");
   ok(!/savePending\(\{[^}]*\b(secret|password|authorization|jwt|bearer)\b/i.test(checkout), "Pending-State enthält keine Secrets");
 })();
 

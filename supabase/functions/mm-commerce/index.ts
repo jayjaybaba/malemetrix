@@ -16,11 +16,8 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const PRODUCT_KEYS: Record<string, string[]> = {
   // Produkt-ID (shop-data.js) -> Entitlements. Nur bekannte IDs werden gemappt.
   "protokoll": ["protocol", "twelve_week"],
-  // Interner E2E-Test (1,00 €): vergibt AUSSCHLIESSLICH das isolierte
-  // e2e_test-Entitlement — niemals Zugriff auf echte Produkte.
-  "mm-e2e-test": ["e2e_test"],
 };
-const KNOWN_PRICES_CENTS: Record<string, number> = { "protokoll": 4900, "mm-e2e-test": 100 };
+const KNOWN_PRICES_CENTS: Record<string, number> = { "protokoll": 4900 };
 
 // CORS: die Funktion wird vom Browser (www.malemetrix.com) cross-origin
 // aufgerufen. supabase-js sendet authorization + x-client-info + apikey →
@@ -203,12 +200,6 @@ Deno.serve(async (req) => {
     const paidCents = Math.round(parseFloat(cap.amount?.value || "0") * 100);
     const minCents = productIds.reduce((a, p) => a + (KNOWN_PRICES_CENTS[p] || 0), 0);
     if (minCents > 0 && paidCents < minCents) return json({ error: "amount_mismatch" }, 409);
-    // E2E-Testprodukt strikt isoliert: nie mit echten Produkten kombinierbar
-    // und der Betrag muss EXAKT 1,00 € sein (nicht nur Mindestbetrag).
-    if (productIds.includes("mm-e2e-test")) {
-      if (productIds.length !== 1) return json({ error: "test_product_isolated" }, 400);
-      if (paidCents !== 100) return json({ error: "amount_mismatch" }, 409);
-    }
 
     // --- Idempotenz ZUERST (§73): unique insert, Duplikat => Replay.
     // WICHTIG: Ein Replay kehrt NICHT sofort zurück, sondern stellt Order +

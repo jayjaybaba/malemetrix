@@ -39,29 +39,6 @@
     return String(r.code || r.error || "unknown");
   }
 
-  const bootParams = new URLSearchParams(location.search);
-
-  /* Manuelle Recovery-URL: checkout.html?recover=<PayPal-Order- ODER
-     Transaktions-/Capture-ID>. Für die Wiederherstellung einer Zahlung,
-     deren lokaler State verloren ist (z. B. der 1-€-E2E-Test). Der Server
-     verifiziert die ID direkt bei PayPal — ohne echte Zahlung passiert nichts. */
-  try {
-    const rec = bootParams.get("recover");
-    if (rec && /^[A-Za-z0-9\-_]{8,40}$/.test(rec)) {
-      savePending({ paypalOrderId: rec, productIds: ["mm-e2e-test"], orderNo: null, ts: Date.now(), manual: true });
-    }
-  } catch (e) {}
-
-  /* ---------- Interner E2E-Testpfad (bewusst aufrufbar, nicht verlinkt) ----
-     checkout.html?e2e=mm1 setzt den Warenkorb auf GENAU das versteckte
-     1,00-€-Testprodukt — aber NUR, wenn keine unabgeschlossene Zahlung
-     aussteht (sonst würde der Rücksprung von PayPal den Zustand zerstören). */
-  try {
-    if (bootParams.get("e2e") === "mm1" && !getPending()) {
-      MM.store.set("cart", [{ id: "mm-e2e-test", qty: 1 }]);
-    }
-  } catch (e) {}
-
   /* ---------- Automatische Code-Auslieferung nach bestätigter Zahlung ------
      Die Zugangscodes liegen AES-verschlüsselt vor und werden erst nach einem
      erfolgreichen PayPal-Capture entschlüsselt und angezeigt. Bei Vorkasse
