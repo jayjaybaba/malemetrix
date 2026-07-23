@@ -12,6 +12,17 @@
   const wrap = document.getElementById("checkoutWrap");
   if (!wrap) return;
 
+  /* ---------- Interner E2E-Testpfad (bewusst aufrufbar, nicht verlinkt) ----
+     checkout.html?e2e=mm1 setzt den Warenkorb auf GENAU das versteckte
+     1,00-€-Testprodukt. Der Server (mm-commerce) verifiziert für dieses
+     Produkt exakt 1,00 € und vergibt nur das isolierte e2e_test-Entitlement —
+     DAS PROTOKOLL ist davon vollständig getrennt und kostet weiterhin 49 €. */
+  try {
+    if (new URLSearchParams(location.search).get("e2e") === "mm1") {
+      MM.store.set("cart", [{ id: "mm-e2e-test", qty: 1 }]);
+    }
+  } catch (e) {}
+
   /* ---------- Automatische Code-Auslieferung nach bestätigter Zahlung ------
      Die Zugangscodes liegen AES-verschlüsselt vor und werden erst nach einem
      erfolgreichen PayPal-Capture entschlüsselt und angezeigt. Bei Vorkasse

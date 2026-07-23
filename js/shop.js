@@ -13,7 +13,8 @@
   const T = (k, fb) => (window.MM && MM.i18n && MM.i18n.t(k)) || fb;
 
   function render() {
-    const list = products.filter(p => activeFilter === "alle" || p.cat === activeFilter);
+    // hidden-Produkte (interne Testpfade) erscheinen nie im öffentlichen Shop.
+    const list = products.filter(p => !p.hidden && (activeFilter === "alle" || p.cat === activeFilter));
     grid.innerHTML = list.map(p =>
       '<article class="product-card reveal visible">' +
       '<div class="product-visual">' + p.svg +
