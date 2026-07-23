@@ -448,3 +448,27 @@
 @media (prefers-reduced-motion: reduce) {
   .os-fab, .os-sheet-body, .os-anchor { transition: none !important; animation: none !important; }
 }
+
+/* ====================== PHASE 5 — INTELLIGENCE (Today strategy strip) ====================== */
+.os-intel { margin: 14px 0; padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: linear-gradient(100deg, rgba(0,194,255,0.045), transparent 65%); position: relative; }
+.os-intel .tag { display: block; font-family: var(--font-mono, monospace); font-size: 0.6rem; letter-spacing: 0.2em; color: var(--muted-2); margin-bottom: 8px; }
+.os-intel .intel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.os-intel .intel-head b { font-size: 1rem; }
+.intel-conf { font-family: var(--font-mono, monospace); font-size: 0.62rem; letter-spacing: 0.1em; color: var(--muted-2); }
+.intel-text { font-size: 0.86rem; color: var(--muted); margin: 6px 0 0; }
+.intel-missing { font-size: 0.8rem; color: var(--amber, #f5a623); margin: 8px 0 0; }
+.intel-proposal { margin: 12px 0 4px; padding: 10px 12px; border-radius: 10px; background: rgba(0,194,255,0.06); display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.intel-proposal .k { font-family: var(--font-mono, monospace); font-size: 0.58rem; letter-spacing: 0.16em; color: var(--muted-2); }
+.intel-proposal b { font-size: 0.95rem; }
+.intel-dnc { font-size: 0.78rem; color: var(--muted); margin: 10px 0 0; }
+.intel-dnc .k, .intel-contra .k { font-family: var(--font-mono, monospace); font-size: 0.58rem; letter-spacing: 0.14em; color: var(--muted-2); margin-right: 6px; }
+.intel-contra { font-size: 0.8rem; color: var(--amber, #f5a623); margin: 8px 0 0; }
+.intel-advisor { margin-top: 12px; }
+.os-intel.intel-execution_first, .os-intel.intel-recovery_first { background: linear-gradient(100deg, rgba(245,166,35,0.07), transparent 65%); border-color: rgba(245,166,35,0.28); }
+.os-intel.intel-keep { background: rgba(61,220,132,0.04); border-color: rgba(61,220,132,0.2); }
+.intel-adv { margin-top: 12px; padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(127,127,127,0.03); }
+.intel-adv-a { font-size: 0.88rem; margin: 0 0 8px; }
+.intel-adv-pr .pr { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; border-top: 1px dashed var(--line); }
+.intel-adv-pr .pr b { font-size: 0.85rem; }
+.intel-adv-pr .pr span { font-size: 0.78rem; color: var(--muted); }
+.intel-adv-nn { font-size: 0.8rem; color: var(--muted); margin: 8px 0 4px; }

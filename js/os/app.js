@@ -91,6 +91,35 @@
 
   /* ============ PHASE 6 — TODAY-2.0-BAUSTEINE (NBA-Karte · Timeline · Kontext) ============ */
   function fmtDateShort(ymd) { return ymd ? ymd.slice(8) + "." + ymd.slice(5, 7) + "." : ""; }
+  // PHASE 5 — Strategie-Streifen: der „Kopf“ über der Ausführung. Zeigt den
+  // Verdict (KEEP / EXECUTION FIRST / RECOVERY FIRST / WARTE AUF DATEN / konkrete
+  // Anpassung mit REVIEW→ÜBERNEHMEN), Konfidenz und WAS NICHT ändern.
+  function intelStrip(day) {
+    if (!window.MM || !MM.intelligence) return "";
+    var dec; try { dec = MM.intelligence.decide(); } catch (e) { return ""; }
+    if (!dec) return "";
+    var conf = dec.confidence ? '<span class="intel-conf">Konfidenz: ' + esc(dec.confidence) + '</span>' : "";
+    var html = '<div class="os-intel intel-' + esc(dec.verdict) + '"><span class="tag">STRATEGIE</span>';
+    html += '<div class="intel-head"><b>' + esc(dec.title) + '</b>' + conf + '</div>';
+    html += '<p class="intel-text">' + esc(dec.text) + '</p>';
+    if (dec.verdict === "waiting_for_data" && dec.missing) {
+      html += '<p class="intel-missing">Wartet auf: ' + dec.missing.map(esc).join(" · ") + '</p>';
+    }
+    if (dec.verdict === "adjust" && dec.proposal) {
+      html += '<div class="intel-proposal"><span class="k">VORSCHLAG</span><b>' + dec.proposal.from + ' → ' + dec.proposal.to + ' kcal</b>' +
+        '<button class="btn btn-primary btn-sm" data-intelapply="1">Übernehmen &amp; Review in ' + (dec.proposal.reviewInDays || 14) + ' Tagen</button></div>';
+    }
+    if (dec.explain && dec.explain.notChange && dec.explain.notChange.length) {
+      html += '<p class="intel-dnc"><span class="k">NICHT ÄNDERN</span> ' + dec.explain.notChange.map(esc).join(" · ") + '</p>';
+    }
+    if (dec.contradictions && dec.contradictions.length) {
+      html += '<p class="intel-contra">' + esc(dec.contradictions[0].text) + '</p>';
+    }
+    html += '<button class="os-ghost intel-advisor" data-advisor="1">Advisor fragen</button>';
+    html += '<div id="intelSheet"></div></div>';
+    return html;
+  }
+
   function nbaCard(day) {
     var nba = day.nba; if (!nba.primary) return "";
     var a = nba.primary;
@@ -205,6 +234,9 @@
       } else {
         html += nbaCard(day);
       }
+
+      // INTELLIGENCE — strategische Bedeutung über der Ausführung (Phase 5)
+      html += intelStrip(day);
 
       // MY DAY CHANGED + WAS KANN ICH JETZT ESSEN
       html += '<div class="os-daybtns"><button class="os-daychanged" data-daychanged><span class="ic">⟲</span> Mein Tag hat sich geändert</button><button class="os-eatnow" data-eatnow>Was kann ich jetzt essen?</button></div>';
@@ -846,6 +878,22 @@
       }
       var pw = t.closest("[data-pathway]"); if (pw) { OS.setPathway(pw.getAttribute("data-pathway")); if (MM.track) MM.track("pathway_selected", { p: pw.getAttribute("data-pathway") }); location.hash = "#today"; render(); return; }
       var done = t.closest("[data-osdone]"); if (done) { OS.completeAction(done.getAttribute("data-osdone")); render(); return; }
+      // PHASE 5 — Vorschlag übernehmen (PROPOSE → CONFIRM → EXECUTE, ein Ledger)
+      if (t.closest("[data-intelapply]")) {
+        try { var dec = MM.intelligence.decide(); if (dec && dec.proposal) { var r = MM.intelligence.applyDecision(dec); if (MM.toast) MM.toast(r.ok ? "Übernommen: " + dec.proposal.from + " → " + dec.proposal.to + " kcal. Review terminiert." : "Konnte nicht angewendet werden."); } } catch (e) {}
+        render(); return;
+      }
+      if (t.closest("[data-advisor]")) {
+        var sheet = document.getElementById("intelSheet"); if (!sheet) return;
+        try {
+          var adv = MM.intelligence.advise("Was ist gerade mein wichtigster Hebel?");
+          sheet.innerHTML = '<div class="intel-adv"><p class="intel-adv-a">' + esc(adv.answer) + '</p>' +
+            (adv.proposals && adv.proposals.length ? '<div class="intel-adv-pr">' + adv.proposals.map(function (pp) { return '<div class="pr"><b>' + esc(pp.title) + '</b><span>' + esc(pp.detail || "") + '</span>' + (pp.deepLink ? '<a class="os-ghost" href="' + esc(pp.deepLink) + '">Öffnen</a>' : '') + '</div>'; }).join("") + '</div>' : '') +
+            '<p class="intel-adv-nn"><b>Not now:</b> ' + (adv.notNow || []).map(esc).join(" · ") + '</p>' +
+            '<p class="small muted">' + (adv.deterministic ? "Deterministische Analyse aus deinen echten Daten — kein KI-Text." : "Formuliert vom konfigurierten Provider.") + '</p></div>';
+        } catch (e) { sheet.innerHTML = '<p class="small muted">Advisor nicht verfügbar.</p>'; }
+        return;
+      }
       var ctx = t.closest("[data-ctx]"); if (ctx) { OS.setContextMode(ctx.getAttribute("data-ctx")); render(); return; }
       var rsc = t.closest("[data-resched]"); if (rsc) { var pr = rsc.getAttribute("data-resched").split(":"); if (OS.applyReschedule(parseInt(pr[0], 10), parseInt(pr[1], 10))) { if (MM.toast) MM.toast("Krafttag verschoben — Kalender/Plan aktualisiert."); } render(); return; }
       var ph = t.closest(".os-photo"); if (ph && !t.closest("input")) { var fi = ph.querySelector("input[type=file]"); if (fi) fi.click(); return; }
