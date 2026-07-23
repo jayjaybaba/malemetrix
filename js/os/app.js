@@ -1081,7 +1081,66 @@
     // Personalization depth (§123)
     html += '<div class="card intel-depth"><span class="os-k">MaleMetrix kennt dich zu</span><div class="bar"><span style="width:' + depth.pct + '%"></span></div><b>' + depth.pct + '%</b>' +
       (depth.missingHighValue.length ? '<p class="small muted" style="margin:8px 0 0">Größter Hebel für bessere Personalisierung: ' + depth.missingHighValue.map(esc).join(", ") + '</p>' : '') + '</div>';
+
+    // Phase 8 (§18): Eskalation zu menschlichem Review — nur bei echten Triggern, ohne Angst.
+    var escal = coachEscalation(I, ctx);
+    if (escal.length) {
+      html += '<div class="card os-escalate"><span class="tag">HUMAN REVIEW</span><p style="margin:6px 0 4px;font-weight:600">Das könnte von einem menschlichen Review profitieren:</p>' +
+        '<ul class="small" style="margin:0 0 12px;padding-left:18px;color:var(--muted)">' + escal.map(function (r2) { return '<li>' + esc(r2) + '</li>'; }).join("") + '</ul>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn btn-primary btn-sm" href="coaching.html" data-track="coaching_interest">1:1 Coaching ansehen →</a><button class="btn btn-dark btn-sm" id="coachPacket">Coach-Paket exportieren ↓</button></div></div>';
+    } else {
+      html += '<div class="card"><span class="card-num">FÜR DEINEN COACH</span><p class="muted" style="margin:8px 0 12px">Ein Coach muss bei dir nicht bei null anfangen: Exportiere dein strukturiertes MaleMetrix-Paket (Ziel, Phase, Verlauf, Entscheidungen, Engpass) — du entscheidest, wem du es gibst. Keine Fotos, keine Roh-Logs.</p>' +
+        '<button class="btn btn-dark btn-sm" id="coachPacket">Coach-Paket exportieren ↓</button></div>';
+    }
     return html;
+  }
+  /* §18 — deterministische Eskalations-Trigger; nie Angst, nur Sachlage. */
+  function coachEscalation(I, ctx) {
+    var out = [];
+    try {
+      var pr = I.foresight.plateauRisk(ctx);
+      if (pr && pr.level === "MODERATE" && ctx.execution && ctx.execution.consistency >= 85) out.push("Plateau trotz " + ctx.execution.consistency + " % Umsetzung — die einfachen Hebel sind durch.");
+    } catch (e) {}
+    try {
+      var contras = I.decision.contradictions(ctx);
+      if (contras.length >= 2) out.push(contras.length + " widersprüchliche Signale gleichzeitig — Priorisierung ist hier Erfahrungssache.");
+    } catch (e) {}
+    try {
+      var led = I.memory.ledger();
+      var reverted = led.filter(function (d2) { var o = d2.outcome && (d2.outcome.key || d2.outcome); return o === "reverted"; });
+      if (reverted.length >= 2) out.push(reverted.length + " Anpassungen wurden wieder zurückgenommen — ein externer Blick kann das Muster brechen.");
+    } catch (e) {}
+    try {
+      if (OS.pathway() === "enhanced" && MM.labs && MM.labs.priorities && (MM.labs.priorities() || []).length) out.push("Enhanced-Kontext mit priorisierten Labor-Markern — strukturierte menschliche Begleitung ist hier der sichere Weg.");
+    } catch (e) {}
+    return out.slice(0, 3);
+  }
+  /* §16/§98 — Coach-Paket: strukturierter Snapshot. Explizite Nutzeraktion,
+     bewusster Umfang: KEINE Fotos, KEINE Roh-Logs, KEINE Secrets. */
+  function buildCoachPacket() {
+    var d = MM.account.getDashboardState(); var p = d.program || {};
+    var I = INTEL(); var ctx = null, dec = null, led = [];
+    try { ctx = I.buildContext(); dec = I.decision.decide(ctx); led = I.memory.ledger(); } catch (e) {}
+    var w0 = OS.firstMetric("weight"), wN = OS.latestMetric("weight");
+    var wa0 = OS.firstMetric("waist"), waN = OS.latestMetric("waist");
+    var labs = null;
+    try { labs = (MM.labs && MM.labs.reviewSummary) ? MM.labs.reviewSummary() : null; } catch (e) {}
+    return {
+      _about: "MaleMetrix Coach-Paket — vom Nutzer bewusst exportiert. Enthält keine Fotos und keine Rohdaten-Logs.",
+      created: new Date().toISOString().slice(0, 10),
+      goal: { mode: d.mode || null, pathway: OS.pathway() || null, bottleneck_score: d.bottleneck || null },
+      program: p.active ? { week: p.week, day: p.day, phase: p.phase, consistency: p.consistency } : null,
+      body: {
+        weight: wN ? { start: w0 ? w0.value : null, now: wN.value, unit: "kg" } : null,
+        waist: waN ? { start: wa0 ? wa0.value : null, now: waN.value, unit: "cm" } : null
+      },
+      nutrition: MM.store.get("os_nutrition_plan", null),
+      training: (function () { var t = MM.store.get("os_training_plan", null); return t ? { days: t.days, location: t.location, priority: t.priority } : null; })(),
+      current_decision: dec && dec.primary ? { type: dec.primary.type, title: dec.primary.title, reason: dec.primary.reason } : null,
+      decision_history: led.slice(-10).map(function (x) { return { date: x.date, title: x.title, domain: x.domain, status: x.status, outcome: x.outcome ? (x.outcome.key || x.outcome) : null }; }),
+      labs_summary: labs,
+      open_questions: (function () { try { return (I.review.latestReview() || {}).questions || []; } catch (e) { return []; } })()
+    };
   }
   function module(href, title, sub, badge) {
     return '<a class="intel-module" href="' + href + '"><div class="hd"><b>' + esc(title) + '</b>' + (badge ? '<span class="badge">' + esc(badge) + '</span>' : '') + '</div><span>' + esc(sub) + '</span></a>';
@@ -1456,6 +1515,15 @@
       if (t.closest("#rcSave")) { var sh = parseFloat((document.getElementById("rcSleep") || {}).value); var en = parseInt((document.getElementById("rcEnergy") || {}).value, 10); var any = false; if (sh) { OS.logMetric("sleep", sh, "h"); any = true; } if (en) { OS.logMetric("energy", en, "/5"); any = true; } if (any) { if (MM.toast) MM.toast("Recovery gespeichert."); render(); } return; }
       if (t.closest("#cycDone")) { OS.completeCycle(); if (MM.toast) MM.toast("Zyklus abgeschlossen — er ist jetzt Teil deiner Historie."); render(); return; }
       var shc = t.closest("[data-sharecard]"); if (shc) { downloadShareCard(shc.getAttribute("data-sharecard")); return; }
+      if (t.closest("#coachPacket")) {
+        var pk = buildCoachPacket();
+        var pb = new Blob([JSON.stringify(pk, null, 2)], { type: "application/json" });
+        var pa = document.createElement("a"); pa.href = URL.createObjectURL(pb); pa.download = "malemetrix-coach-paket.json"; pa.click();
+        setTimeout(function () { URL.revokeObjectURL(pa.href); }, 2000);
+        if (MM.track) MM.track("coach_packet_export", {});
+        if (MM.toast) MM.toast("Coach-Paket exportiert — du entscheidest, wem du es gibst.");
+        return;
+      }
       if (t.closest("#tkSave")) { var w = parseFloat((document.getElementById("tkW") || {}).value); var wa = parseFloat((document.getElementById("tkWa") || {}).value); var okAny = false; if (w) { OS.logMetric("weight", w, "kg"); okAny = true; } if (wa) { OS.logMetric("waist", wa, "cm"); okAny = true; } if (okAny) { if (MM.toast) MM.toast("Gespeichert."); render(); } return; }
       if (t.closest("#icsGo")) {
         var tm = (document.getElementById("icsTime") || {}).value || "18:00"; OS.setP("calendar.trainTime", tm);

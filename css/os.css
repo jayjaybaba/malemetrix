@@ -731,3 +731,4 @@
 .os-outcome .ver-watch { color: var(--amber, #f5a623); }
 .os-outcome .ver-off { color: var(--muted-2); }
 .os-outcome .s { display: block; color: var(--muted-2); font-size: 0.8rem; margin-top: 4px; }
+.os-escalate { border-color: rgba(0,194,255,0.35); background: linear-gradient(180deg, rgba(0,194,255,0.06), rgba(10,13,19,0.6)); }

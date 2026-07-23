@@ -153,7 +153,20 @@ imports; every cross-layer call is lazy + guarded.
 | Visual Intelligence | Metrix Body (SVG, 6 Systeme), Trajektorie-Band-Chart (ein Chart-System), visual-manifest v2 (12 Assets, REQUIRES_EXTERNAL_GENERATION) |
 | Content-Foundation | MM.content: 1 Wissensobjekt → Multi-Plattform-Struktur, gegroundet, ohne Nutzerdaten |
 
-Tests: `node tools-dev/tests/phase7.test.js` (51) — gesamt 295 Assertions über 4 Suiten. SW: mm-v82.
+Tests: `node tools-dev/tests/phase7.test.js` (51).
+
+## Phase 8 — Aktivierung · Monetarisierung · Proof (`MM.activation`, `I.proof`, mm-commerce)
+| Piece | What it does |
+|---|---|
+| MM.activation (js/os/activation.js) | Meilensteine/Stage/Depth/ColdStart rein aus vorhandenem Zustand abgeleitet — nichts wird doppelt gefragt; Funnel-Events je 1×, ohne Gesundheitswerte |
+| Performance Map (#map) | Erster Wert in Sekunden: Du heute → Limiter → 12 Wochen → Start hier → Not now, mit ehrlicher Datenbasis-Zeile |
+| I.proof (intelligence/proof.js) | "Was MaleMetrix gelernt hat": Muster mit Evidenz-Klassen (BEOBACHTET/ZUSAMMENHANG/WAHRSCHEINLICH/UNSICHER), Mindest-N je Generator, Entscheidungs-Outcomes (#learned) |
+| Transformation Proof | Checkpoints W4/8/12 (Karte nur, wenn Fotos wirklich fehlen), W12-Report, privacy-safe Share-Cards (4:5/9:16 PNG — ohne Labs/Medikation/Pathway) |
+| Commerce | mm-commerce Edge Function (Server-Verify direkt bei PayPal, Idempotenz via commerce_events unique(provider,event_id), Entitlements nur per Service-Role) + Migration 0007 + COMMERCE.md — CONFIG REQUIRED |
+| Coaching-Bridge | Coach-Paket-Export (strukturierter Snapshot, keine Fotos/Roh-Logs) + deterministische Eskalations-Trigger im Coach-Hub |
+| Paywall-Intelligenz | Kontextuelle Upgrade-Momente mit ECHTEN Vorschauwerten (nie erfunden), outcome-basierte Preisleiter FREE → PROTOKOLL → COACHING |
+
+Tests: `node tools-dev/tests/phase8.test.js` (62, inkl. 20-Kategorien-AI-Eval-Batterie + Commerce-/Privacy-Invarianten) — gesamt 357 Assertions über 5 Suiten. SW: mm-v83.
 
 ## Future modules (contract)
 tracker · nutrition-logging · stack-adherence · labs · wearables:
