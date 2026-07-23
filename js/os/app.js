@@ -329,6 +329,20 @@
 
     if (!d.access.twelve_week) {
       html += '<div class="card"><p class="small" style="margin:0 0 8px;font-weight:600">Du hast bereits einen Zugangscode?</p><div style="display:flex;gap:8px;flex-wrap:wrap"><input id="mmClaim" type="text" placeholder="Zugangscode" autocomplete="off" spellcheck="false" style="flex:1;min-width:180px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(127,127,127,0.06);color:var(--text);letter-spacing:1px"><button id="mmClaimBtn" class="btn btn-primary btn-sm">Zugang aktivieren</button></div><p id="mmClaimMsg" class="small" style="display:none;margin-top:8px"></p></div>';
+      // Produktions-Recovery (P10/P0.10): Kunde hat per PayPal bezahlt, aber
+      // der Browser-Kontext ging verloren (iOS Safari, Tab zu, anderes Gerät).
+      // Server-autoritativ + claim-sicher: mm-commerce verifiziert die
+      // Transaktion DIREKT bei PayPal; eine fremde/bereits zugeordnete
+      // Zahlung gibt hier strukturell keinen Zugang (payment_already_claimed).
+      // Bewusst KEIN URL-Parameter-Einstieg — nur eingeloggt, nur im Konto.
+      if (snap.state === "signed_in") {
+        html += '<div class="card"><p class="small" style="margin:0 0 8px;font-weight:600">Mit PayPal bezahlt, aber kein Zugang?</p>' +
+          '<p class="small muted" style="margin:0 0 10px">Gib die Transaktions-ID aus deiner PayPal-Bestätigung ein (PayPal-App/E-Mail → Aktivitäten). Die Prüfung löst <strong>keine</strong> neue Zahlung aus.</p>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap"><input id="mmPayRef" type="text" placeholder="PayPal-Transaktions-ID" autocomplete="off" spellcheck="false" style="flex:1;min-width:180px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(127,127,127,0.06);color:var(--text);letter-spacing:1px"><button id="mmPayCheckBtn" class="btn btn-primary btn-sm">Zahlung prüfen</button></div>' +
+          '<p id="mmPayCheckMsg" class="small" style="display:none;margin-top:8px"></p></div>';
+      } else {
+        html += '<p class="small muted" style="margin:6px 2px 0">Mit PayPal bezahlt, aber kein Zugang? Melde dich zuerst mit dem Konto an, mit dem du gekauft hast — danach kannst du hier deine Zahlung prüfen.</p>';
+      }
     }
 
     var SYNC_TXT = { synced: "Gespeichert ✓", pending: "Sync ausstehend", saving: "Speichert…", offline: "Offline — lokal gespeichert", error: "Sync wird automatisch erneut versucht", "local": "Nur dieses Gerät", "n/a": "" };
@@ -1529,6 +1543,42 @@
       var out = t.closest("#mmOut"); if (out) { MM.account.signOut(); return; }
       var imp = t.closest("#mmImport"); if (imp) { imp.disabled = true; imp.textContent = "Übernehme…"; MM.account.importLocalData().then(function (r) { var m = document.getElementById("mmImportMsg"); if (m) { m.style.display = "block"; m.textContent = r.ok ? "Vollständig übernommen. Deine lokalen Daten bleiben als Backup." : ((r.status && r.status.state === "partial") ? "Teilweise übernommen — bitte erneut versuchen." : (r.message || "Fehlgeschlagen — bitte erneut versuchen.")); } setTimeout(render, 900); }); return; }
       var cb = t.closest("#mmClaimBtn"); if (cb) { var val = (document.getElementById("mmClaim") || {}).value; var m2 = document.getElementById("mmClaimMsg"); cb.disabled = true; MM.account.claimAccessCode(val).then(function (r) { if (m2) { m2.style.display = "block"; m2.style.color = r.ok ? "var(--green,#3ddc84)" : "var(--amber,#f5a623)"; m2.textContent = r.ok ? "Zugang aktiviert." : (r.message || "Code nicht erkannt."); } cb.disabled = false; if (r.ok) { if (MM.track) MM.track("claim_access", {}); setTimeout(render, 700); } }); return; }
+      // Zahlung prüfen (P0.10): server-autoritative PayPal-Recovery im Konto.
+      // Löst NIE eine neue Zahlung aus — reine Verifikation bei PayPal.
+      var pc = t.closest("#mmPayCheckBtn"); if (pc) {
+        var refEl = document.getElementById("mmPayRef");
+        var pm = document.getElementById("mmPayCheckMsg");
+        var ref = String((refEl && refEl.value) || "").trim().toUpperCase().replace(/\s+/g, "");
+        var show = function (msg, good) { if (pm) { pm.style.display = "block"; pm.style.color = good ? "var(--green,#3ddc84)" : "var(--amber,#f5a623)"; pm.textContent = msg; } };
+        if (!/^[A-Z0-9-]{8,40}$/.test(ref)) { show("Bitte die Transaktions-ID aus deiner PayPal-Bestätigung eingeben (Buchstaben/Zahlen)."); return; }
+        if (!MM.account.invokeFunction) { show("Zahlungsprüfung ist auf diesem Gerät nicht verfügbar."); return; }
+        pc.disabled = true; pc.textContent = "Prüfe…";
+        MM.account.invokeFunction("mm-commerce", { action: "verify_paypal", paypalOrderId: ref, productIds: ["protokoll"] }).then(function (r) {
+          pc.disabled = false; pc.textContent = "Zahlung prüfen";
+          var okRes = r && r.ok && r.data && r.data.ok;
+          if (okRes) {
+            if (MM.track) MM.track("purchase_recovered", { replay: !!r.data.replay });
+            show("Zahlung bestätigt — dein Zugang ist freigeschaltet.", true);
+            setTimeout(render, 900);
+            return;
+          }
+          var code = (r && (r.code || (r.data && r.data.error))) || "";
+          var MSG = {
+            payment_already_claimed: "Diese Zahlung ist bereits einem anderen Konto zugeordnet. Melde dich mit dem Konto an, mit dem du gekauft hast.",
+            order_not_found: "Zu dieser ID wurde bei PayPal keine Zahlung gefunden. Bitte ID prüfen.",
+            capture_not_found: "Zu dieser ID wurde bei PayPal keine Zahlung gefunden. Bitte ID prüfen.",
+            amount_mismatch: "Die gefundene Zahlung passt nicht zu DAS PROTOKOLL (49 €). Bitte melde dich beim Support.",
+            currency_mismatch: "Die gefundene Zahlung ist nicht in EUR. Bitte melde dich beim Support.",
+            not_captured: "Die Zahlung ist bei PayPal noch nicht abgeschlossen. Bitte in Kürze erneut prüfen.",
+            capture_incomplete: "Die Zahlung ist bei PayPal noch nicht abgeschlossen. Bitte in Kürze erneut prüfen.",
+            auth_missing: "Bitte neu einloggen und erneut prüfen.",
+            auth_invalid_token: "Deine Sitzung ist abgelaufen. Bitte neu einloggen und erneut prüfen.",
+            unreachable: "Der Prüf-Server ist gerade nicht erreichbar. Bitte in einigen Minuten erneut versuchen."
+          };
+          show(MSG[code] || "Prüfung nicht erfolgreich (" + (code || "unbekannt") + "). Keine Sorge: deine Zahlung geht nicht verloren — NICHT erneut bezahlen.");
+        });
+        return;
+      }
       var ex = t.closest("#mmExport"); if (ex) { MM.account.exportMyData().then(function (data) { var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }); var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "my-malemetrix-export.json"; a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000); }); return; }
       var del = t.closest("#mmDelete"); if (del) {
         if (!confirm("Konto endgültig löschen? Alle Cloud-Daten werden entfernt. Das kann nicht rückgängig gemacht werden.")) return;

@@ -67,6 +67,14 @@ group("Recovery · Pending-State überlebt Reload (produktiv)");
   ok(/id="retryVerify"/.test(checkout) && !/retryVerify[\s\S]{0,400}order\.create/.test(checkout), "Wiederholungs-Button prüft nur — löst nie neue Zahlung aus");
   ok(/\.then\(\(r\) => \{\s*if \(fnOk\(r\)\)[\s\S]{0,400}renderVerifyIssue\(fnCode\(r\)\)/.test(checkout), "Verifikationsfehler ⇒ KEINE falsche Erfolgsseite");
   ok(!/savePending\(\{[^}]*\b(secret|password|authorization|jwt|bearer)\b/i.test(checkout), "Pending-State enthält keine Secrets");
+  // P0.10: Konto-seitige Recovery — authentifiziert, server-autoritativ,
+  // bewusst OHNE URL-Parameter-Backdoor.
+  var appJs = read("js/os/app.js");
+  ok(/mmPayCheckBtn/.test(appJs) && /action:\s*"verify_paypal"/.test(appJs), "Konto: „Zahlung prüfen“-Mechanismus vorhanden (verify_paypal)");
+  ok(/productIds:\s*\["protokoll"\]/.test(appJs), "Konto-Recovery meldet nur Kaufabsicht (protokoll) — Preis bleibt serverseitig");
+  ok(/snap\.state === "signed_in"/.test(appJs.split("mmPayRef")[0].slice(-800)), "Recovery-Eingabe nur für eingeloggte Nutzer gerendert");
+  ok(/payment_already_claimed/.test(appJs), "Konto-Recovery erklärt den Fremd-Claim-Fall ehrlich");
+  ok(!/get\("recover"\)|get\("e2e"\)/.test(appJs), "kein URL-Parameter-Backdoor in der Konto-Recovery");
 })();
 
 /* ===== 6) Server-Robustheit: Fehler ehrlich, Replay selbstheilend ===== */
