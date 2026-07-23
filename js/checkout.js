@@ -182,7 +182,21 @@
         onApprove: (data, actions) => actions.order.capture().then((details) => {
           const order = buildOrder("PayPal (bezahlt)");
           order.paid = true;
-          finalizeOrder(order, { paypalPaid: true });
+          // Phase 8 (§12): Serverseitige Verifikation + Entitlement-Vergabe, wenn
+          // Cloud-Konto aktiv. Der Server prüft die Zahlung DIREKT bei PayPal —
+          // der Client vergibt nie selbst Zugriff. Ohne Cloud-Config: dokumentierter
+          // Legacy-Weg (Vault-Code nach Capture). Kein Fake in beiden Fällen.
+          if (window.MM && MM.account && MM.account.invokeFunction && MM.account.getCurrentUser && MM.account.getCurrentUser()) {
+            MM.account.invokeFunction("mm-commerce", {
+              action: "verify_paypal", paypalOrderId: data.orderID, orderNo: order.no,
+              productIds: order.productIds, items: order.items
+            }).then((r) => {
+              if (r.ok) { MM.account.loadAccountState().then(() => {}); }
+              finalizeOrder(order, { paypalPaid: true, serverGrant: !!r.ok });
+            }).catch(() => finalizeOrder(order, { paypalPaid: true }));
+          } else {
+            finalizeOrder(order, { paypalPaid: true });
+          }
         }),
         onError: () => MM.toast("PayPal-Zahlung fehlgeschlagen — versuche es erneut oder nutze Vorkasse.")
       }).render("#paypalBtns");
