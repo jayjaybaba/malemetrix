@@ -73,7 +73,7 @@ group("Recovery · Pending-State überlebt Reload, kein Doppel-Seed");
   ok(/id="retryVerify"/.test(checkout) && !/retryVerify[\s\S]{0,400}order\.create/.test(checkout), "Wiederholungs-Button prüft nur — löst nie neue Zahlung aus");
   ok(/\.then\(\(r\) => \{\s*if \(fnOk\(r\)\)[\s\S]{0,400}renderVerifyIssue\(fnCode\(r\)\)/.test(checkout), "Verifikationsfehler ⇒ KEINE falsche Erfolgsseite");
   ok(/get\("recover"\)/.test(checkout) && /\^?\[A-Za-z0-9\\\-_\]\{8,40\}/.test(checkout), "Manuelle Recovery-URL (?recover=ID) mit ID-Validierung");
-  ok(!/savePending\(\{[^}]*secret|password|token/i.test(checkout), "Pending-State enthält keine Secrets");
+  ok(!/savePending\(\{[^}]*\b(secret|password|authorization|jwt|bearer)\b/i.test(checkout), "Pending-State enthält keine Secrets");
 })();
 
 /* ===== 6) Server-Robustheit: Fehler ehrlich, Replay selbstheilend ===== */
@@ -141,6 +141,30 @@ group("Fehlercodes · konkret statt generisch");
   ok(/code: "unreachable"/.test(acc), "Client: Netzwerk/CORS-Block ⇒ 'unreachable' statt 'function_error'");
   ok(/VERIFY_MSG/.test(checkout) && /amount_mismatch:/.test(checkout) && /paypal_auth_failed:/.test(checkout),
     "Client: lesbare Meldungen je Fehlercode (nicht nur 'function_error')");
+})();
+
+/* ===== 11) Server-Auth: JWT autoritativ via Service-Role validieren ===== */
+group("Auth · getUser(jwt) mit Service-Role, keine ungeprüften Claims");
+(function () {
+  ok(!/Deno\.env\.get\("SUPABASE_ANON_KEY"\)/.test(edge), "liest SUPABASE_ANON_KEY nicht mehr (falscher Key für ES256/Publishable-Projekt)");
+  ok(/service\.auth\.getUser\(jwt\)/.test(edge), "Bearer-Token wird EXPLIZIT validiert: service.auth.getUser(jwt)");
+  ok(/authHeader\.replace\(\/\^Bearer\\s\+\/i, ""\)/.test(edge), "Bearer-Prefix wird sauber entfernt");
+  ok(/error: "auth_missing"/.test(edge), "fehlender Header ⇒ auth_missing (401)");
+  ok(/error: "auth_invalid_token"/.test(edge), "ungültiger/abgelaufener/fremder Token ⇒ auth_invalid_token (401)");
+  ok(/error: "auth_validation_failed"/.test(edge), "Validierungs-Exception ⇒ auth_validation_failed (401)");
+  ok(!/uData\?\.user[\s\S]{0,40}\.\.\.jwt|body\.user|payload\.sub/.test(edge), "keine Trust-Entscheidung anhand ungeprüfter JWT-Claims");
+  // Genau EIN Service-Role-Client (Dublette entfernt), an Subscription-Handler übergeben
+  var svc = (edge.match(/createClient\(/g) || []).length;
+  ok(svc === 1, "genau eine createClient-Erzeugung (Dublette vereinheitlicht) — ist " + svc);
+  ok(/handleSubscriptionEvent\(body, user, service\)/.test(edge), "Subscription-Handler bekommt den geteilten service-Client");
+  // Service-Role-Key wird nie serialisiert: nicht INNERHALB eines json({...})-
+  // Objekts und nie in einer console.-Zeile (der Guard `!SR_KEY` steht VOR
+  // json( und ist damit kein Leak).
+  ok(!/json\(\{[^}]*(SR_KEY|SERVICE_ROLE)/.test(edge), "Service-Role-Key nie im json()-Antwortkörper");
+  ok(!/console\.[a-z]+\([^)]*(SR_KEY|SERVICE_ROLE)/.test(edge), "Service-Role-Key nie geloggt");
+  // Client kennt die neuen Auth-Codes
+  ok(/auth_missing:/.test(checkout) && /auth_invalid_token:/.test(checkout) && /auth_validation_failed:/.test(checkout),
+    "Client mappt auth_missing/auth_invalid_token/auth_validation_failed auf klare Meldungen");
 })();
 
 console.log("\n==============================");

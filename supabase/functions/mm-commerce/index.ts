@@ -71,13 +71,13 @@ function billingNext(state: string, event: string): string {
   return t.to as string;
 }
 
-async function handleSubscriptionEvent(body: any, user: any): Promise<Response> {
+async function handleSubscriptionEvent(body: any, user: any, service: any): Promise<Response> {
   const provider = String(body.provider || "");
   const eventId = String(body.eventId || "");
   const eventType = String(body.eventType || "");
   const plan = String(body.plan || "");
   if (!provider || !eventId || !eventType || !plan) return json({ error: "bad_request" }, 400);
-  const service = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  // service-Client wird vom Aufrufer übergeben (einmalig erzeugt, Service-Role).
   // Idempotenz zuerst (§12): unique(provider,event_id). Duplikat ⇒ No-Op.
   const ev = await service.from("subscription_events").insert({
     provider, event_id: eventId, event_type: eventType, provider_sub_id: body.providerSubId || null,
@@ -123,17 +123,34 @@ Deno.serve(async (req) => {
     const PP_BASE = (Deno.env.get("PAYPAL_ENV") || "live") === "sandbox"
       ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
 
-    // --- Auth: Nutzer-JWT (Entitlements brauchen ein Konto) ---
-    const supa = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { authorization: req.headers.get("authorization") || "" } },
-    });
-    const { data: userData } = await supa.auth.getUser();
-    const user = userData?.user;
-    if (!user) return json({ error: "not_signed_in" }, 401);
+    // --- Auth: JWT SERVER-AUTORITATIV validieren ---
+    // Dieses Projekt nutzt neue Signing Keys (ES256) + das Publishable-Key-
+    // System. Der frühere ANON_KEY-Client mit getUser() OHNE Token liefert
+    // hier keinen User, obwohl das Gateway den JWT längst erkennt (leerer/
+    // falscher SUPABASE_ANON_KEY für diesen Projekt-Typ). Korrekt: den Bearer-
+    // Token EXPLIZIT mit dem Service-Role-Client validieren — autoritativ,
+    // niemals ungeprüfte JWT-Claims als Wahrheit nehmen. Ein einziger
+    // Service-Client wird ab hier für Auth UND alle Writes wiederverwendet.
+    const SUPA_URL = Deno.env.get("SUPABASE_URL") || "";
+    const SR_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    if (!SUPA_URL || !SR_KEY) return json({ error: "provider_not_configured" }, 503);
+    const service = createClient(SUPA_URL, SR_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+
+    const authHeader = req.headers.get("authorization") || "";
+    const jwt = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (!jwt) return json({ error: "auth_missing" }, 401);
+    let user: { id: string; email?: string } | null = null;
+    try {
+      const { data: uData, error: uErr } = await service.auth.getUser(jwt);
+      if (uErr || !uData?.user) return json({ error: "auth_invalid_token" }, 401);
+      user = uData.user;
+    } catch (_e) {
+      return json({ error: "auth_validation_failed" }, 401);
+    }
 
     // --- Abo-Webhook (§10–§12): deterministische Zustandsmaschine, idempotent ---
     if (body.action === "subscription_event") {
-      return await handleSubscriptionEvent(body, user);
+      return await handleSubscriptionEvent(body, user, service);
     }
 
     if (body.action !== "verify_paypal" || typeof body.paypalOrderId !== "string") {
@@ -196,8 +213,8 @@ Deno.serve(async (req) => {
     // --- Idempotenz ZUERST (§73): unique insert, Duplikat => Replay.
     // WICHTIG: Ein Replay kehrt NICHT sofort zurück, sondern stellt Order +
     // Entitlements idempotent sicher (Selbstheilung, falls ein früherer
-    // Aufruf nach dem Event-Log, aber vor den Writes abgebrochen ist). ---
-    const service = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    // Aufruf nach dem Event-Log, aber vor den Writes abgebrochen ist).
+    // (service-Client wird oben einmalig erzeugt und hier wiederverwendet.) ---
     const providerRef = String(cap.id || body.paypalOrderId);
     let replay = false;
     const evIns = await service.from("commerce_events").insert({

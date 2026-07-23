@@ -457,6 +457,9 @@
   /* ---------- Recovery: Verifikation nach Reload/Kontextverlust ----------- */
   const VERIFY_MSG = {
     not_signed_in: "Du bist nicht (mehr) eingeloggt. Bitte melde dich in My MaleMetrix an und prüfe die Zahlung dann erneut — NICHT erneut bezahlen.",
+    auth_missing: "Deine Anmeldung wurde nicht mitgesendet. Bitte in My MaleMetrix neu einloggen und erneut prüfen — NICHT erneut bezahlen.",
+    auth_invalid_token: "Deine Sitzung ist abgelaufen oder ungültig. Bitte in My MaleMetrix neu einloggen und erneut prüfen — NICHT erneut bezahlen.",
+    auth_validation_failed: "Deine Anmeldung konnte serverseitig nicht geprüft werden. Bitte neu einloggen und erneut prüfen — NICHT erneut bezahlen.",
     unauthorized: "Deine Anmeldung wurde serverseitig nicht erkannt. Bitte in My MaleMetrix neu einloggen und erneut prüfen — NICHT erneut bezahlen.",
     unreachable: "Der Verifikations-Server ist gerade nicht erreichbar. Bitte in einigen Minuten erneut prüfen — deine Zahlung ist sicher, NICHT erneut bezahlen.",
     no_cloud: "Kein Cloud-Konto aktiv. Bitte in My MaleMetrix einloggen und erneut prüfen — NICHT erneut bezahlen.",
@@ -483,7 +486,7 @@
       (errCode && errCode !== "not_signed_in" ? '<p class="small" style="color:var(--muted-2);margin-bottom:18px">Technischer Status: ' + String(errCode).replace(/[<>]/g, "") + '</p>' : '<div style="margin-bottom:18px"></div>') +
       '<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">' +
       '<button class="btn btn-primary" id="retryVerify">Zahlung erneut prüfen</button>' +
-      (["not_signed_in", "unauthorized", "no_cloud"].indexOf(errCode) >= 0 ? '<a class="btn btn-dark" href="mein-protokoll.html">Zu My MaleMetrix (Login)</a>' : '') +
+      (["not_signed_in", "unauthorized", "no_cloud", "auth_missing", "auth_invalid_token", "auth_validation_failed"].indexOf(errCode) >= 0 ? '<a class="btn btn-dark" href="mein-protokoll.html">Zu My MaleMetrix (Login)</a>' : '') +
       '</div>' +
       '<p class="small" style="color:var(--muted-2);margin-top:22px">Der Prüf-Button löst KEINE neue Zahlung aus — er fragt nur den Status deiner bestehenden PayPal-Zahlung ab.</p>' +
       '</div>';
