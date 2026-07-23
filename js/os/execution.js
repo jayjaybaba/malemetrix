@@ -698,9 +698,12 @@
 
     function act(a) { a.status = a.done ? "done" : "open"; actions.push(a); return a; }
 
-    // TRAINING — geplante Session ODER Nachhol-Session (nie beides doppelt)
+    // TRAINING — geplante Session ODER Nachhol-Session (nie beides doppelt).
+    // Zukünftig verschobene Einheiten (Autopilot/Repair) erscheinen am ZIELTAG.
     var trainingAction = null;
-    if (p.active && !p.notStarted && !p.over && pd != null && dtype === "strength" && d.access.twelve_week) {
+    if (p.active && !p.notStarted && !p.over && pd != null && dtype === "strength" && d.access.twelve_week && movedAway(pd, ymd)) {
+      // bewusst keine Aktion: Einheit ist auf einen anderen Tag verlegt
+    } else if (p.active && !p.notStarted && !p.over && pd != null && dtype === "strength" && d.access.twelve_week) {
       trainingAction = act({
         id: "train:d" + pd, domain: "training", type: "workout",
         title: session ? session.name : "Kraft-Session", detail: "~" + estMin + " min" + (session && session.substituted && session.substituted.length ? " · angepasst an Equipment" : ""),
@@ -1132,9 +1135,9 @@
       var ymd = addDays(today, i);
       var pd = programDayForDate(ymd);
       if (p.active && !p.notStarted && !p.over && pd != null && pd <= 84) {
-        if (dayTypeAt(pd) === "strength") {
+        if (dayTypeAt(pd) === "strength" && !movedAway(pd, ymd)) {
           var done = !!dailyRec(pd).p;
-          out.push({ id: "mm-train-d" + pd, sourceActionId: "train:d" + pd, date: ymd, time: pf.trainTime, durationMin: 60, domain: "training", title: "MaleMetrix · Kraft-Session" + (currentSession() ? "" : ""), status: done ? "done" : "planned", flexibility: "window", syncState: "internal" });
+          out.push({ id: "mm-train-d" + pd, sourceActionId: "train:d" + pd, date: ymd, time: pf.trainTime, durationMin: 60, domain: "training", title: "MaleMetrix · Kraft-Session", status: done ? "done" : "planned", flexibility: "window", syncState: "internal" });
         }
         if (pd % 7 === 0) out.push({ id: "mm-review-w" + Math.ceil(pd / 7), sourceActionId: "review:w" + Math.ceil(pd / 7), date: ymd, time: "19:30", durationMin: 15, domain: "review", title: "MaleMetrix · Weekly Review", status: "planned", flexibility: "anytime", syncState: "internal" });
       }
@@ -1203,6 +1206,69 @@
   }
 
   /* =========================================================================
+     KALENDER-FORESIGHT (Phase 7 §78–§84) — BUSY/FREE, privacy-first.
+     Es werden NUR Zeitfenster gespeichert (start/end/busy/source) — nie
+     Termintitel (§81/§179). Quellen: manueller Eintrag, ICS-Import (der
+     Nutzer exportiert seinen Kalender als .ics; Titel werden verworfen).
+     Google-OAuth: Provider-Seam, CONFIG REQUIRED (CALENDAR.md) — kein Fake.
+     ========================================================================= */
+  function busyWindows(ymd) {
+    var all = S.get("os_busy", []) || [];
+    return ymd ? all.filter(function (b) { return b.date === ymd; }) : all;
+  }
+  function addBusy(ymd, startHM, endHM, source) {
+    var all = busyWindows();
+    all.push({ date: ymd, start: startHM, end: endHM, source: source || "manual" });
+    all = all.filter(function (b) { return diffDays(todayYmd(), b.date) >= -7; });   // Vergangenheit > 7 Tage verwerfen
+    if (all.length > 400) all = all.slice(-400);
+    S.set("os_busy", all);
+  }
+  function clearBusy(source) { S.set("os_busy", busyWindows().filter(function (b) { return source && b.source !== source; })); }
+  // ICS-Import: parst NUR DTSTART/DTEND — SUMMARY/DESCRIPTION werden nie gelesen.
+  function importBusyICS(text) {
+    var n = 0;
+    try {
+      var events = String(text || "").split("BEGIN:VEVENT").slice(1);
+      events.forEach(function (ev) {
+        var ds = ev.match(/DTSTART[^:]*:(\d{8})T(\d{4})/); var de = ev.match(/DTEND[^:]*:(\d{8})T(\d{4})/);
+        if (!ds || !de) return;
+        var date = ds[1].slice(0, 4) + "-" + ds[1].slice(4, 6) + "-" + ds[1].slice(6, 8);
+        if (diffDays(todayYmd(), date) < 0 || diffDays(todayYmd(), date) > 21) return;   // nur nahes Zukunftsfenster
+        addBusy(date, ds[2].slice(0, 2) + ":" + ds[2].slice(2), de[2].slice(0, 2) + ":" + de[2].slice(2), "ics");
+        n++;
+      });
+    } catch (e) {}
+    return n;
+  }
+  function overlaps(aStart, aEnd, bStart, bEnd) { return hmToMin(aStart) < hmToMin(bEnd) && hmToMin(bStart) < hmToMin(aEnd); }
+  function conflictsForDate(ymd) {
+    var pf = prefs();
+    var s = pf.trainTime; var e = String(Math.floor((hmToMin(s) + 60) / 60) % 24).padStart(2, "0") + ":" + String((hmToMin(s) + 60) % 60).padStart(2, "0");
+    return busyWindows(ymd).filter(function (b) { return overlaps(s, e, b.start, b.end); });
+  }
+  // Beste Ausweichfenster (§83): frei + nah an Präferenz + zuverlässig (Foresight).
+  function bestWindows(ymd, durationMin) {
+    durationMin = durationMin || 60;
+    var pf = prefs(); var busy = busyWindows(ymd);
+    var pref = hmToMin(pf.trainTime);
+    var out = [];
+    for (var h = 6; h <= 20; h++) {
+      var start = String(h).padStart(2, "0") + ":00";
+      var end = String(Math.floor((h * 60 + durationMin) / 60)).padStart(2, "0") + ":" + String(durationMin % 60).padStart(2, "0");
+      var clash = busy.some(function (b) { return overlaps(start, end, b.start, b.end); });
+      if (clash) continue;
+      out.push({ start: start, distMin: Math.abs(h * 60 - pref) });
+    }
+    out.sort(function (a, b) { return a.distMin - b.distMin; });
+    return out.slice(0, 3);
+  }
+  // Zukunfts-Verschiebung: eine geplante (zukünftige) Einheit gilt als „moved“,
+  // wenn ein aktiver Reschedule von ihrem Programm-Tag wegzeigt.
+  function movedAway(pd, ymd) {
+    return reschedules().some(function (r) { return r.fromPd === pd && !r.cancelled && r.toDate && r.toDate !== ymd; });
+  }
+
+  /* =========================================================================
      PUSH-ARCHITEKTUR — EHRLICHE KLASSIFIKATION.
      Client-Seite ist vorbereitet (Subscription-Persistenz unten), Server-
      Versand (VAPID-Keys + Edge Function + Scheduler) ist CONFIG REQUIRED.
@@ -1265,6 +1331,9 @@
     foodLog: foodLog, logFood: logFood, remaining: remaining, eatNow: eatNow, FOOD_CONTEXT: FOOD_CONTEXT,
     // Kalender
     calendarEvents: calendarEvents, icsCalendar: icsCalendar, weekPlan: weekPlan,
+    // Kalender-Foresight (Phase 7): busy/free ohne Titel, Konflikte, Fenster
+    busyWindows: busyWindows, addBusy: addBusy, clearBusy: clearBusy, importBusyICS: importBusyICS,
+    conflictsForDate: conflictsForDate, bestWindows: bestWindows, movedAway: movedAway,
     // Push (ehrlich)
     pushStatus: pushStatus, subscribePush: subscribePush
   };

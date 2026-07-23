@@ -88,7 +88,9 @@
       var m = text.match(/(\d{2,3}(?:[.,]\d)?)\s?kg/g) || [];
       m.forEach(function (tok) {
         var v = parseFloat(tok.replace(",", "."));
-        if (v >= 40 && v <= 200 && Math.abs(v - w) > 12 && Math.abs(v - (payload.context.body.weightStart || w)) > 12) {
+        // Toleranz bewusst eng (±6 kg): lieber deterministischer Fallback als
+        // eine falsch behauptete Ist-Zahl. Zielgewichte fallen ggf. mit — safe.
+        if (v >= 40 && v <= 200 && Math.abs(v - w) > 6 && Math.abs(v - (payload.context.body.weightStart || w)) > 6) {
           out.ok = false; out.reasons.push("ungrounded_weight:" + tok);
         }
       });
@@ -99,7 +101,7 @@
       out.ok = false; out.reasons.push("contradicts_deterministic_keep");
     }
     // Quellen-Halluzination (§176): keine erfundenen Zitations-Pattern rendern.
-    if (/\(([A-Z][a-z]+ et al\.,? \d{4})\)|doi\.org/i.test(text)) { out.ok = false; out.reasons.push("uncited_source_pattern"); }
+    if (/\([A-ZÄÖÜ][\wäöüß-]+ et al\.,? \d{4}\)|doi\.org|pubmed/i.test(text)) { out.ok = false; out.reasons.push("uncited_source_pattern"); }
     return out;
   }
 

@@ -667,3 +667,18 @@
 .os-proposal { margin: 0 0 12px; }
 .os-waiting { border-color: rgba(0, 194, 255, 0.3); }
 .intel-links { margin-top: 2px; }
+
+/* ================== PHASE 7 — FORESIGHT & VISUAL INTELLIGENCE ================== */
+.mm-chart { width: 100%; height: auto; display: block; margin-top: 8px; }
+.mm-chart-lbl { font-family: var(--font-mono, monospace); font-size: 8px; fill: var(--muted-2, #8a94a6); }
+.mm-metrixbody { border: 1px solid var(--line); border-radius: 14px; background: rgba(10, 13, 19, 0.6); padding: 10px 6px; margin-bottom: 12px; }
+.mm-metrixbody svg { width: 100%; height: auto; display: block; }
+.mb-axis { stroke: rgba(0, 194, 255, 0.12); stroke-width: 1; }
+.mb-silhouette { fill: none; stroke: rgba(255, 255, 255, 0.28); stroke-width: 1.4; }
+.mb-node { fill: rgba(14, 18, 26, 0.9); stroke: var(--accent-2, #00c2ff); stroke-width: 1.4; }
+.mb-node.mb-warn { stroke: var(--amber, #f5a623); }
+.mb-node.mb-off { stroke: rgba(255, 255, 255, 0.18); }
+.mb-lbl { font-size: 10px; fill: var(--text, #dbe2ee); letter-spacing: 0.08em; }
+.mm-metrixbody a:hover .mb-node { fill: rgba(0, 194, 255, 0.18); }
+.os-autopilot .rsn { margin: 4px 0; }
+@media (prefers-reduced-motion: reduce) { .mm-metrixbody a { transition: none; } }

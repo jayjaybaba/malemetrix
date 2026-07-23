@@ -1,12 +1,118 @@
 {
-  "style_suffix": "ultra-premium dark health-tech, near-black #07090d, controlled electric blue #2e7cf6 and cyan #00c2ff accent light, cinematic rim light, realistic materials, medical-documentary precision, no text, no logos",
+  "version": 2,
+  "phase": 7,
+  "note": "Cinematic Asset Pipeline (§101–§103). Status REQUIRES_EXTERNAL_GENERATION — in dieser Umgebung wird nichts als 'erstellt' behauptet. Prompts sind produktionsreif für externe Generierung; Integration über die genannten Seiten/Slots.",
+  "artDirection": "PERFORMANCE LUXURY × Präzisionsdiagnostik × cinematic editorial. Dunkles Koordinatensystem, kalibrierte Cyan-Akzente (#00c2ff), reale erwachsene Männer 30–50, keine Neon-Sci-Fi-Klischees, keine Stock-Fitness-Ästhetik.",
   "assets": [
-    { "id": "home-hero-metrix-body", "page": "index.html", "purpose": "hero background", "type": "image", "aspect": "16:9", "mobile_crop": "4:5 center", "tool": "Higgsfield/ChatGPT Image", "prompt": "abstract male torso sculpted from fine measurement lines and data points emerging from darkness, subtle blue coordinate grid, sports-science scanning aesthetic", "alt": "Abstrakte männliche Silhouette aus Messlinien", "animation": "slow light sweep loop (8s), muted, poster fallback", "status": "REQUIRES_EXTERNAL_GENERATION" },
-    { "id": "score-scan", "page": "check.html", "purpose": "section visual", "type": "image", "aspect": "16:9", "tool": "ChatGPT Image", "prompt": "diagnostic scanning geometry over a dark human silhouette, seven measurement markers, clinical precision", "alt": "Diagnostische Scan-Geometrie", "status": "REQUIRES_EXTERNAL_GENERATION" },
-    { "id": "transformation-timeline", "page": "mein-protokoll.html#transform", "purpose": "roadmap backdrop", "type": "image", "aspect": "21:9", "tool": "Higgsfield", "prompt": "male physique progression as layered translucent silhouettes along a timeline axis, dark, blue accents", "alt": "Physique-Progression über Zeitachse", "status": "REQUIRES_EXTERNAL_GENERATION" },
-    { "id": "enhanced-lab", "page": "learn/enhanced", "purpose": "section header", "type": "image", "aspect": "16:9", "tool": "ChatGPT Image", "prompt": "dark pharmaceutical laboratory macro, glass vials with cool blue light, clinical controlled mood, no branding", "alt": "Klinische Labor-Atmosphäre", "status": "REQUIRES_EXTERNAL_GENERATION" },
-    { "id": "coaching-cinematic", "page": "coaching.html", "purpose": "hero", "type": "image", "aspect": "16:9", "tool": "Higgsfield", "prompt": "cinematic portrait lighting, athletic man mid-40s in dark gym environment, documentary realism, rim light", "alt": "Cinematisches Coaching-Portrait", "status": "REQUIRES_EXTERNAL_GENERATION" },
-    { "id": "apob-diagram", "page": "library/blood", "purpose": "education diagram + social derivatives (TikTok 9:16, IG carousel 1:1, ebook)", "type": "diagram", "aspect": "multi", "tool": "Canva/ChatGPT Image", "prompt": "ApoB particle count vs LDL-C concept, clean medical diagram style, dark theme", "alt": "ApoB vs. LDL-C Diagramm", "status": "REQUIRES_EXTERNAL_GENERATION" },
-    { "id": "carbon-macro-loop", "page": "index.html", "purpose": "background video moment", "type": "video", "aspect": "16:9", "tool": "Higgsfield", "prompt": "macro shot of carbon fiber and brushed titanium surfaces, slow light pass, 6s seamless loop", "alt": "Material-Makroaufnahme", "animation": "autoplay muted, poster + prefers-reduced-motion static fallback, <2MB", "status": "REQUIRES_EXTERNAL_GENERATION" }
+    {
+      "id": "home_metrix_hero",
+      "page": "index.html",
+      "purpose": "Hero: 'Dein Körper ist ein System'",
+      "aspect": "21:9 desktop / 4:5 mobile",
+      "prompt": "Cinematic editorial photograph, athletic man in his 40s standing in a dark studio, subtle cyan coordinate grid light projection across his torso mapping body systems, precision-instrument mood, Hasselblad look, deep shadows, no text",
+      "motion": "langsamer Koordinaten-Drift",
+      "status": "REQUIRES_EXTERNAL_GENERATION",
+      "alt": "Mann im dunklen Studio mit Koordinatenlicht auf dem Oberkörper"
+    },
+    {
+      "id": "today_environment",
+      "page": "mein-protokoll.html#today",
+      "purpose": "Today-Umgebung",
+      "aspect": "16:9",
+      "prompt": "Abstract dark instrument-panel environment, thin cyan reference lines and calibration ticks over near-black gradient, extremely subtle, premium automotive cockpit inspiration, no objects, no text",
+      "motion": "Parallax 2–4px",
+      "status": "REQUIRES_EXTERNAL_GENERATION",
+      "alt": "Dunkle Instrumenten-Umgebung"
+    },
+    {
+      "id": "twin_hero",
+      "page": "#twin",
+      "purpose": "Digital-Twin-Welt",
+      "aspect": "1:1",
+      "prompt": "Elegant minimal human silhouette made of fine cyan measurement lines and nodes on near-black, medical-precision aesthetic, NOT sci-fi hologram, editorial restraint",
+      "status": "REQUIRES_EXTERNAL_GENERATION",
+      "alt": "Silhouette aus Messlinien"
+    },
+    {
+      "id": "score_diagnostic",
+      "page": "check.html",
+      "purpose": "Score-Diagnostik",
+      "aspect": "16:9",
+      "prompt": "Seven thin measurement dials arranged asymmetrically on dark field, one dial highlighted amber, laboratory-report elegance, no text",
+      "status": "REQUIRES_EXTERNAL_GENERATION",
+      "alt": "Sieben Messskalen"
+    },
+    {
+      "id": "trajectory",
+      "page": "#review",
+      "purpose": "Trajektorie/Transformation",
+      "aspect": "16:9",
+      "prompt": "Abstract ribbon of data points forming an ascending band with uncertainty corridor, dark editorial, cyan on black, honest chart aesthetic",
+      "status": "REQUIRES_EXTERNAL_GENERATION",
+      "alt": "Datenband mit Korridor"
+    },
+    {
+      "id": "training_biomech",
+      "page": "kurs-programm.html",
+      "purpose": "Training",
+      "aspect": "16:9",
+      "prompt": "Cinematic photo of barbell squat mid-rep, force-vector overlay as thin cyan lines, biomechanics-textbook precision meets premium sports commercial, dark gym",
+      "status": "REQUIRES_EXTERNAL_GENERATION",
+      "alt": "Kniebeuge mit Kraftvektoren"
+    },
+    {
+      "id": "nutrition_metabolism",
+      "page": "#plan",
+      "purpose": "Nutrition",
+      "aspect": "16:9",
+      "prompt": "Premium real food photography (steak, eggs, rice, greens) on dark slate with faint metabolic-pathway line diagram etched beside, appetizing, no meal-prep boxes",
+      "status": "REQUIRES_EXTERNAL_GENERATION",
+      "alt": "Hochwertiges Essen mit Stoffwechsel-Diagramm"
+    },
+    {
+      "id": "labs_world",
+      "page": "labor.html",
+      "purpose": "Labs",
+      "aspect": "16:9",
+      "prompt": "Macro photograph of blood vial on dark glass with thin data annotations, clinical luxury, pharma-grade lighting, no gore",
+      "status": "REQUIRES_EXTERNAL_GENERATION",
+      "alt": "Blutprobe mit Datenannotation"
+    },
+    {
+      "id": "enhanced_clinical",
+      "page": "#learn enhanced",
+      "purpose": "Enhanced",
+      "aspect": "16:9",
+      "prompt": "Clinical dark still life: monitoring chart, blood pressure cuff, lab report on brushed steel, pharmaceutical restraint, absolutely no syringes glamorization",
+      "status": "REQUIRES_EXTERNAL_GENERATION",
+      "alt": "Klinisches Monitoring-Stillleben"
+    },
+    {
+      "id": "advisor_env",
+      "page": "#advisor",
+      "purpose": "Intelligence",
+      "aspect": "16:9",
+      "prompt": "Dark room with single focused desk light over printed performance data and pen annotations, human strategist mood, no robots, no glowing brains",
+      "status": "REQUIRES_EXTERNAL_GENERATION",
+      "alt": "Schreibtisch mit Leistungsdaten"
+    },
+    {
+      "id": "weekly_review",
+      "page": "#review",
+      "purpose": "Weekly Review",
+      "aspect": "16:9",
+      "prompt": "Editorial flat-lay of a week grid with three measurements circled in cyan pencil, decisive minimalism, dark paper",
+      "status": "REQUIRES_EXTERNAL_GENERATION",
+      "alt": "Wochenraster mit Markierungen"
+    },
+    {
+      "id": "coaching_human",
+      "page": "coaching.html",
+      "purpose": "Coaching",
+      "aspect": "3:2",
+      "prompt": "Cinematic portrait, experienced coach in conversation across a table with athlete, dark warm tones, trust and competence, documentary realism",
+      "status": "REQUIRES_EXTERNAL_GENERATION",
+      "alt": "Coach im Gespräch"
+    }
   ]
 }

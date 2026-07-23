@@ -236,9 +236,29 @@
       // TAGESPLAN — chronologische High-Value-Anker
       html += sec("Today Plan", planTimeline(day) + '<p class="os-weeklink"><a href="#week">Ganze Woche ansehen →</a></p>');
 
-      // EIN SIGNAL (dedupliziert, läuft ab)
+      // WOCHEN-AUTOPILOT (§127/§128): Konflikte VOR der Woche sichtbar machen.
+      if (MM.intelligence && MM.intelligence.foresight) {
+        var ap = null;
+        try { ap = MM.intelligence.foresight.weekAutopilot(); } catch (e) {}
+        var weekEndSoon = day.programDay != null && (day.programDay % 7 === 0 || day.programDay % 7 >= 6);
+        if (ap && (ap.status === "ISSUES" || weekEndSoon)) {
+          html += '<div class="intel-decision ' + (ap.status === "ISSUES" ? "intel-tone-watch" : "intel-tone-good") + ' os-autopilot"><div class="hd"><span class="verdict">' + (ap.status === "ISSUES" ? "AUTOPILOT" : "NÄCHSTE WOCHE") + '</span><span class="bn">Load: ' + esc(ap.load) + ' · Recovery: ' + esc(ap.recovery) + '</span></div>' +
+            '<b class="ttl">' + esc(ap.headline) + '</b>' +
+            ap.conflicts.map(function (c) { return '<p class="rsn">' + esc(c.wd) + ' ' + esc(fmtDateShort(c.date)) + ': belegt ' + esc(c.busy.start) + '–' + esc(c.busy.end) + (c.altTime ? ' → frei um ' + esc(c.altTime.start) : c.altDay ? ' → Ausweichtag ' + esc(c.altDay.wd) : '') + '</p>'; }).join("") +
+            '<p class="rsn"><b>Fokus:</b> ' + esc(ap.focus) + (ap.notNow.length ? ' · <b>Not now:</b> ' + esc(ap.notNow[0]) : '') + '</p>' +
+            '<div class="ctl" style="display:flex;gap:8px;margin-top:10px">' + (ap.moves.length ? '<button class="btn btn-primary btn-sm" data-apweek>Woche übernehmen ✓</button>' : '') + '<a class="os-ghost" href="#week">Woche ansehen →</a></div></div>';
+        }
+      }
+
+      // EIN SIGNAL (dedupliziert, läuft ab) — Foresight hat Vorrang, max. EINES (§63/§157).
+      var fsi = null;
+      if (!day.insight && !day.proposal && MM.intelligence && MM.intelligence.foresight) {
+        try { fsi = MM.intelligence.foresight.pickInsight(); } catch (e) {}
+      }
       if (day.insight) {
         html += '<div class="os-insight"><span class="tag">SIGNAL</span><p>' + esc(day.insight.text) + '</p><button class="os-ghost" data-ackinsight="' + esc(day.insight.id) + '">Gesehen</button></div>';
+      } else if (fsi) {
+        html += '<div class="os-insight"><span class="tag">FORESIGHT · ' + esc(fsi.level) + '</span><p><b>' + esc(fsi.title) + ':</b> ' + esc(fsi.text) + '</p>' + (fsi.action ? '<a class="os-ghost" href="' + esc(fsi.action.link) + '">' + esc(fsi.action.label) + ' →</a>' : '') + '</div>';
       }
 
       // ENTSCHEIDUNGS-REVIEWS fällig (Closed-Loop-Ledger)
@@ -340,6 +360,14 @@
       '<label class="os-toggle"><input type="checkbox" id="stMinimum"' + (pf.minimumMode ? " checked" : "") + '><span>Minimum-Mode (nur Training · Protein · Schlaf · 1 Messung)</span></label>' +
       '<label class="os-field"><span>Automationslevel</span>' + sel("stAutomation", pf.automation, [["manual", "Manuell — nur anzeigen"], ["assisted", "Assistiert — vorschlagen, ich bestätige"], ["proactive", "Proaktiv — sichere Mikro-Änderungen automatisch"]]) + '</label>' +
       '<p class="small muted">Größere Plan-Änderungen brauchen IMMER deine Bestätigung — unabhängig vom Level. Medizinische Automation gibt es nicht.</p>');
+    html += sec("Kalender-Voraussicht",
+      '<p class="muted" style="margin:0 0 10px">MaleMetrix prüft geplante Einheiten gegen deine BELEGTEN Zeitfenster — gespeichert werden nur Start/Ende, nie Termintitel.</p>' +
+      '<label class="os-field"><span>Kalender-Export (.ics) importieren — nur busy/free</span><input id="calIcs" type="file" accept=".ics,text/calendar"></label>' +
+      '<p class="small muted">' + (X.busyWindows().length ? X.busyWindows().length + ' belegte Fenster gespeichert. ' : 'Noch keine belegten Fenster. ') + 'Google-Kalender (busy/free via OAuth): Architektur steht — CONFIG REQUIRED, siehe CALENDAR.md.</p>' +
+      (X.busyWindows().length ? '<button class="os-ghost" id="calClear">Importierte Fenster löschen</button>' : ''));
+    var aiSt = (window.MM && MM.ai) ? MM.ai.status() : { state: "config_required" };
+    html += sec("KI-Sprachschicht",
+      '<p class="small muted">' + esc(aiSt.state === "enabled" ? "KI-Synthese aktiv (server-seitig, validiert). Deterministische Intelligenz bleibt maßgeblich." : (aiSt.honest || "Deterministische Intelligenz aktiv — KI-Schicht braucht Server-Konfiguration.")) + '</p>');
     html += '<p style="margin-top:16px"><a class="os-ghost" href="#today">← Zurück zu Today</a></p>';
     return html;
   }
@@ -702,7 +730,17 @@
   /* =========================== LEARN =========================== */
   function vLearn() {
     var pw = OS.pathway();
-    var html = sec("Learn · verstehe dein System",
+    var html = "";
+    if (MM.intelligence && MM.intelligence.knowledge) {
+      try {
+        var ln = MM.intelligence.knowledge.learnNow();
+        html += sec("Lerne, was JETZT zählt", '<p class="small muted" style="margin:0 0 10px">Ausgewählt für deinen aktuellen Engpass: <b style="color:var(--text)">' + esc((MM.intelligence.LABELS.BN[ln.bottleneck] || ln.bottleneck)) + '</b>.</p>' +
+          ln.items.map(function (it) {
+            return '<div class="os-decision" style="margin:8px 0"><b>' + esc(it.title) + '</b><span class="s">' + esc(it.summary) + '</span>' + (it.action ? '<div class="ctl"><a class="os-chip" href="' + esc(it.action.link) + '">' + esc(it.action.label) + ' →</a></div>' : '') + '</div>';
+          }).join(""));
+      } catch (e) {}
+    }
+    html += sec("Learn · verstehe dein System",
       '<div class="os-learn-grid">' +
       '<a class="os-learn" href="ebooks/protokoll.html"><b>DAS PROTOKOLL</b><span>Das Referenzwerk — warum dein System funktioniert.</span></a>' +
       '<a class="os-learn" href="ebooks.html"><b>Library</b><span>Deep Dives: Body · Engine · Recovery · Hormone · Health.</span></a>' +
@@ -769,6 +807,60 @@
   function insightCard(tag, headline, rows) {
     return '<div class="intel-insight"><span class="tag">' + esc(tag) + '</span><b class="hl">' + esc(headline) + '</b>' +
       '<div class="rows">' + rows.map(function (r) { return '<div class="r"><span>' + esc(r.k) + '</span><b class="' + toneClass(r.tone) + '">' + esc(r.v) + '</b></div>'; }).join("") + '</div></div>';
+  }
+
+  /* ============ PHASE 7 — VISUAL INTELLIGENCE (ein Chart-System, §110) ============ */
+  // Trajektorie: Erwartungsband (Modus) als Korridor + tatsächliche Gewichtsserie.
+  // Ehrliche Achsen, keine Punkt-Prognose — Band statt Linie (§53/§94/§111).
+  function svgTrajectory(ctx) {
+    ctx = ctx || (MM.intelligence ? MM.intelligence.buildContext() : null);
+    if (!ctx || !ctx.body.available) return "";
+    var series = OS.metricSeries("weight").slice(-28);
+    if (series.length < 5) return '<p class="small muted">Trajektorie erscheint ab ~5 Messpunkten.</p>';
+    var band = MM.intelligence.foresight ? MM.intelligence.foresight.MODE_BAND[ctx.goal.mode] : null;
+    var W = 320, H = 96, P = 6;
+    var vals = series.map(function (m) { return m.value; });
+    var w0 = vals[0];
+    var days = series.length;
+    var expLo = band ? w0 * (1 + band[0] / 100 * days / 7) : null;
+    var expHi = band ? w0 * (1 + band[1] / 100 * days / 7) : null;
+    var min = Math.min.apply(null, vals.concat(expLo != null ? [expLo] : [])) - 0.3;
+    var max = Math.max.apply(null, vals.concat(expHi != null ? [expHi] : [])) + 0.3;
+    function y(v) { return H - P - (v - min) / (max - min) * (H - 2 * P); }
+    function x(i) { return P + i / (days - 1) * (W - 2 * P); }
+    var bandPath = "";
+    if (band) {
+      var pts = [];
+      for (var i = 0; i < days; i++) pts.push(x(i).toFixed(1) + "," + y(w0 * (1 + band[0] / 100 * i / 7)).toFixed(1));
+      for (var j = days - 1; j >= 0; j--) pts.push(x(j).toFixed(1) + "," + y(w0 * (1 + band[1] / 100 * j / 7)).toFixed(1));
+      bandPath = '<polygon points="' + pts.join(" ") + '" fill="rgba(0,194,255,0.10)" stroke="none"/>';
+    }
+    var line = series.map(function (m, i) { return x(i).toFixed(1) + "," + y(m.value).toFixed(1); }).join(" ");
+    return '<svg class="mm-chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Gewichtsverlauf mit Erwartungskorridor (' + min.toFixed(1) + '–' + max.toFixed(1) + ' kg)">' + bandPath +
+      '<polyline points="' + line + '" fill="none" stroke="var(--accent-2,#00c2ff)" stroke-width="1.6" vector-effect="non-scaling-stroke"/>' +
+      '<text x="' + P + '" y="10" class="mm-chart-lbl">' + max.toFixed(1) + '</text><text x="' + P + '" y="' + (H - 2) + '" class="mm-chart-lbl">' + min.toFixed(1) + ' kg</text></svg>' +
+      (band ? '<p class="small muted" style="margin:2px 0 0">Blaues Band = Erwartungskorridor ' + esc(ctx.goal.mode.toUpperCase()) + ' (' + band[0] + '…' + band[1] + ' %KG/Woche) · Linie = deine Messungen.</p>' : '');
+  }
+  // METRIX BODY (§92): Signatur-Visual im Koordinatensystem-Stil — sechs
+  // tappbare System-Regionen, kein Fake-Diagnose-Scan.
+  function svgMetrixBody(twin) {
+    var st = {};
+    (twin && twin.domains || []).forEach(function (d) { st[(d.key || d.label || "").toLowerCase()] = d; });
+    function tone(k) { var d = st[k]; if (!d) return "off"; return d.confidence && d.confidence.level === "none" ? "off" : d.trend && d.trend.dir < 0 && (k === "recovery" || k === "execution") ? "warn" : "on"; }
+    function node(cx, cy, k, label, link) {
+      return '<a href="' + link + '" aria-label="' + esc(label) + '"><circle cx="' + cx + '" cy="' + cy + '" r="11" class="mb-node mb-' + tone(k) + '"/><text x="' + (cx + 16) + '" y="' + (cy + 4) + '" class="mb-lbl">' + esc(label) + '</text></a>';
+    }
+    return '<div class="mm-metrixbody"><svg viewBox="0 0 320 240" role="img" aria-label="Metrix Body — Systemübersicht">' +
+      '<line x1="60" y1="20" x2="60" y2="220" class="mb-axis"/><line x1="20" y1="120" x2="300" y2="120" class="mb-axis"/>' +
+      '<path d="M60,36 C78,36 84,52 84,66 C84,84 72,92 72,104 L72,150 C72,178 66,196 62,214 M60,36 C42,36 36,52 36,66 C36,84 48,92 48,104 L48,150 C48,178 54,196 58,214" class="mb-silhouette"/>' +
+      '<circle cx="60" cy="26" r="10" class="mb-silhouette"/>' +
+      node(140, 44, "body", "BODY · Körper", "#track") +
+      node(140, 78, "engine", "ENGINE · Cardio", "#track") +
+      node(140, 112, "recovery", "RECOVERY · Schlaf", "#experiments") +
+      node(140, 146, "metabolic", "METABOLIC · Nutrition/Glukose", "#plan") +
+      node(140, 180, "hormonal", "HORMONAL · Labs", "labor.html") +
+      node(140, 214, "execution", "EXECUTION · Umsetzung", "#week") +
+      '</svg></div>';
   }
 
   /* =========================== COACH HUB =========================== */
@@ -870,6 +962,7 @@
       (rev.doNotChange.length ? '<div class="fbox"><span class="os-k">NICHT ÄNDERN</span><b>' + rev.doNotChange.map(esc).join(" · ") + '</b></div>' : '') +
       '<div class="fbox"><span class="os-k">NÄCHSTER REVIEW</span><b>in ' + rev.reviewInDays + ' Tagen</b></div></div>';
     // History
+    html += '<div class="card"><span class="os-k">Trajektorie · erwartet vs. tatsächlich</span>' + svgTrajectory(ctx) + '</div>';
     var hist = I.review.reviews().filter(function (r) { return r.week !== rev.week; });
     if (hist.length) html += '<section class="os-sec"><h2 class="os-h2">Frühere Reviews</h2><div class="intel-revhist">' + hist.slice(-6).reverse().map(function (r) { return '<div class="rh"><b>W' + r.week + '</b><span>' + esc(r.verdict) + '</span><i>' + esc(r.primaryFocus) + '</i></div>'; }).join("") + '</div><p class="small muted">Historische Reviews sind unveränderlich — sie ändern sich nicht mit neuen Daten.</p></section>';
     return html;
@@ -884,6 +977,8 @@
     var html = '<div class="intel-back"><a href="#coach">← Coach</a></div>';
     html += '<section class="os-sec"><span class="tag">DIGITAL TWIN</span><h1 class="os-big" style="font-size:1.5rem">Dein Modell, über die Zeit.</h1>' +
       '<p class="muted" style="margin:0 0 6px">Je Domäne: Zustand, Trend, wie sicher MaleMetrix ist — und was es NICHT weiß.</p></section>';
+    html += svgMetrixBody(twin);
+    html += '<div class="card"><span class="os-k">Trajektorie · erwartet vs. tatsächlich</span>' + svgTrajectory(ctx) + '</div>';
     html += '<div class="intel-twin">' + twin.domains.map(function (d) {
       var arrow = d.trend.dir > 0 ? "↑" : d.trend.dir < 0 ? "↓" : "→";
       return '<div class="intel-tdom"><div class="hd"><b>' + esc(d.label) + '</b>' + confDot(d.confidence.level) + '</div>' +
@@ -921,6 +1016,10 @@
       // §23 SIMULATOR → EXECUTION: Szenario wird Vorschlag, nie stille Mutation.
       if (key === 'calories_plus') html += '<div class="intel-simact"><button class="btn btn-primary btn-sm" data-simpropose="calories_plus">Als Vorschlag übernehmen (+~175 kcal) →</button><span class="small muted">Erst nach deiner Bestätigung: Ziel ändert sich, Entscheidung wird im Ledger dokumentiert, Review in 14 Tagen.</span></div>';
       html += '<div class="intel-assume"><span class="os-k">Annahmen</span>' + sim.assumptions.map(function (a) { return '<span class="' + (a.holds ? "hold" : "broken") + '">' + esc(a.text) + (a.holds ? " ✓" : " ✗") + '</span>'; }).join("") + '<p class="small muted" style="margin:6px 0 0">Fällt eine Annahme, sinkt die Verlässlichkeit der Szenarien.</p></div>';
+      if (key === "calories_plus" && I.foresight) {
+        var prh = I.foresight.personalResponse("nutrition");
+        if (prh) html += '<div class="card"><span class="tag">DEINE HISTORIE</span><p class="small" style="margin:6px 0 0">' + esc(prh.summary) + '</p><p class="small muted" style="margin:4px 0 0">Konfidenz: ' + (prh.n >= 2 ? "MODERAT" : "NIEDRIG") + ' — wird mit jeder bewerteten Entscheidung stärker.</p></div>';
+      }
     }
     return html;
   }
@@ -1225,6 +1324,12 @@
       var expS = t.closest("[data-expstart]"); if (expS && MM.intelligence) { var resE = MM.intelligence.experiments.start(expS.getAttribute("data-expstart")); if (MM.toast) MM.toast(resE.ok ? "Experiment gestartet — erscheint in Today." : "Bereits ein Experiment aktiv."); render(); return; }
       var expE = t.closest("[data-expeval]"); if (expE && MM.intelligence) { MM.intelligence.experiments.evaluate(expE.getAttribute("data-expeval")); if (MM.toast) MM.toast("Experiment ausgewertet — Ergebnis in der Historie."); render(); return; }
       var memF = t.closest("[data-memforget]"); if (memF && MM.intelligence) { MM.intelligence.memory.forget(memF.getAttribute("data-memforget")); render(); return; }
+      if (t.closest("[data-apweek]") && MM.intelligence && MM.intelligence.foresight) {
+        var ap2 = MM.intelligence.foresight.weekAutopilot();
+        if (ap2) { var res2 = MM.intelligence.foresight.applyWeek(ap2); if (MM.toast) MM.toast(res2.applied ? "Woche übernommen ✓ — " + res2.applied + " Anpassung(en). Kalender & Erinnerungen ziehen mit." : "Nichts anzupassen — Woche steht."); }
+        render(); return;
+      }
+      if (t.closest("#calClear")) { X.clearBusy(); if (MM.toast) MM.toast("Belegte Fenster gelöscht."); render(); return; }
 
       /* PROPOSAL-FLOW (§21/§22): Intelligence schlägt vor → Nutzer bestätigt →
          Execution wendet an → Ledger dokumentiert → Review terminiert. */
@@ -1242,6 +1347,11 @@
       }
     });
     host.addEventListener("change", function (e) {
+      var ci = e.target.closest("#calIcs");
+      if (ci && ci.files && ci.files[0]) {
+        ci.files[0].text().then(function (txt) { var n = X.importBusyICS(txt); if (MM.toast) MM.toast(n ? n + " belegte Fenster importiert — Termintitel wurden verworfen." : "Keine verwertbaren Termine im Import-Fenster (nächste 21 Tage)."); render(); });
+        return;
+      }
       var fi = e.target.closest("[data-photoin]");
       if (fi && fi.files && fi.files[0]) {
         var angle = fi.getAttribute("data-photoin");
