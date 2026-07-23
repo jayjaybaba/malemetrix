@@ -55,7 +55,7 @@ window.MM_CONFIG = {
   // 3. Unten das "sb" durch deine Live-Client-ID ersetzen. Fertig.
   // Die Client-ID ist öffentlich und darf im Frontend stehen.
   // (Leer lassen "" = PayPal-Buttons aus, nur Vorkasse.)
-  paypalClientId: "sb",      // "sb" = Test · "AeB1Q..." = live · "" = aus
+  paypalClientId: "AcN9AssC3uXAokijIZpDnXJl07vHXNg-QJS2pwZe8oKAcVnOPNeagfd0UDbo2m978Z1wASaqx8vBzgec",      // "sb" = Test · "AeB1Q..." = live · "" = aus
   paypalCurrency: "EUR",
 
   // Variante B (Fallback ohne Entwickler-App): PayPal.me-Link,
