@@ -27,8 +27,9 @@
   function todayYmd() { var d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
 
   /* ---------- Routing ---------- */
-  var VIEWS = ["today", "plan", "track", "progress", "learn", "baseline", "pathway", "transform", "workout", "week", "settings"];
+  var VIEWS = ["today", "plan", "track", "progress", "learn", "baseline", "pathway", "transform", "workout", "week", "settings", "coach", "advisor", "review", "twin", "simulator", "experiments", "protocol", "timeline", "memory"];
   function view() { var h = (location.hash || "#today").slice(1).split("?")[0]; return VIEWS.indexOf(h) >= 0 ? h : "today"; }
+  function hashParam(name) { var q = (location.hash || "").split("?")[1] || ""; var m = q.split("&").filter(function (kv) { return kv.split("=")[0] === name; })[0]; return m ? decodeURIComponent(m.split("=")[1] || "") : ""; }
   window.addEventListener("hashchange", function () { render(); window.scrollTo(0, 0); });
 
   function navBar(active) {
@@ -206,8 +207,31 @@
         html += nbaCard(day);
       }
 
+      // INTELLIGENCE-VORSCHLAG (§21/§22) — bestätigen oder ablehnen, nie still.
+      if (day.proposal) {
+        var pr = day.proposal;
+        html += '<div class="intel-decision intel-tone-watch os-proposal"><div class="hd"><span class="verdict">' + (pr.type === "check" ? "CHECK FIRST" : "VORSCHLAG") + '</span>' + (day.bottleneck ? '<span class="bn">Limiter: ' + esc((MM.intelligence ? MM.intelligence.LABELS.BN[day.bottleneck.domain] : day.bottleneck.domain) || day.bottleneck.domain) + ' · ' + day.bottleneck.confidencePct + '%</span>' : '') + '</div>' +
+          '<b class="ttl">' + esc(pr.title) + '</b><p class="rsn">' + esc(pr.reason) + '</p>' +
+          (pr.evidence.length ? '<div class="ev"><span>BASIEREND AUF</span>' + pr.evidence.map(function (e2) { return '<i>' + esc(e2) + '</i>'; }).join("") + '</div>' : '') +
+          (pr.oneVariable ? '<p class="onevar">↳ EINE Variable ändern — alles andere konstant halten.</p>' : '') +
+          '<div class="ctl" style="display:flex;gap:8px;margin-top:10px">' +
+          (pr.type === "change" ? '<button class="btn btn-primary btn-sm" data-propapply>Übernehmen ✓</button>' : (pr.deepLink ? '<a class="btn btn-primary btn-sm" href="' + esc(pr.deepLink) + '">Ansehen →</a>' : '')) +
+          '<button class="os-ghost" data-propdismiss="' + esc(pr.key) + '">Nicht jetzt</button></div></div>';
+      }
+
+      // WAITING FOR DATA (§30/§31) — Entscheidung wartet bewusst. KEEP PLAN.
+      if (day.waiting) {
+        day.waiting.slice(0, 1).forEach(function (w) {
+          html += '<div class="os-decision os-waiting"><span class="tag">WAITING FOR DATA</span><b>' + esc(w.decision) + '</b>' +
+            '<span class="s">Braucht noch: ' + w.needs.map(esc).join(" · ") + '</span><span class="s">' + esc(w.until) + '</span></div>';
+        });
+      }
+
       // MY DAY CHANGED + WAS KANN ICH JETZT ESSEN
       html += '<div class="os-daybtns"><button class="os-daychanged" data-daychanged><span class="ic">⟲</span> Mein Tag hat sich geändert</button><button class="os-eatnow" data-eatnow>Was kann ich jetzt essen?</button></div>';
+
+      // Sekundärer Zugang zur Intelligenz (§67): kein 15-Tab-Chaos.
+      if (MM.intelligence) html += '<p class="os-weeklink intel-links"><a href="#coach">Warum? · Coach &amp; Intelligence →</a></p>';
 
       // TAGESPLAN — chronologische High-Value-Anker
       html += sec("Today Plan", planTimeline(day) + '<p class="os-weeklink"><a href="#week">Ganze Woche ansehen →</a></p>');
@@ -391,6 +415,7 @@
     var html = "";
     var t = MM.store.get("os_transformation", null);
     html += '<a class="card os-row-cta" href="#transform"><span class="tag">ROADMAP</span><b>' + (t ? "12-Monats-Roadmap ansehen" : "Transformation planen — Reality Check") + '</b></a>';
+    if (MM.intelligence) html += '<a class="card os-row-cta" href="#simulator"><span class="tag">WHAT IF?</span><b>Szenarien vergleichen — 3 vs 4 Tage · mehr essen · Reise</b></a>';
 
     /* --- NUTRITION OS --- */
     var np = MM.store.get("os_nutrition_plan", null);
@@ -653,6 +678,7 @@
     var hist = arch.map(function (a, i) { return '<div class="os-cycle"><b>Zyklus ' + (i + 1) + '</b><span>' + esc((MODE[a.goal] || a.goal || "—")) + '</span><i>abgeschlossen ' + esc(a.ended || "") + '</i></div>'; }).join("");
     if (p.active) hist += '<div class="os-cycle on"><b>Zyklus ' + (arch.length + 1) + '</b><span>' + esc(MODE[d.mode] || "") + '</span><i>aktiv · Woche ' + p.week + '</i></div>';
     if (hist) html += sec("Zyklus-Historie", '<div class="os-cycles">' + hist + '</div><p class="small muted">Historische Zyklen sind unveränderlich — sie sind deine Geschichte, nicht dein Arbeitsstand.</p>');
+    if (MM.intelligence) html += '<a class="card os-row-cta" href="#timeline"><span class="tag">TIMELINE</span><b>Deine ganze Historie — Entscheidungen · Labs · Reviews</b></a>';
     return html;
   }
   function loadPhotoCompare() {
@@ -682,6 +708,7 @@
       '<a class="os-learn" href="ebooks.html"><b>Library</b><span>Deep Dives: Body · Engine · Recovery · Hormone · Health.</span></a>' +
       '<a class="os-learn" href="labor.html"><b>MaleMetrix Labs</b><span>Deine Biologie über die Zeit — Werte werden zu Kontext.</span></a>' +
       '<a class="os-learn" href="blutwerte.html"><b>Blood &amp; Labs (Guide)</b><span>Die Biomarker, die für Männer zählen.</span></a>' +
+      (MM.intelligence ? '<a class="os-learn" href="#protocol"><b>MY PROTOCOL</b><span>Dein Betriebshandbuch — dynamisch aus deinem echten Plan.</span></a>' : '') +
       '</div>');
     if (pw === "enhanced") {
       var F = E.ENHANCED_FRAMEWORK;
@@ -709,6 +736,272 @@
     }
     return html;
   }
+
+  /* ======================================================================
+     INTELLIGENCE UI (Phase 5) — Coach-Hub, Advisor, Review, Twin, Simulator,
+     Experimente, Protocol, Timeline, Memory. Sekundäre Navigation über den
+     Coach-Hub — die Bottom-Nav bleibt bei 5 Einträgen.
+     ====================================================================== */
+  function INTEL() { return MM.intelligence; }
+  var TONE_COL = { good: "var(--green,#3ddc84)", watch: "var(--amber,#f5a623)", alert: "#ff5470", neutral: "var(--muted)" };
+  function confDot(level) { return '<span class="intel-conf intel-conf-' + esc(level) + '" title="Confidence: ' + esc(level) + '"><i></i><i></i><i></i></span>'; }
+  function toneClass(t) { return "intel-tone-" + (t || "neutral"); }
+
+  // DECISION CARD (§85): KEEP / CHANGE / WATCH / CHECK FIRST
+  var DEC_LABEL = { keep: "KEEP", change: "CHANGE", watch: "WATCH", check: "CHECK FIRST" };
+  var DEC_TONE = { keep: "good", change: "watch", watch: "neutral", check: "alert" };
+  function decisionCard(dec, opts) {
+    opts = opts || {};
+    var p = dec.primary || dec;
+    var type = p.type || "keep";
+    var html = '<div class="intel-decision intel-tone-' + (DEC_TONE[type] || "neutral") + '">' +
+      '<div class="hd"><span class="verdict">' + esc(DEC_LABEL[type] || type.toUpperCase()) + '</span>' + (dec.bottleneck ? '<span class="bn">Limiter: ' + esc((INTEL().LABELS.BN[dec.bottleneck.domain] || dec.bottleneck.domain)) + ' · ' + dec.bottleneck.confidencePct + '%</span>' : '') + '</div>' +
+      '<b class="ttl">' + esc(p.title) + '</b>' +
+      '<p class="rsn">' + esc(p.reason) + '</p>';
+    if (p.evidence && p.evidence.length) html += '<div class="ev"><span>BASIEREND AUF</span>' + p.evidence.map(function (e) { return '<i>' + esc(e) + '</i>'; }).join("") + '</div>';
+    if (dec.oneVariable) html += '<p class="onevar">↳ EINE Variable ändern — alles andere konstant halten.</p>';
+    if (dec.notNow && dec.notNow.length) html += '<p class="notnow"><b>Not now:</b> ' + dec.notNow.map(esc).join(" · ") + '</p>';
+    if (p.deepLink) html += '<a class="btn btn-primary btn-sm" href="' + esc(p.deepLink) + '">Ansehen →</a>';
+    html += '</div>';
+    return html;
+  }
+  // INSIGHT CARD (§86)
+  function insightCard(tag, headline, rows) {
+    return '<div class="intel-insight"><span class="tag">' + esc(tag) + '</span><b class="hl">' + esc(headline) + '</b>' +
+      '<div class="rows">' + rows.map(function (r) { return '<div class="r"><span>' + esc(r.k) + '</span><b class="' + toneClass(r.tone) + '">' + esc(r.v) + '</b></div>'; }).join("") + '</div></div>';
+  }
+
+  /* =========================== COACH HUB =========================== */
+  function vCoach() {
+    if (!INTEL() || !INTEL().buildContext) return '<div class="card"><p class="muted">Intelligence lädt…</p></div>';
+    var I = INTEL(); var ctx = I.buildContext();
+    var dec = I.decision.decide(ctx);
+    var depth = I.twin.personalizationDepth();
+    var html = '<div class="intel-hero"><span class="tag">PERSONAL PERFORMANCE INTELLIGENCE</span>' +
+      '<h1 class="os-big">Was solltest du als Nächstes tun — und warum?</h1>' +
+      '<p class="muted" style="margin:2px 0 0">Dein System liest, was du tust, was sich verändert und was gerade limitiert — und entscheidet begründet.</p></div>';
+
+    // PRIMARY DECISION
+    html += '<section class="os-sec"><h2 class="os-h2">Deine Entscheidung jetzt</h2>' + decisionCard(dec) + '</section>';
+
+    // Contradictions
+    var contras = I.decision.contradictions(ctx);
+    if (contras.length) {
+      html += '<section class="os-sec"><h2 class="os-h2">Dein System zieht in verschiedene Richtungen</h2>' +
+        contras.map(function (c) { return '<div class="intel-contra intel-sev-' + esc(c.severity) + '"><b>' + esc(c.title) + '</b><p>' + esc(c.text) + '</p></div>'; }).join("") + '</section>';
+    }
+
+    // Ask MaleMetrix teaser
+    html += '<a class="card os-row-cta intel-ask-cta" href="#advisor"><span class="tag">ASK MALEMETRIX</span><b>Frag dein System — gegroundet in deinen echten Daten</b><span class="s">Warum stagniere ich? · Soll ich mehr essen? · Was ändern meine Labs?</span></a>';
+
+    // Module grid
+    html += '<section class="os-sec"><h2 class="os-h2">Intelligence-Module</h2><div class="intel-grid">' +
+      module("#review", "WEEKLY REVIEW", "Wochen-Synthese + Verdict", I.review.reviewDue(ctx) ? "fällig" : "") +
+      module("#twin", "DIGITAL TWIN", "Dein Modell über die Zeit", depth.pct + "% Reife") +
+      module("#simulator", "WHAT IF?", "Szenarien vergleichen", "") +
+      module("#experiments", "EXPERIMENTE", "Kontrolliert optimieren", (I.experiments.active().length ? "1 aktiv" : "")) +
+      module("#protocol", "MY PROTOCOL", "Dein Betriebshandbuch", "") +
+      module("#timeline", "TIMELINE", "Deine Historie", "") +
+      '</div></section>';
+
+    // Personalization depth (§123)
+    html += '<div class="card intel-depth"><span class="os-k">MaleMetrix kennt dich zu</span><div class="bar"><span style="width:' + depth.pct + '%"></span></div><b>' + depth.pct + '%</b>' +
+      (depth.missingHighValue.length ? '<p class="small muted" style="margin:8px 0 0">Größter Hebel für bessere Personalisierung: ' + depth.missingHighValue.map(esc).join(", ") + '</p>' : '') + '</div>';
+    return html;
+  }
+  function module(href, title, sub, badge) {
+    return '<a class="intel-module" href="' + href + '"><div class="hd"><b>' + esc(title) + '</b>' + (badge ? '<span class="badge">' + esc(badge) + '</span>' : '') + '</div><span>' + esc(sub) + '</span></a>';
+  }
+
+  /* =========================== ADVISOR =========================== */
+  function vAdvisor() {
+    if (!INTEL() || !INTEL().advisor) return '<div class="card"><p class="muted">Advisor lädt…</p></div>';
+    var I = INTEL();
+    var ctx = I.buildContext();
+    var suggestions = I.advisor.suggestedQuestions(ctx);
+    var lastQ = MM.store.get("intel_last_q", "");
+    var html = '<div class="intel-back"><a href="#coach">← Coach</a></div>';
+    html += '<section class="os-sec"><span class="tag">ASK MALEMETRIX</span><h1 class="os-big" style="font-size:1.6rem">Frag dein System.</h1>' +
+      '<p class="muted" style="margin:0 0 14px">Antworten sind in DEINEN Daten gegroundet — kein generischer Chat. Kurz zuerst, Details ausklappbar.</p>' +
+      '<div class="intel-ask"><input id="advQ" type="text" placeholder="z. B. Warum stagniert mein Gewicht?" value="' + esc(lastQ) + '" autocomplete="off"><button id="advGo" class="btn btn-primary">Fragen</button></div>' +
+      '<div class="intel-suggest">' + suggestions.map(function (q) { return '<button class="os-chip" data-advq="' + esc(q) + '">' + esc(q) + '</button>'; }).join("") + '</div>' +
+      '<div id="advOut">' + (lastQ ? renderAdvisorAnswer(I.advisor.answer(lastQ, ctx)) : "") + '</div></section>';
+    return html;
+  }
+  function renderAdvisorAnswer(a) {
+    function block(label, items, cls) { if (!items || !items.length) return ""; return '<div class="ans-block ' + (cls || "") + '"><span>' + esc(label) + '</span><ul>' + items.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join("") + '</ul></div>'; }
+    var html = '<div class="intel-answer ' + (a.unsure ? "unsure" : "") + '">' +
+      '<div class="ans-main"><span class="tag">ANTWORT</span><b>' + esc(a.answer) + '</b></div>' +
+      block("Was ich sehe", a.whatISee) +
+      block("Was es wahrscheinlich bedeutet", a.whatItMeans) +
+      block("Was ich als Nächstes täte", a.whatIdDo, "do") +
+      block("Was NICHT ändern", a.whatNotToChange, "nochange") +
+      (a.reassess ? '<div class="ans-block"><span>Wann neu bewerten</span><p>' + esc(a.reassess) + '</p></div>' : '') +
+      (a.basedOn && a.basedOn.length ? '<div class="ans-based"><span>BASIEREND AUF</span>' + a.basedOn.map(function (e) { return '<i>' + esc(e) + '</i>'; }).join("") + '</div>' : '') +
+      (a.boundaryNote ? '<p class="ans-boundary">' + esc(a.boundaryNote) + '</p>' : '') +
+      '</div>';
+    return html;
+  }
+
+  /* =========================== WEEKLY REVIEW =========================== */
+  function vReview() {
+    if (!INTEL() || !INTEL().review) return '<div class="card"><p class="muted">Review lädt…</p></div>';
+    var I = INTEL(); var ctx = I.buildContext();
+    var rev = I.review.generate(ctx);
+    var eva = I.review.expectedVsActual(ctx);
+    var html = '<div class="intel-back"><a href="#coach">← Coach</a></div>';
+    html += '<section class="os-sec"><span class="tag">WEEKLY INTELLIGENCE REVIEW</span>' +
+      '<h1 class="os-big" style="font-size:1.6rem">Woche ' + (rev.week || "—") + '</h1>' +
+      '<div class="intel-revconf">' + confDot(rev.confidence.level) + '<span>' + esc(rev.confidence.level.toUpperCase()) + ' CONFIDENCE · ' + esc(rev.confidence.factors.join(" · ")) + '</span></div></section>';
+    // Sections
+    html += '<div class="intel-revsections">' + rev.sections.map(function (s) { return '<div class="intel-revsec ' + toneClass(s.tone) + '"><span>' + esc(s.label) + '</span><b>' + esc(s.value) + '</b></div>'; }).join("") + '</div>';
+    // Expected vs Actual — the wow moment (§174)
+    if (eva.actual != null) {
+      var statusLabel = { ahead: "VORAUS", within: "IM ERWARTUNGSBAND", behind: "HINTER PLAN" };
+      html += '<div class="intel-eva"><span class="tag">ERWARTET vs. TATSÄCHLICH</span>' +
+        '<div class="eva-bar"><span class="band" style="left:0;right:0"></span><span class="actual ' + toneClass(eva.status === "behind" ? "watch" : "good") + '"></span></div>' +
+        '<div class="eva-rows"><div><span>Erwartet (kg/Wo)</span><b>' + eva.expected[0] + " … " + eva.expected[1] + '</b></div><div><span>Tatsächlich</span><b>' + (eva.actual > 0 ? "+" : "") + eva.actual + '</b></div><div><span>Status</span><b>' + esc(statusLabel[eva.status] || "—") + '</b></div></div></div>';
+    }
+    // Verdict decision card
+    html += '<section class="os-sec"><h2 class="os-h2">Verdict</h2>' +
+      decisionCard({ primary: { type: rev.decisionType, title: rev.decisionTitle || rev.verdict, reason: rev.decisionReason, evidence: rev.evidence, deepLink: null }, bottleneck: { domain: rev.bottleneck, confidencePct: rev.bottleneckConfidence }, oneVariable: rev.decisionType === "change" }) + '</section>';
+    // Primary focus + do not change
+    html += '<div class="intel-focus"><div class="fbox"><span class="os-k">PRIMÄRER FOKUS</span><b>' + esc(rev.primaryFocus) + '</b></div>' +
+      (rev.doNotChange.length ? '<div class="fbox"><span class="os-k">NICHT ÄNDERN</span><b>' + rev.doNotChange.map(esc).join(" · ") + '</b></div>' : '') +
+      '<div class="fbox"><span class="os-k">NÄCHSTER REVIEW</span><b>in ' + rev.reviewInDays + ' Tagen</b></div></div>';
+    // History
+    var hist = I.review.reviews().filter(function (r) { return r.week !== rev.week; });
+    if (hist.length) html += '<section class="os-sec"><h2 class="os-h2">Frühere Reviews</h2><div class="intel-revhist">' + hist.slice(-6).reverse().map(function (r) { return '<div class="rh"><b>W' + r.week + '</b><span>' + esc(r.verdict) + '</span><i>' + esc(r.primaryFocus) + '</i></div>'; }).join("") + '</div><p class="small muted">Historische Reviews sind unveränderlich — sie ändern sich nicht mit neuen Daten.</p></section>';
+    return html;
+  }
+
+  /* =========================== DIGITAL TWIN =========================== */
+  function vTwin() {
+    if (!INTEL() || !INTEL().twin) return '<div class="card"><p class="muted">Twin lädt…</p></div>';
+    var I = INTEL(); var ctx = I.buildContext();
+    var twin = I.twin.build(ctx);
+    var depth = I.twin.personalizationDepth(twin);
+    var html = '<div class="intel-back"><a href="#coach">← Coach</a></div>';
+    html += '<section class="os-sec"><span class="tag">DIGITAL TWIN</span><h1 class="os-big" style="font-size:1.5rem">Dein Modell, über die Zeit.</h1>' +
+      '<p class="muted" style="margin:0 0 6px">Je Domäne: Zustand, Trend, wie sicher MaleMetrix ist — und was es NICHT weiß.</p></section>';
+    html += '<div class="intel-twin">' + twin.domains.map(function (d) {
+      var arrow = d.trend.dir > 0 ? "↑" : d.trend.dir < 0 ? "↓" : "→";
+      return '<div class="intel-tdom"><div class="hd"><b>' + esc(d.label) + '</b>' + confDot(d.confidence.level) + '</div>' +
+        '<div class="st">' + esc(d.state) + '</div>' +
+        '<div class="tr"><span class="arr ' + (d.trend.dir > 0 ? "up" : d.trend.dir < 0 ? "down" : "") + '">' + arrow + '</span>' + esc(d.trend.text) + '</div>' +
+        '<div class="meta"><span class="cpl"><i style="width:' + d.dataCompleteness.pct + '%"></i></span><span class="cl">' + esc(d.confidence.reason) + '</span></div>' + '</div>';
+    }).join("") + '</div>';
+    html += '<div class="card intel-depth"><span class="os-k">Datenreife gesamt</span><div class="bar"><span style="width:' + depth.pct + '%"></span></div><b>' + depth.pct + '%</b>' +
+      (depth.lowConfidenceDomains.length ? '<p class="small muted" style="margin:8px 0 0">Dünne Datenlage: ' + depth.lowConfidenceDomains.map(esc).join(", ") + '</p>' : '') + '</div>';
+    return html;
+  }
+
+  /* =========================== SIMULATOR =========================== */
+  function vSimulator() {
+    if (!INTEL() || !INTEL().simulator) return '<div class="card"><p class="muted">Simulator lädt…</p></div>';
+    var I = INTEL(); var ctx = I.buildContext();
+    var key = hashParam("s") || "calories_plus";
+    var scenarios = I.simulator.listScenarios();
+    var sim = I.simulator.simulate(key, {}, ctx);
+    var html = '<div class="intel-back"><a href="#coach">← Coach</a></div>';
+    html += '<section class="os-sec"><span class="tag">WHAT IF?</span><h1 class="os-big" style="font-size:1.5rem">Szenarien vergleichen.</h1>' +
+      '<p class="muted" style="margin:0 0 12px">Kein Zukunftsversprechen — Richtung, Zeit-Spanne, Trade-offs und was wahr sein müsste.</p>' +
+      '<div class="intel-scenpick">' + scenarios.map(function (s) { return '<button class="os-chip ' + (s.key === key ? "sel" : "") + '" data-scen="' + s.key + '">' + esc(s.label) + '</button>'; }).join("") + '</div></section>';
+    if (sim) {
+      html += '<div class="intel-sim">' +
+        '<div class="intel-simcol current"><span class="lbl">AKTUELLER PFAD</span><b>' + esc(sim.current.label) + '</b><p>' + esc(sim.current.direction) + '</p></div>' +
+        sim.options.map(function (o) {
+          return '<div class="intel-simcol"><span class="lbl">OPTION</span><b>' + esc(o.label) + '</b><p class="dir">' + esc(o.direction) + '</p>' +
+            '<div class="tr"><span>Zeit</span>' + esc(o.timeRange) + '</div>' +
+            (o.tradeoffs.length ? '<ul class="to">' + o.tradeoffs.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join("") + '</ul>' : '') +
+            '<div class="cf"><span>Confidence</span> ' + confDot(o.confidence) + '</div>' +
+            (o.needsTrue.length ? '<div class="nt"><span>Müsste wahr sein</span>' + o.needsTrue.map(function (n) { return '<i>' + esc(n) + '</i>'; }).join("") + '</div>' : '') + '</div>';
+        }).join("") + '</div>';
+      if (sim.note) html += '<div class="os-nobody"><p>' + esc(sim.note) + '</p></div>';
+      // §23 SIMULATOR → EXECUTION: Szenario wird Vorschlag, nie stille Mutation.
+      if (key === 'calories_plus') html += '<div class="intel-simact"><button class="btn btn-primary btn-sm" data-simpropose="calories_plus">Als Vorschlag übernehmen (+~175 kcal) →</button><span class="small muted">Erst nach deiner Bestätigung: Ziel ändert sich, Entscheidung wird im Ledger dokumentiert, Review in 14 Tagen.</span></div>';
+      html += '<div class="intel-assume"><span class="os-k">Annahmen</span>' + sim.assumptions.map(function (a) { return '<span class="' + (a.holds ? "hold" : "broken") + '">' + esc(a.text) + (a.holds ? " ✓" : " ✗") + '</span>'; }).join("") + '<p class="small muted" style="margin:6px 0 0">Fällt eine Annahme, sinkt die Verlässlichkeit der Szenarien.</p></div>';
+    }
+    return html;
+  }
+
+  /* =========================== EXPERIMENTS =========================== */
+  function vExperiments() {
+    if (!INTEL() || !INTEL().experiments) return '<div class="card"><p class="muted">Experimente laden…</p></div>';
+    var I = INTEL(); var ctx = I.buildContext();
+    var X = I.experiments;
+    var active = X.active();
+    var html = '<div class="intel-back"><a href="#coach">← Coach</a></div>';
+    html += '<section class="os-sec"><span class="tag">EXPERIMENTE</span><h1 class="os-big" style="font-size:1.5rem">Kontrolliert optimieren.</h1>' +
+      '<p class="muted" style="margin:0 0 6px">Eine Variable, klare Hypothese, feste Dauer. So lernst du, was bei DIR wirkt.</p></section>';
+    if (active.length) {
+      var e = active[0];
+      var due = X.dueForReview().length > 0;
+      html += '<div class="intel-expactive"><span class="tag">LÄUFT</span><b>' + esc(e.title) + '</b>' +
+        '<div class="exgrid"><div><span>Hypothese</span><p>' + esc(e.hypothesis) + '</p></div><div><span>Änderung</span><p>' + esc(e.change) + '</p></div>' +
+        '<div><span>Primär</span><p>' + esc(e.primary) + '</p></div><div><span>Konstant halten</span><p>' + e.keepConstant.map(esc).join(", ") + '</p></div></div>' +
+        '<p class="small muted">Start ' + esc(e.startDate) + ' · Ende ' + esc(e.endDate) + '</p>' +
+        (due ? '<button class="btn btn-primary btn-sm" data-expeval="' + esc(e.id) + '">Jetzt auswerten →</button>' : '<p class="small muted">Läuft noch — kein vorzeitiges Urteil.</p>') + '</div>';
+    } else {
+      html += '<section class="os-sec"><h2 class="os-h2">Experiment starten</h2><div class="intel-exptpl">' +
+        X.templates().map(function (t) {
+          var prior = X.priorAttempts(t.key).length;
+          return '<div class="intel-tpl"><div class="hd"><b>' + esc(t.title) + '</b><span>' + t.durationDays + ' Tage</span></div><p>' + esc(t.change) + '</p><span class="pr">Primär: ' + esc(t.primary) + '</span>' +
+            (prior ? '<span class="prior">schon ' + prior + '× getestet</span>' : '') +
+            '<button class="os-ghost os-ghost-sm" data-expstart="' + esc(t.key) + '">Starten</button></div>';
+        }).join("") + '</div><p class="small muted">Immer nur EIN Experiment gleichzeitig — sonst weißt du nicht, was gewirkt hat.</p></section>';
+    }
+    var hist = X.history();
+    if (hist.length) html += '<section class="os-sec"><h2 class="os-h2">Abgeschlossen</h2><div class="intel-exphist">' + hist.slice(-6).reverse().map(function (e) { return '<div class="eh"><b>' + esc(e.title) + '</b><span class="v v-' + (e.result ? esc(e.result.verdict.replace(/\s/g, "_").toLowerCase()) : "") + '">' + esc(e.result ? e.result.verdict : "—") + '</span></div>'; }).join("") + '</div></section>';
+    return html;
+  }
+
+  /* =========================== PROTOCOL =========================== */
+  function vProtocol() {
+    if (!INTEL() || !INTEL().protocol) return '<div class="card"><p class="muted">Protokoll lädt…</p></div>';
+    var I = INTEL(); var ctx = I.buildContext();
+    var p = I.protocol.current(ctx);
+    var html = '<div class="intel-back"><a href="#coach">← Coach</a></div>';
+    html += '<section class="os-sec"><span class="tag">MY PROTOCOL · v' + p.version + '</span><h1 class="os-big" style="font-size:1.5rem">Dein Betriebshandbuch.</h1>' +
+      '<p class="muted" style="margin:0 0 6px">Dynamisch aus deinem echten Plan — nicht das allgemeine Protokoll, sondern deins.</p></section>';
+    if (p.changedFrom && p.changedFrom.length) html += '<div class="intel-protochange"><span class="tag">GEÄNDERT SEIT v' + (p.version - 1) + '</span>' + p.changedFrom.map(function (c) { return '<p>' + esc(c.label) + ': <s>' + esc(c.from) + '</s> → <b>' + esc(c.to) + '</b></p>'; }).join("") + '</div>';
+    html += '<div class="intel-proto">' + p.sections.map(function (s) { return '<div class="intel-psec"><span class="os-k">' + esc(s.label) + '</span><b>' + esc(s.value) + '</b>' + (s.detail ? '<i>' + esc(s.detail) + '</i>' : '') + '</div>'; }).join("") + '</div>';
+    html += '<section class="os-sec"><h2 class="os-h2">Meine Regeln</h2><ul class="intel-rules">' + p.rules.map(function (r) { return '<li>' + esc(r) + '</li>'; }).join("") + '</ul></section>';
+    html += '<p class="small muted">Nächster Review: ' + esc(p.nextReview) + ' · Version steigt automatisch, wenn sich dein Plan ändert.</p>';
+    return html;
+  }
+
+  /* =========================== TIMELINE =========================== */
+  function vTimeline() {
+    if (!INTEL() || !INTEL().timeline) return '<div class="card"><p class="muted">Timeline lädt…</p></div>';
+    var I = INTEL(); var ctx = I.buildContext();
+    var events = I.timeline.build(ctx);
+    var TYPE_LABEL = { score: "SCORE", program_start: "PROGRAMM", lab_panel: "LABS", decision: "ENTSCHEIDUNG", experiment: "EXPERIMENT", review: "REVIEW", pr: "PR", mode_change: "MODUS" };
+    var html = '<div class="intel-back"><a href="#coach">← Coach</a></div>';
+    html += '<section class="os-sec"><span class="tag">TIMELINE</span><h1 class="os-big" style="font-size:1.5rem">Deine Historie.</h1>' +
+      '<p class="muted" style="margin:0 0 12px">Score, Programm, Labs, Entscheidungen, Experimente, Reviews — an einem Ort.</p></section>';
+    if (!events.length) { html += '<div class="card"><p class="muted">Noch keine Ereignisse — sie sammeln sich, während du das System nutzt.</p></div>'; return html; }
+    html += '<div class="intel-timeline">' + events.map(function (e) {
+      return '<div class="intel-tlrow"><span class="d">' + esc(e.date.slice(2)) + '</span><span class="ty ty-' + esc(e.type) + '">' + esc(TYPE_LABEL[e.type] || e.type) + '</span><div class="c"><b>' + esc(e.title) + '</b>' + (e.summary ? '<span>' + esc(e.summary) + '</span>' : '') + '</div></div>';
+    }).join("") + '</div>';
+    return html;
+  }
+
+  /* =========================== MEMORY CENTER =========================== */
+  function vMemory() {
+    if (!INTEL() || !INTEL().memory) return '<div class="card"><p class="muted">Memory lädt…</p></div>';
+    var I = INTEL(); var mc = I.memory.centerView();
+    var html = '<div class="intel-back"><a href="#coach">← Coach</a></div>';
+    html += '<section class="os-sec"><span class="tag">WAS MALEMETRIX ÜBER MICH WEISS</span><h1 class="os-big" style="font-size:1.5rem">Memory Center.</h1>' +
+      '<p class="muted" style="margin:0 0 12px">Strukturierte Fakten — kein Chatverlauf. Du kannst alles einsehen und löschen.</p></section>';
+    if (mc.goal) html += '<div class="card"><span class="os-k">Ziel</span><b style="display:block;color:#fff;margin-top:4px">' + esc(mc.goal.text) + '</b></div>';
+    if (mc.constraints.length) html += '<div class="card"><span class="os-k">Randbedingungen</span>' + mc.constraints.map(function (c) { return '<div class="intel-memrow"><span>' + esc(c.text) + '</span><button class="lab-del" data-memforget="' + esc(c.id) + '">×</button></div>'; }).join("") + '</div>';
+    if (mc.responses.length) html += '<section class="os-sec"><h2 class="os-h2">Beobachtete Reaktionen</h2>' + mc.responses.map(function (r) { var iv = r.intervention || {}, ob = r.observed || {}; return '<div class="intel-resp"><b>' + esc(iv.change || iv.domain || "Intervention") + '</b><span>→ ' + (ob.weightDelta != null ? "Gewicht " + (ob.weightDelta > 0 ? "+" : "") + ob.weightDelta + " kg" : "") + (ob.waistDelta != null ? " · Taille " + (ob.waistDelta > 0 ? "+" : "") + ob.waistDelta + " cm" : "") + (ob.strengthPct != null ? " · Kraft " + (ob.strengthPct > 0 ? "+" : "") + ob.strengthPct + "%" : "") + '</span><i>beobachtet, keine bewiesene Ursache</i></div>'; }).join("") + '</section>';
+    if (mc.decisions.length) html += '<section class="os-sec"><h2 class="os-h2">Entscheidungs-Ledger</h2>' + mc.decisions.map(function (d) { return '<div class="intel-ledrow"><span class="d">' + esc(d.date.slice(2)) + '</span><div><b>' + esc(d.title) + '</b><span>' + esc(d.reason) + '</span></div><i class="st st-' + esc(d.status) + '">' + esc(d.status) + '</i></div>'; }).join("") + '</section>';
+    html += '<p class="small muted">Insgesamt: ' + mc.counts.memories + ' Fakten · ' + mc.counts.decisions + ' Entscheidungen · ' + mc.counts.responses + ' Reaktionen. Export/Löschung über Today → Konto &amp; Daten.</p>';
+    return html;
+  }
+
 
   /* =========================== SHEETS (Phase 6: My Day Changed · Eat Now · Quick Capture) =========================== */
   var dcState = { key: null, params: {} };
@@ -821,7 +1114,8 @@
     if (snap.configured && snap.state === "signed_out") { signInScreen(); return; }
     OS.ensureCycle();   // Zyklus-Zustandsmaschine bei jedem Render konsistent halten
     var v = view();
-    var body = v === "plan" ? vPlan() : v === "track" ? vTrack() : v === "progress" ? vProgress() : v === "learn" ? vLearn() : v === "baseline" ? vBaseline() : v === "pathway" ? vPathway() : v === "transform" ? vTransform() : v === "workout" ? vWorkout() : v === "week" ? vWeek() : v === "settings" ? vSettings() : vToday(snap);
+    var body = v === "plan" ? vPlan() : v === "track" ? vTrack() : v === "progress" ? vProgress() : v === "learn" ? vLearn() : v === "baseline" ? vBaseline() : v === "pathway" ? vPathway() : v === "transform" ? vTransform() : v === "workout" ? vWorkout() : v === "week" ? vWeek() : v === "settings" ? vSettings() :
+      v === "coach" ? vCoach() : v === "advisor" ? vAdvisor() : v === "review" ? vReview() : v === "twin" ? vTwin() : v === "simulator" ? vSimulator() : v === "experiments" ? vExperiments() : v === "protocol" ? vProtocol() : v === "timeline" ? vTimeline() : v === "memory" ? vMemory() : vToday(snap);
     var fab = (v !== "workout" && v !== "settings" && snap.state !== "signed_out") ? '<button class="os-fab" data-fab aria-label="Schnell erfassen">+</button>' : "";
     host.innerHTML = '<div class="os-shell os-env-' + (v === "progress" || v === "workout" ? "performance" : v === "plan" ? "metabolic" : v === "learn" && OS.pathway() === "enhanced" ? "clinical" : "instrument") + '">' + navBar(v) + '<div class="os-body">' + body + '</div>' + fab + '</div>';
     if (v === "progress") loadPhotoCompare();
@@ -912,6 +1206,29 @@
       if (t.closest("[data-fab]")) { sheetQuickCapture(); return; }
       if (t.closest("[data-qcweight]")) { var qw = parseFloat((document.getElementById("qcW") || {}).value); if (!isNaN(qw)) { OS.logMetric("weight", qw, "kg"); closeSheet(); if (MM.toast) MM.toast("Gewicht gespeichert."); render(); } return; }
       if (t.closest("#rmPerm")) { X.requestNotifyPermission().then(function () { render(); }); return; }
+
+      /* ---------- INTELLIGENCE (Phase 5) ---------- */
+      var advq = t.closest("[data-advq]"); if (advq) { askAdvisor(advq.getAttribute("data-advq")); return; }
+      if (t.closest("#advGo")) { var qq = (document.getElementById("advQ") || {}).value; askAdvisor(qq); return; }
+      var scen = t.closest("[data-scen]"); if (scen) { location.hash = "#simulator?s=" + scen.getAttribute("data-scen"); render(); return; }
+      var expS = t.closest("[data-expstart]"); if (expS && MM.intelligence) { var resE = MM.intelligence.experiments.start(expS.getAttribute("data-expstart")); if (MM.toast) MM.toast(resE.ok ? "Experiment gestartet — erscheint in Today." : "Bereits ein Experiment aktiv."); render(); return; }
+      var expE = t.closest("[data-expeval]"); if (expE && MM.intelligence) { MM.intelligence.experiments.evaluate(expE.getAttribute("data-expeval")); if (MM.toast) MM.toast("Experiment ausgewertet — Ergebnis in der Historie."); render(); return; }
+      var memF = t.closest("[data-memforget]"); if (memF && MM.intelligence) { MM.intelligence.memory.forget(memF.getAttribute("data-memforget")); render(); return; }
+
+      /* PROPOSAL-FLOW (§21/§22): Intelligence schlägt vor → Nutzer bestätigt →
+         Execution wendet an → Ledger dokumentiert → Review terminiert. */
+      var pap = t.closest("[data-propapply]"); if (pap) {
+        var dayP = X.buildDay();
+        if (dayP.proposal) { X.applyProposal(dayP.proposal); if (MM.toast) MM.toast("Übernommen ✓ — Entscheidung im Ledger, Review in " + dayP.proposal.reviewInDays + " Tagen."); }
+        render(); return;
+      }
+      var pdm = t.closest("[data-propdismiss]"); if (pdm) { X.dismissProposal(pdm.getAttribute("data-propdismiss")); if (MM.toast) MM.toast("Okay — Vorschlag pausiert (7 Tage)."); render(); return; }
+      var simP = t.closest("[data-simpropose]"); if (simP && MM.intelligence) {
+        var np9 = MM.store.get("os_nutrition_plan", null);
+        if (!np9) { if (MM.toast) MM.toast("Erst einen Nutrition-Plan erstellen (Plan-Tab)."); return; }
+        X.applyProposal({ key: "nutrition:sim_calories_plus", domain: "nutrition", type: "change", code: "adjust_up", title: "+~175 kcal (Simulator-Szenario)", reason: "Aus dem What-If-Szenario übernommen — eine Variable, Review in 14 Tagen.", evidence: ["Simulator: Mehr essen (+kcal)"], reviewInDays: 14 });
+        if (MM.toast) MM.toast("Übernommen ✓ — neues Ziel aktiv, Review in 14 Tagen."); location.hash = "#today"; render(); return;
+      }
     });
     host.addEventListener("change", function (e) {
       var fi = e.target.closest("[data-photoin]");
