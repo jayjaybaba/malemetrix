@@ -18,6 +18,7 @@ MaleMetrix does the integration — the user never combines tools in his head.
 | TRACK | measure execution (generic metrics, tracker) |
 | PROGRESS | show change (Start→Now, photos, cycles, interpretation) |
 | LABS | turn lab data into context (biomarker intelligence, not a spreadsheet) |
+| COACH | personal performance intelligence — decide what's next & why (Phase 5) |
 | LEARN | explain why (Protokoll, Library, Enhanced Center) |
 
 ## Code
@@ -70,6 +71,29 @@ OS domains register via `MM.account.registerStateDomain(name, storeKey)` →
 versioned rows in the generic `os_state` table (migration 0003), same
 dirty-queue/retry/backoff/hydration rules as program/score. Local-first;
 offline never loses work. Photos intentionally NOT synced.
+
+## Intelligence layer (Phase 5) — `js/os/intelligence/*` (MM.intelligence)
+Three-layer model: (1) DETERMINISTIC TRUTH read from os/labs/account, never
+rewritten; (2) RULE/DECISION engines; (3) SYNTHESIS/LANGUAGE (optional AI seam
+with deterministic fallback). Modules:
+```
+intelligence-core.js  freshness (fresh/aging/stale/missing) + confidence utils
+context-builder.js    buildContext() canonical package · snapshot · relevance budgeting
+memory.js             goal/preference/constraint/response memory + Decision Ledger
+digital-twin.js       8 domains w/ state·trend·confidence·completeness
+decision-engine.js    decide() arbitration · bottleneck2 · contradictions · leverage · stopDoing
+review.js             immutable Weekly Intelligence Review · morning/evening brief · expected-vs-actual
+advisor.js            ASK MALEMETRIX — grounded contract answers, tool model, provider seam, boundaries
+simulator.js          WHAT-IF scenarios + calibrated forecast + goal feasibility
+experiments.js        N-of-1 engine (one-change, conservative verdicts, response memory)
+protocol.js           MY PROTOCOL (versioned) + unified TIMELINE
+```
+All intelligence stores sync as append-merged os_state domains (intelmemory,
+inteldecisions, intelreviews, intelexperiments, intelprotocol, inteltimeline,
+intelbnhist). Events carry no raw values. Advisor works fully without any AI
+provider; a provider only polishes language over the deterministic contract and
+can never override Layer-1/2 truth. Tests: `tools-dev/tests/intelligence.test.js`
+(123 assertions incl. 8 golden personas + longitudinal + adversarial + evals).
 
 ## Labs sync (Phase 4)
 Lab records sync as three OWN os_state domain rows (`labpanels`/`labresults`/
