@@ -34,6 +34,65 @@ async function paypalToken(base: string, id: string, secret: string): Promise<st
   return j.access_token || null;
 }
 
+// --- Billing-Zustandsmaschine (§11): dieselbe Tabelle wie js/os/billing-machine.js.
+// Out-of-order/rückwärtige/unbekannte Events sind No-Ops statt Zustandsschäden.
+const BILLING_TRANSITIONS: Record<string, { from: string[]; to: string | null }> = {
+  trial_started: { from: ["FREE"], to: "TRIALING" },
+  subscription_created: { from: ["FREE", "TRIALING", "CANCELLED", "EXPIRED"], to: "ACTIVE" },
+  invoice_paid: { from: ["TRIALING", "ACTIVE", "PAST_DUE", "GRACE", "CANCEL_AT_PERIOD_END"], to: null },
+  payment_failed: { from: ["ACTIVE", "TRIALING"], to: "PAST_DUE" },
+  grace_entered: { from: ["PAST_DUE"], to: "GRACE" },
+  cancel_at_period_end: { from: ["ACTIVE", "TRIALING", "PAST_DUE", "GRACE"], to: "CANCEL_AT_PERIOD_END" },
+  cancel_now: { from: ["ACTIVE", "TRIALING", "PAST_DUE", "GRACE", "CANCEL_AT_PERIOD_END"], to: "CANCELLED" },
+  period_ended: { from: ["CANCEL_AT_PERIOD_END", "GRACE", "PAST_DUE"], to: "EXPIRED" },
+  refunded: { from: ["ACTIVE", "PAST_DUE", "GRACE", "CANCEL_AT_PERIOD_END", "CANCELLED"], to: "REFUNDED" },
+  reactivated: { from: ["CANCELLED", "EXPIRED", "REFUNDED"], to: "ACTIVE" },
+};
+function billingNext(state: string, event: string): string {
+  const t = BILLING_TRANSITIONS[event];
+  if (!t) return state;
+  if (!t.from.includes(state)) return state;
+  if (event === "invoice_paid") return state === "CANCEL_AT_PERIOD_END" ? "CANCEL_AT_PERIOD_END" : "ACTIVE";
+  return t.to as string;
+}
+
+async function handleSubscriptionEvent(body: any, user: any): Promise<Response> {
+  const provider = String(body.provider || "");
+  const eventId = String(body.eventId || "");
+  const eventType = String(body.eventType || "");
+  const plan = String(body.plan || "");
+  if (!provider || !eventId || !eventType || !plan) return json({ error: "bad_request" }, 400);
+  const service = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  // Idempotenz zuerst (§12): unique(provider,event_id). Duplikat ⇒ No-Op.
+  const ev = await service.from("subscription_events").insert({
+    provider, event_id: eventId, event_type: eventType, provider_sub_id: body.providerSubId || null,
+  });
+  if (ev.error) {
+    const dup = String(ev.error.code) === "23505" || /duplicate/i.test(ev.error.message || "");
+    if (dup) return json({ ok: true, replay: true });
+    return json({ error: "event_log_failed" }, 500);
+  }
+  // Aktuellen Zustand laden, deterministisch transitionieren, schreiben.
+  const cur = await service.from("subscriptions").select("state")
+    .eq("user_id", user.id).eq("provider", provider).eq("plan", plan).maybeSingle();
+  const fromState = cur.data?.state || "FREE";
+  const toState = billingNext(fromState, eventType);
+  await service.from("subscriptions").upsert({
+    user_id: user.id, provider, plan, state: toState,
+    provider_sub_id: body.providerSubId || null,
+    current_period_end: body.currentPeriodEnd || null,
+    cancel_at_period_end: toState === "CANCEL_AT_PERIOD_END",
+    updated_at: new Date().toISOString(),
+  }, { onConflict: "user_id,provider,plan" });
+  // Fähigkeits-Entitlement folgt dem Zustand: aktiv ⇒ intelligence_sub, sonst entziehen.
+  const live = ["ACTIVE", "TRIALING", "GRACE", "CANCEL_AT_PERIOD_END"].includes(toState);
+  await service.from("entitlements").upsert(
+    { user_id: user.id, product_key: "intelligence_sub", status: live ? "active" : "revoked", source: provider },
+    { onConflict: "user_id,product_key" },
+  );
+  return json({ ok: true, from: fromState, to: toState });
+}
+
 Deno.serve(async (req) => {
   try {
     if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
@@ -53,6 +112,11 @@ Deno.serve(async (req) => {
     const { data: userData } = await supa.auth.getUser();
     const user = userData?.user;
     if (!user) return json({ error: "not_signed_in" }, 401);
+
+    // --- Abo-Webhook (§10–§12): deterministische Zustandsmaschine, idempotent ---
+    if (body.action === "subscription_event") {
+      return await handleSubscriptionEvent(body, user);
+    }
 
     if (body.action !== "verify_paypal" || typeof body.paypalOrderId !== "string") {
       return json({ error: "bad_request" }, 400);

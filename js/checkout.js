@@ -263,8 +263,14 @@
     });
 
     MM.cart.clear();
-    const codes = opts.paypalPaid ? await deliveryCodes() : null;
-    renderSuccess(order, res.viaMailto, opts.paypalPaid, codes);
+    // Phase 9 (§5): Wenn der Server das Entitlement bereits vergeben hat
+    // (serverGrant), wird der Client-Vault NICHT mehr entschlüsselt — der
+    // Zugang kommt aus dem Konto (resolveProductAccess). Das ist der Pfad, der
+    // den exponierten Client-Schlüssel im Produktivbetrieb tot legt. Nur ohne
+    // Cloud fällt die Auslieferung auf den (dokumentiert schwächeren) Vault
+    // zurück, damit bestehende Abläufe nicht brechen.
+    const codes = (opts.paypalPaid && !opts.serverGrant) ? await deliveryCodes() : null;
+    renderSuccess(order, res.viaMailto, opts.paypalPaid, codes, !!opts.serverGrant);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -276,14 +282,24 @@
     await finalizeOrder(order);
   }
 
-  function renderSuccess(order, viaMailto, paypalPaid, codes) {
+  function renderSuccess(order, viaMailto, paypalPaid, codes, serverGrant) {
     const bank = CFG.bank || {};
+    // Server-Grant: Zugang liegt im Konto — kein Client-Code, kein Vault.
+    if (serverGrant) {
+      const hasCourse = (order.productIds || []).some(id => id === "protokoll" || id === "kurs-12w");
+      var accountBlock = '<div class="card" style="text-align:left;margin-bottom:24px;border-color:var(--accent-line)">' +
+        '<span class="card-num" style="color:var(--green)">✓ ZUGANG IM KONTO FREIGESCHALTET</span>' +
+        '<p class="muted" style="margin:6px 0 14px">Deine Zahlung ist bestätigt und dein Zugang ist serverseitig deinem Konto zugeordnet — kein Code nötig, auf allen deinen Geräten verfügbar.</p>' +
+        (hasCourse ? '<a class="btn btn-primary btn-block" href="mein-protokoll.html">My MaleMetrix öffnen →</a>' : '') + '</div>';
+    }
     const isPaypalMe = order.payMethod === "PayPal" && CFG.paypalMe && !paypalPaid;
     const amountRaw = order.total.replace(/[^\d,]/g, "").replace(",", ".");
 
-    /* 12-Wochen-Programm: Zugang nach Kauf */
-    let courseBlock = "";
-    if ((order.productIds || []).indexOf("kurs-12w") !== -1) {
+    /* 12-Wochen-Programm: Zugang nach Kauf.
+       Bei Server-Grant zeigt der Konto-Block oben den Zugang; die Code-Blöcke
+       entfallen dann komplett (kein Client-Code mehr). */
+    let courseBlock = serverGrant ? (accountBlock || "") : "";
+    if (!serverGrant && (order.productIds || []).indexOf("kurs-12w") !== -1) {
       const code = (codes && codes.protokoll) || "";
       if (paypalPaid && code) {
         const link = "kurs-programm.html?code=" + encodeURIComponent(code);

@@ -38,7 +38,7 @@
 
   var backend = null;
   var _user = null, _profile = null, _entitlements = null;
-  var _cloudScore = null, _cloudCycle = null;
+  var _cloudScore = null, _cloudCycle = null, _subscription = null;
   var _state = "loading";
   var _subs = [];
   var _initPromise = null;
@@ -421,7 +421,10 @@
       backend.select("profiles", { eq: { user_id: uid }, single: true }).then(function (r) { if (r.error) throw r.error; _profile = r.data || null; }),
       backend.select("entitlements", { eq: { user_id: uid } }).then(function (r) { if (r.error) throw r.error; _entitlements = (r.data || []).filter(function (e) { return e.status === "active"; }).map(function (e) { return e.product_key; }); }),
       backend.select("score_results", { eq: { user_id: uid }, order: "scored_at", limit: 1, single: true }).then(function (r) { if (r.error) throw r.error; _cloudScore = r.data ? (r.data.result || r.data) : null; }),
-      backend.select("program_cycles", { eq: { user_id: uid, status: "active" }, order: "updated_at", limit: 1, single: true }).then(function (r) { if (r.error) throw r.error; _cloudCycle = r.data || null; })
+      backend.select("program_cycles", { eq: { user_id: uid, status: "active" }, order: "updated_at", limit: 1, single: true }).then(function (r) { if (r.error) throw r.error; _cloudCycle = r.data || null; }),
+      // Phase 9: Abo-Zustand (Tabelle existiert erst nach Migration 0008 — Fehler
+      // sind hier gutartig: ohne Abo-Provider bleibt _subscription null).
+      backend.select("subscriptions", { eq: { user_id: uid }, order: "updated_at", limit: 1, single: true }).then(function (r) { _subscription = (r && !r.error && r.data) ? r.data : null; }).catch(function () { _subscription = null; })
     ]);
   }
 
@@ -631,6 +634,8 @@
     getCurrentUser: function () { return _user; },
     getProfile: function () { return _profile; },
     getEntitlements: function () { return (_entitlements || localEntitlements()).slice(); },
+    // Phase 9: Abo-Zustand für MM.entitlements.billingState (null ohne Provider).
+    subscription: function () { return _subscription ? { state: _subscription.state, plan: _subscription.plan, cancel_at_period_end: _subscription.cancel_at_period_end, current_period_end: _subscription.current_period_end } : null; },
     hasAccess: function (key) { return (_entitlements || localEntitlements()).indexOf(key) >= 0; },
     canAccess: function (key) { return api.hasAccess(key); },
     resolveProductAccess: resolveProductAccess,
