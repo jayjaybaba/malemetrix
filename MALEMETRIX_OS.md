@@ -100,6 +100,47 @@ one-completion, no history rewrites, reminder honesty, calendar honesty,
 overlay expiry, snapshot immutability, ledger loop, mirror↔programView
 parity, pulse-override).
 
+## SYSTEM LAYERS (Grand Unification — Phase 5 thinks, Phase 6 executes)
+```
+Layer 0  ACCOUNT/DATA   account.js (auth, sync, os_state, entitlements)
+Layer 1  DOMAIN TRUTH   course.js (12-week) · programView · engines ·
+                        labs · metrics (os-core) · workout/nutrition logs
+Layer 2  INTELLIGENCE   MM.intelligence (js/os/intelligence/*) —
+                        context builder · snapshot · digital twin ·
+                        freshness/confidence · memory + DECISION LEDGER
+                        (intel_decisions, canonical) · decision engine 2.0 ·
+                        bottleneck 2.0 · contradictions · weekly review ·
+                        briefing content · advisor (deterministic core +
+                        provider seam) · simulator/forecast · experiments ·
+                        protocol · timeline · waiting-for-data · KEEP verdict
+Layer 3  EXECUTION      MM.exec (execution.js) — buildDay/NBA feasibility ·
+                        overlays · my-day-changed · compression ·
+                        repair/reschedule · reminders · calendar/ICS ·
+                        brief delivery · evening close · comeback ·
+                        proposal apply (after user confirmation ONLY)
+Layer 4  EXPERIENCE     app.js — ONE app shell, 5-tab nav + secondary
+                        intelligence routes via Coach hub
+```
+Direction: domain state → intelligence → execution → app. Execution writes
+outcomes back to domain state; intelligence learns from them. No circular
+imports; every cross-layer call is lazy + guarded.
+
+## CONCEPT → OWNER (duplicate-owner audit, §104)
+| Concept | Owner | Note |
+|---|---|---|
+| Decision Ledger | MM.intelligence.memory (`intel_decisions`) | MM.exec = facade + one-time migration of `os_decisions` (frozen) |
+| NBA | intelligence ranks · exec filters feasibility | ONE result in buildDay() |
+| Today rendering | app.js vToday (single path) | data: exec + intelligence |
+| Morning Brief | content: intelligence.review.morningBrief · schedule/render: exec.brief | one contract |
+| Weekly Review | intelligence.review (wraps Weekly Pulse truth) | pulse business logic untouched |
+| Bottleneck | intelligence.decision.bottleneck2 (dynamic) | score bottleneck = historical prior |
+| Context modes | MM.exec overlays (`os_overlays`) | intelligence interprets via executionContext |
+| Timeline | intelligence.timeline (`intel_timeline`) | includes exec events |
+| Nutrition target | `os_nutrition_plan` (domain) | intelligence proposes · exec applies after confirm |
+| Training plan | `os_training_plan` + course.js | exec compresses/substitutes only |
+| Program truth | course.js / programView | read-only everywhere else |
+| Labs | MM.labs (Phase 4 canonical) | intelligence consumes via adapted context |
+
 ## Future modules (contract)
 tracker · nutrition-logging · stack-adherence · labs · wearables:
 each = local-first store key + `registerStateDomain` (+ optional engine).

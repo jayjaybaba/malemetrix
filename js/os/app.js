@@ -1077,6 +1077,17 @@
       '<button class="os-sheet-opt" data-daychanged><b>Kontext ändern</b><span>Reise · weniger Zeit · kein Gym · …</span></button>');
   }
 
+  /* ---- Advisor: Frage stellen (deterministischer Kern, Provider-Seam) ---- */
+  function askAdvisor(q) {
+    q = (q || "").trim(); if (!q || !MM.intelligence) return;
+    MM.store.set("intel_last_q", q);
+    var out = document.getElementById("advOut");
+    var inp = document.getElementById("advQ"); if (inp) inp.value = q;
+    var ans = MM.intelligence.advisor.answer(q);
+    if (out) out.innerHTML = renderAdvisorAnswer(ans);
+    if (MM.track) MM.track("advisor_ask", {});
+  }
+
   /* ---- Rest-Timer (optional, ein Timer gleichzeitig) ---- */
   var restIv = null;
   function startRestTimer(btn) {
