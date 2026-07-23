@@ -85,11 +85,11 @@ window.MM_CONFIG = {
   // die Felder leer sind, läuft My MaleMetrix im lokalen Modus (nur dieses
   // Gerät, ohne Cloud-Konto) und die Website funktioniert vollständig weiter.
   // Setup + SQL + RLS: siehe SUPABASE.md.
-  supabaseUrl: "",                 // z. B. "https://xxxxxxxx.supabase.co"
-  // Aktuelles Modell: Publishable Key ("sb_publishable_..."). Ist clientseitig
+  supabaseUrl: "https://vczhfyxltiyvtvppfodt.supabase.co",                 // z. B. "https://vczhfyxltiyvtvppfodt.supabase.co"
+  // Aktuelles Modell: Publishable Key ("sb_publishable_dfpck4XKI--7rdrd7tHFWQ_VFIdPY2F"). Ist clientseitig
   // erlaubt. (Ältere Projekte nutzen den anon/public JWT — supabaseAnonKey als
   // Fallback möglich, aber Publishable Key bevorzugen.)
-  supabasePublishableKey: "",      // z. B. "sb_publishable_..."
+  supabasePublishableKey: "sb_publishable_dfpck4XKI--7rdrd7tHFWQ_VFIdPY2F",      // z. B. "sb_publishable_..."
   supabaseAnonKey: "",             // Legacy-Fallback (nur falls kein Publishable Key)
 
   // --- Dinner-Planer: Foto-Kalorienschätzung (KI) --------------------------
@@ -247,3 +247,4 @@ window.MM_CONFIG = {
     ustHinweis: "Kleinunternehmer gemäß § 19 UStG — keine Ausweisung der Umsatzsteuer."
   }
 };
+
