@@ -319,12 +319,16 @@
     var st = MM.store.get("os_stack", null);
     var budget = (st && st.budget) || "optimal";
     var budgetEuro = st && st.budgetEuro;
+    // §31/§95/§96 — Labs speisen Stack-Kontext: Vitamin D ausreichend → nicht
+    // hochdosieren; Eisen hoch → kein Eisen; Hämatokrit hoch → Monitoring-Flag.
+    var labCtx = (window.MM.labs) ? MM.labs.stackContext() : { flags: {}, notes: [] };
     var strat = E.stackStrategy({
       mode: d.mode || "recomp", pathway: OS.pathway(), budget: budget, budgetEuro: budgetEuro,
       current: (OS.getP("stack.currentText", "") || (OS.baseline() || {}).stackText || "").split(","),
       sleepBad: (OS.getP("recovery.sleepHours", 7) || 7) < 6.5,
       fishTwiceWeek: OS.getP("nutrition.fishTwiceWeek", false), summerSun: OS.getP("lifestyle.summerSun", false),
-      medication: OS.getP("health.medication", false)
+      medication: OS.getP("health.medication", false),
+      vitDAdequate: labCtx.flags.vitDAdequate, ironHigh: labCtx.flags.ironHigh
     });
     html += sec("Stack · wertbasiert, nicht maximal",
       '<div class="os-budget">' + ["essential", "optimal", "maximal"].map(function (b) { return '<button class="os-chip ' + (budget === b && !budgetEuro ? "sel" : "") + '" data-budget="' + b + '">' + b.toUpperCase() + '</button>'; }).join("") +
@@ -510,7 +514,8 @@
       '<div class="os-learn-grid">' +
       '<a class="os-learn" href="ebooks/protokoll.html"><b>DAS PROTOKOLL</b><span>Das Referenzwerk — warum dein System funktioniert.</span></a>' +
       '<a class="os-learn" href="ebooks.html"><b>Library</b><span>Deep Dives: Body · Engine · Recovery · Hormone · Health.</span></a>' +
-      '<a class="os-learn" href="blutwerte.html"><b>Blood &amp; Labs</b><span>Die Biomarker, die für Männer zählen.</span></a>' +
+      '<a class="os-learn" href="labor.html"><b>MaleMetrix Labs</b><span>Deine Biologie über die Zeit — Werte werden zu Kontext.</span></a>' +
+      '<a class="os-learn" href="blutwerte.html"><b>Blood &amp; Labs (Guide)</b><span>Die Biomarker, die für Männer zählen.</span></a>' +
       '</div>');
     if (pw === "enhanced") {
       var F = E.ENHANCED_FRAMEWORK;

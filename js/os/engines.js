@@ -540,6 +540,8 @@
     // §46/§47 — Kontext REDUZIERT die Liste, statt sie aufzublasen:
     var skipped = [];
     take = take.filter(function (s) {
+      // §31 Labs: Vitamin D ausreichend → nicht empfehlen; Eisen wird ohnehin nie empfohlen.
+      if (s.id === "vitd" && g.vitDAdequate) { skipped.push({ name: s.name, why: "Laut Laborwert ist dein Vitamin D ausreichend — nicht blind hochdosieren, ggf. nur erhalten.", lab: true }); return false; }
       if (s.skipIf) { for (var k in s.skipIf) { if (g[k]) { skipped.push({ name: s.name, why: s.skipIf[k] }); return false; } } }
       if (s.conflict) { for (var c in s.conflict) { if (g[c]) { skipped.push({ name: s.name, why: s.conflict[c], conflict: true }); return false; } } }
       return true;
@@ -567,6 +569,7 @@
     if (current.some(function (c) { return /pre.?workout|booster/.test(c); }) && chosen.some(function (s) { return s.id === "caffeine"; })) conflicts.push("Dein Pre-Workout enthält vermutlich bereits Koffein — nicht zusätzlich dosieren (Doppel-Stimulanzien).");
     if (current.some(function (c) { return /multi/.test(c); }) && chosen.some(function (s) { return s.id === "vitd"; })) conflicts.push("Multivitamin + separates Vitamin D: prüfe die Gesamtdosis — Dopplung ist üblich und unnötig.");
     if (g.medication) conflicts.push("CONTEXT CHECK: Du hast Medikation angegeben — kläre Supplement-Wechselwirkungen mit Arzt/Apotheke. Wir bewerten das bewusst nicht automatisch.");
+    if (g.ironHigh) conflicts.push("CONTEXT CHECK: Dein Eisenstatus ist laut Labor hoch — KEIN Eisen supplementieren; Ursache (Entzündung/Überladung) fachlich klären.");
     var schedule = { morning: [], with_food: [], pre_training: [], evening: [] };
     chosen.forEach(function (s) {
       if (/pre/.test(s.timing)) schedule.pre_training.push(s.name);

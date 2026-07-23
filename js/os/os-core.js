@@ -433,6 +433,13 @@
     // Messung veraltet (>7 Tage kein Gewicht)
     var lw = latestMetric("weight");
     if (lw && diffDays(lw.date, todayYmd()) > 7) out.push({ type: "measurement", urgent: false, text: "Letzte Gewichtsmessung ist " + diffDays(lw.date, todayYmd()) + " Tage her — Trends brauchen Messpunkte." });
+    // §27/§80 — Lab-Recheck fällig ODER neue Lab-Änderung (nur wenn relevant, nicht täglich)
+    if (window.MM && MM.labs) {
+      try {
+        var due2 = MM.labs.rechecksDue();
+        if (due2.length) { var m0 = (MM.labsData ? MM.labsData.marker(due2[0].markerId) : null); out.push({ type: "lab_recheck", urgent: false, text: "Lab-Recheck fällig: " + (m0 ? m0.name : due2[0].markerId) + (due2.length > 1 ? " +" + (due2.length - 1) + " weitere" : "") + " — " + due2[0].note }); }
+      } catch (e) {}
+    }
     return out;
   }
 
@@ -598,7 +605,8 @@
     osadjust: "os_adjust_history",          // §39 — Anpassungshistorie
     osengine: "os_engine_log",              // §88 — Engine-/Cardio-Sessions
     oscycle: "os_cycle", oscyclehist: "os_cycle_history",
-    oscontext: "os_context", osreminders: "os_reminders_done"
+    oscontext: "os_context", osreminders: "os_reminders_done",
+    oslabpanels: "lab_panels", oslabresults: "lab_results", oslabnotes: "lab_notes"  // Phase 4 (registriert in labs.js)
   };
   var LOCAL_ONLY = {
     os_events: "abgeleitetes, gekapptes Ereignis-Log (rekonstruierbar)",

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MaleMetrix Labs — Deine Biologie, über die Zeit</title>
+  <meta name="description" content="Biomarker-Intelligenz: Laborwerte werden zu Kontext — was sich verändert, was zählt, was du nachkontrollieren solltest.">
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="css/fonts.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/os.css">
+  <link rel="stylesheet" href="css/labs.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%232e7cf6'/><stop offset='1' stop-color='%2300c2ff'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='url(%23g)'/><path d='M8 23V9.5l8 7 8-7V23' fill='none' stroke='white' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/><circle cx='8' cy='9.5' r='2.2' fill='white'/><circle cx='24' cy='9.5' r='2.2' fill='white'/><circle cx='16' cy='16.5' r='1.9' fill='%23bfe9ff'/></svg>">
+  <link rel="canonical" href="https://www.malemetrix.com/labor.html">
+  <meta name="theme-color" content="#07090d">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+</head>
+<body>
+
+<header class="site-header" id="siteHeader">
+  <div class="container header-inner">
+    <a href="index.html" class="logo"><span class="logo-mark">M</span>Male<span class="x">Metrix</span></a>
+    <nav class="main-nav" id="mainNav">
+      <a href="index.html#system" data-i18n="nav.system">System</a>
+      <a href="check.html" data-i18n="nav.check">Score</a>
+      <a href="ebooks.html" data-i18n="nav.library">Library</a>
+      <a href="coaching.html" data-i18n="nav.coaching">1:1 Coaching</a>
+      <div class="nav-more">
+        <button class="nav-more-toggle" data-i18n="nav.about">Über</button>
+        <div class="nav-more-menu">
+          <a href="ueber.html" data-i18n="nav.aboutMM">Über MaleMetrix</a>
+          <a href="faq.html" data-i18n="nav.faq">FAQ</a>
+          <a href="kontakt.html" data-i18n="nav.contact">Kontakt</a>
+        </div>
+      </div>
+      <a href="mein-protokoll.html" class="nav-my" data-i18n="nav.mymm">My MaleMetrix</a>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-btn lang-btn" aria-label="Sprache wechseln / Switch language" title="DE / EN">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"/></svg>
+        <span class="lang-code">EN</span>
+      </button>
+      <button class="nav-toggle" id="navToggle" aria-label="Menü öffnen">☰</button>
+    </div>
+  </div>
+</header>
+
+<main class="page-head" id="labTop" style="min-height:70vh">
+  <div class="container container-narrow">
+    <div id="mmLabs" aria-live="polite"></div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-bottom" style="border-top:none;padding-top:0">
+      <span>© <span data-year></span> MaleMetrix. <span data-i18n="foot.rights">Alle Rechte vorbehalten.</span></span>
+      <span><a href="mein-protokoll.html">My MaleMetrix</a> · <a href="index.html">Startseite</a></span>
+    </div>
+  </div>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/analytics.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/main.js"></script>
+<script src="js/account.js"></script>
+<script src="js/os/program-view.js"></script>
+<script src="js/os/os-core.js"></script>
+<script src="js/os/engines.js"></script>
+<script src="js/os/labs-data.js"></script>
+<script src="js/os/labs.js"></script>
+<script src="js/os/labs-app.js"></script>
+</body>
+</html>
