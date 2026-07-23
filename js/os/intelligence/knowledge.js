@@ -19,7 +19,7 @@
   if (!window.MM) window.MM = {};
   var I = MM.intelligence = MM.intelligence || {};
 
-  var KV = 1;                 // Knowledge-Graph-Version (Entscheidungs-Snapshots referenzieren sie)
+  var KV = 2;                 // Knowledge-Graph-Version (Phase 9: Quellen aufgelöst; Snapshots referenzieren die Version zum Entscheidungszeitpunkt, §30)
   var STALE_DAYS = 365;
   var REVIEWED = "2026-07-23"; // Redaktionsstand dieses Builds
 
@@ -30,12 +30,43 @@
     return Object.assign({ claim_id: id, statement: statement, evidence_type: evidence, confidence: evidence === "STRONG" ? "high" : evidence === "MODERATE" ? "medium" : "low", reviewed_at: REVIEWED, context: "", limitations: "", source_ids: ["unresolved"] }, opts || {});
   }
 
+  /* ======================= QUELLEN-REGISTER (§27/§28/§65) =======================
+     Nur real verifizierte Landmark-Quellen (Web-Recherche, Phase 9). Jede trägt
+     canonical URL + ggf. DOI. UNRESOLVED bleibt UNRESOLVED — nie erfunden.
+     source_type: GUIDELINE | CONSENSUS | META_ANALYSIS | RCT | COHORT | POSITION_STAND */
+  var SOURCES = {
+    morton_2018: { title: "A systematic review, meta-analysis and meta-regression of the effect of protein supplementation on resistance training-induced gains in muscle mass and strength in healthy adults", authors: "Morton RW, et al.", year: 2018, venue: "Br J Sports Med 52(6):376–384", doi: "10.1136/bjsports-2017-097608", url: "https://bjsm.bmj.com/content/52/6/376", source_type: "META_ANALYSIS", last_reviewed: REVIEWED },
+    kreider_2017: { title: "ISSN position stand: safety and efficacy of creatine supplementation in exercise, sport, and medicine", authors: "Kreider RB, et al.", year: 2017, venue: "J Int Soc Sports Nutr 14:18", doi: "10.1186/s12970-017-0173-z", url: "https://jissn.biomedcentral.com/articles/10.1186/s12970-017-0173-z", source_type: "POSITION_STAND", last_reviewed: REVIEWED },
+    esc_eas_2019: { title: "2019 ESC/EAS Guidelines for the management of dyslipidaemias", authors: "Mach F, et al.", year: 2020, venue: "Eur Heart J 41(1):111–188", doi: "10.1093/eurheartj/ehz455", url: "https://academic.oup.com/eurheartj/article/41/1/111/5556353", source_type: "GUIDELINE", last_reviewed: REVIEWED },
+    step1_2021: { title: "Once-Weekly Semaglutide in Adults with Overweight or Obesity (STEP 1)", authors: "Wilding JPH, et al.", year: 2021, venue: "N Engl J Med 384:989–1002", doi: "10.1056/NEJMoa2032183", url: "https://www.nejm.org/doi/full/10.1056/NEJMoa2032183", source_type: "RCT", last_reviewed: REVIEWED },
+    bhasin_2018: { title: "Testosterone Therapy in Men With Hypogonadism: An Endocrine Society Clinical Practice Guideline", authors: "Bhasin S, et al.", year: 2018, venue: "J Clin Endocrinol Metab 103(5):1715–1744", doi: "10.1210/jc.2018-00229", url: "https://academic.oup.com/jcem/article/103/5/1715/4939465", source_type: "GUIDELINE", last_reviewed: REVIEWED }
+  };
+  function source(id) { return SOURCES[id] || null; }
+  // Evidenz-Publikations-Gate (§29): ein Objekt ist nur PUBLISHED, wenn seine
+  // Kern-Claims mindestens eine AUFGELÖSTE Quelle tragen; sonst REVIEWED (intern
+  // nutzbar) oder STALE. UNRESOLVED darf NIE als "PUBLISHED"/autoritativ gelten.
+  function claimSources(cl) { return (cl.source_ids || []).filter(function (s) { return s !== "unresolved" && SOURCES[s]; }); }
+  function pubState(o) {
+    if (isStale(o)) return "STALE";
+    var cls = o.claims || [];
+    var withSrc = cls.filter(function (c) { return claimSources(c).length; }).length;
+    if (withSrc === 0) return "REVIEWED";          // kuratiert, aber (noch) ohne aufgelöste Quelle
+    if (withSrc === cls.length) return "PUBLISHED"; // alle Kern-Claims belegt
+    return "REVIEWED";                              // teilweise belegt: intern ok, öffentlich vorsichtig
+  }
+  // Öffentliche Zitate NUR aus aufgelösten Quellen — nie "unresolved" rendern.
+  function citations(o) {
+    var seen = {}, out = [];
+    (o.claims || []).forEach(function (c) { claimSources(c).forEach(function (sid) { if (!seen[sid]) { seen[sid] = 1; out.push(SOURCES[sid]); } }); });
+    return out;
+  }
+
   /* ======================= INITIALBESTAND (§30) ======================= */
   var OBJECTS = [
     K({ id: "protein_target", slug: "protein", title: "Proteinzufuhr für Muskelaufbau & Diät", domain: "nutrition", summary: "1,6–2,2 g/kg/Tag deckt für die meisten Trainierenden den Bedarf; im Defizit eher oberes Ende. Verteilung ist zweitrangig gegenüber Tagessumme.", goals: ["build", "cut", "recomp", "perform"], interventions: ["protein_floor"], claims: [
-      C("prot1", "1,6–2,2 g Protein/kg/Tag maximiert Muskelproteinsynthese für die meisten Trainierenden.", "STRONG"),
-      C("prot2", "Im Kaloriendefizit schützt eine höhere Zufuhr (~2,2 g/kg) Muskelmasse.", "MODERATE"),
-      C("prot3", "Mahlzeiten-Timing ist gegenüber der Tagessumme nachrangig.", "MODERATE", { limitations: "Randfälle: sehr lange Fastenfenster, sehr niedrige Mahlzeitenfrequenz." })
+      C("prot1", "1,6–2,2 g Protein/kg/Tag maximiert Muskelproteinsynthese für die meisten Trainierenden.", "STRONG", { source_ids: ["morton_2018"], context: "Morton 2018 (49 RCTs, 1863 Teilnehmer): Dosis-Wirkung plateauisiert nahe 1,62 g/kg/Tag." }),
+      C("prot2", "Im Kaloriendefizit schützt eine höhere Zufuhr (~2,2 g/kg) Muskelmasse.", "MODERATE", { source_ids: ["morton_2018"] }),
+      C("prot3", "Mahlzeiten-Timing ist gegenüber der Tagessumme nachrangig.", "MODERATE", { source_ids: ["morton_2018"], limitations: "Randfälle: sehr lange Fastenfenster, sehr niedrige Mahlzeitenfrequenz." })
     ], related: ["energy_balance", "creatine"] }),
     K({ id: "energy_balance", slug: "energie", title: "Energiebilanz & Gewichtstrend", domain: "nutrition", summary: "Der rollende Wochentrend zählt — Einzelmessungen sind Rauschen (Wasser, Glykogen, Natrium, Darminhalt). Anpassungen erst nach 2+ Wochen konsistenter Daten.", goals: ["build", "cut", "recomp"], claims: [
       C("en1", "Tagesgewicht schwankt durch Wasser/Glykogen um bis zu ±1–2 kg unabhängig von Fettmasse.", "STRONG"),
@@ -52,9 +83,9 @@
       C("hv3", "Double Progression (erst Wdh., dann Last) ist eine robuste Real-World-Progressionsregel.", "REAL_WORLD_LIMITED")
     ], related: ["recovery_sleep", "plateau"] }),
     K({ id: "creatine", slug: "kreatin", title: "Kreatin Monohydrat", domain: "stack", summary: "Bestbelegtes Supplement für Kraft/Muskelmasse. 3–5 g täglich, Timing egal. Erhöht Kreatinin im Blut OHNE Nierenschaden — Kontext für Laborwerte.", markers: ["creatinine", "cystatin_c"], interventions: ["creatine_daily"], claims: [
-      C("cr1", "Kreatin erhöht Kraft- und Muskelaufbau messbar gegenüber Placebo.", "STRONG"),
-      C("cr2", "Kreatin erhöht Serum-Kreatinin ohne echte Nierenfunktionsverschlechterung — Cystatin C bleibt dabei normal.", "STRONG", { context: "Wichtig für Lab-Interpretation: hohes Kreatinin + normales Cystatin C unter Kreatin ist erwartbar." }),
-      C("cr3", "Bei gesunden Nieren ist Langzeit-Einnahme (3–5 g) nicht nephrotoxisch.", "MODERATE", { limitations: "Vorbestehende Nierenerkrankung: ärztlich abklären." })
+      C("cr1", "Kreatin erhöht Kraft- und Muskelaufbau messbar gegenüber Placebo.", "STRONG", { source_ids: ["kreider_2017"], context: "ISSN Position Stand: wirksamstes ergogenes Supplement für Hochintensität + fettfreie Masse." }),
+      C("cr2", "Kreatin erhöht Serum-Kreatinin ohne echte Nierenfunktionsverschlechterung — Cystatin C bleibt dabei normal.", "STRONG", { source_ids: ["kreider_2017"], context: "Wichtig für Lab-Interpretation: hohes Kreatinin + normales Cystatin C unter Kreatin ist erwartbar." }),
+      C("cr3", "Bei gesunden Nieren ist Langzeit-Einnahme (3–5 g) nicht nephrotoxisch.", "MODERATE", { source_ids: ["kreider_2017"], limitations: "Vorbestehende Nierenerkrankung: ärztlich abklären. ISSN: bis 30 g/Tag über 5 Jahre in Studien gut verträglich." })
     ], related: ["kidney_markers"] }),
     K({ id: "omega3", slug: "omega-3", title: "Omega-3 (EPA/DHA)", domain: "stack", summary: "Kardiometabolische Basis, besonders bei wenig Fischkonsum. Triglycerid-senkend in relevanter Dosis.", markers: ["triglycerides"], claims: [
       C("o31", "EPA/DHA senken Triglyceride dosisabhängig.", "STRONG"),
@@ -66,23 +97,23 @@
       C("sl3", "Koffein nach ~14 Uhr verschlechtert bei sensiblen Personen messbar die Schlafarchitektur.", "MODERATE")
     ], related: ["plateau", "hypertrophy_volume"] }),
     K({ id: "testosterone_basics", slug: "testosteron", title: "Testosteron-Grundlagen", domain: "hormonal", summary: "Schlaf, Körperfett, Energieverfügbarkeit und Krafttraining sind die größten natürlichen Hebel. Einzelwerte schwanken stark tageszeitabhängig — morgens, nüchtern, wiederholt messen.", markers: ["total_testosterone", "free_testosterone", "lh", "shbg"], claims: [
-      C("t1", "Testosteron ist morgens am höchsten; Messungen außerhalb des Morgens sind schwer interpretierbar.", "STRONG"),
+      C("t1", "Testosteron ist morgens am höchsten; Messungen außerhalb des Morgens sind schwer interpretierbar.", "STRONG", { source_ids: ["bhasin_2018"], context: "Endocrine-Society-Leitlinie: Diagnose nur bei Symptomen UND wiederholt eindeutig niedrigem Morgen-Testosteron." }),
       C("t2", "Massives Kaloriendefizit und Schlafmangel senken Testosteron reversibel.", "MODERATE"),
       C("t3", "Ein einzelner niedrig-normaler Wert ist keine Diagnose — Wiederholung + LH/SHBG-Kontext nötig.", "STRONG")
     ], related: ["trt_context", "recovery_sleep"] }),
     K({ id: "trt_context", slug: "trt", title: "TRT — Kontext statt Hype", domain: "hormonal", audience: "advanced", pathways: ["enhanced", "performance"], summary: "TRT ist Therapie eines diagnostizierten Mangels, kein Lifestyle-Upgrade. Unter TRT/Enhanced sind Hämatokrit, Lipide, Blutdruck und Fertilität die Monitoring-Kernachsen.", markers: ["total_testosterone", "hematocrit", "estradiol", "psa"], contraContext: ["kinderwunsch_ohne_beratung"], claims: [
-      C("trt1", "Exogenes Testosteron supprimiert die eigene Achse (LH/FSH) und die Spermatogenese.", "STRONG"),
-      C("trt2", "Hämatokrit-Anstieg ist unter TRT häufig und monitoringpflichtig.", "STRONG"),
+      C("trt1", "Exogenes Testosteron supprimiert die eigene Achse (LH/FSH) und die Spermatogenese.", "STRONG", { source_ids: ["bhasin_2018"] }),
+      C("trt2", "Hämatokrit-Anstieg ist unter TRT häufig und monitoringpflichtig.", "STRONG", { source_ids: ["bhasin_2018"], context: "Endocrine-Society-Leitlinie: Hämatokrit vor Beginn sowie 3–6 und 12 Monate danach kontrollieren." }),
       C("trt3", "Fertilität erholt sich nach Absetzen oft, aber langsam und nicht garantiert.", "MODERATE", { limitations: "Individuell hochvariabel; Kinderwunsch VOR Beginn planen." })
     ], related: ["hematocrit_ctx", "enhanced_monitoring"] }),
     K({ id: "glp1_context", slug: "glp1", title: "GLP-1-Agonisten im Performance-Kontext", domain: "metabolic", audience: "advanced", summary: "Starke Gewichtsreduktion, aber relevanter Anteil fettfreier Masse geht ohne Krafttraining + Protein verloren. Ruhepuls-Anstieg ist dokumentiert.", markers: ["hba1c", "fasting_glucose"], claims: [
-      C("g1", "GLP-1-Agonisten erzeugen klinisch relevante Gewichtsverluste.", "STRONG"),
+      C("g1", "GLP-1-Agonisten erzeugen klinisch relevante Gewichtsverluste.", "STRONG", { source_ids: ["step1_2021"], context: "STEP 1 (Wilding 2021, NEJM): Semaglutid 2,4 mg + Lifestyle → ~14,9 % mittlerer Gewichtsverlust über 68 Wochen." }),
       C("g2", "Ohne Widerstandstraining/Protein ist der Anteil fettfreier Masse am Verlust erheblich (~25–40 %).", "MODERATE"),
       C("g3", "Ruhepuls steigt unter GLP-1-Agonisten im Mittel messbar an.", "MODERATE")
     ], related: ["protein_target", "hypertrophy_volume"] }),
     K({ id: "apob_lipids", slug: "apob", title: "ApoB & Lipide", domain: "cardiovascular", markers: ["apo_b", "ldl_c", "hdl_c", "triglycerides"], summary: "ApoB zählt atherogene Partikel und ist dem LDL-C als Risikomarker überlegen — besonders bei hohen Triglyceriden oder metabolischem Syndrom. Dein LDL ist nicht die ganze Geschichte.", claims: [
-      C("ab1", "ApoB ist ein besserer Prädiktor atherosklerotischen Risikos als LDL-C allein.", "STRONG"),
-      C("ab2", "Diskordanz (normales LDL-C, hohes ApoB) identifiziert übersehenes Risiko.", "STRONG"),
+      C("ab1", "ApoB ist ein besserer Prädiktor atherosklerotischen Risikos als LDL-C allein.", "STRONG", { source_ids: ["esc_eas_2019"], context: "2019 ESC/EAS: ApoB als Risiko-verfeinernder Marker, v. a. bei hohen Triglyceriden/metabolischem Syndrom." }),
+      C("ab2", "Diskordanz (normales LDL-C, hohes ApoB) identifiziert übersehenes Risiko.", "STRONG", { source_ids: ["esc_eas_2019"] }),
       C("ab3", "Anabolika verschlechtern das Lipidprofil (HDL ↓, ApoB ↑) teils drastisch und reversibel.", "MODERATE", { context: "Enhanced-Monitoring." })
     ], related: ["enhanced_monitoring"] }),
     K({ id: "glucose_hba1c", slug: "hba1c", title: "Glukose & HbA1c", domain: "metabolic", markers: ["hba1c", "fasting_glucose"], summary: "HbA1c bildet ~3 Monate ab; Nüchternglukose ist tagesformabhängig. Krafttraining + Alltagsbewegung sind die stärksten nicht-medikamentösen Hebel der Glukosetoleranz.", claims: [
@@ -215,6 +246,10 @@
 
   I.knowledge = {
     VERSION: KV, all: all, byId: byId, retrieve: retrieve, learnNow: learnNow,
-    reviewQueue: reviewQueue, isStale: isStale, actionFor: function (id) { return OBJ_ACTION[id] || null; }
+    reviewQueue: reviewQueue, isStale: isStale, actionFor: function (id) { return OBJ_ACTION[id] || null; },
+    // Phase 9 (§27/§29): Quellen, Publikations-Zustand, öffentliche Zitate.
+    SOURCES: SOURCES, source: source, pubState: pubState, citations: citations,
+    // Evidenz-Deckungsgrad für Doku/Tests: wie viele Objekte sind PUBLISHED?
+    coverage: function () { var pub = 0, rev = 0; OBJECTS.forEach(function (o) { var s = pubState(o); if (s === "PUBLISHED") pub++; else if (s === "REVIEWED") rev++; }); return { total: OBJECTS.length, published: pub, reviewed: rev, resolvedSources: Object.keys(SOURCES).length }; }
   };
 })();

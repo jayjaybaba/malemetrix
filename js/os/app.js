@@ -914,9 +914,15 @@
     if (MM.intelligence && MM.intelligence.knowledge) {
       try {
         var ln = MM.intelligence.knowledge.learnNow();
+        var K = MM.intelligence.knowledge;
         html += sec("Lerne, was JETZT zählt", '<p class="small muted" style="margin:0 0 10px">Ausgewählt für deinen aktuellen Engpass: <b style="color:var(--text)">' + esc((MM.intelligence.LABELS.BN[ln.bottleneck] || ln.bottleneck)) + '</b>.</p>' +
           ln.items.map(function (it) {
-            return '<div class="os-decision" style="margin:8px 0"><b>' + esc(it.title) + '</b><span class="s">' + esc(it.summary) + '</span>' + (it.action ? '<div class="ctl"><a class="os-chip" href="' + esc(it.action.link) + '">' + esc(it.action.label) + ' →</a></div>' : '') + '</div>';
+            // Phase 9 (§29): nur AUFGELÖSTE Quellen öffentlich zitieren, mit Evidenz-Zustand.
+            var obj = K.byId ? K.byId(it.id) : null;
+            var cites = obj && K.citations ? K.citations(obj) : [];
+            var pst = obj && K.pubState ? K.pubState(obj) : null;
+            var srcHtml = cites.length ? '<div class="os-cite"><span class="cst">EVIDENZ · ' + esc(pst || "") + '</span>' + cites.slice(0, 2).map(function (s) { return '<a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.authors + " " + s.year + " · " + s.venue) + '</a>'; }).join("") + '</div>' : '';
+            return '<div class="os-decision" style="margin:8px 0"><b>' + esc(it.title) + '</b><span class="s">' + esc(it.summary) + '</span>' + srcHtml + (it.action ? '<div class="ctl"><a class="os-chip" href="' + esc(it.action.link) + '">' + esc(it.action.label) + ' →</a></div>' : '') + '</div>';
           }).join(""));
       } catch (e) {}
     }

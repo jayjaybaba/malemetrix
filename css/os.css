@@ -732,3 +732,8 @@
 .os-outcome .ver-off { color: var(--muted-2); }
 .os-outcome .s { display: block; color: var(--muted-2); font-size: 0.8rem; margin-top: 4px; }
 .os-escalate { border-color: rgba(0,194,255,0.35); background: linear-gradient(180deg, rgba(0,194,255,0.06), rgba(10,13,19,0.6)); }
+/* Phase 9 — Evidenz-Zitate (nur aufgelöste Quellen) */
+.os-cite { margin-top: 8px; display: flex; flex-direction: column; gap: 3px; }
+.os-cite .cst { font-family: var(--font-mono, monospace); font-size: 0.6rem; letter-spacing: 0.12em; color: var(--green, #3ddc84); }
+.os-cite a { font-size: 0.74rem; color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
+.os-cite a:hover { color: var(--accent-2, #00c2ff); }
