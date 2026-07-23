@@ -65,8 +65,32 @@ versioned rows in the generic `os_state` table (migration 0003), same
 dirty-queue/retry/backoff/hydration rules as program/score. Local-first;
 offline never loses work. Photos intentionally NOT synced.
 
+## Phase 6 — Execution layer (`js/os/execution.js`, MM.exec)
+Turns plan + context into ONE executable day. Owns NOTHING that course.js
+owns — it derives (read-only mirror of `dayTypeAt`, tested against fixtures)
+and completes via the existing keys (`c2_daily.dN.p`). One completion,
+many readers.
+
+| Piece | What it does |
+|---|---|
+| `buildDay()` | canonical actions + chronological anchors + NBA 2.0 (1 primary, ≤2 secondary, WHY) |
+| Overlays (`os_overlays`) | BASE PLAN + TODAY OVERLAY: travel/busy/no_gym/low_recovery/vacation/sick/family_day/jetlag — expiring, reversible, never rewrites history |
+| `proposeDayChange()` | MY DAY CHANGED: deterministic proposals → user confirms → overlay/reschedule |
+| `compressSession()` | 15/30/45-min versions from the REAL plan; slot order = stimulus priority; compounds always survive |
+| `substituteSession()` | equivalence via engines.EXDB.alt (movement pattern preserved) |
+| Repair (`os_reschedules`) | missed session → ranked makeup options (spacing-based); past days stay honestly missed; makeup completes on target day |
+| Reminders (`os_reminder_prefs`) | ONE engine: value filter, dedup/day, quiet hours, max/day, escalation exactly once, never for completed actions; privacy FULL/DISCREET/OFF |
+| Brief/Close (`os_daylog`) | Morning Brief data + Evening Close snapshot (immutable after the day); CONSISTENCY (28d) instead of streaks; comeback instead of guilt |
+| Decisions (`os_decisions`) | ledger: decide → review due (Today action) → keep/revert/adjust |
+| Calendar | internal events + honest ICS (training/makeup/review/measure ONLY, floating local time, DTEND); week planner + week load; two-way sync NOT faked |
+| Push | local notifications while app open; server push = architecture + migration 0004, **CONFIG REQUIRED** (see PUSH.md) |
+
+Invariant tests: `node tools-dev/test-execution.mjs` (57 assertions —
+one-completion, no history rewrites, reminder honesty, calendar honesty,
+overlay expiry, snapshot immutability, ledger loop, dayType mirror).
+
 ## Future modules (contract)
-tracker · nutrition-logging · stack-adherence · labs · calendar · reminders:
+tracker · nutrition-logging · stack-adherence · labs · wearables:
 each = local-first store key + `registerStateDomain` (+ optional engine).
 No account-layer rewrite needed. Wearables/push/food-AI = external services,
 documented, never faked.
