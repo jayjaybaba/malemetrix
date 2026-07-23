@@ -141,6 +141,20 @@ imports; every cross-layer call is lazy + guarded.
 | Program truth | course.js / programView | read-only everywhere else |
 | Labs | MM.labs (Phase 4 canonical) | intelligence consumes via adapted context |
 
+## Phase 7 — Foresight (`MM.intelligence.knowledge/foresight`, `MM.ai`, `MM.content`)
+| Piece | What it does |
+|---|---|
+| Knowledge Graph | 19 kuratierte Objekte, CLAIMs mit 6 Evidenztypen, Retrieval mit Kontext-Ranking, Staleness, Personalized Learn (kein Dead-End) |
+| MM.ai | server-seitige KI-Sprachschicht (Edge `mm-ai`, CONFIG REQUIRED): Task-Routing, Budget, Cache, Validator (Grounding/Verbote/KEEP-Schutz), deterministischer Fallback |
+| Foresight | Execution-Risk je Wochentag (gelernt), Plateau-Risk mit Restraint, Recovery-Pressure, Trajektorie-Band, Forecast (Band + persönliche Response-Historie), Prediction-Ledger + Kalibrierung, EIN-Insight-Regel |
+| Weekly Autopilot | nächste Woche = Plan × busy/free × Recovery → Konflikte + Moves + Fokus; ACCEPT WEEK nur §57-sichere Ausführungs-Präferenzen |
+| Kalender-Voraussicht | os_busy (nur start/end, nie Titel), ICS-Import, Konflikt-Engine, beste Fenster; Google OAuth = CONFIG REQUIRED |
+| Push-Sender | Edge `send-brief` (VAPID, Dedup, DISCREET) — CONFIG REQUIRED |
+| Visual Intelligence | Metrix Body (SVG, 6 Systeme), Trajektorie-Band-Chart (ein Chart-System), visual-manifest v2 (12 Assets, REQUIRES_EXTERNAL_GENERATION) |
+| Content-Foundation | MM.content: 1 Wissensobjekt → Multi-Plattform-Struktur, gegroundet, ohne Nutzerdaten |
+
+Tests: `node tools-dev/tests/phase7.test.js` (51) — gesamt 295 Assertions über 4 Suiten. SW: mm-v81.
+
 ## Future modules (contract)
 tracker · nutrition-logging · stack-adherence · labs · wearables:
 each = local-first store key + `registerStateDomain` (+ optional engine).
