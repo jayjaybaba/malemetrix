@@ -153,7 +153,7 @@ imports; every cross-layer call is lazy + guarded.
 | Visual Intelligence | Metrix Body (SVG, 6 Systeme), Trajektorie-Band-Chart (ein Chart-System), visual-manifest v2 (12 Assets, REQUIRES_EXTERNAL_GENERATION) |
 | Content-Foundation | MM.content: 1 Wissensobjekt → Multi-Plattform-Struktur, gegroundet, ohne Nutzerdaten |
 
-Tests: `node tools-dev/tests/phase7.test.js` (51) — gesamt 295 Assertions über 4 Suiten. SW: mm-v81.
+Tests: `node tools-dev/tests/phase7.test.js` (51) — gesamt 295 Assertions über 4 Suiten. SW: mm-v82.
 
 ## Future modules (contract)
 tracker · nutrition-logging · stack-adherence · labs · wearables:

@@ -1534,6 +1534,9 @@ input[type="range"]::-moz-range-thumb {
   align-items: center;
   gap: 10px;
   max-width: calc(100vw - 48px);
+  /* Toast ist reine Anzeige: darf nie Taps auf UI dahinter schlucken —
+     weder unsichtbar (opacity 0) noch während der Einblendung. */
+  pointer-events: none;
 }
 
 .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
