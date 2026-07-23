@@ -155,11 +155,17 @@
     if (!h.some(function (x) { return x.id === c.id; })) { h.push(Object.assign({}, c, { status: status || "archived", ended: todayYmd() })); S.set("os_cycle_history", h); }
   }
   // Idempotente Zustandsmaschine: hält os_cycle konsistent mit c2_start.
+  // WICHTIG (Multi-Device): wird ein Zyklus aus einem BEREITS bestehenden
+  // Programm abgeleitet (c2_start existiert, aber noch keine cycle_id), ist die
+  // ID DETERMINISTISCH aus dem Startdatum — so minten zwei Geräte NICHT zwei
+  // verschiedene IDs für denselben Zyklus. Nur echte Draft-Neustarts (vor
+  // Programmstart) bekommen eine zufällige ID.
+  function derivedCycleId(start) { return "cyc_p_" + start; }
   function ensureCycle() {
     var c = S.get("os_cycle", null);
     var start = S.get("c2_start", "") || null;
     if (!c || !c.id) {
-      c = { id: genCycleId(), status: start ? "active" : "draft", start: start, created: todayYmd() };
+      c = { id: start ? derivedCycleId(start) : genCycleId(), status: start ? "active" : "draft", start: start, created: todayYmd() };
       S.set("os_cycle", c);
       migrateLegacyBaselines(c.id);
       return c;
