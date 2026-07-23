@@ -28,6 +28,17 @@
   function savePending(p) { MM.store.set(PENDING_KEY, p); }
   function clearPending() { MM.store.set(PENDING_KEY, null); }
 
+  /* MM.account.invokeFunction-Contract: { ok, data } bzw. { ok:false, code }.
+     Der eigentliche Server-Erfolg steht in data.ok — hier zentral entpackt,
+     damit Erfolg/Fehler/Entitlements/Betrag nie am falschen Feld gelesen werden. */
+  function fnOk(r) { return !!(r && r.ok && r.data && r.data.ok); }
+  function fnData(r) { return (r && r.data) || {}; }
+  function fnCode(r) {
+    if (!r) return "network";
+    if (r.ok && r.data && !r.data.ok) return String(r.data.error || "unknown");
+    return String(r.code || r.error || "unknown");
+  }
+
   const bootParams = new URLSearchParams(location.search);
 
   /* Manuelle Recovery-URL: checkout.html?recover=<PayPal-Order- ODER
@@ -248,12 +259,12 @@
               action: "verify_paypal", paypalOrderId: data.orderID, orderNo: order.no,
               productIds: order.productIds, items: order.items
             }).then((r) => {
-              if (r && r.ok) {
+              if (fnOk(r)) {
                 clearPending();
                 MM.account.loadAccountState().then(() => {});
                 finalizeOrder(order, { paypalPaid: true, serverGrant: true });
               } else {
-                renderVerifyIssue(r && r.error);
+                renderVerifyIssue(fnCode(r));
               }
             }).catch(() => renderVerifyIssue("network"));
           } else {
@@ -464,7 +475,7 @@
     if (btn) btn.addEventListener("click", () => { const p = getPending(); if (p) runRecovery(p); else location.reload(); });
   }
 
-  function renderRecoverySuccess(pending, resp) {
+  function renderRecoverySuccess(pending, data) {
     MM.cart.clear();
     if (MM.track) MM.track("order_completed", { value: "recovered", paid: true, method: "PayPal (recovery)" });
     wrap.innerHTML =
@@ -474,10 +485,10 @@
       '<h1 class="h-section" style="margin-bottom:14px">Zahlung bestätigt.</h1>' +
       '<div class="card" style="text-align:left;margin:0 auto 16px;max-width:560px;border-color:var(--accent-line)">' +
       '<span class="card-num" style="color:var(--green)">✓ ZAHLUNG ERHALTEN</span>' +
-      '<p class="muted" style="margin-top:6px">Deine PayPal-Zahlung ist serverseitig verifiziert' + (resp && resp.amount_cents ? " (" + MM.eur(resp.amount_cents / 100) + ")" : "") + '.</p></div>' +
+      '<p class="muted" style="margin-top:6px">Deine PayPal-Zahlung ist serverseitig verifiziert' + (data && data.amount_cents ? " (" + MM.eur(data.amount_cents / 100) + ")" : "") + (data && data.replay ? " — war bereits verarbeitet, kein doppelter Zugriff vergeben" : "") + '.</p></div>' +
       '<div class="card" style="text-align:left;margin:0 auto 24px;max-width:560px;border-color:var(--accent-line)">' +
       '<span class="card-num" style="color:var(--green)">✓ ZUGANG IM KONTO FREIGESCHALTET</span>' +
-      '<p class="muted" style="margin:6px 0 0">Freigeschaltet: <strong style="color:var(--text)">' + ((resp && resp.entitlements) || []).join(", ") + '</strong> — deinem Konto zugeordnet, auf allen Geräten verfügbar.</p></div>' +
+      '<p class="muted" style="margin:6px 0 0">Freigeschaltet: <strong style="color:var(--text)">' + ((data && data.entitlements) || []).join(", ") + '</strong> — deinem Konto zugeordnet, auf allen Geräten verfügbar.</p></div>' +
       '<a href="mein-protokoll.html" class="btn btn-primary">My MaleMetrix öffnen →</a>' +
       '</div>';
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -497,12 +508,12 @@
       productIds: pending.productIds || [],
       items: []
     }).then((r) => {
-      if (r && r.ok) {
+      if (fnOk(r)) {
         clearPending();
         MM.account.loadAccountState().then(() => {});
-        renderRecoverySuccess(pending, r);
+        renderRecoverySuccess(pending, fnData(r));
       } else {
-        renderVerifyIssue(r && r.error);
+        renderVerifyIssue(fnCode(r));
       }
     }).catch(() => renderVerifyIssue("network"));
     if (!signedIn) {

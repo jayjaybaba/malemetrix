@@ -656,7 +656,20 @@
       if (!backend || !backend.invokeFunction) return Promise.resolve({ ok: false, code: "no_cloud" });
       if (!_user) return Promise.resolve({ ok: false, code: "not_signed_in" });
       return backend.invokeFunction(name, body).then(function (r) {
-        if (r.error) return { ok: false, code: "function_error", error: String(r.error && r.error.message || r.error) };
+        if (r.error) {
+          var errObj = { ok: false, code: "function_error", error: String(r.error && r.error.message || r.error) };
+          // Non-2xx: echten Server-Fehlercode ({error:"..."} im Body) durchreichen,
+          // damit z. B. amount_mismatch/not_captured im UI unterscheidbar sind.
+          try {
+            if (r.error.context && typeof r.error.context.json === "function") {
+              return r.error.context.json().then(function (j) {
+                if (j && j.error) errObj.code = String(j.error);
+                return errObj;
+              }).catch(function () { return errObj; });
+            }
+          } catch (e) { /* Response nicht lesbar — generischer Code bleibt */ }
+          return errObj;
+        }
         return { ok: true, data: r.data };
       }).catch(function (e) { return { ok: false, code: "network", error: String(e && e.message || e) }; });
     },

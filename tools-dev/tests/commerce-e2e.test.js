@@ -71,7 +71,7 @@ group("Recovery · Pending-State überlebt Reload, kein Doppel-Seed");
   ok(/Zahlung wird bestätigt/.test(checkout), "Recovery-UX: „Zahlung wird bestätigt …“");
   ok(/NICHT erneut bezahlen/.test(checkout), "UX warnt explizit vor Doppelzahlung");
   ok(/id="retryVerify"/.test(checkout) && !/retryVerify[\s\S]{0,400}order\.create/.test(checkout), "Wiederholungs-Button prüft nur — löst nie neue Zahlung aus");
-  ok(/renderVerifyIssue\(r && r\.error\)/.test(checkout), "Verifikationsfehler ⇒ KEINE falsche Erfolgsseite");
+  ok(/\.then\(\(r\) => \{\s*if \(fnOk\(r\)\)[\s\S]{0,400}renderVerifyIssue\(fnCode\(r\)\)/.test(checkout), "Verifikationsfehler ⇒ KEINE falsche Erfolgsseite");
   ok(/get\("recover"\)/.test(checkout) && /\^?\[A-Za-z0-9\\\-_\]\{8,40\}/.test(checkout), "Manuelle Recovery-URL (?recover=ID) mit ID-Validierung");
   ok(!/savePending\(\{[^}]*secret|password|token/i.test(checkout), "Pending-State enthält keine Secrets");
 })();
@@ -87,6 +87,38 @@ group("Server · DB-Fehler nicht ignoriert, Replay heilt, Capture-Fallback");
   ok(/APPROVED/.test(edge) && /\/capture"/.test(edge.replace(/\n/g, "")) || /\+ "\/capture"/.test(edge), "APPROVED-Order wird serverseitig captured (verlorenes Client-Capture)");
   ok(/PayPal-Request-Id/.test(edge), "serverseitiges Capture idempotent (PayPal-Request-Id)");
   ok(/replay, entitlements: keys/.test(edge), "bereits verarbeitete Zahlung ⇒ Erfolg (replay:true), kein Doppel-Grant");
+})();
+
+/* ===== 7) P0-Regression: account.js auf checkout.html + Cache-Busting ===== */
+group("Checkout-Seite · account.js geladen, Assets versioniert");
+(function () {
+  var co = read("checkout.html");
+  var accIdx = co.indexOf("js/account.js");
+  var ckIdx = co.indexOf("js/checkout.js");
+  ok(accIdx > -1, "checkout.html lädt js/account.js (MM.account für Server-Verify/Recovery)");
+  ok(ckIdx > -1 && accIdx < ckIdx, "account.js steht VOR checkout.js");
+  ok(/js\/checkout\.js\?v=\d+/.test(co), "checkout.js ist versioniert (Cache-Bust alter Clients)");
+  ok(/js\/account\.js\?v=\d+/.test(co), "account.js ist versioniert");
+  ok(/js\/shop-data\.js\?v=\d+/.test(co), "shop-data.js ist versioniert (Testprodukt erreicht alte Clients)");
+  // Keine andere Seite darf checkout.js ohne account.js laden
+  var all = fs.readdirSync(ROOT).filter(function (f) { return /\.html$/.test(f); });
+  var offenders = all.filter(function (f) {
+    var h = read(f);
+    return h.indexOf("js/checkout.js") > -1 && h.indexOf("js/account.js") === -1;
+  });
+  ok(offenders.length === 0, "keine Seite lädt checkout.js ohne account.js" + (offenders.length ? " (" + offenders.join(", ") + ")" : ""));
+})();
+
+/* ===== 8) invokeFunction-Contract korrekt entpackt ===== */
+group("Contract · { ok, data } wird zentral entpackt");
+(function () {
+  ok(/function fnOk\(r\) \{ return !!\(r && r\.ok && r\.data && r\.data\.ok\); \}/.test(checkout),
+    "fnOk prüft Transport- UND Server-Erfolg (r.ok && r.data.ok)");
+  ok(/renderRecoverySuccess\(pending, fnData\(r\)\)/.test(checkout), "Recovery liest entitlements/amount aus data, nicht von r");
+  ok(/renderVerifyIssue\(fnCode\(r\)\)/.test(checkout), "Fehlercode kommt aus fnCode (data.error bzw. code)");
+  ok(!/r\.entitlements|resp\.entitlements/.test(checkout), "kein Zugriff mehr auf r.entitlements (alter Contract-Bug)");
+  var acc = read("js/account.js");
+  ok(/r\.error\.context/.test(acc) && /json\(\)/.test(acc), "account.js reicht Server-Fehlercodes aus non-2xx-Antworten durch");
 })();
 
 console.log("\n==============================");
