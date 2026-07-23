@@ -449,8 +449,13 @@
     paypal_lookup_failed: "PayPal war bei der Prüfung kurz nicht erreichbar. Bitte in einigen Minuten erneut prüfen — NICHT erneut bezahlen.",
     provider_not_configured: "Die Zahlungsprüfung ist serverseitig noch nicht aktiv. Bitte melde dich — NICHT erneut bezahlen.",
     order_write_failed: "Die Zahlung ist bestätigt, aber die Bestellung konnte nicht gespeichert werden. Bitte erneut prüfen — NICHT erneut bezahlen.",
+    order_lookup_failed: "Die Zahlung ist bestätigt, die Bestellprüfung ist aber kurz fehlgeschlagen. Bitte erneut prüfen — NICHT erneut bezahlen.",
     entitlement_write_failed: "Die Zahlung ist bestätigt, aber die Freischaltung konnte nicht gespeichert werden. Bitte erneut prüfen — NICHT erneut bezahlen.",
-    event_log_failed: "Die Zahlung ist bestätigt, es gab aber ein Speicherproblem. Bitte erneut prüfen — NICHT erneut bezahlen."
+    event_log_failed: "Die Zahlung ist bestätigt, es gab aber ein Speicherproblem. Bitte erneut prüfen — NICHT erneut bezahlen.",
+    payment_already_claimed: "Diese Zahlung ist bereits einem anderen Konto zugeordnet. Bitte melde dich mit dem Konto an, mit dem du gekauft hast — NICHT erneut bezahlen.",
+    order_conflict: "Diese Zahlung passt nicht zu den angeforderten Produkten. Bitte melde dich beim Support — NICHT erneut bezahlen.",
+    currency_mismatch: "Die Währung der PayPal-Zahlung passt nicht zur Bestellung (EUR erwartet). Bitte melde dich — NICHT erneut bezahlen.",
+    unknown_product: "Ein Produkt in dieser Bestellung ist serverseitig unbekannt. Bitte Warenkorb neu laden — NICHT erneut bezahlen."
   };
   function renderVerifyIssue(errCode) {
     const hint = VERIFY_MSG[errCode] ||

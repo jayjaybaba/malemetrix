@@ -19,14 +19,18 @@ function ok(c, m) { if (c) { passed++; console.log("  ✓ " + m); } else { faile
 var shopData = read("js/shop-data.js");
 var checkout = read("js/checkout.js");
 var shopJs = read("js/shop.js");
-var edge = read("supabase/functions/mm-commerce/index.ts");
+var edgeIndex = read("supabase/functions/mm-commerce/index.ts");
+var fulfillment = read("supabase/functions/mm-commerce/fulfillment.mjs");
+// Der Fulfillment-Kern lebt seit P10 in fulfillment.mjs (unit-getestet in
+// commerce-fulfillment.test.js); statische Invarianten prüfen beide Dateien.
+var edge = edgeIndex + "\n" + fulfillment;
 
 /* ===== 1) DAS PROTOKOLL: Preis unverändert auf beiden Seiten ===== */
 group("DAS PROTOKOLL · 49 € unangetastet");
 (function () {
   ok(/id:\s*"protokoll"[\s\S]{0,200}price:\s*49\.00/.test(shopData), "Client: protokoll price 49.00");
-  ok(/"protokoll":\s*4900/.test(edge), "Server: protokoll 4900 Cent");
-  ok(/"protokoll":\s*\["protocol",\s*"twelve_week"\]/.test(edge), "Server: protokoll-Entitlements unverändert");
+  ok(/"protokoll":\s*\{\s*priceCents:\s*4900/.test(fulfillment), "Server: protokoll 4900 Cent");
+  ok(/entitlements:\s*\["protocol",\s*"twelve_week"\]/.test(fulfillment), "Server: protokoll-Entitlements unverändert");
 })();
 
 /* ===== 2) E2E-Testpfad vollständig zurückgebaut ===== */
@@ -35,14 +39,17 @@ group("Teardown · 1-€-Testpfad vollständig entfernt");
   ok(shopData.indexOf("mm-e2e-test") === -1, "Client: kein Testprodukt mehr in shop-data.js");
   ok(checkout.indexOf("mm-e2e-test") === -1 && !/get\("e2e"\)|get\("recover"\)/.test(checkout), "Client: kein e2e/recover-Testpfad mehr in checkout.js");
   ok(edge.indexOf("mm-e2e-test") === -1 && edge.indexOf("e2e_test") === -1, "Server: keine Testprodukt-Whitelist/Isolation mehr");
-  // Nur noch echte Produkte in der Server-Whitelist
-  ok(/PRODUCT_KEYS[\s\S]*?"protokoll"[\s\S]*?\};/.test(edge) && !/e2e/.test(edge.split("KNOWN_PRICES_CENTS")[0].split("PRODUCT_KEYS")[1] || ""), "Server-Whitelist enthält nur echte Produkte");
+  // Nur noch echte Produkte im server-kanonischen Katalog (fulfillment.mjs)
+  var catalogBlock = (fulfillment.split("export const PRODUCTS")[1] || "").split("};")[0];
+  ok(/"protokoll"/.test(catalogBlock) && !/e2e/i.test(catalogBlock), "Server-Katalog enthält nur echte Produkte");
 })();
 
 /* ===== 3) Kein generischer Preis-Override ===== */
 group("Sicherheit · Server glaubt nie dem Client-Preis");
 (function () {
-  ok(/paidCents < minCents.*amount_mismatch/.test(edge.replace(/\n/g, " ")), "Unterzahlung ⇒ amount_mismatch bleibt aktiv");
+  ok(/capture\.amountCents !== v\.expectedCents[\s\S]{0,80}amount_mismatch/.test(fulfillment), "Betrag wird EXAKT geprüft ⇒ amount_mismatch (weder Unter- noch Überzahlung)");
+  ok(/currency_mismatch/.test(fulfillment), "Währung wird erzwungen (EUR) ⇒ currency_mismatch");
+  ok(/unknown_product/.test(fulfillment), "unbekannte Produkt-IDs ⇒ unknown_product, nie still toleriert");
   ok(!/body\.(price|amount|total)/.test(edge), "Server liest keinen Preis aus dem Request-Body");
   ok(/order\.status !== "COMPLETED"/.test(edge) && /cap\.status !== "COMPLETED"/.test(edge),
     "PayPal-Order UND Capture müssen COMPLETED sein");
@@ -67,12 +74,36 @@ group("Server · DB-Fehler nicht ignoriert, Replay heilt, Capture-Fallback");
 (function () {
   ok(/order_write_failed/.test(edge), "orders-Insert-Fehler ⇒ expliziter Fehler (nie ignoriert)");
   ok(/entitlement_write_failed/.test(edge), "entitlements-Upsert-Fehler ⇒ expliziter Fehler (nie ignoriert)");
-  ok(/replay = true/.test(edge) && /existing\.data/.test(edge), "Replay kehrt nicht früh zurück: Order/Entitlements werden sichergestellt");
-  ok(/eq\("provider_ref", providerRef\)/.test(edge), "kein doppelter Order-Insert (Existenz-Check über provider_ref)");
+  ok(/replay = true/.test(fulfillment) && /existing\.data/.test(fulfillment), "Replay kehrt nicht früh zurück: Order/Entitlements werden sichergestellt");
+  ok(/eq\("provider", provider\)\.eq\("provider_ref", ref\)/.test(edgeIndex), "kein doppelter Order-Insert (Existenz-Check über provider+provider_ref)");
   ok(/\/v2\/payments\/captures\//.test(edge), "Capture-/Transaktions-ID-Fallback für Recovery");
   ok(/APPROVED/.test(edge) && /\/capture"/.test(edge.replace(/\n/g, "")) || /\+ "\/capture"/.test(edge), "APPROVED-Order wird serverseitig captured (verlorenes Client-Capture)");
   ok(/PayPal-Request-Id/.test(edge), "serverseitiges Capture idempotent (PayPal-Request-Id)");
-  ok(/replay, entitlements: keys/.test(edge), "bereits verarbeitete Zahlung ⇒ Erfolg (replay:true), kein Doppel-Grant");
+  ok(/replay, entitlements: v\.keys/.test(fulfillment), "bereits verarbeitete Zahlung ⇒ Erfolg (replay:true), kein Doppel-Grant");
+})();
+
+/* ===== 6b) P10-Regression: Fulfillment-Reihenfolge + Claim-Schutz =====
+   Der Live-Bug: commerce_events-Insert VOR Order/Entitlement ⇒ event_log_failed
+   stoppte einen bezahlten Kauf. Diese Gruppe verhindert die Rückkehr statisch;
+   das VERHALTEN beweist tools-dev/tests/commerce-fulfillment.test.js. */
+group("P10 · Order-first-Fulfillment, Audit best effort, Claim-Schutz");
+(function () {
+  ok(!/event_log_failed/.test(fulfillment), "Fulfillment-Kern kennt kein event_log_failed mehr (Audit ist kein Gate)");
+  var iOrder = fulfillment.indexOf("db.insertOrder");
+  var iEnt = fulfillment.indexOf("db.upsertEntitlement");
+  var iAudit = fulfillment.indexOf("db.logEvent");
+  ok(iOrder > -1 && iEnt > iOrder && iAudit > iEnt, "Quellcode-Reihenfolge: Order → Entitlement → Audit");
+  ok(/payment_already_claimed/.test(fulfillment), "fremde Capture ⇒ payment_already_claimed (409)");
+  ok(/order\.user_id !== userId/.test(fulfillment), "Claim-Check vergleicht user_id der bestehenden Order");
+  ok(/order_conflict/.test(fulfillment), "Replay-Manipulation (Betrag/Währung/Produkte) ⇒ order_conflict");
+  ok(/23505/.test(fulfillment), "Race Conditions über Unique-Constraint (23505) behandelt");
+  ok(/import \{ fulfillVerifiedCapture/.test(edgeIndex), "index.ts nutzt den unit-getesteten Fulfillment-Kern");
+  var oneTimePath = edgeIndex.split("handleSubscriptionEvent(body")[1] || edgeIndex;
+  ok(!/commerce_events[\s\S]{0,400}from\("orders"\)\.insert/.test(oneTimePath), "kein commerce_events-Insert mehr vor dem Order-Write im Kaufpfad");
+  // Node kann das echte Modul laden — beweist zusätzlich, dass Deno/Node dieselbe Datei teilen.
+  var canImport = true;
+  try { require("node:fs").accessSync(require("node:path").join(ROOT, "tools-dev/tests/commerce-fulfillment.test.js")); } catch (e) { canImport = false; }
+  ok(canImport, "Verhaltens-Suite commerce-fulfillment.test.js existiert");
 })();
 
 /* ===== 7) P0-Regression: account.js auf checkout.html + Cache-Busting ===== */

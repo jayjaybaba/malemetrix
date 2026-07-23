@@ -1,23 +1,23 @@
 // ============================================================================
-// MaleMetrix Phase 8 — Edge Function `mm-commerce`
-// SERVERSEITIGE Kauf-Verifikation + Entitlement-Vergabe (§12/§73).
-// STATUS: CODE COMPLETE · CONFIG REQUIRED (Secrets + Deploy — siehe COMMERCE.md).
+// MaleMetrix Phase 10 — Edge Function `mm-commerce`
+// SERVERSEITIGE Kauf-Verifikation + Entitlement-Vergabe.
 //   supabase secrets set PAYPAL_CLIENT_ID=... PAYPAL_SECRET=... [PAYPAL_ENV=live]
 //   supabase functions deploy mm-commerce
 //
-// EISERNE REGEL: Der Client vergibt NIE bezahlten Zugriff. Diese Funktion
-// prüft die Zahlung DIREKT bei PayPal (Server→Server) und schreibt erst dann
-// Order + Entitlements — idempotent über commerce_events (unique event_id).
-// Ein wiederholter/replayter Aufruf mit derselben Capture-ID vergibt nichts
-// doppelt und eine erfundene Order-ID scheitert an der PayPal-Verifikation.
+// EISERNE REGELN:
+// · Der Client vergibt NIE bezahlten Zugriff und bestimmt NIE Preis/Währung/
+//   Entitlements — er meldet nur Kaufabsicht (Produkt-IDs). Die Zahlung wird
+//   DIREKT bei PayPal (Server→Server) verifiziert.
+// · Fulfillment-Reihenfolge (Live-Bugfix, siehe fulfillment.mjs):
+//   PAYPAL VERIFIED → ORDER → ENTITLEMENT → AUDIT (best effort).
+//   orders(provider, provider_ref) ist die Transaktions-Idempotenz,
+//   entitlements(user_id, product_key) die Access-Idempotenz,
+//   commerce_events ist NUR Audit und blockiert nie einen bezahlten Kauf.
+// · Eine Capture kann nie von einem zweiten Account geclaimt werden
+//   (409 payment_already_claimed).
 // ============================================================================
 import { createClient } from "npm:@supabase/supabase-js@2";
-
-const PRODUCT_KEYS: Record<string, string[]> = {
-  // Produkt-ID (shop-data.js) -> Entitlements. Nur bekannte IDs werden gemappt.
-  "protokoll": ["protocol", "twelve_week"],
-};
-const KNOWN_PRICES_CENTS: Record<string, number> = { "protokoll": 4900 };
+import { fulfillVerifiedCapture, PRODUCTS, validateProducts } from "./fulfillment.mjs";
 
 // CORS: die Funktion wird vom Browser (www.malemetrix.com) cross-origin
 // aufgerufen. supabase-js sendet authorization + x-client-info + apikey →
@@ -153,9 +153,11 @@ Deno.serve(async (req) => {
     if (body.action !== "verify_paypal" || typeof body.paypalOrderId !== "string") {
       return json({ error: "bad_request" }, 400);
     }
-    const productIds: string[] = Array.isArray(body.productIds) ? body.productIds.filter((p: unknown) => typeof p === "string") : [];
-    const keys = [...new Set(productIds.flatMap((p) => PRODUCT_KEYS[p] || []))];
-    if (!keys.length) return json({ error: "no_entitled_products" }, 400);
+    // Produkt-/Preis-Validierung VOR dem PayPal-Roundtrip: unbekannte oder
+    // leere Produktlisten sofort ablehnen (P0.2) — nie still tolerieren.
+    const productIds: string[] = Array.isArray(body.productIds) ? body.productIds : [];
+    const pv = validateProducts(productIds, PRODUCTS);
+    if (!pv.ok) return json({ error: pv.error }, pv.status);
 
     // --- Zahlung DIREKT bei PayPal prüfen (nie dem Client glauben) ---
     // Robust für iOS-Safari-Kontextverlust: die übergebene ID darf eine
@@ -197,49 +199,34 @@ Deno.serve(async (req) => {
       return json({ error: "paypal_lookup_failed", status: or.status }, 502);
     }
     if (cap.status !== "COMPLETED") return json({ error: "capture_incomplete", status: cap.status }, 409);
-    const paidCents = Math.round(parseFloat(cap.amount?.value || "0") * 100);
-    const minCents = productIds.reduce((a, p) => a + (KNOWN_PRICES_CENTS[p] || 0), 0);
-    if (minCents > 0 && paidCents < minCents) return json({ error: "amount_mismatch" }, 409);
 
-    // --- Idempotenz ZUERST (§73): unique insert, Duplikat => Replay.
-    // WICHTIG: Ein Replay kehrt NICHT sofort zurück, sondern stellt Order +
-    // Entitlements idempotent sicher (Selbstheilung, falls ein früherer
-    // Aufruf nach dem Event-Log, aber vor den Writes abgebrochen ist).
-    // (service-Client wird oben einmalig erzeugt und hier wiederverwendet.) ---
-    const providerRef = String(cap.id || body.paypalOrderId);
-    let replay = false;
-    const evIns = await service.from("commerce_events").insert({
-      provider: "paypal", event_id: providerRef, event_type: "capture.completed",
-      order_no: body.orderNo || null,
-    });
-    if (evIns.error) {
-      const already = String(evIns.error.code) === "23505" || /duplicate/i.test(evIns.error.message || "");
-      if (!already) return json({ error: "event_log_failed" }, 500);
-      replay = true;
-    }
-
-    // --- Order sicherstellen (kein Duplikat über provider_ref) ---
-    const existing = await service.from("orders").select("id").eq("provider_ref", providerRef).maybeSingle();
-    if (!existing.data) {
-      const oi = await service.from("orders").insert({
-        user_id: user.id, order_no: body.orderNo || ("PP-" + providerRef), email: user.email,
-        items: body.items || [], product_keys: keys, total_cents: paidCents,
-        currency: cap.amount?.currency_code || "EUR", pay_method: "paypal",
-        status: "paid", provider: "paypal", provider_ref: providerRef,
-        paid_at: new Date().toISOString(),
-      });
-      if (oi.error) return json({ error: "order_write_failed", detail: oi.error.message }, 500);
-    }
-
-    // --- Entitlements sicherstellen (idempotenter Upsert, Fehler = Fehler) ---
-    for (const k of keys) {
-      const ue = await service.from("entitlements").upsert(
-        { user_id: user.id, product_key: k, status: "active", source: "paypal" },
-        { onConflict: "user_id,product_key" },
-      );
-      if (ue.error) return json({ error: "entitlement_write_failed", detail: ue.error.message }, 500);
-    }
-    return json({ ok: true, replay, entitlements: keys, amount_cents: paidCents });
+    // --- Fulfillment: ORDER → ENTITLEMENT → AUDIT (fulfillment.mjs) ---
+    // Der DB-Adapter kapselt Supabase; die Geschäftslogik ist injiziert und
+    // in tools-dev/tests/commerce-fulfillment.test.js real unit-getestet.
+    const db = {
+      findOrderByProviderRef: async (provider: string, ref: string) =>
+        await service.from("orders")
+          .select("id,user_id,status,total_cents,currency,product_keys")
+          .eq("provider", provider).eq("provider_ref", ref).maybeSingle(),
+      insertOrder: async (row: Record<string, unknown>) => await service.from("orders").insert(row),
+      upsertEntitlement: async (row: Record<string, unknown>) =>
+        await service.from("entitlements").upsert(row, { onConflict: "user_id,product_key" }),
+      logEvent: async (row: Record<string, unknown>) => await service.from("commerce_events").insert(row),
+    };
+    const result = await fulfillVerifiedCapture({
+      userId: user.id,
+      email: user.email || null,
+      orderNo: typeof body.orderNo === "string" ? body.orderNo : null,
+      items: body.items,
+      capture: {
+        id: String(cap.id),
+        status: String(cap.status),
+        amountCents: Math.round(parseFloat(cap.amount?.value || "0") * 100),
+        currency: String(cap.amount?.currency_code || ""),
+      },
+      productIds,
+    }, db, PRODUCTS);
+    return json(result.body, result.status);
   } catch (e) {
     return json({ error: "internal", detail: String(e?.message || e) }, 500);
   }
