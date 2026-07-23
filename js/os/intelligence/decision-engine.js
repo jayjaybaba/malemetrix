@@ -51,9 +51,12 @@
     var t = ctx.training;
     if (t.available && t.avgE1rmPct != null && t.avgE1rmPct <= 0 && (cons == null || cons >= 75)) add("training", 3, "Kraft-Trend flach (" + signed(t.avgE1rmPct) + "%) bei guter Umsetzung");
     if (!t.available) add("training", 1.5, "Keine geloggten Workouts — Trainingsreiz unklar");
-    // NUTRITION: Ziel-Modus vs. Körpertrend inkonsistent.
+    // NUTRITION: Ziel-Modus vs. Körpertrend inkonsistent. Im Build ist flaches
+    // Gewicht der klassische „iss mehr“-Fall — und liegt VOR einer Trainings-
+    // umstellung (stagnierende Kraft im Build ist oft Folge des fehlenden
+    // Überschusses). Daher etwas höher gewichtet als das Trainings-Plateau.
     var b = ctx.body, mode = ctx.goal.mode;
-    if (mode === "build" && b.weightTrend15 != null && b.weightTrend15 <= 0 && (cons == null || cons >= 80)) add("nutrition", 3, "Build-Ziel, aber Gewicht stagniert/fällt bei hoher Adhärenz");
+    if (mode === "build" && b.weightTrend15 != null && b.weightTrend15 <= 0 && (cons == null || cons >= 80)) add("nutrition", 3.5, "Build-Ziel, aber Gewicht stagniert/fällt bei hoher Adhärenz");
     if ((mode === "cut") && b.weightTrend15 != null && b.weightTrend15 >= 0 && b.waistTrend14 != null && b.waistTrend14 >= 0 && (cons == null || cons >= 80)) add("nutrition", 3, "Cut-Ziel, aber Gewicht UND Taille stehen");
     // BODY: Taille läuft in falsche Richtung fürs Ziel.
     if (mode === "build" && b.waistTrend14 != null && b.waistTrend14 > 0.7) add("body", 2, "Taille steigt schneller als für sauberen Aufbau nötig");

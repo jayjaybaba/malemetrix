@@ -253,7 +253,7 @@
     if (/lab|blut|apob|ldl|hba1c|hormone|testosteron|marker|biomarker/.test(q)) return "labs";
     if (/stack|supplement|kreatin|vitamin|creatine/.test(q)) return "stack";
     if (/fokus|focus|priorit|woche|this week|next|wichtig/.test(q)) return "focus";
-    if (/geändert|changed|change|letzten monat|last month|verlauf/.test(q)) return "change";
+    if (/geändert|verändert|verändern|ver[äa]nderung|changed|change|letzten monat|last month|verlauf|fortschritt|progress/.test(q)) return "change";
     return "general";
   }
   function relevantContext(topicOrQuestion, fullCtx) {
