@@ -121,6 +121,28 @@ group("Contract · { ok, data } wird zentral entpackt");
   ok(/r\.error\.context/.test(acc) && /json\(\)/.test(acc), "account.js reicht Server-Fehlercodes aus non-2xx-Antworten durch");
 })();
 
+/* ===== 9) CORS: Preflight sauber, sonst blockt der Browser den POST ===== */
+group("CORS · OPTIONS-Preflight + CORS-Header auf allen Antworten");
+(function () {
+  ok(/access-control-allow-origin/.test(edge), "CORS-Header definiert (access-control-allow-origin)");
+  ok(/access-control-allow-headers[^]*authorization[^]*x-client-info/.test(edge.replace(/\n/g, " ")), "erlaubt authorization + x-client-info (supabase-js Header)");
+  ok(/req\.method === "OPTIONS"[\s\S]{0,80}status: 204[\s\S]{0,20}headers: CORS/.test(edge), "OPTIONS ⇒ 204 mit CORS-Headern (Preflight besteht)");
+  ok(/headers: \{ "content-type": "application\/json", \.\.\.CORS \}/.test(edge), "json()-Antworten tragen CORS-Header");
+})();
+
+/* ===== 10) Präzise, sichere Fehlercodes (Recovery-Diagnose) ===== */
+group("Fehlercodes · konkret statt generisch");
+(function () {
+  ok(/"paypal_auth_failed"/.test(edge), "Token-Fehler ⇒ paypal_auth_failed");
+  ok(/"capture_not_found"/.test(edge), "unbekannte Capture-/Order-ID ⇒ capture_not_found");
+  ok(/"paypal_lookup_failed"/.test(edge), "PayPal-Lookup-Fehler ⇒ paypal_lookup_failed");
+  ok(/or\.status === 404/.test(edge), "Order-404 wird klar von echten Fehlern unterschieden");
+  var acc = read("js/account.js");
+  ok(/code: "unreachable"/.test(acc), "Client: Netzwerk/CORS-Block ⇒ 'unreachable' statt 'function_error'");
+  ok(/VERIFY_MSG/.test(checkout) && /amount_mismatch:/.test(checkout) && /paypal_auth_failed:/.test(checkout),
+    "Client: lesbare Meldungen je Fehlercode (nicht nur 'function_error')");
+})();
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 process.exit(failed ? 1 : 0);

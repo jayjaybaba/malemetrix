@@ -455,10 +455,26 @@
   }
 
   /* ---------- Recovery: Verifikation nach Reload/Kontextverlust ----------- */
+  const VERIFY_MSG = {
+    not_signed_in: "Du bist nicht (mehr) eingeloggt. Bitte melde dich in My MaleMetrix an und prüfe die Zahlung dann erneut — NICHT erneut bezahlen.",
+    unauthorized: "Deine Anmeldung wurde serverseitig nicht erkannt. Bitte in My MaleMetrix neu einloggen und erneut prüfen — NICHT erneut bezahlen.",
+    unreachable: "Der Verifikations-Server ist gerade nicht erreichbar. Bitte in einigen Minuten erneut prüfen — deine Zahlung ist sicher, NICHT erneut bezahlen.",
+    no_cloud: "Kein Cloud-Konto aktiv. Bitte in My MaleMetrix einloggen und erneut prüfen — NICHT erneut bezahlen.",
+    order_not_found: "Zu dieser Referenz wurde bei PayPal keine Zahlung gefunden. Bitte Transaktions-ID prüfen — NICHT erneut bezahlen.",
+    capture_not_found: "Zu dieser Referenz wurde bei PayPal keine Zahlung gefunden. Bitte Transaktions-ID prüfen — NICHT erneut bezahlen.",
+    not_captured: "Die PayPal-Zahlung ist noch nicht abgeschlossen. Bitte in Kürze erneut prüfen — NICHT erneut bezahlen.",
+    capture_incomplete: "Die PayPal-Zahlung ist noch nicht abgeschlossen. Bitte in Kürze erneut prüfen — NICHT erneut bezahlen.",
+    amount_mismatch: "Der bei PayPal verifizierte Betrag passt nicht zur Bestellung. Bitte melde dich — NICHT erneut bezahlen.",
+    paypal_auth_failed: "Server-Konfigurationsproblem bei der Zahlungsprüfung. Bitte melde dich — NICHT erneut bezahlen.",
+    paypal_lookup_failed: "PayPal war bei der Prüfung kurz nicht erreichbar. Bitte in einigen Minuten erneut prüfen — NICHT erneut bezahlen.",
+    provider_not_configured: "Die Zahlungsprüfung ist serverseitig noch nicht aktiv. Bitte melde dich — NICHT erneut bezahlen.",
+    order_write_failed: "Die Zahlung ist bestätigt, aber die Bestellung konnte nicht gespeichert werden. Bitte erneut prüfen — NICHT erneut bezahlen.",
+    entitlement_write_failed: "Die Zahlung ist bestätigt, aber die Freischaltung konnte nicht gespeichert werden. Bitte erneut prüfen — NICHT erneut bezahlen.",
+    event_log_failed: "Die Zahlung ist bestätigt, es gab aber ein Speicherproblem. Bitte erneut prüfen — NICHT erneut bezahlen."
+  };
   function renderVerifyIssue(errCode) {
-    const hint = errCode === "not_signed_in"
-      ? "Du bist nicht (mehr) eingeloggt. Bitte melde dich in My MaleMetrix an und prüfe die Zahlung dann erneut — NICHT erneut bezahlen."
-      : "Deine Zahlung wurde möglicherweise bereits ausgeführt. Bitte NICHT erneut bezahlen — prüfe die Zahlung einfach noch einmal.";
+    const hint = VERIFY_MSG[errCode] ||
+      "Deine Zahlung wurde möglicherweise bereits ausgeführt. Bitte NICHT erneut bezahlen — prüfe die Zahlung einfach noch einmal.";
     wrap.innerHTML =
       '<div class="order-success">' +
       '<div class="success-icon" style="background:rgba(245,166,35,.12);color:#f5a623">!</div>' +
@@ -467,7 +483,7 @@
       (errCode && errCode !== "not_signed_in" ? '<p class="small" style="color:var(--muted-2);margin-bottom:18px">Technischer Status: ' + String(errCode).replace(/[<>]/g, "") + '</p>' : '<div style="margin-bottom:18px"></div>') +
       '<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">' +
       '<button class="btn btn-primary" id="retryVerify">Zahlung erneut prüfen</button>' +
-      (errCode === "not_signed_in" ? '<a class="btn btn-dark" href="mein-protokoll.html">Zu My MaleMetrix (Login)</a>' : '') +
+      (["not_signed_in", "unauthorized", "no_cloud"].indexOf(errCode) >= 0 ? '<a class="btn btn-dark" href="mein-protokoll.html">Zu My MaleMetrix (Login)</a>' : '') +
       '</div>' +
       '<p class="small" style="color:var(--muted-2);margin-top:22px">Der Prüf-Button löst KEINE neue Zahlung aus — er fragt nur den Status deiner bestehenden PayPal-Zahlung ab.</p>' +
       '</div>';

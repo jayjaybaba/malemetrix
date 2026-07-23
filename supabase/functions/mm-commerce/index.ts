@@ -22,8 +22,20 @@ const PRODUCT_KEYS: Record<string, string[]> = {
 };
 const KNOWN_PRICES_CENTS: Record<string, number> = { "protokoll": 4900, "mm-e2e-test": 100 };
 
+// CORS: die Funktion wird vom Browser (www.malemetrix.com) cross-origin
+// aufgerufen. supabase-js sendet authorization + x-client-info + apikey →
+// der Browser macht einen Preflight (OPTIONS). Ohne diese Header schlägt der
+// Preflight fehl und der eigentliche POST wird NIE gesendet (Symptom:
+// "function_error" ohne lesbaren Server-Body). Deshalb: jede Antwort trägt
+// CORS-Header und OPTIONS wird sauber mit 204 beantwortet.
+const CORS: Record<string, string> = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "POST, OPTIONS",
+  "access-control-allow-headers": "authorization, x-client-info, apikey, content-type",
+  "access-control-max-age": "86400",
+};
 function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json" } });
+  return new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json", ...CORS } });
 }
 
 async function paypalToken(base: string, id: string, secret: string): Promise<string | null> {
@@ -98,6 +110,9 @@ async function handleSubscriptionEvent(body: any, user: any): Promise<Response> 
 
 Deno.serve(async (req) => {
   try {
+    // CORS-Preflight zuerst — MUSS 2xx + CORS-Header liefern, sonst blockt
+    // der Browser den nachfolgenden POST (Root Cause des function_error).
+    if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
     if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
     const body = await req.json();
 
@@ -134,9 +149,13 @@ Deno.serve(async (req) => {
     // Eine APPROVED-Order (Client-Capture kam nie zurück) wird serverseitig
     // idempotent captured — die Zahlung des Kunden geht nie verloren.
     const token = await paypalToken(PP_BASE, PP_ID, PP_SECRET);
-    if (!token) return json({ error: "provider_auth_failed" }, 502);
+    if (!token) return json({ error: "paypal_auth_failed" }, 502);
     const ppId = encodeURIComponent(body.paypalOrderId);
     let cap: any = null;
+    // Die übergebene ID kann eine Order-ID ODER eine Capture-/Transaktions-ID
+    // sein (Recovery nutzt die Transaktions-ID aus der PayPal-Aktivität).
+    // Reihenfolge: erst als Order deuten (nötig fürs Capture einer nur
+    // APPROVED-Order), sonst als Capture nachschlagen.
     const or = await fetch(PP_BASE + "/v2/checkout/orders/" + ppId, { headers: { authorization: "Bearer " + token } });
     if (or.ok) {
       let order = await or.json();
@@ -152,14 +171,18 @@ Deno.serve(async (req) => {
       if (order.status !== "COMPLETED") return json({ error: "not_captured", status: order.status }, 409);
       const pu = (order.purchase_units || [])[0] || {};
       cap = ((pu.payments || {}).captures || [])[0] || {};
-    } else {
-      // Fallback: ID als Capture-/Transaktions-ID interpretieren (so steht
-      // sie in der PayPal-Aktivität) — Betrag/Status kommen aus dem Capture.
+      if (!cap || !cap.id) return json({ error: "capture_not_found" }, 404);
+    } else if (or.status === 404) {
+      // ID ist keine Order → als Capture-/Transaktions-ID nachschlagen.
       const cr = await fetch(PP_BASE + "/v2/payments/captures/" + ppId, { headers: { authorization: "Bearer " + token } });
-      if (!cr.ok) return json({ error: "order_not_found" }, 404);
+      if (cr.status === 404) return json({ error: "capture_not_found" }, 404);
+      if (!cr.ok) return json({ error: "paypal_lookup_failed", status: cr.status }, 502);
       cap = await cr.json();
+    } else {
+      // Weder Order-Lookup ok noch klares 404 → echtes PayPal-/Auth-Problem.
+      return json({ error: "paypal_lookup_failed", status: or.status }, 502);
     }
-    if (cap.status !== "COMPLETED") return json({ error: "capture_incomplete" }, 409);
+    if (cap.status !== "COMPLETED") return json({ error: "capture_incomplete", status: cap.status }, 409);
     const paidCents = Math.round(parseFloat(cap.amount?.value || "0") * 100);
     const minCents = productIds.reduce((a, p) => a + (KNOWN_PRICES_CENTS[p] || 0), 0);
     if (minCents > 0 && paidCents < minCents) return json({ error: "amount_mismatch" }, 409);
