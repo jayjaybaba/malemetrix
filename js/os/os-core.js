@@ -612,11 +612,19 @@
     osengine: "os_engine_log",              // §88 — Engine-/Cardio-Sessions
     oscycle: "os_cycle", oscyclehist: "os_cycle_history",
     oscontext: "os_context", osreminders: "os_reminders_done",
-    oslabpanels: "lab_panels", oslabresults: "lab_results", oslabnotes: "lab_notes"  // Phase 4 (registriert in labs.js)
+    oslabpanels: "lab_panels", oslabresults: "lab_results", oslabnotes: "lab_notes",  // Phase 4 (registriert in labs.js)
+    // Phase 6 — Execution-Layer (registriert in execution.js)
+    osoverlays: "os_overlays", osreschedules: "os_reschedules", osdecisions: "os_decisions",
+    osdaylog: "os_daylog", osreminderprefs: "os_reminder_prefs"
   };
   var LOCAL_ONLY = {
     os_events: "abgeleitetes, gekapptes Ereignis-Log (rekonstruierbar)",
-    os_photo_pending: "Foto-Upload existiert nicht — Fotos sind bewusst device-only"
+    os_photo_pending: "Foto-Upload existiert nicht — Fotos sind bewusst device-only",
+    os_reminder_state: "Notification-Zustand ist Geräte-Zustand (Dedup pro Gerät)",
+    os_push_subscription: "Push-Subscription ist per Definition geräte-gebunden",
+    os_workout_draft: "laufende Session — Resume gehört zum Gerät, nicht zum Konto",
+    os_comeback_ack: "Begrüßungs-Zustand pro Gerät",
+    os_insights_state: "Insight-Anzeige-Dedup pro Gerät"
   };
   MM.os.SYNC_CLASSIFICATION = { cloud: SYNC_DOMAINS, localOnly: LOCAL_ONLY };
 
