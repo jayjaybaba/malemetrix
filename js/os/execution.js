@@ -645,11 +645,18 @@
     anchors.push({ time: pf.bedtime, title: "WIND DOWN", sub: "Schlaf-Ziel", ref: "sleep:" + ymd, done: OS().actionDone("sleep:" + ymd, ymd) });
     anchors.sort(function (a, b) { return hmToMin(a.time) - hmToMin(b.time); });
 
-    /* ---- NBA 2.0 — genau EINE primäre, max. zwei sekundäre, mit WARUM ---- */
+    /* ---- NBA 2.0 — genau EINE primäre, max. zwei sekundäre, mit WARUM ----
+       PHASE 5 INTEGRATION: Intelligence liefert die STRATEGISCHE Priorität
+       (dynamischer Engpass + Verdict + Konfidenz). Execution behält die
+       MACHBARKEIT (Timing/Verfügbarkeit). Ergebnis: GENAU EINE NBA. */
     var open = actions.filter(function (a) { return !a.done; });
     var missed = isToday ? missedThisWeek().filter(function (m) { return !m.handled; }) : [];
     var nba = { primary: null, secondary: [], why: [], missed: missed };
     var bn = d.bottleneck || "";
+    var hint = null;
+    try { if (window.MM && MM.intelligence && MM.intelligence.strategicHint) hint = MM.intelligence.strategicHint(ymd); } catch (e) { hint = null; }
+    if (hint && hint.bottleneckConfidence && hint.bottleneckConfidence !== "low" && hint.bottleneckConfidence !== "none") bn = hint.bottleneck;   // dynamischer Engpass schlägt deklarierten (nur mit Evidenz)
+    nba.strategic = hint ? { verdict: hint.verdict, title: hint.verdictTitle, text: hint.verdictText, bottleneck: hint.bottleneck, confidence: hint.confidence, decisionPending: hint.decisionPending } : null;
     if (open.length || missed.length) {
       var scored = open.map(function (a) {
         var s = 20 - a.priority * 2;
@@ -658,6 +665,8 @@
         if (a.urgent && /_due$/.test(a.type)) s += 12;                              // fälliger Pulse/Recheck überstimmt alles (§57)
         if ((a.type === "workout" || a.type === "makeup_workout")) s += 7;          // Programm ist das Rückgrat
         if (overlay && overlay.mode === "low_recovery" && a.domain === "recovery") s += 6;
+        // Intelligence-Guard: RECOVERY FIRST demotet hartes Training, hebt Recovery
+        if (hint && hint.guard === "hard_training") { if (a.type === "workout" || a.type === "makeup_workout") s -= 5; if (a.domain === "recovery") s += 6; }
         if (bn === "recovery" && a.domain === "recovery") s += 3;
         if ((bn === "body" || bn === "metabolic") && a.domain === "nutrition") s += 3;
         if ((bn === "strength" || bn === "lifestyle") && a.domain === "training") s += 2;
@@ -689,9 +698,11 @@
       }
     }
 
-    /* ---- NOT NOW — was gerade bewusst NICHT der Hebel ist ---- */
-    var notNow = [];
-    if (bn === "recovery") notNow = ["Mehr Supplements", "Mehr Cardio-Volumen", "Programm wechseln"];
+    /* ---- NOT NOW — was gerade bewusst NICHT der Hebel ist ----
+       Intelligence-NOT-NOW (aus dem Verdict) hat Vorrang, wenn vorhanden. */
+    var notNow;
+    if (hint && hint.notNow && hint.notNow.length) notNow = hint.notNow;
+    else if (bn === "recovery") notNow = ["Mehr Supplements", "Mehr Cardio-Volumen", "Programm wechseln"];
     else if (bn === "body" || bn === "metabolic") notNow = ["Neues Supplement", "Noch ein Trainingsplan", "Kalorien im Tagesrhythmus ändern"];
     else notNow = ["Mehr gleichzeitig ändern", "Neue Tools suchen"];
 
