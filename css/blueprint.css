@@ -171,8 +171,18 @@
 
 /* ---------- QUELLEN-SEKTION ---------- */
 .bp-sources ol { padding-left: 20px; }
-.bp-sources li { color: #b9c4cf; margin: 8px 0; font-size: .9rem; line-height: 1.6; }
-.bp-sources em { color: var(--bp-cyan); }
+.bp-sources ul { list-style: none; padding: 0; margin: 0; }
+.bp-sources li { color: #b9c4cf; margin: 0 0 14px; font-size: .9rem; line-height: 1.6; padding-bottom: 12px; border-bottom: 1px dashed rgba(255,255,255,.08); }
+.bp-sources li:last-child { border-bottom: 0; }
+.bp-sources li > div:first-child { color: #eef5fb; font-weight: 600; }
+.bp-sources li > div { color: #9fb0bd; font-size: .86rem; margin: 2px 0; }
+.bp-sources a { color: var(--bp-cyan); text-decoration: underline; }
+.bp-sources em { color: var(--bp-cyan); font-style: normal; }
+
+/* ---------- DOC-RESTE AUF DUNKLEM bp-GRUND (Footer / Disclaimer / Diagramm) ---------- */
+.bp .doc-footer { border-top-color: rgba(255,255,255,.1); color: #7f95a8; }
+.bp .doc-disclaimer { color: #7f95a8; }
+.bp .doc-diagram { background: #f7f9fc; border-color: #e6eaf1; }
 
 /* ---------- DUNKLES GATE (Freischalt-Seite im bp-Look) ---------- */
 .bp-gate { max-width: 540px; margin: 60px auto; padding: 40px 28px; text-align: center; border: 1px solid rgba(255,255,255,.1); border-radius: 20px; background: linear-gradient(180deg, rgba(0,194,255,.05), rgba(7,9,13,.6)); }
