@@ -194,7 +194,17 @@ Tests: `node tools-dev/tests/phase9.test.js` (44) — Billing-Determinismus + ou
 | KNOWLEDGE_AUDIT.md | Deckung je Objekt (2 PUBLISHED, 16 REVIEWED, 5 Quellen), nächste Redaktionsschritte |
 | Trust-Transparenz | trust.html "Wer sieht was — konkret", gegen Code verifiziert |
 
-Tests: `node tools-dev/tests/phase95.test.js` (37) — AES-Inhaltsgrenze, Autoritäts-Modell, Capability-Facade server-autoritativ, SW-Cache-Sicherheit (nie Cross-Origin), Migrations-Idempotenz + RLS-Statik, productionStatus ohne Secrets. Gesamt 438 Assertions über 7 Suiten. SW: mm-v86.
+Tests: `node tools-dev/tests/phase95.test.js` (37) — AES-Inhaltsgrenze, Autoritäts-Modell, Capability-Facade server-autoritativ, SW-Cache-Sicherheit (nie Cross-Origin), Migrations-Idempotenz + RLS-Statik, productionStatus ohne Secrets.
+
+## Phase 9.6 — Pre-Activation-Hardening (Stack 2.0, Evidenz, Cold Start, Chaos)
+| Piece | What it does |
+|---|---|
+| Stack Builder 2.0 | `analyzeCurrentStack` triagiert den eingegebenen Stack in BEHALTEN/OPTIONAL/STREICHEN/NICHT-BEWERTBAR (Wow: 11 Supps → behalte 4, streiche 4, spart ~81 €/Mon.); ESSENTIAL/OPTIMAL/ADVANCED-Ebenen; aktiv reduzierend; Enhanced strikt ohne Dosen |
+| Knowledge-Vervollständigung | +Schoenfeld 2017 (Volumen), +Watson 2015 (Schlaf); 7 verifizierte Quellen; KV 2→3; Gate hält |
+| Cold-Start-Provenance | Map zeigt „was MaleMetrix als Nächstes lernt" + „auf Basis deiner Baseline" vs „aus deinem Verlauf"; KEEP zeigt „was würde das ändern?" (falsifizierbar) |
+| Chaos-Harness | `tools-dev/tests/chaos.test.js` (20): korrupter Store, malformed/doppelter ICS, Idempotenz (Completion/Day-Close), 800er-Historie, Müll-Einheiten, dünne Daten → 0 erfundene Muster. **Fand+fixte ICS-Duplikations-Bug** (addBusy dedupe + Re-Import = frischer Snapshot) |
+
+Tests: `node tools-dev/tests/phase96.test.js` (26) + `chaos.test.js` (20). Gesamt 484 Assertions über 9 Suiten. SW: mm-v88.
 
 ## Future modules (contract)
 tracker · nutrition-logging · stack-adherence · labs · wearables:

@@ -205,7 +205,9 @@
         var reWhy = [];
         try { var tj = MM.intelligence && MM.intelligence.foresight ? MM.intelligence.foresight.trajectory() : null; if (tj && tj.status === "WITHIN") reWhy.push("Gewichtstrend im Erwartungsband"); } catch (e) {}
         if (reCons && reCons.planned > 0 && (reCons.done / reCons.planned) >= 0.8) reWhy.push("Umsetzung " + Math.round(reCons.done / reCons.planned * 100) + " %");
-        html += '<div class="os-nba os-quiet"><span class="tag">HEUTE · KEEP</span><b>Ändere heute nichts.</b><p class="muted">' + (reWhy.length ? esc(reWhy.join(" · ")) + ". " : "") + 'Eine Änderung jetzt würde nur Rauschen hinzufügen. Stabilität ist das Feature — neu bewerten in ' + (p.nextReviewDays != null ? p.nextReviewDays : 7) + ' Tagen.</p></div>';
+        // §12 — "Was würde diese Antwort ändern?" macht KEEP falsifizierbar.
+        html += '<div class="os-nba os-quiet"><span class="tag">HEUTE · KEEP</span><b>Ändere heute nichts.</b><p class="muted">' + (reWhy.length ? esc(reWhy.join(" · ")) + ". " : "") + 'Eine Änderung jetzt würde nur Rauschen hinzufügen. Stabilität ist das Feature — neu bewerten in ' + (p.nextReviewDays != null ? p.nextReviewDays : 7) + ' Tagen.</p>' +
+          '<div class="os-wouldchange"><span class="wk">WAS WÜRDE DAS ÄNDERN?</span><span>7 Tage flacher Gewichtstrend · fallende Kraft · Umsetzung unter 80 % · Taille steigt</span></div></div>';
       } else if (day.restDay && !day.nba.primary) {
         html += '<div class="os-nba os-quiet"><span class="tag">RECOVERY DAY</span><b>Erholung ist Teil des Programms.</b><p class="muted">' + esc(X.prefs().stepTarget) + ' Schritte · Protein halten · Schlaf vor ' + esc(X.prefs().bedtime) + '. Kein künstliches „Mehr“.</p></div>';
       } else {
@@ -374,8 +376,20 @@
       (d.access.twelve_week ? '<a class="btn btn-primary btn-sm" style="margin-top:10px" href="#today">Zu Today →</a>' : '<a class="btn btn-primary btn-sm" style="margin-top:10px" href="protokoll.html">Dein System aufbauen →</a>') + '</div>';
     // NICHT JAGEN
     html += '<div class="mm-map-notnow"><span class="mm-map-k">JETZT NICHT JAGEN</span>' + md.notNow.map(function (n) { return '<span class="nn">✕ ' + esc(n) + '</span>'; }).join("") + '</div>';
-    // KONFIDENZ — ehrlich
-    html += '<p class="small muted" style="margin:14px 2px 0">Datenbasis: ' + esc(md.confidence.depth) + ' · ' + esc(md.confidence.line) + (md.scoreDate ? ' · Score vom ' + esc(fmtDateShort(md.scoreDate)) : '') + '</p>';
+    // WAS MALEMETRIX ALS NÄCHSTES LERNT (§14) — ehrlich, kein Fake-"gelernt".
+    if (MM.activation) {
+      var cs = MM.activation.coldStart();
+      var open = cs.signals.filter(function (s) { return !s.ok; }).slice(0, 3);
+      if (open.length) {
+        html += '<div class="mm-map-spine" aria-hidden="true"></div><div class="mm-map-node learning"><span class="mm-map-k">WAS MALEMETRIX ALS NÄCHSTES LERNT</span>' +
+          '<span class="s" style="margin-bottom:6px">Deine Map basiert auf deiner <b>Baseline</b> — noch nicht auf deinem gelernten Verlauf. Das schärft sie:</span>' +
+          open.map(function (s) { return '<span class="learn-sig">◷ ' + esc(s.label) + '</span>'; }).join("") + '</div>';
+      }
+    }
+    // KONFIDENZ — ehrlich, mit klarer Baseline-vs-gelernt-Sprache.
+    var prov = MM.activation && MM.activation.depth ? MM.activation.depth().level : md.confidence.depth;
+    var provText = (prov === "CALIBRATED" || prov === "ADAPTIVE") ? "aus deinem gelernten Verlauf" : "auf Basis deiner Baseline";
+    html += '<p class="small muted" style="margin:14px 2px 0">Datenbasis: ' + esc(prov) + ' — Empfehlungen ' + provText + '. ' + esc(md.confidence.line) + (md.scoreDate ? ' · Score vom ' + esc(fmtDateShort(md.scoreDate)) : '') + '</p>';
     html += '</div>';
     return html;
   }

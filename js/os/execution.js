@@ -1231,8 +1231,11 @@
     return ymd ? all.filter(function (b) { return b.date === ymd; }) : all;
   }
   function addBusy(ymd, startHM, endHM, source) {
+    var src = source || "manual";
     var all = busyWindows();
-    all.push({ date: ymd, start: startHM, end: endHM, source: source || "manual" });
+    // Idempotenz: identisches Fenster (Datum/Start/Ende/Quelle) nie doppelt (Chaos §7.14).
+    if (all.some(function (b) { return b.date === ymd && b.start === startHM && b.end === endHM && b.source === src; })) return;
+    all.push({ date: ymd, start: startHM, end: endHM, source: src });
     all = all.filter(function (b) { return diffDays(todayYmd(), b.date) >= -7; });   // Vergangenheit > 7 Tage verwerfen
     if (all.length > 400) all = all.slice(-400);
     S.set("os_busy", all);
@@ -1241,6 +1244,9 @@
   // ICS-Import: parst NUR DTSTART/DTEND — SUMMARY/DESCRIPTION werden nie gelesen.
   function importBusyICS(text) {
     var n = 0;
+    // Re-Import = frischer Kalender-Snapshot: alte ICS-Fenster verwerfen, damit
+    // abgesagte Termine verschwinden und nichts dupliziert (Chaos §7.14).
+    clearBusy("ics");
     try {
       var events = String(text || "").split("BEGIN:VEVENT").slice(1);
       events.forEach(function (ev) {

@@ -758,3 +758,9 @@
 .os-stacktier { margin-bottom: 10px; }
 .os-stacktier .stl { display: block; font-family: var(--font-mono, monospace); font-size: 0.64rem; letter-spacing: 0.14em; color: var(--accent-2, #00c2ff); margin-bottom: 6px; }
 .os-supp .mag, .os-supp .mon { margin: 4px 0 0; font-size: 0.78rem; color: var(--muted-2); }
+/* Phase 9.6 — Cold-start provenance + falsifiability */
+.mm-map-node.learning { border-color: rgba(0,194,255,0.3); }
+.mm-map-node .learn-sig { display: inline-block; margin: 3px 8px 0 0; font-size: 0.8rem; color: var(--accent-2, #00c2ff); }
+.os-wouldchange { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
+.os-wouldchange .wk { display: block; font-family: var(--font-mono, monospace); font-size: 0.6rem; letter-spacing: 0.12em; color: var(--muted-2); margin-bottom: 2px; }
+.os-wouldchange span:last-child { font-size: 0.8rem; color: var(--muted); }
