@@ -181,7 +181,20 @@ Tests: `node tools-dev/tests/phase8.test.js` (62, inkl. 20-Kategorien-AI-Eval-Ba
 | Falsifizierbarkeit + KEEP | §68 jeder Vorschlag mit erwartetem Signal + Reassess-Kriterium; §70 KEEP als Premium-Output mit Reassess-Datum |
 | Docs | BUSINESS-MODEL.md (Modell E Hybrid, AI-Kosten, Unit Economics), ACTIVATION.md (Wahrheitsmatrix + Founder-Checkliste WO/WAS/VERIFY/ROLLBACK) |
 
-Tests: `node tools-dev/tests/phase9.test.js` (44) — Billing-Determinismus + out-of-order, Capability-Gating, Vault-Neutralisierung, Evidenz-nicht-erfindbar, productionStatus-ohne-Secrets, Chaos. Gesamt 401 Assertions über 6 Suiten. SW: mm-v84.
+Tests: `node tools-dev/tests/phase9.test.js` (44) — Billing-Determinismus + out-of-order, Capability-Gating, Vault-Neutralisierung, Evidenz-nicht-erfindbar, productionStatus-ohne-Secrets, Chaos.
+
+## Phase 9.5 — Go-Live-Wahrheit (Access-Control-Härtung, Production-Truth-Docs)
+| Piece | What it does |
+|---|---|
+| Access-Path-Graph (SECURITY.md) | Jeder Premium-Grant-Pfad + Autoritäts-Modell: bezahlter Vermögenswert = AES-verschlüsselter Inhalt, nicht die statische Shell; localStorage-Fälschung öffnet weder Inhalt noch Server-Ressource |
+| PRODUCTION_TRUTH.md | Machine-readable 7-Zustands-Matrix je Capability + "was 100 Fremde morgen erleben würden" |
+| SUPABASE_PRODUCTION_AUDIT.md | 8 Migrationen + 5 Edge Functions statisch auditiert (RLS/Rollback/Idempotenz); Runtime-RLS BLOCKED (keine Creds) |
+| FIRST_100_USERS.md | Messplan + Diagnose-Baum (welcher Funnel-Abfall bedeutet was) |
+| SUBSCRIPTION_ACTIVATION_DECISION.md | Was vor Abo-Preis gemessen sein muss; Schalter dokumentiert |
+| KNOWLEDGE_AUDIT.md | Deckung je Objekt (2 PUBLISHED, 16 REVIEWED, 5 Quellen), nächste Redaktionsschritte |
+| Trust-Transparenz | trust.html "Wer sieht was — konkret", gegen Code verifiziert |
+
+Tests: `node tools-dev/tests/phase95.test.js` (37) — AES-Inhaltsgrenze, Autoritäts-Modell, Capability-Facade server-autoritativ, SW-Cache-Sicherheit (nie Cross-Origin), Migrations-Idempotenz + RLS-Statik, productionStatus ohne Secrets. Gesamt 438 Assertions über 7 Suiten. SW: mm-v86.
 
 ## Future modules (contract)
 tracker · nutrition-logging · stack-adherence · labs · wearables:
