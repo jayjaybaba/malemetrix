@@ -62,3 +62,33 @@ zurückgehalten; kein Kunde verliert Zugang.
 Cross-User-RLS-Live-Test, PayPal-Live-Verifikation, VAPID-Rotation, CSP am
 Live-Host — alle in ACTIVATION.md mit exaktem Founder-Schritt. Keiner ist
 durch Code allein abschließbar; keiner wird als erledigt behauptet.
+
+---
+
+## Phase 9.5 — Access-Path-Graph (§4.1) & Autoritäts-Modell
+
+**Jeder Weg, auf dem Premium gewährt werden kann — und was ihn absichert:**
+
+| Pfad | Kontrolliert durch | Autoritativ? |
+|---|---|---|
+| Cloud-Konto + Server-Entitlement (`resolveProductAccess` signed_in) | `hasAccess()` liest `_entitlements` aus dem Server (`loadAccountState`), Edge Function `resolve-product-access` prüft JWT+Entitlement | **JA — Server** |
+| PayPal-Kauf | `mm-commerce` verifiziert Server→Server bei PayPal, vergibt Entitlement per Service-Role | **JA — Server** |
+| Claim-Code (Cloud) | `claim_access_code` RPC serverseitig | **JA — Server** |
+| Claim-Code (lokal) | `claimAccessCode` → `tryValidateCode` = **AES-GCM-Decrypt** vor `grantLocal` | JA — Krypto-Beweis |
+| Gespeicherter Code beim Init | `revalidateStoredCode` verwirft Entitlements und regrantet nur nach Decrypt | JA — Krypto-Beweis |
+| **Verschlüsselter Inhalt** (protokoll/kurs-programm) | AES-256-GCM, Code = Schlüssel; falscher/leerer Code ⇒ Decrypt schlägt fehl (getestet) | **JA — Krypto** |
+| localStorage `account_entitlements` (lokaler Modus) | rein **advisory** für die App-Shell-UI; öffnet KEINEN verschlüsselten Inhalt, verursacht KEINE Server-Kosten | NEIN — nur UI |
+| URL-Flag / DevTools-Mutation | kann nur die advisory-UI spoofen; Inhalt bleibt AES-gesperrt, Server ignoriert Client-Behauptungen | NEIN |
+
+**Autoritäts-Modell (§4.2):** Server-vergebene Entitlements sind autoritativ.
+Der **bezahlte Vermögenswert ist der AES-verschlüsselte Inhalt**, nicht die
+statische App-Shell (die ist ohnehin öffentlich lesbarer Client-Code und
+arbeitet auf den lokalen Daten des Nutzers ohne Server-Kosten). Ein gefälschter
+localStorage-Eintrag kann die kostenlose Shell-UI zeigen, aber **weder den
+verschlüsselten Inhalt entschlüsseln noch server-kostende Ressourcen (KI/Cloud)
+freischalten** — beides verlangt echten Krypto-Beweis bzw. Server-Entitlement.
+
+**Restrisiko** (unverändert, dokumentiert): der Delivery-Vault-Code in
+`checkout.js` + der historische Klartextcode gelten als KOMPROMITTIERT. Die
+Retire-Sequenz oben entwertet sie (Rotation nach Cloud-Aktivierung). Bis dahin
+neutralisiert der Server-Grant-Pfad den Client-Vault im Live-Kauf.
