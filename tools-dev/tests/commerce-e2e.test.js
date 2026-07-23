@@ -61,6 +61,34 @@ group("Sichtbarkeit · versteckt im Shop, Seed nur per ?e2e=mm1");
   ok(pub.indexOf("mm-e2e-test") === -1, "kein öffentlicher Link/Verweis auf das Testprodukt");
 })();
 
+/* ===== 5) Reload-/Kontextverlust-Robustheit (iOS Safari) ===== */
+group("Recovery · Pending-State überlebt Reload, kein Doppel-Seed");
+(function () {
+  ok(/savePending\(\{\s*paypalOrderId: ppOrderId/.test(checkout), "Pending-State wird in createOrder VOR der Freigabe gespeichert");
+  ok(/captureId/.test(checkout) && /pd\.captureId = capId/.test(checkout), "Capture-ID wird nach onApprove ergänzt");
+  ok(/get\("e2e"\) === "mm1" && !getPending\(\)/.test(checkout), "e2e-Seed NUR ohne ausstehende Zahlung (kein Warenkorb-Reset beim Rücksprung)");
+  ok(/if \(bootPending && \(bootPending\.paypalOrderId \|\| bootPending\.captureId\)\)/.test(checkout), "Boot: ausstehende Zahlung ⇒ Recovery statt neuem Checkout");
+  ok(/Zahlung wird bestätigt/.test(checkout), "Recovery-UX: „Zahlung wird bestätigt …“");
+  ok(/NICHT erneut bezahlen/.test(checkout), "UX warnt explizit vor Doppelzahlung");
+  ok(/id="retryVerify"/.test(checkout) && !/retryVerify[\s\S]{0,400}order\.create/.test(checkout), "Wiederholungs-Button prüft nur — löst nie neue Zahlung aus");
+  ok(/renderVerifyIssue\(r && r\.error\)/.test(checkout), "Verifikationsfehler ⇒ KEINE falsche Erfolgsseite");
+  ok(/get\("recover"\)/.test(checkout) && /\^?\[A-Za-z0-9\\\-_\]\{8,40\}/.test(checkout), "Manuelle Recovery-URL (?recover=ID) mit ID-Validierung");
+  ok(!/savePending\(\{[^}]*secret|password|token/i.test(checkout), "Pending-State enthält keine Secrets");
+})();
+
+/* ===== 6) Server-Robustheit: Fehler ehrlich, Replay selbstheilend ===== */
+group("Server · DB-Fehler nicht ignoriert, Replay heilt, Capture-Fallback");
+(function () {
+  ok(/order_write_failed/.test(edge), "orders-Insert-Fehler ⇒ expliziter Fehler (nie ignoriert)");
+  ok(/entitlement_write_failed/.test(edge), "entitlements-Upsert-Fehler ⇒ expliziter Fehler (nie ignoriert)");
+  ok(/replay = true/.test(edge) && /existing\.data/.test(edge), "Replay kehrt nicht früh zurück: Order/Entitlements werden sichergestellt");
+  ok(/eq\("provider_ref", providerRef\)/.test(edge), "kein doppelter Order-Insert (Existenz-Check über provider_ref)");
+  ok(/\/v2\/payments\/captures\//.test(edge), "Capture-/Transaktions-ID-Fallback für Recovery");
+  ok(/APPROVED/.test(edge) && /\/capture"/.test(edge.replace(/\n/g, "")) || /\+ "\/capture"/.test(edge), "APPROVED-Order wird serverseitig captured (verlorenes Client-Capture)");
+  ok(/PayPal-Request-Id/.test(edge), "serverseitiges Capture idempotent (PayPal-Request-Id)");
+  ok(/replay, entitlements: keys/.test(edge), "bereits verarbeitete Zahlung ⇒ Erfolg (replay:true), kein Doppel-Grant");
+})();
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 process.exit(failed ? 1 : 0);

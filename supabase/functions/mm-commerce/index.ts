@@ -129,16 +129,36 @@ Deno.serve(async (req) => {
     if (!keys.length) return json({ error: "no_entitled_products" }, 400);
 
     // --- Zahlung DIREKT bei PayPal prüfen (nie dem Client glauben) ---
+    // Robust für iOS-Safari-Kontextverlust: die übergebene ID darf eine
+    // Order-ID ODER eine Capture-/Transaktions-ID sein (Recovery-Pfad).
+    // Eine APPROVED-Order (Client-Capture kam nie zurück) wird serverseitig
+    // idempotent captured — die Zahlung des Kunden geht nie verloren.
     const token = await paypalToken(PP_BASE, PP_ID, PP_SECRET);
     if (!token) return json({ error: "provider_auth_failed" }, 502);
-    const or = await fetch(PP_BASE + "/v2/checkout/orders/" + encodeURIComponent(body.paypalOrderId), {
-      headers: { authorization: "Bearer " + token },
-    });
-    if (!or.ok) return json({ error: "order_not_found" }, 404);
-    const order = await or.json();
-    if (order.status !== "COMPLETED") return json({ error: "not_captured", status: order.status }, 409);
-    const pu = (order.purchase_units || [])[0] || {};
-    const cap = ((pu.payments || {}).captures || [])[0] || {};
+    const ppId = encodeURIComponent(body.paypalOrderId);
+    let cap: any = null;
+    const or = await fetch(PP_BASE + "/v2/checkout/orders/" + ppId, { headers: { authorization: "Bearer " + token } });
+    if (or.ok) {
+      let order = await or.json();
+      if (order.status === "APPROVED") {
+        // Kunde hat bei PayPal bestätigt, Client-Capture ging verloren →
+        // serverseitig capturen (idempotent über PayPal-Request-Id).
+        const capRes = await fetch(PP_BASE + "/v2/checkout/orders/" + ppId + "/capture", {
+          method: "POST",
+          headers: { authorization: "Bearer " + token, "content-type": "application/json", "PayPal-Request-Id": "mm-cap-" + body.paypalOrderId },
+        });
+        if (capRes.ok) order = await capRes.json();
+      }
+      if (order.status !== "COMPLETED") return json({ error: "not_captured", status: order.status }, 409);
+      const pu = (order.purchase_units || [])[0] || {};
+      cap = ((pu.payments || {}).captures || [])[0] || {};
+    } else {
+      // Fallback: ID als Capture-/Transaktions-ID interpretieren (so steht
+      // sie in der PayPal-Aktivität) — Betrag/Status kommen aus dem Capture.
+      const cr = await fetch(PP_BASE + "/v2/payments/captures/" + ppId, { headers: { authorization: "Bearer " + token } });
+      if (!cr.ok) return json({ error: "order_not_found" }, 404);
+      cap = await cr.json();
+    }
     if (cap.status !== "COMPLETED") return json({ error: "capture_incomplete" }, 409);
     const paidCents = Math.round(parseFloat(cap.amount?.value || "0") * 100);
     const minCents = productIds.reduce((a, p) => a + (KNOWN_PRICES_CENTS[p] || 0), 0);
@@ -150,34 +170,45 @@ Deno.serve(async (req) => {
       if (paidCents !== 100) return json({ error: "amount_mismatch" }, 409);
     }
 
-    // --- Idempotenz ZUERST (§73): unique insert, Duplikat => bereits verarbeitet ---
+    // --- Idempotenz ZUERST (§73): unique insert, Duplikat => Replay.
+    // WICHTIG: Ein Replay kehrt NICHT sofort zurück, sondern stellt Order +
+    // Entitlements idempotent sicher (Selbstheilung, falls ein früherer
+    // Aufruf nach dem Event-Log, aber vor den Writes abgebrochen ist). ---
     const service = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const providerRef = String(cap.id || body.paypalOrderId);
+    let replay = false;
     const evIns = await service.from("commerce_events").insert({
-      provider: "paypal", event_id: String(cap.id || body.paypalOrderId), event_type: "capture.completed",
+      provider: "paypal", event_id: providerRef, event_type: "capture.completed",
       order_no: body.orderNo || null,
     });
     if (evIns.error) {
-      // 23505 unique violation = Replay: kein zweites Grant, aber ehrlicher Erfolg
       const already = String(evIns.error.code) === "23505" || /duplicate/i.test(evIns.error.message || "");
       if (!already) return json({ error: "event_log_failed" }, 500);
-      return json({ ok: true, replay: true, entitlements: keys });
+      replay = true;
     }
 
-    // --- Order + Entitlements (Service-Role, RLS-geschützt vor Clients) ---
-    await service.from("orders").insert({
-      user_id: user.id, order_no: body.orderNo || ("PP-" + cap.id), email: user.email,
-      items: body.items || [], product_keys: keys, total_cents: paidCents,
-      currency: cap.amount?.currency_code || "EUR", pay_method: "paypal",
-      status: "paid", provider: "paypal", provider_ref: String(cap.id || body.paypalOrderId),
-      paid_at: new Date().toISOString(),
-    });
+    // --- Order sicherstellen (kein Duplikat über provider_ref) ---
+    const existing = await service.from("orders").select("id").eq("provider_ref", providerRef).maybeSingle();
+    if (!existing.data) {
+      const oi = await service.from("orders").insert({
+        user_id: user.id, order_no: body.orderNo || ("PP-" + providerRef), email: user.email,
+        items: body.items || [], product_keys: keys, total_cents: paidCents,
+        currency: cap.amount?.currency_code || "EUR", pay_method: "paypal",
+        status: "paid", provider: "paypal", provider_ref: providerRef,
+        paid_at: new Date().toISOString(),
+      });
+      if (oi.error) return json({ error: "order_write_failed", detail: oi.error.message }, 500);
+    }
+
+    // --- Entitlements sicherstellen (idempotenter Upsert, Fehler = Fehler) ---
     for (const k of keys) {
-      await service.from("entitlements").upsert(
+      const ue = await service.from("entitlements").upsert(
         { user_id: user.id, product_key: k, status: "active", source: "paypal" },
         { onConflict: "user_id,product_key" },
       );
+      if (ue.error) return json({ error: "entitlement_write_failed", detail: ue.error.message }, 500);
     }
-    return json({ ok: true, entitlements: keys });
+    return json({ ok: true, replay, entitlements: keys, amount_cents: paidCents });
   } catch (e) {
     return json({ error: "internal", detail: String(e?.message || e) }, 500);
   }

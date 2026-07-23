@@ -12,13 +12,41 @@
   const wrap = document.getElementById("checkoutWrap");
   if (!wrap) return;
 
+  /* ---------- Persistenter Pending-Payment-State --------------------------
+     iOS Safari kann beim PayPal-Rücksprung die Seite neu laden — der JS-
+     Kontext (und damit onApprove) geht verloren. Deshalb wird VOR der
+     PayPal-Freigabe ein lokaler Zustand gespeichert (keine Secrets: nur
+     PayPal-Order-ID, Produkt-IDs, interne Bestellnummer, Timestamp) und
+     beim Laden der Seite eine Verifikations-Recovery gefahren. */
+  const PENDING_KEY = "pending_payment";
+  const PENDING_TTL_MS = 48 * 3600 * 1000;
+  function getPending() {
+    const p = MM.store.get(PENDING_KEY, null);
+    if (!p || !p.ts || (Date.now() - p.ts) > PENDING_TTL_MS) return null;
+    return p;
+  }
+  function savePending(p) { MM.store.set(PENDING_KEY, p); }
+  function clearPending() { MM.store.set(PENDING_KEY, null); }
+
+  const bootParams = new URLSearchParams(location.search);
+
+  /* Manuelle Recovery-URL: checkout.html?recover=<PayPal-Order- ODER
+     Transaktions-/Capture-ID>. Für die Wiederherstellung einer Zahlung,
+     deren lokaler State verloren ist (z. B. der 1-€-E2E-Test). Der Server
+     verifiziert die ID direkt bei PayPal — ohne echte Zahlung passiert nichts. */
+  try {
+    const rec = bootParams.get("recover");
+    if (rec && /^[A-Za-z0-9\-_]{8,40}$/.test(rec)) {
+      savePending({ paypalOrderId: rec, productIds: ["mm-e2e-test"], orderNo: null, ts: Date.now(), manual: true });
+    }
+  } catch (e) {}
+
   /* ---------- Interner E2E-Testpfad (bewusst aufrufbar, nicht verlinkt) ----
      checkout.html?e2e=mm1 setzt den Warenkorb auf GENAU das versteckte
-     1,00-€-Testprodukt. Der Server (mm-commerce) verifiziert für dieses
-     Produkt exakt 1,00 € und vergibt nur das isolierte e2e_test-Entitlement —
-     DAS PROTOKOLL ist davon vollständig getrennt und kostet weiterhin 49 €. */
+     1,00-€-Testprodukt — aber NUR, wenn keine unabgeschlossene Zahlung
+     aussteht (sonst würde der Rücksprung von PayPal den Zustand zerstören). */
   try {
-    if (new URLSearchParams(location.search).get("e2e") === "mm1") {
+    if (bootParams.get("e2e") === "mm1" && !getPending()) {
       MM.store.set("cart", [{ id: "mm-e2e-test", qty: 1 }]);
     }
   } catch (e) {}
@@ -189,23 +217,48 @@
             amount: { value: t.total.toFixed(2), currency_code: CFG.paypalCurrency || "EUR" },
             description: "MaleMetrix Bestellung"
           }]
+        }).then((ppOrderId) => {
+          // Pending-State VOR der PayPal-Freigabe sichern — überlebt den
+          // iOS-Safari-Rücksprung/Reload. Keine Secrets, nur Referenzen.
+          const list = items();
+          savePending({
+            paypalOrderId: ppOrderId,
+            productIds: list.map(i => i.p.id),
+            orderNo: null, ts: Date.now()
+          });
+          return ppOrderId;
         }),
         onApprove: (data, actions) => actions.order.capture().then((details) => {
           const order = buildOrder("PayPal (bezahlt)");
           order.paid = true;
+          // Capture-ID zusätzlich in den Pending-State (präziseste Referenz).
+          try {
+            const capId = (((details.purchase_units || [])[0] || {}).payments || {}).captures?.[0]?.id || "";
+            const pd = getPending() || { ts: Date.now() };
+            pd.paypalOrderId = data.orderID; pd.captureId = capId; pd.orderNo = order.no;
+            savePending(pd);
+          } catch (e) {}
           // Phase 8 (§12): Serverseitige Verifikation + Entitlement-Vergabe, wenn
           // Cloud-Konto aktiv. Der Server prüft die Zahlung DIREKT bei PayPal —
-          // der Client vergibt nie selbst Zugriff. Ohne Cloud-Config: dokumentierter
-          // Legacy-Weg (Vault-Code nach Capture). Kein Fake in beiden Fällen.
+          // der Client vergibt nie selbst Zugriff. Bei Verifikationsfehler wird
+          // KEINE Erfolgsseite vorgetäuscht: der Pending-State bleibt und die
+          // Recovery-Ansicht übernimmt (nie doppelt zahlen).
           if (window.MM && MM.account && MM.account.invokeFunction && MM.account.getCurrentUser && MM.account.getCurrentUser()) {
             MM.account.invokeFunction("mm-commerce", {
               action: "verify_paypal", paypalOrderId: data.orderID, orderNo: order.no,
               productIds: order.productIds, items: order.items
             }).then((r) => {
-              if (r.ok) { MM.account.loadAccountState().then(() => {}); }
-              finalizeOrder(order, { paypalPaid: true, serverGrant: !!r.ok });
-            }).catch(() => finalizeOrder(order, { paypalPaid: true }));
+              if (r && r.ok) {
+                clearPending();
+                MM.account.loadAccountState().then(() => {});
+                finalizeOrder(order, { paypalPaid: true, serverGrant: true });
+              } else {
+                renderVerifyIssue(r && r.error);
+              }
+            }).catch(() => renderVerifyIssue("network"));
           } else {
+            // Legacy-Weg ohne Cloud-Konto (dokumentiert): Vault-Code nach Capture.
+            clearPending();
             finalizeOrder(order, { paypalPaid: true });
           }
         }),
@@ -390,5 +443,88 @@
       '<a href="index.html" class="btn btn-ghost">Zur Startseite</a></div></div>';
   }
 
-  renderForm();
+  /* ---------- Recovery: Verifikation nach Reload/Kontextverlust ----------- */
+  function renderVerifyIssue(errCode) {
+    const hint = errCode === "not_signed_in"
+      ? "Du bist nicht (mehr) eingeloggt. Bitte melde dich in My MaleMetrix an und prüfe die Zahlung dann erneut — NICHT erneut bezahlen."
+      : "Deine Zahlung wurde möglicherweise bereits ausgeführt. Bitte NICHT erneut bezahlen — prüfe die Zahlung einfach noch einmal.";
+    wrap.innerHTML =
+      '<div class="order-success">' +
+      '<div class="success-icon" style="background:rgba(245,166,35,.12);color:#f5a623">!</div>' +
+      '<h1 class="h-section" style="margin-bottom:14px">Zahlung wird geprüft — nicht erneut bezahlen.</h1>' +
+      '<p class="muted" style="max-width:56ch;margin:0 auto 10px">' + hint + '</p>' +
+      (errCode && errCode !== "not_signed_in" ? '<p class="small" style="color:var(--muted-2);margin-bottom:18px">Technischer Status: ' + String(errCode).replace(/[<>]/g, "") + '</p>' : '<div style="margin-bottom:18px"></div>') +
+      '<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">' +
+      '<button class="btn btn-primary" id="retryVerify">Zahlung erneut prüfen</button>' +
+      (errCode === "not_signed_in" ? '<a class="btn btn-dark" href="mein-protokoll.html">Zu My MaleMetrix (Login)</a>' : '') +
+      '</div>' +
+      '<p class="small" style="color:var(--muted-2);margin-top:22px">Der Prüf-Button löst KEINE neue Zahlung aus — er fragt nur den Status deiner bestehenden PayPal-Zahlung ab.</p>' +
+      '</div>';
+    const btn = document.getElementById("retryVerify");
+    if (btn) btn.addEventListener("click", () => { const p = getPending(); if (p) runRecovery(p); else location.reload(); });
+  }
+
+  function renderRecoverySuccess(pending, resp) {
+    MM.cart.clear();
+    if (MM.track) MM.track("order_completed", { value: "recovered", paid: true, method: "PayPal (recovery)" });
+    wrap.innerHTML =
+      '<div class="order-success">' +
+      '<div class="success-icon">✓</div>' +
+      (pending.orderNo ? '<span class="eyebrow" style="justify-content:center">Bestellung ' + pending.orderNo + '</span>' : '') +
+      '<h1 class="h-section" style="margin-bottom:14px">Zahlung bestätigt.</h1>' +
+      '<div class="card" style="text-align:left;margin:0 auto 16px;max-width:560px;border-color:var(--accent-line)">' +
+      '<span class="card-num" style="color:var(--green)">✓ ZAHLUNG ERHALTEN</span>' +
+      '<p class="muted" style="margin-top:6px">Deine PayPal-Zahlung ist serverseitig verifiziert' + (resp && resp.amount_cents ? " (" + MM.eur(resp.amount_cents / 100) + ")" : "") + '.</p></div>' +
+      '<div class="card" style="text-align:left;margin:0 auto 24px;max-width:560px;border-color:var(--accent-line)">' +
+      '<span class="card-num" style="color:var(--green)">✓ ZUGANG IM KONTO FREIGESCHALTET</span>' +
+      '<p class="muted" style="margin:6px 0 0">Freigeschaltet: <strong style="color:var(--text)">' + ((resp && resp.entitlements) || []).join(", ") + '</strong> — deinem Konto zugeordnet, auf allen Geräten verfügbar.</p></div>' +
+      '<a href="mein-protokoll.html" class="btn btn-primary">My MaleMetrix öffnen →</a>' +
+      '</div>';
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function runRecovery(pending) {
+    wrap.innerHTML =
+      '<div class="order-success">' +
+      '<div class="success-icon" style="background:var(--accent-soft);color:var(--accent-2)">…</div>' +
+      '<h1 class="h-section" style="margin-bottom:10px">Zahlung wird bestätigt …</h1>' +
+      '<p class="muted">Wir prüfen deine PayPal-Zahlung serverseitig. Bitte NICHT erneut bezahlen und das Fenster kurz offen lassen.</p></div>';
+    const signedIn = window.MM && MM.account && MM.account.getCurrentUser && MM.account.getCurrentUser();
+    const call = () => MM.account.invokeFunction("mm-commerce", {
+      action: "verify_paypal",
+      paypalOrderId: pending.captureId || pending.paypalOrderId,
+      orderNo: pending.orderNo || null,
+      productIds: pending.productIds || [],
+      items: []
+    }).then((r) => {
+      if (r && r.ok) {
+        clearPending();
+        MM.account.loadAccountState().then(() => {});
+        renderRecoverySuccess(pending, r);
+      } else {
+        renderVerifyIssue(r && r.error);
+      }
+    }).catch(() => renderVerifyIssue("network"));
+    if (!signedIn) {
+      // Konto-Init abwarten (account.js lädt asynchron), dann entscheiden.
+      if (window.MM && MM.account && MM.account.whenReady) {
+        MM.account.whenReady().then(() => {
+          if (MM.account.getCurrentUser && MM.account.getCurrentUser()) call();
+          else renderVerifyIssue("not_signed_in");
+        }).catch(() => renderVerifyIssue("not_signed_in"));
+      } else {
+        renderVerifyIssue("not_signed_in");
+      }
+      return;
+    }
+    call();
+  }
+
+  /* ---------- Boot: ausstehende Zahlung hat Vorrang vor neuem Checkout ---- */
+  const bootPending = getPending();
+  if (bootPending && (bootPending.paypalOrderId || bootPending.captureId)) {
+    runRecovery(bootPending);
+  } else {
+    renderForm();
+  }
 })();
