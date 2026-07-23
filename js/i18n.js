@@ -89,18 +89,43 @@
     "shop.fGear": { de: "Tracking & Gadgets", en: "Tracking & gadgets" },
     "shop.fDigital": { de: "Digital", en: "Digital" },
 
-    /* ---------- Homepage ---------- */
-    "home.badge": { de: "Performance-System statt Fitnessprogramm", en: "A performance system, not a fitness program" },
-    "home.h1a": { de: "Das Performance-System für", en: "The performance system for" },
-    "home.h1b": { de: "alle Männer", en: "all men" },
-    "home.lead": { de: "Verliere Bauchfett, baue Kraft auf und bekomme wieder Energie und Struktur — mit Training, Ernährung, Schlaf und messbarem Tracking. Kein Crash. Kein Bro-Science. Ein System, das zu Job und Familie passt.",
-                   en: "Lose belly fat, build strength and get your energy and structure back — with training, nutrition, sleep and measurable tracking. No crash. No bro-science. A system that fits your job and family." },
-    "home.trust1": { de: "Für Männer mit Job, Familie & wenig Zeit", en: "For men with a job, family & little time" },
-    "home.trust2": { de: "Kein Crash-Diät-System", en: "No crash-diet system" },
-    "home.trust3": { de: "Keine medizinischen Versprechen — klare Lifestyle-Struktur", en: "No medical promises — clear lifestyle structure" },
-    "home.freeTitle": { de: "Erst nutzen, dann entscheiden — komplett kostenlos.", en: "Use it first, decide later — completely free." },
-    "home.freebar": { de: "100 % kostenlos: Score-Check, 19 Rechner, Tracker & alle Ebooks online — ohne Anmeldung. PDF-Download der Ebooks gegen E-Mail.",
-                      en: "100% free: score check, 19 calculators, tracker & all ebooks online — no signup. Ebook PDF downloads in exchange for your email." },
+    /* ---------- Homepage (aktuell verdrahtet, Stand P9.8) ---------- */
+    "home.badge": { de: "Männergesundheit als System — nicht nach Bauchgefühl", en: "Men’s health as a system — not guesswork" },
+    "home.h1": { de: "Bau den Körper.<br><span class=\"text-grad\">Schütz das System.</span>",
+                 en: "Build the body.<br><span class=\"text-grad\">Protect the system.</span>" },
+    "home.lead": { de: "Training, Ernährung, Schlaf, Hormone und Gesundheit für Männer, die Job und Familie haben — datenbasiert statt nach Bauchgefühl. MaleMetrix findet zuerst deinen größten Engpass, bevor du Zeit, Geld oder Energie in die falschen Dinge steckst.",
+                   en: "Training, nutrition, sleep, hormones and health for men with a job and a family — data-driven, not guesswork. MaleMetrix first finds your biggest bottleneck, before you pour time, money or energy into the wrong things." },
+    "home.trustline": { de: "~10 Minuten · kostenlos · sofortige Auswertung · kein E-Mail-Zwang", en: "~10 minutes · free · instant results · no email required" },
+    "home.howLink": { de: "So funktioniert MaleMetrix ↓", en: "How MaleMetrix works ↓" },
+
+    /* Sektions-Kicker + Überschriften */
+    "home.s.problem.k": { de: "Das eigentliche Problem", en: "The real problem" },
+    "home.s.problem.h": { de: "Du brauchst nicht mehr Informationen. Du brauchst die richtige <span class=\"text-grad\">Reihenfolge</span>.",
+                          en: "You don’t need more information. You need the right <span class=\"text-grad\">order</span>." },
+    "home.s.system.k": { de: "Das MaleMetrix System", en: "The MaleMetrix system" },
+    "home.s.system.h": { de: "Ein System. Vier klare Rollen.", en: "One system. Four clear roles." },
+    "home.s.score.k": { de: "Der MaleMetrix Score", en: "The MaleMetrix Score" },
+    "home.s.score.h": { de: "Deine Performance besteht aus <span class=\"text-grad\">mehreren Systemen</span>.",
+                        en: "Your performance is made of <span class=\"text-grad\">several systems</span>." },
+    "home.s.wege.k": { de: "Nach dem Score", en: "After the Score" },
+    "home.s.wege.h": { de: "Wie möchtest du MaleMetrix nutzen?", en: "How do you want to use MaleMetrix?" },
+    "home.s.lib.k": { de: "Sekundär · zum Vertiefen", en: "Secondary · go deeper" },
+    "home.s.lib.h": { de: "MaleMetrix Library &amp; Tools", en: "MaleMetrix Library &amp; Tools" },
+    "home.s.fit.k": { de: "Ehrliche Auswahl", en: "An honest fit" },
+    "home.s.fit.h": { de: "Für wen MaleMetrix ist — und für wen nicht.", en: "Who MaleMetrix is for — and who it isn’t." },
+    "home.s.trust.k": { de: "Transparenz statt Hochglanz", en: "Transparency over polish" },
+    "home.s.trust.h": { de: "Warum du MaleMetrix vertrauen kannst — gerade weil es neu ist.",
+                        en: "Why you can trust MaleMetrix — precisely because it’s new." },
+    "home.s.founder.k": { de: "Warum ich MaleMetrix gebaut habe", en: "Why I built MaleMetrix" },
+    "home.s.founder.h": { de: "Ein Ingenieur denkt Männergesundheit als System.", en: "An engineer treats men’s health as a system." },
+    "home.s.know.k": { de: "Wissen, das du anwenden kannst", en: "Knowledge you can actually apply" },
+    "home.s.know.h": { de: "Klartext statt Bro-Science.", en: "Straight talk, not bro-science." },
+    "home.s.faq.k": { de: "Häufige Fragen", en: "Frequent questions" },
+    "home.s.faq.h": { de: "Kurz beantwortet.", en: "Answered briefly." },
+    "home.s.final.k": { de: "Kostenlos · ~10 Minuten", en: "Free · ~10 minutes" },
+    "cta.findBottleneck": { de: "Meinen Engpass finden", en: "Find my bottleneck" },
+    "cta.startFree": { de: "Kostenlos starten", en: "Start free" },
+    "cta.calcScore": { de: "Score berechnen", en: "Calculate my Score" },
 
     /* ---------- Tools-Seite ---------- */
     "tools.eyebrow": { de: "Kostenlose Tools · keine Anmeldung", en: "Free tools · no signup" },
@@ -161,13 +186,56 @@
     "eb.ctaText": { de: "Die Ebooks zeigen dir das Was. Der kostenlose Score zeigt dir, wo bei dir zuerst angesetzt werden muss.", en: "The ebooks show you the what. The free score shows you where to start first." }
   };
 
-  let lang = "de";
-  try { lang = localStorage.getItem("mm_lang") || "de"; } catch (e) {}
-  if (lang !== "de" && lang !== "en") lang = "de";
+  /* ---------- Locale-Auflösung: Normalisierung → gespeicherte Wahl → Browser → DE ---------- */
+  const SUPPORTED = ["de", "en"];
+  function norm(l) {
+    if (!l) return null;
+    l = String(l).trim().toLowerCase();
+    if (l === "german" || l === "deutsch") return "de";
+    if (l === "english") return "en";
+    l = l.split("-")[0].split("_")[0];       // de-DE → de, en_US → en
+    return SUPPORTED.indexOf(l) >= 0 ? l : null;
+  }
+  function detectBrowser() {
+    try {
+      const cands = [].concat(navigator.languages || [], [navigator.language]);
+      for (const c of cands) { const n = norm(c); if (n) return n; }
+    } catch (e) {}
+    return "de";
+  }
+  let stored = null;
+  try { stored = norm(localStorage.getItem("mm_lang")); } catch (e) {}
+  // Explizite Wahl gewinnt immer; sonst beim Erstbesuch Browser-Sprache; sonst DE.
+  let lang = stored || detectBrowser();
+  // Erstbesuch-Erkennung persistiert NICHT automatisch — die manuelle Wahl in
+  // setLang() setzt den Marker. So bleibt "Browser-Erkennung nur beim Erstbesuch".
 
-  function t(key) {
+  const MISSING = {};   // Diagnose: fehlende Keys sammeln (für Tests/QA)
+  function t(key, vars) {
     const e = DICT[key];
-    return e ? (e[lang] || e.de) : null;
+    let s = e ? (e[lang] != null ? e[lang] : e.de) : null;
+    if (s == null) { MISSING[key] = (MISSING[key] || 0) + 1; return null; }
+    if (vars) s = s.replace(/\{(\w+)\}/g, (m, k) => (vars[k] != null ? vars[k] : m));
+    return s;
+  }
+
+  /* ---------- Formatierung (Intl) — Speicherwerte bleiben locale-neutral ---------- */
+  function fmtNum(n, opts) {
+    try { return new Intl.NumberFormat(lang === "de" ? "de-DE" : "en-US", opts).format(n); }
+    catch (e) { return String(n); }
+  }
+  function fmtDate(d, opts) {
+    try {
+      const date = (d instanceof Date) ? d : new Date(d);
+      return new Intl.DateTimeFormat(lang === "de" ? "de-DE" : "en-US",
+        opts || { year: "numeric", month: "long", day: "numeric" }).format(date);
+    } catch (e) { return String(d); }
+  }
+  function plural(n, forms) {
+    // forms: { one, other }  (DE/EN sind beide 1-vs-viele)
+    const key = (n === 1 || n === -1) ? "one" : "other";
+    const s = forms[key] != null ? forms[key] : forms.other;
+    return String(s).replace(/\{n\}/g, fmtNum(n));
   }
 
   function apply(root) {
@@ -191,8 +259,8 @@
   }
 
   function setLang(l) {
-    lang = (l === "en") ? "en" : "de";
-    try { localStorage.setItem("mm_lang", lang); } catch (e) {}
+    lang = norm(l) || "de";
+    try { localStorage.setItem("mm_lang", lang); } catch (e) {}   // manuelle Wahl gewinnt künftig
     apply();
     document.dispatchEvent(new CustomEvent("mm:langchange", { detail: { lang } }));
     const codeEls = document.querySelectorAll(".lang-code");
@@ -204,7 +272,15 @@
     t,
     apply,
     setLang,
+    norm,
+    detectBrowser,
+    fmtNum,
+    fmtDate,
+    plural,
+    supported: SUPPORTED.slice(),
     get lang() { return lang; },
+    /** Fehlende Keys, die zur Laufzeit angefragt wurden (QA/Diagnose). */
+    missing() { return Object.assign({}, MISSING); },
     toggle() { setLang(lang === "de" ? "en" : "de"); },
     dict: DICT,
     /** Registriert zusätzliche Übersetzungen (für Seiten-spezifische Strings). */
