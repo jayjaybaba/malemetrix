@@ -682,3 +682,52 @@
 .mm-metrixbody a:hover .mb-node { fill: rgba(0, 194, 255, 0.18); }
 .os-autopilot .rsn { margin: 4px 0; }
 @media (prefers-reduced-motion: reduce) { .mm-metrixbody a { transition: none; } }
+
+/* ================== PHASE 8 — ACTIVATION · MAP · PROOF · SHARE ================== */
+/* Performance Map (§6): ein Fluss, eine Erkenntnis pro Knoten. */
+.mm-map { margin-top: 6px; }
+.mm-map-node { border: 1px solid var(--line); border-radius: 16px; background: rgba(10, 13, 19, 0.65); padding: 16px 18px; }
+.mm-map-node.warn { border-color: rgba(245, 166, 35, 0.45); background: linear-gradient(180deg, rgba(245,166,35,0.07), rgba(10,13,19,0.65)); }
+.mm-map-node.go { border-color: var(--accent-line, rgba(46,124,246,0.45)); background: linear-gradient(180deg, rgba(46,124,246,0.1), rgba(10,13,19,0.65)); }
+.mm-map-k { display: block; font-family: var(--font-mono, monospace); font-size: 0.68rem; letter-spacing: 0.14em; color: var(--muted-2); margin-bottom: 8px; }
+.mm-map-big { display: block; font-size: 1.25rem; color: var(--text); line-height: 1.25; }
+.mm-map-node .s { display: block; color: var(--muted); font-size: 0.88rem; margin-top: 6px; }
+.mm-map-you { display: flex; gap: 16px; align-items: center; }
+.mm-map-you .s { display: block; color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+.mm-map-score { font-family: var(--font-mono, monospace); color: var(--text); }
+.mm-map-score b { font-size: 2.4rem; font-weight: 800; background: linear-gradient(135deg, #2e7cf6, #00c2ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.mm-map-score span { color: var(--muted-2); font-size: 0.9rem; }
+.mm-map-spine { width: 2px; height: 22px; margin: 0 auto; background: linear-gradient(180deg, rgba(46,124,246,0.7), rgba(0,194,255,0.25)); }
+.mm-map-notnow { margin-top: 14px; border: 1px dashed rgba(255,255,255,0.14); border-radius: 14px; padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.mm-map-notnow .nn { color: var(--muted); font-size: 0.85rem; }
+
+/* Cold Start (§25) */
+.os-coldstart { border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; margin: 12px 0; background: rgba(10,13,19,0.55); }
+.os-coldstart p { margin: 6px 0 8px; color: var(--text); font-size: 0.92rem; }
+.os-coldstart .s { color: var(--muted-2); font-size: 0.78rem; }
+.cs-dots { display: flex; gap: 6px; margin-bottom: 6px; }
+.cs-dot { width: 22px; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.1); }
+.cs-dot.ok { background: linear-gradient(90deg, #2e7cf6, #00c2ff); }
+
+/* Personalisierungstiefe + gelernte Muster (§26/§27) */
+.os-depth .hd { display: flex; justify-content: space-between; align-items: center; }
+.os-depth .lvl { font-family: var(--font-mono, monospace); letter-spacing: 0.1em; font-size: 0.85rem; }
+.os-depth .lvl-calibrated { color: var(--green, #3ddc84); }
+.os-depth .lvl-adaptive { color: var(--accent-2, #00c2ff); }
+.os-depth .lvl-connected { color: var(--accent, #2e7cf6); }
+.os-depth .lvl-baseline, .os-depth .lvl-neu { color: var(--muted); }
+.os-pattern { border: 1px solid var(--line); border-left-width: 3px; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; background: rgba(10,13,19,0.55); }
+.os-pattern p { margin: 6px 0 4px; color: var(--text); font-size: 0.95rem; }
+.os-pattern .pcls { font-family: var(--font-mono, monospace); font-size: 0.66rem; letter-spacing: 0.12em; color: var(--muted-2); }
+.os-pattern .s { color: var(--muted-2); font-size: 0.78rem; }
+.os-p-observed { border-left-color: var(--green, #3ddc84); }
+.os-p-associated { border-left-color: var(--accent-2, #00c2ff); }
+.os-p-likely { border-left-color: var(--accent, #2e7cf6); }
+.os-p-uncertain { border-left-color: rgba(255,255,255,0.25); }
+.os-outcome { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; background: rgba(10,13,19,0.5); }
+.os-outcome .hd { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.os-outcome .ver { font-family: var(--font-mono, monospace); font-size: 0.66rem; letter-spacing: 0.1em; white-space: nowrap; }
+.os-outcome .ver-good { color: var(--green, #3ddc84); }
+.os-outcome .ver-watch { color: var(--amber, #f5a623); }
+.os-outcome .ver-off { color: var(--muted-2); }
+.os-outcome .s { display: block; color: var(--muted-2); font-size: 0.8rem; margin-top: 4px; }

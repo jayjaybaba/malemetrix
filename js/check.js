@@ -366,7 +366,9 @@
     hist.push({ date: result.date, total, scores });
     MM.store.set("check_history", hist.slice(-12));
     MM.store.remove("check_draft");
-    if (MM.track) MM.track("check_completed", { score: total, bottleneck: bottleneck.key, archetype: arch.id });
+    // Analytics-Invariante (§91.23): keine Gesundheits-/Score-WERTE an Analytics —
+    // nur grobe Kategorien (Engpass-Domäne, Archetyp) für den Funnel.
+    if (MM.track) MM.track("check_completed", { bottleneck: bottleneck.key, archetype: arch.id });
     // OS-Event (§61): Graph/Dashboards aktualisieren sich live, ohne Reload.
     if (MM.os && MM.os.emit) MM.os.emit("SCORE_COMPLETED", { score: total, bottleneck: bottleneck.key });
     else { try { document.dispatchEvent(new CustomEvent("mm:os", { detail: { name: "SCORE_COMPLETED", payload: { score: total } } })); } catch (e) {} }

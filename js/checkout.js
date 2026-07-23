@@ -44,6 +44,15 @@
       '<div class="summary-line grand"><span>Gesamt</span><span class="mono">' + MM.eur(t.total) + '</span></div>';
   }
 
+  /* P0 (Phase 8): Bank-Daten dürfen nie als "[IBAN EINTRAGEN]"-Platzhalter beim
+     Kunden ankommen. Vorkasse wird nur angeboten, wenn echte Daten hinterlegt
+     sind — sonst ehrlich: Zahlungsdetails kommen per E-Mail. */
+  function bankConfigured() {
+    const b = CFG.bank || {};
+    const bad = (s) => !s || /\[.*EINTRAGEN.*\]/i.test(String(s));
+    return !bad(b.iban) && !bad(b.inhaber);
+  }
+
   function renderForm() {
     const t = MM.cart.totals();
 
@@ -60,7 +69,9 @@
     const payOptions = [];
     payOptions.push({
       id: "vorkasse", name: "Vorkasse / Überweisung",
-      desc: "Du erhältst die Bankverbindung direkt nach der Bestellung. Versand bzw. Lieferung nach Zahlungseingang."
+      desc: bankConfigured()
+        ? "Du erhältst die Bankverbindung direkt nach der Bestellung. Versand bzw. Lieferung nach Zahlungseingang."
+        : "Du erhältst die Bankverbindung per E-Mail an deine angegebene Adresse. Lieferung nach Zahlungseingang."
     });
     if (CFG.paypalClientId) {
       payOptions.push({ id: "paypal_smart", name: "PayPal / Kreditkarte", desc: "Sicher mit PayPal, Kredit- oder Debitkarte zahlen — ohne die Seite zu verlassen." });
@@ -303,7 +314,7 @@
       payBlock = '<div class="card" style="text-align:left;margin-bottom:24px"><span class="card-num">SO ZAHLST DU PER PAYPAL</span>' +
         '<p class="muted" style="margin-bottom:18px">Klicke auf den Button und zahle <strong style="color:var(--text)">' + order.total + '</strong>. Gib als Verwendungszweck deine Bestellnummer an: <strong style="color:var(--text)">' + order.no + '</strong></p>' +
         '<a class="btn btn-primary" href="' + CFG.paypalMe + "/" + amountRaw + '" target="_blank" rel="noopener">Mit PayPal zahlen — ' + order.total + '</a></div>';
-    } else {
+    } else if (bankConfigured()) {
       payBlock = '<div class="card" style="text-align:left;margin-bottom:24px"><span class="card-num">SO ZAHLST DU PER ÜBERWEISUNG</span>' +
         '<div style="display:grid;gap:10px;font-size:0.95rem">' +
         '<div class="summary-line"><span>Empfänger</span><span class="mono">' + (bank.inhaber || "—") + '</span></div>' +
@@ -312,6 +323,9 @@
         '<div class="summary-line"><span>Betrag</span><span class="mono">' + order.total + '</span></div>' +
         '<div class="summary-line"><span>Verwendungszweck</span><span class="mono">' + order.no + '</span></div>' +
         '</div></div>';
+    } else {
+      payBlock = '<div class="card" style="text-align:left;margin-bottom:24px"><span class="card-num">SO GEHT ES WEITER</span>' +
+        '<p class="muted" style="margin-top:6px">Du erhältst die Bankverbindung für deine Überweisung über <strong style="color:var(--text)">' + order.total + '</strong> per E-Mail an <strong style="color:var(--text)">' + order.email + '</strong>. Verwendungszweck: <strong style="color:var(--text)">' + order.no + '</strong>.</p></div>';
     }
 
     wrap.innerHTML =

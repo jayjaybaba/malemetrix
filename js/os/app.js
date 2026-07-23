@@ -267,6 +267,16 @@
           '<div class="ctl"><button class="os-chip" data-decclose="' + esc(dec.id) + '" data-outcome="kept">Behalten</button><button class="os-chip" data-decclose="' + esc(dec.id) + '" data-outcome="adjusted">Angepasst</button><button class="os-chip" data-decclose="' + esc(dec.id) + '" data-outcome="reverted">Zurückgenommen</button></div></div>';
       });
 
+      // COLD START (§25): erste 14 Tage ehrlich — das System lernt noch.
+      if (MM.activation && day.programDay != null && day.programDay <= 14) {
+        var cs = MM.activation.coldStart();
+        if (cs.established < cs.total) {
+          html += '<div class="os-coldstart"><span class="tag">' + esc(cs.phase.toUpperCase()) + '</span><p>' + esc(cs.line) + '</p>' +
+            '<div class="cs-dots">' + cs.signals.map(function (s3) { return '<span class="cs-dot' + (s3.ok ? " ok" : "") + '" title="' + esc(s3.label) + '"></span>'; }).join("") + '</div>' +
+            '<span class="s">' + cs.signals.filter(function (s3) { return !s3.ok; }).slice(0, 2).map(function (s3) { return esc(s3.label); }).join(" · ") + ' verbessern deine Personalisierung — kein Muss.</span></div>';
+        }
+      }
+
       // CONSISTENCY statt Streak
       var cons = X.consistency28();
       if (cons && cons.planned > 0) html += '<p class="os-consistency">' + esc(cons.label) + (day.restDay ? ' · Geplante Erholung zählt als Erfolg.' : '') + '</p>';
@@ -286,7 +296,16 @@
     } else if (d.access.twelve_week) {
       html += '<div class="card os-accent"><span class="small muted os-k">' + esc(greetTime()) + esc(name) + '</span><h1 class="os-big" style="font-size:1.5rem">Dein 12-Week System ist bereit</h1><p class="muted" style="margin:0 0 14px">Empfohlener Ablauf: erst <a href="#baseline" style="color:var(--accent)">Baseline</a>, dann Programm einrichten.</p><a href="kurs-programm.html" class="btn btn-primary">Programm starten →</a></div>';
     } else if (d.hasScore) {
-      html += '<div class="card os-accent"><span class="small muted os-k">' + esc(greetTime()) + esc(name) + '</span><h1 class="os-big" style="font-size:1.5rem">Dein Engpass: ' + esc(d.bottleneckName || BN[d.bottleneck] || "—") + '</h1><p class="muted" style="margin:0 0 14px">Empfohlener Modus: <strong style="color:var(--text)">' + esc(MODE[d.mode] || d.mode || "—") + '</strong>. Das 12-Week System führt dich Schritt für Schritt.</p><a href="protokoll.html" class="btn btn-primary">Dein System aufbauen →</a></div>';
+      // Phase 8 (§5/§14/§15): erst der persönliche Wert (Map), dann der
+      // kontextuelle Upgrade-Moment — mit ECHTEN Vorschauwerten, nie erfunden.
+      html += '<div class="card os-accent"><span class="small muted os-k">' + esc(greetTime()) + esc(name) + '</span><h1 class="os-big" style="font-size:1.5rem">Dein Engpass: ' + esc(d.bottleneckName || BN[d.bottleneck] || "—") + '</h1><p class="muted" style="margin:0 0 10px">Empfohlener Modus: <strong style="color:var(--text)">' + esc(MODE[d.mode] || d.mode || "—") + '</strong>.</p><a class="btn btn-primary" href="#map">Deine Performance Map ansehen →</a></div>';
+      var wN = OS.metricSeries("weight").length;
+      var upLines = ['Dein Engpass ist identifiziert — das 12-Week System trackt, ob er sich wirklich ändert.'];
+      if (wN >= 2) upLines.push("Du hast bereits " + wN + " Körperdaten-Einträge — sie fließen direkt in dein System ein, nichts geht verloren.");
+      html += '<div class="card"><span class="card-num" style="color:var(--accent)">WARUM JETZT</span>' +
+        upLines.map(function (l) { return '<p class="muted" style="margin:8px 0 0">' + esc(l) + '</p>'; }).join("") +
+        '<p class="muted" style="margin:8px 0 12px">DAS PROTOKOLL (einmalig 49 €) schaltet das komplette System frei: 12-Week Programm, Today, Training, Nutrition, Intelligenz &amp; Foresight.</p>' +
+        '<a href="protokoll.html" class="btn btn-primary btn-sm" data-track="upgrade_view">Dein System aufbauen →</a></div>';
     } else {
       html += '<div class="card os-accent os-start"><h1 class="os-big" style="font-size:1.5rem">Dein System startet hier</h1><ol class="os-steps">' +
         '<li><b>Score machen</b><span>Baseline deiner 7 Systeme — findet deinen Engpass.</span></li>' +
@@ -311,6 +330,78 @@
       '</div><p id="mmAcctMsg" class="small muted" style="display:none;margin-top:8px"></p></div>';
 
     if (snap.state === "local") html += '<p class="small muted" style="text-align:center;margin-top:18px">Dieses Gerät nutzt My MaleMetrix lokal. Das geräteübergreifende Konto wird demnächst aktiviert — deine Daten bleiben erhalten.</p>';
+    return html;
+  }
+
+  /* =========================== PERFORMANCE MAP (Phase 8, §5/§6/§92) ===========================
+     Der erste "Holy Shit"-Moment: dein System in Sekunden verstanden.
+     Reine Ableitung aus Score + Graph + Intelligenz — nichts wird neu gefragt. */
+  function vMap() {
+    var md = MM.activation ? MM.activation.mapData() : null;
+    if (!md) {
+      return '<div class="os-head"><span class="eyebrow" style="margin:0">Performance Map</span></div>' +
+        '<div class="card os-accent"><h1 class="os-big" style="font-size:1.4rem">Deine Map entsteht aus deinem Score.</h1>' +
+        '<p class="muted" style="margin:0 0 14px">10 Minuten, 7 Systeme, sofortige Auswertung — daraus baut MaleMetrix deine persönliche Karte: Engpass, Richtung, erster Schritt.</p>' +
+        '<a href="check.html" class="btn btn-primary">MaleMetrix Score starten →</a></div>';
+    }
+    var d = MM.account.getDashboardState();
+    if (MM.track) { try { var sk = "map_seen_" + todayYmd(); if (!MM.store.get(sk, false)) { MM.track("map_view", {}); MM.store.set(sk, true); } } catch (e) {} }
+    var html = '<div class="os-head"><span class="eyebrow" style="margin:0">Performance Map</span><a class="os-ghost" href="#today">Today →</a></div>';
+    html += '<div class="mm-map">';
+    // DU HEUTE
+    html += '<div class="mm-map-node"><span class="mm-map-k">DU · HEUTE</span>' +
+      '<div class="mm-map-you">' + (md.total != null ? '<div class="mm-map-score"><b>' + md.total + '</b><span>/100</span></div>' : '') +
+      '<div><b>' + esc(md.archetype || "Dein Ausgangspunkt") + '</b>' +
+      (md.weakest.length ? '<span class="s">Schwächste Systeme: ' + md.weakest.map(function (w) { return esc(w.name || w.key); }).join(" · ") + '</span>' : '') +
+      '</div></div></div>';
+    html += '<div class="mm-map-spine" aria-hidden="true"></div>';
+    // LIMITER
+    html += '<div class="mm-map-node warn"><span class="mm-map-k">PRIMÄRER LIMITER</span><b class="mm-map-big">' + esc(md.bottleneck || "—") + '</b>' +
+      (md.bottleneckDyn ? '<span class="s">Dynamisch bestätigt: ' + esc(md.bottleneckDyn.domain) + ' · Konfidenz ' + md.bottleneckDyn.confidencePct + ' %</span>' : '<span class="s">Aus deinem Score — wird mit laufenden Daten dynamisch nachgeführt.</span>') + '</div>';
+    html += '<div class="mm-map-spine" aria-hidden="true"></div>';
+    // 12 WOCHEN
+    html += '<div class="mm-map-node"><span class="mm-map-k">DEINE NÄCHSTEN 12 WOCHEN</span><b class="mm-map-big">' + esc(md.modeName || "MODUS WÄHLEN") + (md.pathway ? ' · ' + esc(md.pathway.toUpperCase()) : '') + '</b><span class="s">' + esc(md.direction) + '</span></div>';
+    html += '<div class="mm-map-spine" aria-hidden="true"></div>';
+    // START HIER
+    html += '<div class="mm-map-node go"><span class="mm-map-k">STARTE HIER</span><b class="mm-map-big">' + esc(md.first.title) + '</b><span class="s">' + esc(md.first.reason) + '</span>' +
+      (d.access.twelve_week ? '<a class="btn btn-primary btn-sm" style="margin-top:10px" href="#today">Zu Today →</a>' : '<a class="btn btn-primary btn-sm" style="margin-top:10px" href="protokoll.html">Dein System aufbauen →</a>') + '</div>';
+    // NICHT JAGEN
+    html += '<div class="mm-map-notnow"><span class="mm-map-k">JETZT NICHT JAGEN</span>' + md.notNow.map(function (n) { return '<span class="nn">✕ ' + esc(n) + '</span>'; }).join("") + '</div>';
+    // KONFIDENZ — ehrlich
+    html += '<p class="small muted" style="margin:14px 2px 0">Datenbasis: ' + esc(md.confidence.depth) + ' · ' + esc(md.confidence.line) + (md.scoreDate ? ' · Score vom ' + esc(fmtDateShort(md.scoreDate)) : '') + '</p>';
+    html += '</div>';
+    return html;
+  }
+
+  /* =========================== WAS MALEMETRIX GELERNT HAT (Phase 8, §27/§28) =========================== */
+  function vLearned() {
+    var html = '<div class="os-head"><span class="eyebrow" style="margin:0">Was MaleMetrix gelernt hat</span><a class="os-ghost" href="#coach">Coach →</a></div>';
+    var P = MM.intelligence && MM.intelligence.proof ? MM.intelligence.proof : null;
+    if (!P) return html + '<div class="card"><p class="muted">Intelligenz-Schicht nicht geladen.</p></div>';
+    var dp = MM.activation ? MM.activation.depth() : null;
+    if (dp) {
+      html += '<div class="card os-depth"><div class="hd"><span class="tag">PERSONALISIERUNGSTIEFE</span><b class="lvl lvl-' + dp.level.toLowerCase() + '">' + esc(dp.level) + '</b></div>' +
+        '<p class="muted" style="margin:8px 0 4px">' + esc(dp.explain) + '</p><p class="small muted" style="margin:0">Nächste Stufe: ' + esc(dp.next) + '</p></div>';
+    }
+    var CLS = { OBSERVED: "BEOBACHTET", ASSOCIATED: "ZUSAMMENHANG", LIKELY: "WAHRSCHEINLICH", UNCERTAIN: "UNSICHER" };
+    var pats = P.learned();
+    if (pats.length) {
+      html += sec("Gelernte Muster", pats.map(function (p2) {
+        return '<div class="os-pattern os-p-' + p2.cls.toLowerCase() + '"><span class="pcls">' + esc(CLS[p2.cls] || p2.cls) + '</span><p>' + esc(p2.text) + '</p><span class="s">Basis: ' + esc(p2.basis) + '</span></div>';
+      }).join(""));
+    } else {
+      var miss = P.missing();
+      html += '<div class="card"><span class="card-num">NOCH KEINE BELASTBAREN MUSTER</span><p class="muted" style="margin:8px 0 10px">MaleMetrix zeigt nur, was deine Daten wirklich hergeben — nichts wird erfunden.</p>' +
+        (miss.length ? '<p class="small" style="margin:0;color:var(--muted)">Das würde helfen: ' + miss.map(esc).join(" · ") + '</p>' : '') + '</div>';
+    }
+    var outs = P.outcomes();
+    if (outs.length) {
+      html += sec("Deine Entscheidungen — und was daraus wurde", outs.map(function (o) {
+        return '<div class="os-outcome"><div class="hd"><b>' + esc(o.what) + '</b><span class="ver ver-' + esc(o.verdict.cls) + '">' + esc(o.verdict.label) + '</span></div>' +
+          '<span class="s">' + esc(fmtDateShort(o.date)) + (o.from != null && o.to != null ? ' · ' + esc(o.from) + ' → ' + esc(o.to) : '') +
+          (o.observed && o.observed.weightDelta != null ? ' · gemessen: Gewicht ' + (o.observed.weightDelta > 0 ? '+' : '') + o.observed.weightDelta + ' kg' : '') + '</span></div>';
+      }).join("") + '<p class="small muted" style="margin-top:10px">Jede Anpassung bekommt ein Review gegen echte Daten — das ist deine persönliche Evidenz, kein generisches Coaching.</p>');
+    }
     return html;
   }
 
@@ -688,6 +779,22 @@
 
     html += '<div class="card" id="osPhotoCmp"><span class="tag">FOTOS · WOCHE 0 vs. JETZT</span><div class="os-photocmp" id="osPhotoSlots"><p class="small muted">Prüfe Fotos…</p></div></div>';
 
+    // Phase 8 (§8): Checkpoint-Logik W4/W8/W12 — erinnert nur, wenn wirklich fällig.
+    if (p.active && p.week >= 4) {
+      var cpDue = p.week >= 12 ? 12 : p.week >= 8 ? 8 : 4;
+      html += '<div class="card" id="osCpCard" data-cpweek="' + cpDue + '" hidden><span class="tag">CHECKPOINT · WOCHE ' + cpDue + '</span>' +
+        '<p class="muted" style="margin:6px 0 10px">Deine W' + cpDue + '-Fotos fehlen noch. Gleiche Distanz, gleiches Licht, gleiche Pose wie Woche 0 — 2 Minuten, und dein Vorher/Nachher ist beweisbar.</p>' +
+        '<a class="btn btn-primary btn-sm" href="#baseline">Checkpoint-Fotos machen →</a></div>';
+    }
+
+    // Phase 8 (§10): Share-Card — privacy-safe, nur Ausführungs-/Körper-Deltas,
+    // NIE Labs, Medikation, Pathway oder sensible Daten. Erst ab echter Datenbasis.
+    var canShare = p.active && p.week >= 4 && ((w0 && wN) || (wa0 && waN) || trend);
+    if (canShare) {
+      html += '<div class="card"><span class="tag">SHARE</span><p class="muted" style="margin:6px 0 10px">Erstelle eine Progress-Card aus deinen echten Zahlen (Gewicht, Taille, Kraft, Consistency). Keine Labs, keine sensiblen Daten — du entscheidest, was du teilst.</p>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-dark btn-sm" data-sharecard="45">Card 4:5 (Feed) ↓</button><button class="btn btn-dark btn-sm" data-sharecard="916">Card 9:16 (Story) ↓</button></div></div>';
+    }
+
     // §66/§67 — W12: Transformation Report + Next Cycle
     if (p.active && (p.week >= 12 || p.over)) {
       var rec = E.nextCycleRecommendation({ mode: d.mode, waistNow: waN ? waN.value : null, weightDelta: (w0 && wN) ? wN.value - w0.value : null, waistDelta: (wa0 && waN) ? waN.value - wa0.value : null, strengthPct: trend ? trend.pct : null, executionPct: p.consistency });
@@ -710,6 +817,12 @@
     return html;
   }
   function loadPhotoCompare() {
+    // Checkpoint-Karte nur zeigen, wenn die fälligen Fotos WIRKLICH fehlen (§8).
+    var cp = document.getElementById("osCpCard");
+    if (cp) {
+      var cw = parseInt(cp.getAttribute("data-cpweek"), 10);
+      OS.hasPhotos(cw).then(function (has) { if (!has) cp.hidden = false; });
+    }
     var slot = document.getElementById("osPhotoSlots"); if (!slot) return;
     Promise.all([OS.photoStatus(0), OS.hasPhotos(12), OS.hasPhotos(8), OS.hasPhotos(4)]).then(function (h) {
       var st0 = h[0];
@@ -725,6 +838,73 @@
         }).join("");
       });
     });
+  }
+
+  /* =========================== SHARE CARD (Phase 8, §10) ===========================
+     Privacy-safe by design: Die Card kann NUR enthalten, was hier explizit
+     gerendert wird — Modus, Wochen, Gewichts-/Taillen-Delta, Kraft, Consistency.
+     Labs, Medikation, Pathway (enhanced), sexuelle Gesundheit: nicht enthalten. */
+  function shareCardData() {
+    var d = MM.account.getDashboardState(); var p = d.program || {};
+    var w0 = OS.firstMetric("weight"), wN = OS.latestMetric("weight");
+    var wa0 = OS.firstMetric("waist"), waN = OS.latestMetric("waist");
+    var trend = E.strengthTrend(exHistories());
+    var rows = [];
+    if (wa0 && waN && Math.abs(waN.value - wa0.value) >= 0.5) rows.push({ k: "TAILLE", v: (waN.value - wa0.value > 0 ? "+" : "") + (waN.value - wa0.value).toFixed(1) + " CM" });
+    if (w0 && wN && Math.abs(wN.value - w0.value) >= 0.3) rows.push({ k: "GEWICHT", v: (wN.value - w0.value > 0 ? "+" : "") + (wN.value - w0.value).toFixed(1) + " KG" });
+    if (trend && trend.pct) rows.push({ k: "KRAFT (e1RM)", v: (trend.pct > 0 ? "+" : "") + trend.pct + " %" });
+    if (p.consistency != null) rows.push({ k: "CONSISTENCY", v: p.consistency + " %" });
+    if (!rows.length) return null;
+    // Konservative, gegroundete Headline (§9): keine Kausal-Überclaims.
+    var head = "WOCHE " + (p.week || "—");
+    var wD = w0 && wN ? wN.value - w0.value : null, waD = wa0 && waN ? waN.value - wa0.value : null;
+    var story = "";
+    if (waD != null && waD <= -2 && wD != null && Math.abs(wD) < 2.5 && trend && trend.pct > 0) story = "Taille runter, Kraft rauf, Gewicht stabil — Muster: Rekomposition.";
+    else if (waD != null && waD <= -2) story = "Messbar schlanker — bei dokumentierter Umsetzung.";
+    else if (trend && trend.pct >= 5) story = "Kraft messbar gesteigert — Progression statt Zufall.";
+    else story = "Messbarer Fortschritt — dokumentiert, nicht behauptet.";
+    return { head: head, mode: (MODE[d.mode] || d.mode || "").toUpperCase(), rows: rows.slice(0, 4), story: story };
+  }
+  function shareCardSVG(data, ratio) {
+    var W = 1080, H = ratio === "916" ? 1920 : 1350;
+    var top = ratio === "916" ? 430 : 260;
+    var rowsSvg = data.rows.map(function (r, i) {
+      var y = top + 240 + i * 150;
+      return '<text x="90" y="' + y + '" font-family="monospace" font-size="40" fill="rgba(255,255,255,0.55)" letter-spacing="6">' + r.k + '</text>' +
+        '<text x="990" y="' + (y + 8) + '" text-anchor="end" font-family="monospace" font-size="72" font-weight="bold" fill="#eef2f7">' + r.v + '</text>' +
+        '<line x1="90" y1="' + (y + 40) + '" x2="990" y2="' + (y + 40) + '" stroke="rgba(255,255,255,0.08)"/>';
+    }).join("");
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">' +
+      '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2e7cf6"/><stop offset="1" stop-color="#00c2ff"/></linearGradient></defs>' +
+      '<rect width="' + W + '" height="' + H + '" fill="#07090d"/>' +
+      '<g stroke="rgba(255,255,255,0.045)">' + [1, 2, 3, 4, 5].map(function (i) { return '<line x1="' + (i * W / 6) + '" y1="0" x2="' + (i * W / 6) + '" y2="' + H + '"/>'; }).join("") + '</g>' +
+      '<rect x="0" y="0" width="' + W + '" height="10" fill="url(#g)"/>' +
+      '<text x="90" y="' + top + '" font-family="monospace" font-size="44" fill="rgba(255,255,255,0.5)" letter-spacing="10">' + data.mode + '</text>' +
+      '<text x="90" y="' + (top + 110) + '" font-family="sans-serif" font-size="96" font-weight="800" fill="#eef2f7">' + data.head + '</text>' +
+      rowsSvg +
+      '<text x="90" y="' + (top + 240 + data.rows.length * 150 + 40) + '" font-family="sans-serif" font-size="40" fill="rgba(255,255,255,0.72)">' + data.story + '</text>' +
+      '<text x="90" y="' + (H - 90) + '" font-family="monospace" font-size="36" fill="rgba(255,255,255,0.4)" letter-spacing="4">MALEMETRIX · GEMESSEN, NICHT BEHAUPTET</text>' +
+      '</svg>';
+  }
+  function downloadShareCard(ratio) {
+    var data = shareCardData();
+    if (!data) { if (MM.toast) MM.toast("Noch nicht genug echte Daten für eine Card."); return; }
+    var svg = shareCardSVG(data, ratio);
+    var img = new Image();
+    var blob = new Blob([svg], { type: "image/svg+xml" });
+    var url = URL.createObjectURL(blob);
+    img.onload = function () {
+      var c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
+      c.getContext("2d").drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+      c.toBlob(function (png) {
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(png); a.download = "malemetrix-progress-" + (ratio === "916" ? "story" : "feed") + ".png"; a.click();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+      }, "image/png");
+      if (MM.track) MM.track("share_created", { ratio: ratio });
+    };
+    img.src = url;
   }
 
   /* =========================== LEARN =========================== */
@@ -894,6 +1074,8 @@
       module("#experiments", "EXPERIMENTE", "Kontrolliert optimieren", (I.experiments.active().length ? "1 aktiv" : "")) +
       module("#protocol", "MY PROTOCOL", "Dein Betriebshandbuch", "") +
       module("#timeline", "TIMELINE", "Deine Historie", "") +
+      module("#learned", "GELERNT", "Was MaleMetrix über dich weiß — mit Evidenz-Klasse", (MM.activation ? MM.activation.depth().level : "")) +
+      module("#map", "PERFORMANCE MAP", "Dein System auf einen Blick", "") +
       '</div></section>';
 
     // Personalization depth (§123)
@@ -1223,9 +1405,10 @@
     if (snap.state === "loading") { skeleton(); return; }
     if (snap.configured && snap.state === "signed_out") { signInScreen(); return; }
     OS.ensureCycle();   // Zyklus-Zustandsmaschine bei jedem Render konsistent halten
+    if (MM.activation) { try { MM.activation.trackOnce(); } catch (e) {} }   // Funnel-Meilensteine, je genau 1×
     var v = view();
     var body = v === "plan" ? vPlan() : v === "track" ? vTrack() : v === "progress" ? vProgress() : v === "learn" ? vLearn() : v === "baseline" ? vBaseline() : v === "pathway" ? vPathway() : v === "transform" ? vTransform() : v === "workout" ? vWorkout() : v === "week" ? vWeek() : v === "settings" ? vSettings() :
-      v === "coach" ? vCoach() : v === "advisor" ? vAdvisor() : v === "review" ? vReview() : v === "twin" ? vTwin() : v === "simulator" ? vSimulator() : v === "experiments" ? vExperiments() : v === "protocol" ? vProtocol() : v === "timeline" ? vTimeline() : v === "memory" ? vMemory() : vToday(snap);
+      v === "coach" ? vCoach() : v === "advisor" ? vAdvisor() : v === "review" ? vReview() : v === "twin" ? vTwin() : v === "simulator" ? vSimulator() : v === "experiments" ? vExperiments() : v === "protocol" ? vProtocol() : v === "timeline" ? vTimeline() : v === "memory" ? vMemory() : v === "map" ? vMap() : v === "learned" ? vLearned() : vToday(snap);
     var fab = (v !== "workout" && v !== "settings" && snap.state !== "signed_out") ? '<button class="os-fab" data-fab aria-label="Schnell erfassen">+</button>' : "";
     host.innerHTML = '<div class="os-shell os-env-' + (v === "progress" || v === "workout" ? "performance" : v === "plan" ? "metabolic" : v === "learn" && OS.pathway() === "enhanced" ? "clinical" : "instrument") + '">' + navBar(v) + '<div class="os-body">' + body + '</div>' + fab + '</div>';
     if (v === "progress") loadPhotoCompare();
@@ -1272,6 +1455,7 @@
       if (t.closest("#enSave")) { saveEngine(); return; }
       if (t.closest("#rcSave")) { var sh = parseFloat((document.getElementById("rcSleep") || {}).value); var en = parseInt((document.getElementById("rcEnergy") || {}).value, 10); var any = false; if (sh) { OS.logMetric("sleep", sh, "h"); any = true; } if (en) { OS.logMetric("energy", en, "/5"); any = true; } if (any) { if (MM.toast) MM.toast("Recovery gespeichert."); render(); } return; }
       if (t.closest("#cycDone")) { OS.completeCycle(); if (MM.toast) MM.toast("Zyklus abgeschlossen — er ist jetzt Teil deiner Historie."); render(); return; }
+      var shc = t.closest("[data-sharecard]"); if (shc) { downloadShareCard(shc.getAttribute("data-sharecard")); return; }
       if (t.closest("#tkSave")) { var w = parseFloat((document.getElementById("tkW") || {}).value); var wa = parseFloat((document.getElementById("tkWa") || {}).value); var okAny = false; if (w) { OS.logMetric("weight", w, "kg"); okAny = true; } if (wa) { OS.logMetric("waist", wa, "cm"); okAny = true; } if (okAny) { if (MM.toast) MM.toast("Gespeichert."); render(); } return; }
       if (t.closest("#icsGo")) {
         var tm = (document.getElementById("icsTime") || {}).value || "18:00"; OS.setP("calendar.trainTime", tm);
