@@ -1,21 +1,29 @@
 /* ==========================================================================
-   MALEMETRIX OS — APP SHELL  (My MaleMetrix)
+   MALEMETRIX OS — APP SHELL  (My MaleMetrix) · Phase 3.1 "Close the Loop"
    --------------------------------------------------------------------------
    Rendert die eingeloggte App in #mmDash: TODAY · PLAN · TRACK · PROGRESS ·
-   LEARN (+ Baseline, Pathway, Transformation, Workout). Hash-Routing
-   (#today …), mobile Bottom-Nav. Bewahrt alle Account-Flows aus Phase 2.x
-   (Sign-in, Migration, Claim, Export, Löschung) — MaleMetrix integriert,
-   der Nutzer kombiniert nicht fünf Tools im Kopf.
+   LEARN (+ Baseline, Pathway, Transformation, Workout). Hash-Routing,
+   mobile Bottom-Nav. Bewahrt alle Account-Flows aus Phase 2.x.
+
+   Phase-3.1-Wahrheiten:
+   · TODAY zeigt den ECHTEN Tagestyp (MM.programView) — §9
+   · Workout schließt Programm-Tage nur auf Kraft-Tagen ab — §10/§105
+   · Session-Zuordnung folgt dem PLAN (Kraftslot-Sequenz), nicht einem
+     Completion-Zähler — §11/§12
+   · Nutrition: PLANNED ≠ LOGGED; persistierte Meal-Days; echte Swaps mit
+     Delta; Wochen-Review mit REVIEW → ACCEPT — §29–§39
+   · Progress rechnet mit echten e1RM-Daten oder sagt INSUFFICIENT DATA — §64
    ========================================================================== */
 (function () {
   "use strict";
   var host = document.getElementById("mmDash");
   if (!host || !window.MM || !MM.account || !MM.os || !MM.engines) return;
-  var OS = MM.os, E = MM.engines;
+  var OS = MM.os, E = MM.engines, PV = MM.programView || null;
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]; }); }
   var MODE = { cut: "CUT", recomp: "RECOMP", build: "BUILD", perform: "PERFORM" };
   var BN = { recovery: "Recovery", engine: "Engine", body: "Body", strength: "Strength", metabolic: "Metabolic", lifestyle: "Lifestyle", medical: "Medical Check" };
   var PHASE = { 1: "Build the Base", 2: "Build Capacity", 3: "Push Performance", 4: "Lock it in" };
+  var GROUP_DE = { chest: "Brust", back: "Rücken", quads: "Quads", hamstrings: "Hamstrings", delts: "Schultern", arms: "Arme", core: "Core" };
   function todayYmd() { var d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
 
   /* ---------- Routing ---------- */
@@ -38,6 +46,48 @@
   }
   function nobody(text) { return '<div class="os-nobody"><span class="tag">WHAT NOBODY TELLS YOU</span><p>' + esc(text) + '</p></div>'; }
   function greetTime() { var h = new Date().getHours(); return h < 11 ? "Guten Morgen" : h < 18 ? "Guten Tag" : "Guten Abend"; }
+  // Mini-Sparkline (§65) — inline SVG, kein Chart-Framework.
+  function spark(series, w, h) {
+    if (!series || series.length < 2) return "";
+    var vals = series.map(function (x) { return x.value; });
+    var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+    var span = (max - min) || 1; w = w || 120; h = h || 32;
+    var pts = vals.map(function (v, i) { return (i / (vals.length - 1) * w).toFixed(1) + "," + (h - 3 - (v - min) / span * (h - 6)).toFixed(1); }).join(" ");
+    return '<svg class="os-spark" viewBox="0 0 ' + w + ' ' + h + '" width="' + w + '" height="' + h + '" aria-hidden="true"><polyline points="' + pts + '" fill="none" stroke="currentColor" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>';
+  }
+
+  /* ---------- Workout-Log-Zugriff (Modell §14, abwärtskompatibel) ---------- */
+  function wlogs() { return MM.store.get("os_workout_logs", {}) || {}; }
+  function exHistories() {
+    var l = wlogs(); var out = {};
+    Object.keys(l).forEach(function (k) { if (k.charAt(0) !== "_" && Array.isArray(l[k])) out[k] = l[k]; });
+    return out;
+  }
+  /* §11/§12 — Session-Zuordnung aus dem PLAN: der n-te Kraftslot des Programms
+     bekommt Template n der Rotation. Überlebt verpasste Tage, Reschedules und
+     Gerätewechsel, weil sie aus (synchronisiertem) Programm-State abgeleitet
+     ist — nicht aus einem lokalen Completion-Zähler. */
+  function plannedSessionInfo(tp) {
+    if (PV && PV.available()) {
+      var st = PV.state();
+      if (!st.notStarted && !st.over) {
+        var today = st.day;
+        var isStrengthToday = PV.dayTypeAt(today) === "strength";
+        var targetDay = today;
+        if (!isStrengthToday) {
+          targetDay = null;
+          for (var d = today + 1; d <= Math.min(84, today + 7); d++) { if (PV.dayTypeAt(d) === "strength") { targetDay = d; break; } }
+        }
+        if (targetDay != null) {
+          var seq = PV.strengthIndexUpTo(targetDay);   // 1-basiert
+          var tpl = tp.sessions[(seq - 1) % tp.sessions.length];
+          return { session: tpl, programDay: targetDay, isToday: isStrengthToday, seq: seq, spid: OS.cycleId() + ":d" + targetDay };
+        }
+      }
+    }
+    var count = ((wlogs())._sessions || []).length;   // Fallback ohne aktives Programm
+    return { session: tp.sessions[count % tp.sessions.length], programDay: null, isToday: false, seq: count + 1, spid: OS.cycleId() + ":free" + (count + 1) };
+  }
 
   /* =========================== TODAY =========================== */
   function vToday(snap) {
@@ -46,11 +96,9 @@
     var name = d.name ? (", " + d.name.toUpperCase()) : "";
     var html = "";
 
-    // Kopf + Abmelden (Bestands-Hooks)
     html += '<div class="os-head"><span class="eyebrow" style="margin:0">My MaleMetrix</span>' +
       (snap.state === "signed_in" ? '<button id="mmOut" class="os-ghost">Abmelden</button>' : '') + '</div>';
 
-    // Migration (Bestands-Flow)
     if (snap.state === "signed_in") {
       var inv = MM.account.localInventory(); var ms = MM.account.migrationStatus();
       if ((inv.score || inv.program) && ms.state !== "complete") {
@@ -58,33 +106,50 @@
       }
     }
 
-    // Pathway wählen, falls noch keiner gesetzt
     if (!OS.pathway() && (d.hasScore || (d.access && d.access.twelve_week))) {
       html += '<a class="card os-pathway-cta" href="#pathway"><span class="tag">PATHWAY</span><b>Was willst du wirklich erreichen?</b><span class="s">Health · Performance · Enhanced — 30 Sekunden, prägt dein ganzes System.</span></a>';
     }
 
+    var cm = OS.contextMode();
     if (d.access.twelve_week && p.active && !p.notStarted && !p.over) {
-      // HERO: Programm-Status (Bestands-Texte 'Woche X · Tag Y' bleiben)
+      var rx = PV ? PV.getTodayPrescription() : null;
       html += '<div class="card os-hero-card"><span class="small muted os-k">' + esc(greetTime()) + esc(name) + '</span>' +
         '<h1 class="os-big">Woche ' + p.week + ' · Tag ' + p.day + '</h1>' +
-        '<p class="muted" style="margin:0 0 14px">Phase ' + p.phase + ' · ' + esc(PHASE[p.phase]) + ' — Modus <strong style="color:var(--text)">' + esc(MODE[d.mode] || d.mode || "") + '</strong> · Engpass <strong style="color:var(--text)">' + esc(BN[d.bottleneck] || d.bottleneck || "—") + '</strong></p>' +
-        '<a href="kurs-programm.html" class="btn btn-primary" data-track="program_continue">Heute fortsetzen →</a></div>';
+        '<p class="muted" style="margin:0 0 6px">Phase ' + p.phase + ' · ' + esc(PHASE[p.phase]) + ' — Modus <strong style="color:var(--text)">' + esc(MODE[d.mode] || d.mode || "") + '</strong> · Engpass <strong style="color:var(--text)">' + esc(BN[d.bottleneck] || d.bottleneck || "—") + '</strong></p>' +
+        (rx ? '<p class="os-daytype os-dt-' + esc(rx.dayType) + '"><span class="dt">' + esc(rx.title) + '</span><span class="dp">' + esc(rx.purpose) + '</span></p>' : '') +
+        '<a href="kurs-programm.html" class="btn btn-primary" data-track="program_continue">Heute fortsetzen →</a>' +
+        (rx && rx.dayType === "strength" ? ' <a href="#workout" class="os-ghost">Workout öffnen →</a>' : '') + '</div>';
       html += '<div class="os-tiles">' + (d.hasScore ? tile("Score", d.score + " / 100") : "") + tile("Programm", "W " + p.week + " / 12") + tile("Consistency", p.consistency + " %", p.active_days + " aktive Tage") + (p.nextReviewDays != null ? tile("Nächstes Review", p.nextReviewDays + " Tage") : "") + '</div>';
 
-      // NEXT BEST ACTION + Aktionen
+      // Reschedule-Karte (§70) — nur wenn wirklich ein Krafttag verpasst wurde
+      var rs = OS.rescheduleOptions();
+      if (rs && rs.options.length) {
+        html += '<div class="card os-resched"><span class="tag">VERPASSTER KRAFTTAG</span><p class="small muted" style="margin:6px 0 10px">Tag ' + rs.missedDay + ' (Strength) ist offen. Beste Ausweichtage diese Woche:</p>' +
+          rs.options.map(function (o) { return '<button class="os-chip" data-resched="' + rs.missedDay + ':' + o.day + '">Tag ' + o.day + ' (' + esc(o.dayType) + ' → Strength)</button>'; }).join(" ") + '</div>';
+      }
+
       var nba = OS.nextBestAction();
       if (nba.primary) {
         html += '<div class="os-nba"><span class="tag">NEXT BEST ACTION</span><div class="nba-main"><b>' + esc(nba.primary.label) + '</b><span>' + esc(nba.primary.detail) + '</span></div>' +
-          (nba.primary.type === "program_day" ? '<a class="btn btn-primary btn-sm" href="' + nba.primary.deepLink + '">Start →</a>' : '<button class="btn btn-primary btn-sm" data-osdone="' + esc(nba.primary.id) + '">Erledigt ✓</button>') + '</div>';
+          (nba.primary.type === "program_strength" ? '<a class="btn btn-primary btn-sm" href="#workout">Start Workout →</a>'
+            : nba.primary.type === "program_engine" ? '<a class="btn btn-primary btn-sm" href="#track">Engine loggen →</a>'
+              : /^program|_due$/.test(nba.primary.type) ? '<a class="btn btn-primary btn-sm" href="' + nba.primary.deepLink + '">Start →</a>'
+                : '<button class="btn btn-primary btn-sm" data-osdone="' + esc(nba.primary.id) + '">Erledigt ✓</button>') + '</div>';
+        if (nba.advisory) html += '<p class="os-advisory">' + esc(nba.advisory) + '</p>';
         html += '<p class="os-notnow"><b>Not now:</b> ' + nba.notNow.map(esc).join(" · ") + '</p>';
       }
       var acts = OS.todayActions();
       html += '<div class="os-actions">' + acts.map(function (a, i) {
         return '<div class="os-action ' + (a.done ? "done" : "") + '"><span class="n">' + (i + 1) + '</span><div class="t"><b>' + esc(a.label) + '</b><span>' + esc(a.detail) + '</span></div>' +
-          (a.type === "program_day" ? '<a class="os-ghost" href="' + a.deepLink + '">Öffnen</a>' : (a.done ? '<span class="ok">✓</span>' : '<button class="os-ghost" data-osdone="' + esc(a.id) + '">✓</button>')) + '</div>';
+          (a.type === "program_strength" ? '<a class="os-ghost" href="#workout">Öffnen</a>'
+            : /^program/.test(a.type) ? '<a class="os-ghost" href="' + a.deepLink + '">Öffnen</a>'
+              : (a.done ? '<span class="ok">✓</span>' : '<button class="os-ghost" data-osdone="' + esc(a.id) + '">✓</button>')) + '</div>';
       }).join("") + '</div>';
 
-      // Baseline-Reminder, falls für diesen Zyklus keine existiert
+      // Reminders (§71) — nur ungelöste, ohne Doppelung mit NBA
+      var rem = OS.reminders().filter(function (r) { return !(nba.primary && nba.primary.type === r.type + "_due"); });
+      if (rem.length) html += '<div class="os-reminders">' + rem.map(function (r) { return '<p class="' + (r.urgent ? "urgent" : "") + '">' + esc(r.text) + '</p>'; }).join("") + '</div>';
+
       if (!OS.baseline()) html += '<a class="card os-baseline-cta" href="#baseline"><span class="tag">BASELINE</span><b>Dokumentiere deinen Start.</b><span class="s">Gewicht, Taille, Kraftwerte, Fotos — du wirst nicht mehr wissen, wie du heute aussahst.</span></a>';
     } else if (d.access.twelve_week && p && p.notStarted) {
       html += '<div class="card os-accent"><span class="small muted os-k">' + esc(greetTime()) + esc(name) + '</span><h1 class="os-big" style="font-size:1.5rem">Dein 12-Week System ist startklar</h1><p class="muted" style="margin:0 0 14px">Dein Programm beginnt am gewählten Startdatum. Nutze die Zeit: <a href="#baseline" style="color:var(--accent)">Baseline anlegen →</a></p><a href="kurs-programm.html" class="btn btn-primary">Programm öffnen →</a></div>';
@@ -93,7 +158,6 @@
     } else if (d.hasScore) {
       html += '<div class="card os-accent"><span class="small muted os-k">' + esc(greetTime()) + esc(name) + '</span><h1 class="os-big" style="font-size:1.5rem">Dein Engpass: ' + esc(d.bottleneckName || BN[d.bottleneck] || "—") + '</h1><p class="muted" style="margin:0 0 14px">Empfohlener Modus: <strong style="color:var(--text)">' + esc(MODE[d.mode] || d.mode || "—") + '</strong>. Das 12-Week System führt dich Schritt für Schritt.</p><a href="protokoll.html" class="btn btn-primary">Dein System aufbauen →</a></div>';
     } else {
-      // Leerer Zustand: DEIN SYSTEM STARTET HIER (enthält Baseline + Score starten)
       html += '<div class="card os-accent os-start"><h1 class="os-big" style="font-size:1.5rem">Dein System startet hier</h1><ol class="os-steps">' +
         '<li><b>Score machen</b><span>Baseline deiner 7 Systeme — findet deinen Engpass.</span></li>' +
         '<li><b>Pathway wählen</b><span>Health · Performance · Enhanced.</span></li>' +
@@ -102,12 +166,16 @@
         '<a href="check.html" class="btn btn-primary">MaleMetrix Score starten →</a></div>';
     }
 
-    // Claim (Bestands-Flow)
+    // Kontext-Modus (§90–§94) — echtes Verhalten, nicht nur Speicherung
+    html += '<div class="card os-context"><span class="os-k">Kontext</span><div class="os-ctxrow">' +
+      ["normal", "travel", "no_gym", "high_stress", "recovery_sick"].map(function (m) {
+        return '<button class="os-chip ' + (cm === m ? "sel" : "") + '" data-ctx="' + m + '">' + esc(OS.CONTEXT_INFO[m].label) + '</button>';
+      }).join("") + '</div>' + (cm !== "normal" ? '<p class="small muted" style="margin:8px 0 0">' + esc(OS.CONTEXT_INFO[cm].note) + '</p>' : '') + '</div>';
+
     if (!d.access.twelve_week) {
       html += '<div class="card"><p class="small" style="margin:0 0 8px;font-weight:600">Du hast bereits einen Zugangscode?</p><div style="display:flex;gap:8px;flex-wrap:wrap"><input id="mmClaim" type="text" placeholder="Zugangscode" autocomplete="off" spellcheck="false" style="flex:1;min-width:180px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(127,127,127,0.06);color:var(--text);letter-spacing:1px"><button id="mmClaimBtn" class="btn btn-primary btn-sm">Zugang aktivieren</button></div><p id="mmClaimMsg" class="small" style="display:none;margin-top:8px"></p></div>';
     }
 
-    // Konto & Daten (Bestands-Flow) + Sync-Status
     var SYNC_TXT = { synced: "Gespeichert ✓", pending: "Sync ausstehend", saving: "Speichert…", offline: "Offline — lokal gespeichert", error: "Sync wird automatisch erneut versucht", "local": "Nur dieses Gerät", "n/a": "" };
     html += '<div class="card os-account"><span class="os-k">Konto &amp; Daten</span>' +
       '<p class="small muted" style="margin:8px 0 10px">Status: ' + esc(SYNC_TXT[snap.state === "signed_in" ? MM.account.getSyncStatus() : "local"] || "") + '</p>' +
@@ -122,20 +190,21 @@
   /* =========================== PATHWAY =========================== */
   function vPathway() {
     var cur = OS.pathway();
-    var html = sec("Was willst du wirklich erreichen?", '<p class="muted" style="margin:0 0 16px">Pathway ≠ Ziel. Der Pathway bestimmt Ton, Tiefe und welche Inhalte dein System dir zeigt — dein Modus (CUT/RECOMP/BUILD/PERFORM) bleibt davon getrennt.</p>' +
+    return sec("Was willst du wirklich erreichen?", '<p class="muted" style="margin:0 0 16px">Pathway ≠ Ziel. Der Pathway bestimmt Ton, Tiefe und welche Inhalte dein System dir zeigt — dein Modus (CUT/RECOMP/BUILD/PERFORM) bleibt davon getrennt.</p>' +
       '<div class="os-pathways">' + Object.keys(OS.PATHWAYS).map(function (k) {
         var p = OS.PATHWAYS[k];
         return '<button class="os-pathway ' + (cur === k ? "sel" : "") + '" data-pathway="' + k + '"><span class="nm">' + esc(p.label) + '</span><span class="ln">' + esc(p.line) + '</span>' + (k === "enhanced" ? '<span class="note">Direkte Real-World-Education · kein Dosierungs-Generator</span>' : '') + '</button>';
       }).join("") + '</div>');
-    return html;
   }
 
   /* =========================== BASELINE =========================== */
   function vBaseline() {
     var b = OS.baseline() || {};
     var lw = OS.latestMetric("weight"), lwa = OS.latestMetric("waist");
+    var cyc = OS.currentCycle();
     function inp(id, label, val, ph) { return '<label class="os-field"><span>' + esc(label) + '</span><input id="' + id + '" type="number" inputmode="decimal" value="' + (val != null ? esc(val) : "") + '" placeholder="' + (ph || "—") + '"></label>'; }
-    var html = sec("Baseline · dokumentiere deinen Start",
+    return sec("Baseline · dokumentiere deinen Start",
+      '<p class="small muted" style="margin:0 0 4px">Zyklus <span class="os-mono">' + esc(cyc.id.slice(-6)) + '</span> · Status ' + esc(cyc.status === "draft" ? "DRAFT (Programm noch nicht gestartet)" : cyc.status.toUpperCase()) + '</p>' +
       '<p class="muted">Du wirst nicht mehr genau wissen, wie du heute aussahst. Miss den Start — Woche 0 · 4 · 8 · 12 vergleichen sich später von selbst.</p>' +
       '<div class="os-grid2">' +
       inp("blW", "Gewicht (kg)", b.weight || (lw && lw.value) || null) + inp("blWa", "Taille (cm)", b.waist || (lwa && lwa.value) || null) +
@@ -147,26 +216,30 @@
       ["front", "side", "back"].map(function (a) { return '<label class="os-photo" data-angle="' + a + '"><input type="file" accept="image/*" capture="environment" data-photoin="' + a + '" hidden><span class="ang">' + a.toUpperCase() + '</span><span class="st" id="ph_' + a + '">+ Foto</span></label>'; }).join("") + '</div>' +
       '<button id="blSave" class="btn btn-primary" style="margin-top:14px">Baseline speichern →</button>' +
       '<p class="small muted" style="margin-top:8px">Fotos sind optional — das Programm startet auch ohne. Ohne Fotos gibt es in Woche 12 nur keinen visuellen Vergleich.</p>');
-    return html;
   }
 
   /* =========================== TRANSFORMATION =========================== */
   function vTransform() {
-    var t = (MM.store && MM.store.get("os_transformation", null)) || null;
+    var t = MM.store.get("os_transformation", null);
     var lw = OS.latestMetric("weight");
     var d = MM.account.getDashboardState();
+    var pw = OS.pathway();
     var html = "";
     if (t && t.result) {
       var r = t.result;
       html += sec("Deine Transformation", realityCheck(t.input.targetWeightKg + " kg · " + (t.input.targetLeanness === "leaner" ? "definierter" : "gleich"), t.input.months + " Monate", r.reality) +
-        '<div class="os-roadmap">' + r.phases.map(function (p, i) { return '<div class="os-phase"><span class="n">' + (i + 1) + '</span><div><b>' + esc(p.name) + '</b><span class="w">' + p.weeks + ' Wochen</span><p>' + esc(p.why) + '</p></div></div>'; }).join("") + '</div>' +
+        (r.enhanced && r.enhancedMarkers ? '<div class="os-enhmarkers"><span class="tag">ENHANCED-KONTEXT</span>' + [["Physique-Potenzial", r.enhancedMarkers.potential], ["Komplexität", r.enhancedMarkers.complexity], ["Monitoring", r.enhancedMarkers.monitoring], ["Reversibilität", r.enhancedMarkers.reversibility], ["Gesundheitskosten", r.enhancedMarkers.healthCost]].map(function (m) { return '<div class="row"><span>' + esc(m[0]) + '</span><b>' + esc(m[1]) + '</b></div>'; }).join("") + '</div>' : '') +
+        '<div class="os-roadmap">' + r.phases.map(function (p, i) { return '<div class="os-phase"><span class="n">' + (i + 1) + '</span><div><b>' + esc(p.name) + '</b><span class="w">' + p.weeks + ' Wochen</span><p>' + esc(p.why) + '</p>' + (p.monitoring ? '<p class="small" style="color:var(--amber,#f5a623)">' + esc(p.monitoring) + '</p>' : '') + '</div></div>'; }).join("") + '</div>' +
         '<p class="small muted">Erwartbarer Muskelaufbau (' + r.months + ' Mon.): konservativ ' + r.gainRange.cons + ' kg · wahrscheinlich ' + r.gainRange.likely + ' kg · aggressiv ' + r.gainRange.aggr + ' kg. Spannen, keine Garantien.</p>' +
         '<p style="margin-top:10px"><a class="btn btn-primary btn-sm" href="kurs-programm.html">Aktuellen 12-Wochen-Zyklus ' + (d.program && d.program.active ? "fortsetzen" : "starten") + ' →</a> <button class="os-ghost" id="txReset">Neu planen</button></p>');
+      if (r.enhanced) html += '<a class="card os-row-cta" href="coaching.html#enhanced"><span class="tag">SUPPORT</span><b>Enhanced Performance Support — 1:1 Begleitung mit Monitoring-Rhythmus</b></a>';
+      else if ((t.input.targetWeightKg - t.input.weightKg) > 8) html += '<a class="card os-row-cta" href="coaching.html#muscle"><span class="tag">COACHING</span><b>Maximum Muscle — 1:1 Begleitung für ambitionierte Aufbauziele</b></a>';
       html += nobody("Aufbau und sichtbar schlanker werden passieren nicht in derselben Woche — sondern in derselben Roadmap. Wer beides gleichzeitig in 12 Wochen will, bekommt meist keins von beidem.");
       return html;
     }
     function inp(id, label, val, ph) { return '<label class="os-field"><span>' + esc(label) + '</span><input id="' + id + '" type="number" inputmode="decimal" value="' + (val != null ? esc(val) : "") + '" placeholder="' + (ph || "—") + '"></label>'; }
     html += sec("Wo willst du hin?", '<p class="muted">Wir rechnen ehrlich: was dein Ziel in deinem Trainingsalter wirklich braucht — in Spannen, nicht in Versprechen.</p>' +
+      (pw === "enhanced" ? '<p class="small" style="color:var(--amber,#f5a623)">Dein Pathway ist ENHANCED — die Roadmap rechnet mit dem Kontext (höhere Spannen, höhere Unsicherheit, Monitoring-Blöcke). Keine Substanz-/Dosierungsplanung.</p>' : '') +
       '<div class="os-grid2">' + inp("txW", "Aktuelles Gewicht (kg)", (lw && lw.value) || null) + inp("txBf", "KFA-Schätzung % (optional)", null, "18") +
       inp("txTW", "Zielgewicht (kg)", null, "90") + inp("txM", "Zeitraum (Monate)", 12) + '</div>' +
       '<label class="os-field"><span>Dabei…</span><select id="txLean"><option value="leaner">definierter werden</option><option value="same">Körperfett egal</option><option value="much_leaner">deutlich definierter</option></select></label>' +
@@ -176,92 +249,154 @@
   }
 
   /* =========================== PLAN =========================== */
+  function currentMealDay() {
+    var nd = MM.store.get("os_nutrition_days", null);
+    return (nd && Array.isArray(nd.current) && nd.current.length) ? nd : null;
+  }
   function vPlan() {
     var d = MM.account.getDashboardState();
-    var prof = OS.profile();
     var html = "";
-    // Transformation-Einstieg
     var t = MM.store.get("os_transformation", null);
     html += '<a class="card os-row-cta" href="#transform"><span class="tag">ROADMAP</span><b>' + (t ? "12-Monats-Roadmap ansehen" : "Transformation planen — Reality Check") + '</b></a>';
 
     /* --- NUTRITION OS --- */
     var np = MM.store.get("os_nutrition_plan", null);
     if (np) {
-      var day = E.exampleDay(np, { maxCookMin: OS.getP("nutrition.cookMinutes", 40) });
-      html += sec("Nutrition · " + esc(MODE[d.mode] || ""), '<div class="os-macro"><div class="m"><b>' + np.kcal + '</b><span>kcal (' + np.kcalRange[0] + '–' + np.kcalRange[1] + ')</span></div><div class="m"><b>' + np.protein + ' g</b><span>Protein</span></div><div class="m"><b>' + np.carbs + ' g</b><span>Carbs</span></div><div class="m"><b>' + np.fat + ' g</b><span>Fett</span></div></div>' +
-        '<p class="small muted" style="margin:8px 0 12px">So sieht ' + np.protein + ' g Protein wirklich aus:</p>' +
-        '<div class="os-meals">' + day.meals.map(function (m) {
-          return '<div class="os-meal"><div class="hd"><b>' + esc(m.name) + '</b><span>' + m.kcal + ' kcal · ' + m.p + ' g P</span></div><p class="ing">' + m.ing.map(esc).join(" · ") + '</p>' +
-            (m.family ? '<p class="fam">👨‍👩‍👧 ' + esc(m.family.note) + ' (' + m.family.servings + ' Portionen)</p>' : '') +
-            '<div class="ctl"><button class="os-chip" data-swap="' + m.id + '" data-want="cheaper">billiger</button><button class="os-chip" data-swap="' + m.id + '" data-want="faster">schneller</button><button class="os-chip" data-swap="' + m.id + '" data-want="protein">mehr Protein</button><button class="os-chip" data-swap="' + m.id + '" data-want="family">Familie</button></div></div>';
+      var nd = currentMealDay();
+      var mealIds = nd ? nd.current : null;
+      var meals = mealIds ? mealIds.map(E.mealById).filter(Boolean) : E.exampleDay(np, { maxCookMin: OS.getP("nutrition.cookMinutes", 40) }).meals;
+      var totals = mealIds ? E.dayTotals(mealIds) : meals.reduce(function (a, m) { return { kcal: a.kcal + m.kcal, p: a.p + m.p }; }, { kcal: 0, p: 0 });
+      var logToday = OS.nutritionLog()[todayYmd()] || [];
+      html += sec("Nutrition · " + esc(MODE[d.mode] || ""),
+        '<div class="os-macro"><div class="m"><b>' + np.kcal + '</b><span>kcal (' + np.kcalRange[0] + '–' + np.kcalRange[1] + ')</span></div><div class="m"><b>' + np.protein + ' g</b><span>Protein</span></div><div class="m"><b>' + np.carbs + ' g</b><span>Carbs</span></div><div class="m"><b>' + np.fat + ' g</b><span>Fett</span></div></div>' +
+        '<p class="small muted" style="margin:8px 0 12px">' + (nd ? 'Dein gespeicherter Tag (seit ' + esc(nd.saved) + ') — geplant: ' + totals.kcal + ' kcal · ' + totals.p + ' g Protein. GEPLANT ≠ GEGESSEN: logge, was du wirklich isst.' : 'Beispieltag — mit „Diesen Tag verwenden“ wird er dein fester Plan, den du swappen und loggen kannst.') + '</p>' +
+        '<div class="os-meals">' + meals.map(function (m) {
+          var logged = logToday.some(function (e) { return e.name === m.name; });
+          return '<div class="os-meal"><div class="hd"><b>' + esc(m.name) + '</b><span>' + m.kcal + ' kcal · ' + m.p + ' g P</span></div><p class="ing">' + E.ingText(m.ing).map(esc).join(" · ") + '</p>' +
+            (m.family ? '<p class="fam">Familie: ' + esc(m.family.note) + ' (' + m.family.servings + ' Portionen)</p>' : '') +
+            '<div class="ctl">' +
+            (nd ? '<button class="os-chip ' + (logged ? "sel" : "") + '" data-eat="' + m.id + '">' + (logged ? "Geloggt ✓" : "Gegessen ✓") + '</button>' : '') +
+            '<button class="os-chip" data-swap="' + m.id + '" data-want="cheaper">billiger</button><button class="os-chip" data-swap="' + m.id + '" data-want="faster">schneller</button><button class="os-chip" data-swap="' + m.id + '" data-want="protein">mehr Protein</button><button class="os-chip" data-swap="' + m.id + '" data-want="family">Familie</button></div></div>';
         }).join("") + '</div>' +
-        '<p class="small muted">Tagessumme Beispiel: ' + day.totals.kcal + ' kcal · ' + day.totals.p + ' g Protein</p>' +
-        '<button class="os-ghost" id="npShop">Einkaufsliste anzeigen</button><div id="npShopOut"></div>' +
-        '<div id="npAdjust" style="margin-top:12px"></div>');
+        (!nd ? '<button class="btn btn-primary btn-sm" id="npUseDay">Diesen Tag verwenden →</button> ' : '') +
+        '<button class="os-ghost" id="npShop">Einkaufsliste (Mengen) anzeigen</button><div id="npShopOut"></div>' +
+        '<div id="npAdjust" style="margin-top:12px">' + weeklyReviewCard(np, d) + '</div>');
     } else {
-      html += '<div class="card"><span class="tag">NUTRITION OS</span><p class="muted" style="margin:8px 0 12px">Jeder Modus braucht Zahlen: Energie, Protein, Beispieltag. Aus deinen vorhandenen Daten — nichts wird doppelt gefragt.</p>' +
-        (OS.latestMetric("weight") && OS.getP("identity.height", null) ? '<button id="npCreate" class="btn btn-primary btn-sm">Nutrition-Plan erstellen →</button>' :
-          '<div class="os-grid2"><label class="os-field"><span>Gewicht (kg)</span><input id="npW" type="number" inputmode="decimal"></label><label class="os-field"><span>Größe (cm)</span><input id="npH" type="number" inputmode="decimal" value="' + (OS.getP("identity.height", "") || "") + '"></label></div><button id="npCreate" class="btn btn-primary btn-sm">Nutrition-Plan erstellen →</button>') + '</div>';
+      html += '<div class="card"><span class="tag">NUTRITION OS</span><p class="muted" style="margin:8px 0 12px">Jeder Modus braucht Zahlen: Energie, Protein, realer Tag. Aus deinen vorhandenen Daten — nichts wird doppelt gefragt.</p>' +
+        '<div class="os-grid2">' +
+        (!OS.latestMetric("weight") ? '<label class="os-field"><span>Gewicht (kg)</span><input id="npW" type="number" inputmode="decimal"></label>' : '') +
+        (!OS.getP("identity.height", null) ? '<label class="os-field"><span>Größe (cm)</span><input id="npH" type="number" inputmode="decimal"></label>' : '') +
+        '<label class="os-field"><span>Beruf/Alltag</span><select id="npOcc"><option value="sitting">überwiegend sitzend</option><option value="mixed">gemischt</option><option value="physical">körperlich</option></select></label>' +
+        '<label class="os-field"><span>Schritte/Tag (grob)</span><select id="npSteps"><option value="4000">&lt; 5.000</option><option value="7000" selected>5–10.000</option><option value="12000">&gt; 10.000</option></select></label>' +
+        '</div><button id="npCreate" class="btn btn-primary btn-sm">Nutrition-Plan erstellen →</button>' +
+        '<p class="small muted" style="margin-top:8px">Aktivität wird aus Trainingstagen + Alltag geschätzt und später aus deinem echten Logging + Gewichtstrend korrigiert — keine Pauschale.</p></div>';
     }
 
     /* --- TRAINING ENGINE --- */
     var tp = MM.store.get("os_training_plan", null);
     if (tp) {
+      var vol = E.weeklyVolume(tp);
+      var psi = plannedSessionInfo(tp);
       html += sec("Training · " + tp.days + " Tage / Woche", (tp.note ? '<p class="small muted" style="margin:0 0 10px">' + esc(tp.note) + '</p>' : '') +
+        (psi.programDay != null ? '<p class="small" style="margin:0 0 10px">' + (psi.isToday ? 'Heute geplant: <b>' + esc(psi.session.name) + '</b>' : 'Nächste geplante Session: <b>' + esc(psi.session.name) + '</b> (Programm-Tag ' + psi.programDay + ')') + '</p>' : '') +
         '<div class="os-sessions">' + tp.sessions.map(function (s) {
-          return '<div class="os-session"><b>' + esc(s.name) + '</b><ul>' + s.slots.map(function (sl) { return '<li>' + esc(sl.name) + ' <span>' + sl.sets + ' × ' + sl.reps[0] + '–' + sl.reps[1] + ' · RIR ' + sl.rir + ' · Pause ' + sl.rest + '</span></li>'; }).join("") + '</ul></div>';
+          return '<div class="os-session"><b>' + esc(s.name) + '</b><ul>' + s.slots.map(function (sl) { return '<li>' + esc(sl.name) + ' <span>' + sl.sets + ' × ' + sl.reps[0] + '–' + sl.reps[1] + ' · RIR ' + sl.rir + ' · Pause ' + sl.rest + '</span>' + (sl.note ? '<em class="os-exnote">' + esc(sl.note) + '</em>' : '') + '</li>'; }).join("") + '</ul></div>';
         }).join("") + '</div>' +
+        '<div class="os-volume"><span class="tag">WOCHENVOLUMEN (harte Sätze)</span>' + Object.keys(vol).filter(function (g) { return g !== "core"; }).map(function (g) { return '<div class="vrow"><span>' + esc(GROUP_DE[g] || g) + '</span><i style="width:' + Math.min(100, vol[g] * 6) + 'px"></i><b>' + vol[g] + '</b></div>'; }).join("") + '</div>' +
         '<p class="small muted">Progression: Double Progression — erst Wiederholungen im Zielbereich füllen, dann Last erhöhen. Dein nächstes Ziel steht im Workout.</p>' +
-        '<a class="btn btn-primary btn-sm" href="#workout">Heutiges Workout öffnen →</a> <button class="os-ghost" id="tpReset">Plan ändern</button>');
+        '<a class="btn btn-primary btn-sm" href="#workout">Workout öffnen →</a> <button class="os-ghost" id="tpReset">Plan ändern</button>');
     } else {
-      var pd = d.program || {};
       var daysKnown = MM.store.get("c2_days", null);
       html += '<div class="card"><span class="tag">TRAINING ENGINE</span><p class="muted" style="margin:8px 0 12px">Exakte Sessions mit Sätzen, Wiederholungsbereichen, RIR und Progressionsregel — abgestimmt auf deine Programm-Tage' + (daysKnown ? ' (' + daysKnown.length + '/Woche, aus deinem Programm übernommen)' : '') + '.</p>' +
         '<div class="os-grid2"><label class="os-field"><span>Ort</span><select id="tpLoc"><option value="gym">Gym</option><option value="home_db">Zuhause (Kurzhanteln)</option><option value="home_none">Zuhause (ohne Equipment)</option></select></label>' +
         '<label class="os-field"><span>Priorität</span><select id="tpPrio"><option value="balanced">Ausgewogen</option><option value="chest">Brust</option><option value="back">Rücken</option><option value="arms">Arme</option><option value="shoulders">Schultern</option><option value="legs">Beine</option></select></label></div>' +
+        '<div class="os-ctxrow" style="margin:6px 0 10px"><span class="small muted" style="align-self:center">Einschränkungen:</span>' +
+        [["shoulder", "Schulter"], ["knee", "Knie"], ["back", "Rücken"]].map(function (l) { return '<label class="os-chip os-chk"><input type="checkbox" data-tplim="' + l[0] + '"> ' + l[1] + '</label>'; }).join("") + '</div>' +
         '<button id="tpCreate" class="btn btn-primary btn-sm">Trainingsplan erstellen →</button></div>';
     }
 
     /* --- STACK INTELLIGENCE --- */
     var st = MM.store.get("os_stack", null);
     var budget = (st && st.budget) || "optimal";
-    var strat = E.stackStrategy({ mode: d.mode || "recomp", pathway: OS.pathway(), budget: budget, current: (OS.getP("stack.currentText", "") || (OS.baseline() || {}).stackText || "").split(","), sleepBad: (OS.getP("recovery.sleepHours", 7) || 7) < 6.5 });
+    var budgetEuro = st && st.budgetEuro;
+    var strat = E.stackStrategy({
+      mode: d.mode || "recomp", pathway: OS.pathway(), budget: budget, budgetEuro: budgetEuro,
+      current: (OS.getP("stack.currentText", "") || (OS.baseline() || {}).stackText || "").split(","),
+      sleepBad: (OS.getP("recovery.sleepHours", 7) || 7) < 6.5,
+      fishTwiceWeek: OS.getP("nutrition.fishTwiceWeek", false), summerSun: OS.getP("lifestyle.summerSun", false),
+      medication: OS.getP("health.medication", false)
+    });
     html += sec("Stack · wertbasiert, nicht maximal",
-      '<div class="os-budget">' + ["essential", "optimal", "maximal"].map(function (b) { return '<button class="os-chip ' + (budget === b ? "sel" : "") + '" data-budget="' + b + '">' + b.toUpperCase() + '</button>'; }).join("") + '</div>' +
-      '<div class="os-stack">' + strat.items.map(function (s) { return '<div class="os-supp"><div class="hd"><b>' + esc(s.name) + '</b><span class="ev ev-' + s.evidence.toLowerCase() + '">' + esc(s.evidence) + '</span></div><p>' + esc(s.why) + '</p><span class="tm">' + esc(s.timing) + '</span></div>'; }).join("") + '</div>' +
+      '<div class="os-budget">' + ["essential", "optimal", "maximal"].map(function (b) { return '<button class="os-chip ' + (budget === b && !budgetEuro ? "sel" : "") + '" data-budget="' + b + '">' + b.toUpperCase() + '</button>'; }).join("") +
+      '<label class="os-chip os-chk" style="margin-left:6px">€/Monat: <input id="stEuro" type="number" inputmode="numeric" value="' + (budgetEuro || "") + '" placeholder="60" style="width:56px;background:transparent;border:0;color:inherit;border-bottom:1px solid var(--line)"></label><button class="os-ghost" id="stEuroGo">Budget anwenden</button></div>' +
+      (strat.costPlan ? '<div class="os-costplan"><div class="row"><span>KERN</span><b>' + strat.costPlan.coreCost + ' €/Mon. — ' + strat.costPlan.core.map(esc).join(", ") + '</b></div>' + (strat.costPlan.nextBest.length ? '<div class="row"><span>NÄCHSTE ERGÄNZUNG</span><b>' + strat.costPlan.nextBest.map(function (n) { return esc(n.name) + " (+" + n.addMo + " €)"; }).join(" · ") + '</b></div>' : '') + (strat.costPlan.lowReturn.length ? '<div class="row low"><span>GERINGER ERTRAG</span><b>' + strat.costPlan.lowReturn.map(function (n) { return esc(n.name) + " (+" + n.addMo + " €)"; }).join(" · ") + '</b></div>' : '') + '</div>' : '') +
+      '<div class="os-stack">' + strat.items.map(function (s) { return '<div class="os-supp"><div class="hd"><b>' + esc(s.name) + '</b><span class="ev ev-' + s.evidence.toLowerCase() + '">' + esc(s.evidence) + '</span></div><p>' + esc(s.why) + '</p><span class="tm">' + esc(s.timing) + ' · ~' + s.costMo + ' €/Mon.</span></div>'; }).join("") + '</div>' +
+      (strat.conflicts.length ? '<div class="os-conflicts"><span class="tag">CONTEXT CHECK</span>' + strat.conflicts.map(function (c) { return '<p>' + esc(c) + '</p>'; }).join("") + '</div>' : '') +
+      (strat.skipped.length ? '<div class="os-skipped"><span class="tag">BEWUSST NICHT EMPFOHLEN</span>' + strat.skipped.map(function (s) { return '<p><b>' + esc(s.name) + '</b> — ' + esc(s.why) + '</p>'; }).join("") + '</div>' : '') +
       (strat.remove.length ? '<div class="os-remove"><span class="tag">STREICHEN — SPART GELD, KOSTET NICHTS</span>' + strat.remove.map(function (s) { return '<p><b>' + esc(s.name) + '</b> — ' + esc(s.why) + '</p>'; }).join("") + '</div>' : '') +
       (strat.diminishing ? '<p class="small muted" style="margin-top:8px">' + esc(strat.diminishing) + '</p>' : '') +
       '<div class="os-schedule">' + [["morning", "MORGENS"], ["with_food", "ZUM ESSEN"], ["pre_training", "PRE-TRAINING"], ["evening", "ABENDS"]].map(function (sl) { var arr = strat.schedule[sl[0]]; return arr.length ? '<div><span>' + sl[1] + '</span><b>' + arr.map(esc).join(" · ") + '</b></div>' : ''; }).join("") + '</div>' +
       '<button class="btn btn-primary btn-sm" id="stSave">Als meine Stack-Routine übernehmen</button>');
 
-    // Kalender / ICS
-    html += '<div class="card"><span class="tag">KALENDER</span><p class="muted" style="margin:8px 0 12px">Trainingszeiten in deinen Kalender — als ICS-Datei (Apple/Google-kompatibel). Kein Zwei-Wege-Sync, ehrlich gesagt.</p><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="icsTime" type="time" value="' + esc(OS.getP("calendar.trainTime", "18:00")) + '" style="padding:8px;border:1px solid var(--line);border-radius:8px;background:rgba(127,127,127,0.06);color:var(--text)"><button id="icsGo" class="os-ghost">Nächste 7 Tage als .ics laden</button></div></div>';
+    html += '<div class="card"><span class="tag">KALENDER</span><p class="muted" style="margin:8px 0 12px">Deine Woche als echte Tagestypen (Strength-Session X · Engine · Recover) in deinen Kalender — als ICS-Datei. Kein Zwei-Wege-Sync, ehrlich gesagt.</p><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="icsTime" type="time" value="' + esc(OS.getP("calendar.trainTime", "18:00")) + '" style="padding:8px;border:1px solid var(--line);border-radius:8px;background:rgba(127,127,127,0.06);color:var(--text)"><button id="icsGo" class="os-ghost">Nächste 7 Tage als .ics laden</button></div></div>';
     return html;
   }
 
-  /* =========================== WORKOUT =========================== */
-  function currentSession(tp) {
-    var logs = MM.store.get("os_workout_logs", {}) || {};
-    var count = (logs._sessions || []).length;
-    return tp.sessions[count % tp.sessions.length];
+  /* Wochen-Review (§37/§38): echte Daten rein → Verdict → REVIEW → ACCEPT */
+  function weeklyReviewCard(np, d) {
+    var wt = OS.metricTrend("weight", 7);
+    var wa = OS.metricTrend("waist", 7);
+    var lw = OS.latestMetric("weight");
+    var log = OS.nutritionLog();
+    var dates = []; for (var i = 1; i <= 7; i++) { var dt = new Date(Date.now() - i * 86400000); dates.push(dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0")); }
+    var adh = E.weeklyAdherence(log, np, dates);
+    var lp = OS.lastPulse();
+    var trend = E.strengthTrend(exHistories());
+    var verdict = E.nutritionAdjust({
+      mode: d.mode || "recomp", weightKg: lw ? lw.value : null,
+      weightTrend: wt ? wt.delta : null, waistTrend: wa ? wa.delta : null,
+      adherencePct: adh.daysLogged >= 3 ? Math.round(adh.proteinDays / Math.max(1, adh.daysLogged) * 100) : null,
+      energyLow: !!(lp && lp.inp && lp.inp.energy != null && lp.inp.energy <= 2),
+      sleepBad: !!(lp && lp.inp && lp.inp.sleep === "bad"),
+      strengthStalled: !!(trend && trend.pct <= 0.5),
+      kcalTarget: np.kcal
+    });
+    var hist = MM.store.get("os_adjust_history", []) || [];
+    var histHtml = hist.length ? '<p class="small muted" style="margin-top:8px">Letzte Anpassung: ' + esc(hist[hist.length - 1].date) + ' · ' + hist[hist.length - 1].oldKcal + ' → ' + hist[hist.length - 1].newKcal + ' kcal (' + esc(hist[hist.length - 1].reason) + ')</p>' : '';
+    return '<div class="os-review"><span class="tag">WOCHEN-REVIEW · NUTRITION</span>' +
+      '<div class="rows"><div class="row"><span>Protein-Ziel</span><b>' + adh.proteinDays + ' / ' + Math.max(adh.daysLogged, 7) + ' Tage' + (adh.daysLogged < 7 ? ' (nur ' + adh.daysLogged + ' geloggt)' : '') + '</b></div>' +
+      '<div class="row"><span>Energie-Korridor</span><b>' + adh.energyDays + ' / ' + Math.max(adh.daysLogged, 7) + ' Tage</b></div>' +
+      '<div class="row"><span>Gewichtstrend</span><b>' + (wt ? ((wt.delta > 0 ? "+" : "") + wt.delta + " kg / Woche") : "INSUFFICIENT DATA") + '</b></div></div>' +
+      '<div class="verdict v-' + esc(verdict.code) + '"><b>' + esc(verdict.title) + '</b><p>' + esc(verdict.text) + '</p>' +
+      (verdict.newKcal ? '<button class="btn btn-primary btn-sm" id="npAccept" data-old="' + verdict.oldKcal + '" data-new="' + verdict.newKcal + '" data-code="' + esc(verdict.code) + '">Änderung übernehmen: ' + verdict.oldKcal + ' → ' + verdict.newKcal + ' kcal</button>' : '') + '</div>' + histHtml + '</div>';
   }
+
+  /* =========================== WORKOUT =========================== */
   function vWorkout() {
     var tp = MM.store.get("os_training_plan", null);
     if (!tp) return '<div class="card"><p class="muted">Noch kein Trainingsplan. <a href="#plan" style="color:var(--accent)">Im Plan erstellen →</a></p></div>';
-    var s = currentSession(tp);
-    var logs = MM.store.get("os_workout_logs", {}) || {};
+    var psi = plannedSessionInfo(tp);
+    var s = psi.session;
+    var logs = wlogs();
+    var recLow = OS.recoveryLow();
+    var head = psi.programDay == null ? "" :
+      psi.isToday ? '<p class="small" style="margin:0 0 10px">Heute ist Krafttag — geplant: <b>Session ' + esc(s.key) + '</b> (' + psi.seq + '. Kraftslot deines Programms).</p>'
+        : '<p class="small" style="margin:0 0 10px;color:var(--amber,#f5a623)">Heute ist laut Programm KEIN Krafttag (' + esc(PV ? PV.getTodayPrescription().title : "") + '). Unten steht deine nächste geplante Session (Tag ' + psi.programDay + ') — ein heute absolviertes Workout hakt den heutigen Programm-Tag NICHT ab.</p>';
     var html = sec("Workout · " + esc(s.name),
-      s.slots.map(function (sl, i) {
+      head +
+      (recLow ? '<p class="os-advisory">Recovery ist unten (Pulse/Kontext) — Progressionsziele sind heute bewusst konservativ.</p>' : '') +
+      s.slots.map(function (sl) {
         var hist = (logs[sl.ex] || []);
         var last = hist.length ? hist[hist.length - 1] : null;
-        var target = E.progressionTarget(last ? last.sets : null, sl.reps);
+        var target = E.progressionPlan(hist, sl.reps, { recoveryLow: recLow });
         return '<div class="os-ex"><div class="hd"><b>' + esc(sl.name) + '</b><span>' + sl.sets + ' × ' + sl.reps[0] + '–' + sl.reps[1] + ' · RIR ' + sl.rir + '</span></div>' +
+          (sl.note ? '<p class="small" style="color:var(--amber,#f5a623)">' + esc(sl.note) + '</p>' : '') +
           (last ? '<p class="last">Zuletzt: ' + last.sets.map(function (x) { return x.w + "×" + x.r; }).join(" · ") + '</p>' : '') +
-          '<p class="tgt">🎯 ' + esc(target.text) + '</p>' +
+          '<p class="tgt"><span class="os-target-ico" aria-hidden="true"></span>' + esc(target.text) + '</p>' +
           '<div class="sets">' + Array.from({ length: sl.sets }).map(function (_, si) { return '<span class="set"><input type="number" inputmode="decimal" placeholder="kg" data-exw="' + sl.ex + '" data-set="' + si + '"><input type="number" inputmode="numeric" placeholder="Wdh" data-exr="' + sl.ex + '" data-set="' + si + '"></span>'; }).join("") + '</div></div>';
       }).join("") +
-      '<button id="woFinish" class="btn btn-primary" style="margin-top:14px">Workout abschließen ✓</button>' +
-      '<p class="small muted" style="margin-top:8px">Abschließen speichert deine Sätze UND hakt den Programm-Tag ab — keine Doppel-Erfassung.</p>');
+      '<button id="woFinish" class="btn btn-primary" style="margin-top:14px" data-spid="' + esc(psi.spid) + '" data-pd="' + (psi.programDay || "") + '" data-skey="' + esc(s.key) + '" data-istoday="' + (psi.isToday ? "1" : "") + '">Workout abschließen ✓</button>' +
+      '<p class="small muted" style="margin-top:8px">' + (psi.isToday ? "Abschließen speichert deine Sätze UND hakt den heutigen Programm-Tag ab — keine Doppel-Erfassung." : "Abschließen speichert deine Sätze. Der Programm-Tag wird nur an echten Krafttagen abgehakt.") + '</p>');
     return html;
   }
 
@@ -269,12 +404,37 @@
   function vTrack() {
     var lw = OS.latestMetric("weight"), lwa = OS.latestMetric("waist");
     var wt = OS.metricTrend("weight", 7);
+    var np = MM.store.get("os_nutrition_plan", null);
+    var ft = OS.todayFoodTotals();
+    var rx = PV && PV.available() ? PV.getTodayPrescription() : null;
     var html = sec("Track · dein Measurement Layer",
       '<div class="os-grid2"><label class="os-field"><span>Gewicht heute (kg)</span><input id="tkW" type="number" inputmode="decimal" placeholder="' + (lw ? lw.value : "—") + '"></label>' +
       '<label class="os-field"><span>Taille (cm)</span><input id="tkWa" type="number" inputmode="decimal" placeholder="' + (lwa ? lwa.value : "—") + '"></label></div>' +
       '<button id="tkSave" class="btn btn-primary btn-sm">Speichern</button>' +
       (wt ? '<p class="small muted" style="margin-top:10px">7-Tage-Trend Gewicht: ' + (wt.delta > 0 ? "+" : "") + wt.delta + ' kg (rollender Ø — Einzelmessungen sind Rauschen).</p>' : '') +
-      '<div class="os-metriclist">' + OS.metricSeries("weight").slice(-7).reverse().map(function (m) { return '<div><span>' + m.date + '</span><b>' + m.value + ' ' + m.unit + '</b><i>' + m.source + '</i></div>'; }).join("") + '</div>' +
+      '<div class="os-metriclist">' + OS.metricSeries("weight").slice(-7).reverse().map(function (m) { return '<div><span>' + m.date + '</span><b>' + m.value + ' ' + m.unit + '</b><i>' + m.source + '</i></div>'; }).join("") + '</div>');
+
+    // §30 — Quick-Log Ernährung
+    if (np) {
+      html += sec("Food-Log heute" + (ft ? " · " + ft.p + " / " + np.protein + " g P · " + ft.kcal + " / " + np.kcal + " kcal" : ""),
+        '<div class="os-quicklog">' + E.MEALS.filter(function (m) { return m.tags.indexOf("restaurant") < 0; }).slice(0, 6).map(function (m) { return '<button class="os-chip" data-eat="' + m.id + '">' + esc(m.name.split(" ")[0]) + ' (' + m.p + 'P)</button>'; }).join("") + '</div>' +
+        '<div class="os-grid2" style="margin-top:10px"><label class="os-field"><span>Eigener Eintrag: kcal</span><input id="qlK" type="number" inputmode="numeric"></label><label class="os-field"><span>Protein (g)</span><input id="qlP" type="number" inputmode="numeric"></label></div>' +
+        '<button id="qlSave" class="os-ghost">Eintrag loggen</button>' +
+        '<div class="os-loglist">' + (OS.nutritionLog()[todayYmd()] || []).map(function (e) { return '<div><span>' + esc(e.name) + '</span><b>' + e.kcal + ' kcal · ' + e.p + ' g P</b><i>' + esc(e.source) + '</i></div>'; }).join("") + '</div>');
+    }
+
+    // §88 — Engine-Session loggen (schließt NUR Engine-Tage ab)
+    html += sec("Engine-Session",
+      (rx && rx.dayType === "engine" ? '<p class="small" style="margin:0 0 10px">Heute ist Engine-Tag: ' + esc(rx.purpose) + '</p>' : '<p class="small muted" style="margin:0 0 10px">Cardio zählt immer — einen Programm-Tag hakt es nur an echten Engine-Tagen ab.</p>') +
+      '<div class="os-grid2"><label class="os-field"><span>Art</span><select id="enType"><option value="zone2">Zone 2 (Rad/Gehen/Rudern)</option><option value="intervals">Intervalle</option><option value="run">Lauf</option><option value="other">Andere</option></select></label>' +
+      '<label class="os-field"><span>Dauer (min)</span><input id="enMin" type="number" inputmode="numeric" placeholder="35"></label></div>' +
+      '<button id="enSave" class="btn btn-primary btn-sm">Engine-Session loggen</button>');
+
+    // §89 — Recovery kurz
+    html += sec("Recovery (kurz)",
+      '<div class="os-grid2"><label class="os-field"><span>Schlaf letzte Nacht (h)</span><input id="rcSleep" type="number" inputmode="decimal" step="0.5" placeholder="7"></label>' +
+      '<label class="os-field"><span>Energie (1–5)</span><select id="rcEnergy"><option>—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label></div>' +
+      '<button id="rcSave" class="os-ghost">Speichern</button>' +
       '<p style="margin-top:14px"><a class="os-ghost" href="tracker.html">Vollständiger Tracker (Training · Cardio · Schlaf) →</a></p>');
     return html;
   }
@@ -286,22 +446,39 @@
     var w0 = OS.firstMetric("weight"), wN = OS.latestMetric("weight");
     var wa0 = OS.firstMetric("waist"), waN = OS.latestMetric("waist");
     var p = d.program || {};
-    function row(l, a, bv) { return '<div class="os-cmp-row"><span>' + esc(l) + '</span><b>' + esc(a != null ? a : "—") + '</b><i>→</i><b class="now">' + esc(bv != null ? bv : "—") + '</b></div>'; }
+    var trend = E.strengthTrend(exHistories());
+    function row(l, a, bv, extra) { return '<div class="os-cmp-row"><span>' + esc(l) + '</span><b>' + esc(a != null ? a : "—") + '</b><i>→</i><b class="now">' + esc(bv != null ? bv : "—") + '</b>' + (extra || "") + '</div>'; }
     var interp = E.interpretProgress({
       weightDelta: (w0 && wN) ? wN.value - w0.value : null,
       waistDelta: (wa0 && waN) ? waN.value - wa0.value : null,
-      strengthPct: null,
+      strengthPct: trend ? trend.pct : null,
       executionPct: p.consistency != null ? p.consistency : null
     });
     var html = sec("Start → Jetzt",
       '<div class="os-cmp">' + row("Score", b.score || (d.hasScore ? "—" : null), d.hasScore ? d.score : "—") +
-      row("Gewicht", w0 ? w0.value + " kg" : null, wN ? wN.value + " kg" : null) +
-      row("Taille", wa0 ? wa0.value + " cm" : null, waN ? waN.value + " cm" : null) +
+      row("Gewicht", w0 ? w0.value + " kg" : null, wN ? wN.value + " kg" : null, spark(OS.metricSeries("weight").slice(-14))) +
+      row("Taille", wa0 ? wa0.value + " cm" : null, waN ? waN.value + " cm" : null, spark(OS.metricSeries("waist").slice(-14))) +
+      row("Kraft (e1RM Ø)", trend ? "Basis" : "—", trend ? ((trend.pct > 0 ? "+" : "") + trend.pct + " %") : "INSUFFICIENT DATA") +
       row("Execution", "—", p.consistency != null ? p.consistency + " %" : "—") + '</div>' +
+      (trend ? '<div class="os-liftlist">' + trend.lifts.map(function (l) { return '<div><span>' + esc(l.name) + '</span><b>' + l.first + ' → ' + l.last + ' kg e1RM</b><i class="' + (l.pct >= 0 ? "up" : "dn") + '">' + (l.pct > 0 ? "+" : "") + l.pct + ' %</i></div>'; }).join("") + '<p class="small muted">e1RM nach Epley: Last × (1 + Wdh/30) — dokumentierte Schätzformel, kein Test-Maximum.</p></div>' : '<p class="small muted">Kraft-Trend erscheint, sobald mindestens zwei geloggte Einheiten derselben Benchmark-Übung existieren.</p>') +
       '<div class="os-interp">' + interp.map(function (t) { return '<p>' + esc(t) + '</p>'; }).join("") + '</div>');
-    // Fotos-Vergleich (async nachgeladen)
+
     html += '<div class="card" id="osPhotoCmp"><span class="tag">FOTOS · WOCHE 0 vs. JETZT</span><div class="os-photocmp" id="osPhotoSlots"><p class="small muted">Prüfe Fotos…</p></div></div>';
-    // Zyklus-Historie
+
+    // §66/§67 — W12: Transformation Report + Next Cycle
+    if (p.active && (p.week >= 12 || p.over)) {
+      var rec = E.nextCycleRecommendation({ mode: d.mode, waistNow: waN ? waN.value : null, weightDelta: (w0 && wN) ? wN.value - w0.value : null, waistDelta: (wa0 && waN) ? waN.value - wa0.value : null, strengthPct: trend ? trend.pct : null, executionPct: p.consistency });
+      html += sec("Transformation Report · Woche 12",
+        '<div class="os-report">' +
+        '<div class="rrow"><span>BODY</span><b>' + (w0 && wN ? (wN.value - w0.value > 0 ? "+" : "") + (wN.value - w0.value).toFixed(1) + " kg · " : "") + (wa0 && waN ? (waN.value - wa0.value > 0 ? "+" : "") + (waN.value - wa0.value).toFixed(1) + " cm Taille" : "Messdaten unvollständig") + '</b></div>' +
+        '<div class="rrow"><span>PERFORMANCE</span><b>' + (trend ? "Kraft " + (trend.pct > 0 ? "+" : "") + trend.pct + " % (e1RM)" : "INSUFFICIENT DATA — keine Workout-Logs") + '</b></div>' +
+        '<div class="rrow"><span>EXECUTION</span><b>' + (p.consistency != null ? p.consistency + " % Consistency" : "—") + '</b></div>' +
+        '<div class="rrow"><span>NEXT MOVE</span><b>' + esc(MODE[rec.mode] || rec.mode) + (rec.repeatFoundation ? " (Fundament wiederholen)" : "") + '</b></div>' +
+        '<p class="small" style="margin-top:8px">' + rec.why.map(esc).join(" ") + '</p>' +
+        '<p class="small muted">Abschließen &amp; archivieren macht diesen Zyklus unveränderlich und öffnet den nächsten.</p>' +
+        '<button class="btn btn-primary btn-sm" id="cycDone">Zyklus abschließen →</button></div>');
+    }
+
     var arch = MM.store.get("c2_archive", []) || [];
     var hist = arch.map(function (a, i) { return '<div class="os-cycle"><b>Zyklus ' + (i + 1) + '</b><span>' + esc((MODE[a.goal] || a.goal || "—")) + '</span><i>abgeschlossen ' + esc(a.ended || "") + '</i></div>'; }).join("");
     if (p.active) hist += '<div class="os-cycle on"><b>Zyklus ' + (arch.length + 1) + '</b><span>' + esc(MODE[d.mode] || "") + '</span><i>aktiv · Woche ' + p.week + '</i></div>';
@@ -310,9 +487,11 @@
   }
   function loadPhotoCompare() {
     var slot = document.getElementById("osPhotoSlots"); if (!slot) return;
-    Promise.all([OS.hasPhotos(0), OS.hasPhotos(12), OS.hasPhotos(8), OS.hasPhotos(4)]).then(function (h) {
+    Promise.all([OS.photoStatus(0), OS.hasPhotos(12), OS.hasPhotos(8), OS.hasPhotos(4)]).then(function (h) {
+      var st0 = h[0];
       var lastWeek = h[1] ? 12 : h[2] ? 8 : h[3] ? 4 : null;
-      if (!h[0]) { slot.innerHTML = '<p class="small muted">Keine Baseline-Fotos auf diesem Gerät. Ohne Woche-0-Fotos gibt es keinen visuellen Vergleich — die Zahlen oben gelten trotzdem.</p>'; return; }
+      if (st0 === "none") { slot.innerHTML = '<p class="small muted">Keine Baseline-Fotos. Ohne Woche-0-Fotos gibt es keinen visuellen Vergleich — die Zahlen oben gelten trotzdem.</p>'; return; }
+      if (st0 === "other_device") { slot.innerHTML = '<p class="small muted">Deine Woche-0-Fotos wurden auf einem anderen Gerät aufgenommen und bleiben bewusst dort (Fotos werden nie hochgeladen). Öffne Progress auf dem Gerät mit den Fotos — oder mache hier neue Checkpoint-Fotos.</p>'; return; }
       if (!lastWeek) { slot.innerHTML = '<p class="small muted">Woche-0-Fotos vorhanden ✓ — der Vergleich erscheint, sobald du Checkpoint-Fotos (W4/W8/W12) machst. <a href="#baseline" style="color:var(--accent)">Jetzt Fotos hinzufügen</a></p>'; return; }
       Promise.all(["front", "side", "back"].map(function (a) { return Promise.all([OS.getPhoto(0, a), OS.getPhoto(lastWeek, a)]); })).then(function (pairs) {
         slot.innerHTML = pairs.map(function (pr, i) {
@@ -327,7 +506,6 @@
   /* =========================== LEARN =========================== */
   function vLearn() {
     var pw = OS.pathway();
-    var d = MM.account.getDashboardState();
     var html = sec("Learn · verstehe dein System",
       '<div class="os-learn-grid">' +
       '<a class="os-learn" href="ebooks/protokoll.html"><b>DAS PROTOKOLL</b><span>Das Referenzwerk — warum dein System funktioniert.</span></a>' +
@@ -341,10 +519,18 @@
           return '<div class="os-enh-level"><div class="hd"><b>' + esc(l.name) + '</b><span>Komplexität: ' + esc(l.complexity) + '</span></div>' +
             '<p><b>Ambition:</b> ' + esc(l.ambition) + '</p><p><b>Monitoring:</b> ' + esc(l.monitoring) + '</p><p><b>Trade-offs:</b> ' + esc(l.tradeoffs) + '</p><p class="und"><b>Unterschätzt:</b> ' + esc(l.underestimated) + '</p></div>';
         }).join("") + '</div>' +
-        '<div class="os-riskmap"><span class="tag">MONITORING-LANDKARTE</span><div class="doms">' + F.monitoringDomains.map(function (m) { return '<span>' + esc(m) + '</span>'; }).join("") + '</div></div>' +
+        // §54 — Klassen-Education (aufklappbar, kein Dosierungs-Generator)
+        '<h3 class="os-h3">Substanzklassen — was Männer real erwartet</h3>' +
+        '<div class="os-classes">' + F.classes.map(function (c) {
+          return '<details class="os-class"><summary><b>' + esc(c.name) + '</b></summary>' +
+            '<p><b>Warum genutzt:</b> ' + esc(c.whyUse) + '</p><p><b>Was es verändert:</b> ' + esc(c.changes) + '</p>' +
+            '<p><b>Erwartung:</b> ' + esc(c.expect) + '</p><p class="und"><b>Unterschätzt:</b> ' + esc(c.underestimate) + '</p>' +
+            '<p><b>Monitoring:</b> ' + esc(c.monitor) + '</p><p><b>Typische Fehler:</b> ' + esc(c.failureModes) + '</p></details>';
+        }).join("") + '</div>' +
+        '<div class="os-matrix"><span class="tag">MONITORING-MATRIX</span><div class="mrows">' + F.monitoringMatrix.map(function (m) { return '<div class="mrow"><span>' + esc(m.domain) + '</span><b>' + m.items.map(esc).join(" · ") + '</b></div>'; }).join("") + '</div></div>' +
         '<div class="os-nobody"><span class="tag">EXIT</span><p>' + esc(F.exit) + '</p></div>' +
         '<a class="card os-row-cta" href="ebooks.html#advanced"><span class="tag">DEEP DIVE</span><b>Ultimate Stack — Muscle-Gain-Framework (Advanced Library)</b></a>' +
-        '<a class="card os-row-cta" href="coaching.html"><span class="tag">SUPPORT</span><b>Enhanced Performance Support — 1:1 Begleitung mit Monitoring</b></a>');
+        '<a class="card os-row-cta" href="coaching.html#enhanced"><span class="tag">SUPPORT</span><b>Enhanced Performance Support — 1:1 Begleitung mit Monitoring</b></a>');
     } else if (pw === "health") {
       html += '<p class="small muted" style="margin-top:12px">Dein Pathway ist HEALTH — Enhanced-Inhalte werden dir bewusst nicht in den Weg gestellt. Du findest sie jederzeit über die Library, wenn du sie suchst.</p>';
     } else {
@@ -368,9 +554,10 @@
     var snap = MM.account.snapshot();
     if (snap.state === "loading") { skeleton(); return; }
     if (snap.configured && snap.state === "signed_out") { signInScreen(); return; }
+    OS.ensureCycle();   // Zyklus-Zustandsmaschine bei jedem Render konsistent halten
     var v = view();
     var body = v === "plan" ? vPlan() : v === "track" ? vTrack() : v === "progress" ? vProgress() : v === "learn" ? vLearn() : v === "baseline" ? vBaseline() : v === "pathway" ? vPathway() : v === "transform" ? vTransform() : v === "workout" ? vWorkout() : vToday(snap);
-    host.innerHTML = '<div class="os-shell">' + navBar(v) + '<div class="os-body">' + body + '</div></div>';
+    host.innerHTML = '<div class="os-shell os-env-' + (v === "progress" || v === "workout" ? "performance" : v === "plan" ? "metabolic" : v === "learn" && OS.pathway() === "enhanced" ? "clinical" : "instrument") + '">' + navBar(v) + '<div class="os-body">' + body + '</div></div>';
     if (v === "progress") loadPhotoCompare();
     bindOnce();
   }
@@ -393,18 +580,28 @@
       }
       var pw = t.closest("[data-pathway]"); if (pw) { OS.setPathway(pw.getAttribute("data-pathway")); if (MM.track) MM.track("pathway_selected", { p: pw.getAttribute("data-pathway") }); location.hash = "#today"; render(); return; }
       var done = t.closest("[data-osdone]"); if (done) { OS.completeAction(done.getAttribute("data-osdone")); render(); return; }
+      var ctx = t.closest("[data-ctx]"); if (ctx) { OS.setContextMode(ctx.getAttribute("data-ctx")); render(); return; }
+      var rsc = t.closest("[data-resched]"); if (rsc) { var pr = rsc.getAttribute("data-resched").split(":"); if (OS.applyReschedule(parseInt(pr[0], 10), parseInt(pr[1], 10))) { if (MM.toast) MM.toast("Krafttag verschoben — Kalender/Plan aktualisiert."); } render(); return; }
       var ph = t.closest(".os-photo"); if (ph && !t.closest("input")) { var fi = ph.querySelector("input[type=file]"); if (fi) fi.click(); return; }
       if (t.closest("#blSave")) { saveBaselineFromForm(); return; }
       if (t.closest("#txGo")) { runTransform(); return; }
       if (t.closest("#txReset")) { MM.store.remove("os_transformation"); render(); return; }
       if (t.closest("#npCreate")) { createNutritionPlan(); return; }
-      var sw = t.closest("[data-swap]"); if (sw) { var alt = E.swapMeal(sw.getAttribute("data-swap"), sw.getAttribute("data-want")); if (alt && MM.toast) MM.toast("Alternative: " + alt.name + " (" + alt.kcal + " kcal · " + alt.p + " g P)"); return; }
-      if (t.closest("#npShop")) { var npx = MM.store.get("os_nutrition_plan", null); var dayx = E.exampleDay(npx, {}); var list = E.shoppingList(dayx.meals.map(function (m) { return m.id; })); var out = document.getElementById("npShopOut"); if (out) out.innerHTML = '<div class="os-shoplist">' + Object.keys(list).map(function (c) { return list[c].length ? '<div><span>' + c.toUpperCase() + '</span>' + list[c].map(function (i) { return '<label><input type="checkbox"> ' + esc(i) + '</label>'; }).join("") + '</div>' : ''; }).join("") + '</div>'; return; }
+      if (t.closest("#npUseDay")) { useThisDay(); return; }
+      var eat = t.closest("[data-eat]"); if (eat) { var meal = E.mealById(eat.getAttribute("data-eat")); if (meal) { OS.logFood({ name: meal.name, kcal: meal.kcal, p: meal.p, c: meal.c, f: meal.f, source: "meal-plan" }); if (MM.toast) MM.toast("Geloggt: " + meal.name + " (" + meal.p + " g P)"); render(); } return; }
+      var sw = t.closest("[data-swap]"); if (sw) { doSwap(sw.getAttribute("data-swap"), sw.getAttribute("data-want")); return; }
+      if (t.closest("#npShop")) { var nd2 = currentMealDay(); var ids = nd2 ? nd2.current : E.exampleDay(MM.store.get("os_nutrition_plan", null), {}).meals.map(function (m) { return m.id; }); var list = E.shoppingList(ids); var out = document.getElementById("npShopOut"); if (out) out.innerHTML = '<div class="os-shoplist">' + Object.keys(list).map(function (c) { return list[c].length ? '<div><span>' + c.toUpperCase() + '</span>' + list[c].map(function (i) { return '<label><input type="checkbox"> ' + esc(i) + '</label>'; }).join("") + '</div>' : ''; }).join("") + '</div>'; return; }
+      var acc = t.closest("#npAccept"); if (acc) { acceptAdjustment(acc); return; }
       if (t.closest("#tpCreate")) { createTrainingPlan(); return; }
       if (t.closest("#tpReset")) { MM.store.remove("os_training_plan"); render(); return; }
-      var bud = t.closest("[data-budget]"); if (bud) { var stx = MM.store.get("os_stack", {}) || {}; stx.budget = bud.getAttribute("data-budget"); MM.store.set("os_stack", stx); render(); return; }
+      var bud = t.closest("[data-budget]"); if (bud) { var stx = MM.store.get("os_stack", {}) || {}; stx.budget = bud.getAttribute("data-budget"); delete stx.budgetEuro; MM.store.set("os_stack", stx); render(); return; }
+      if (t.closest("#stEuroGo")) { var eu = parseInt((document.getElementById("stEuro") || {}).value, 10); var sty = MM.store.get("os_stack", {}) || {}; if (eu > 0) sty.budgetEuro = eu; else delete sty.budgetEuro; MM.store.set("os_stack", sty); render(); return; }
       if (t.closest("#stSave")) { saveStack(); return; }
-      if (t.closest("#woFinish")) { finishWorkout(); return; }
+      if (t.closest("#woFinish")) { finishWorkout(t.closest("#woFinish")); return; }
+      if (t.closest("#qlSave")) { var qk = parseFloat((document.getElementById("qlK") || {}).value), qp = parseFloat((document.getElementById("qlP") || {}).value); if (qk || qp) { OS.logFood({ name: "Eigener Eintrag", kcal: qk || 0, p: qp || 0, source: "quick" }); if (MM.toast) MM.toast("Geloggt."); render(); } return; }
+      if (t.closest("#enSave")) { saveEngine(); return; }
+      if (t.closest("#rcSave")) { var sh = parseFloat((document.getElementById("rcSleep") || {}).value); var en = parseInt((document.getElementById("rcEnergy") || {}).value, 10); var any = false; if (sh) { OS.logMetric("sleep", sh, "h"); any = true; } if (en) { OS.logMetric("energy", en, "/5"); any = true; } if (any) { if (MM.toast) MM.toast("Recovery gespeichert."); render(); } return; }
+      if (t.closest("#cycDone")) { OS.completeCycle(); if (MM.toast) MM.toast("Zyklus abgeschlossen — er ist jetzt Teil deiner Historie."); render(); return; }
       if (t.closest("#tkSave")) { var w = parseFloat((document.getElementById("tkW") || {}).value); var wa = parseFloat((document.getElementById("tkWa") || {}).value); var okAny = false; if (w) { OS.logMetric("weight", w, "kg"); okAny = true; } if (wa) { OS.logMetric("waist", wa, "cm"); okAny = true; } if (okAny) { if (MM.toast) MM.toast("Gespeichert."); render(); } return; }
       if (t.closest("#icsGo")) { var tm = (document.getElementById("icsTime") || {}).value || "18:00"; OS.setP("calendar.trainTime", tm); var ics = OS.icsForNextDays(7, tm); if (!ics) { if (MM.toast) MM.toast("Kein aktives Programm."); return; } var bl = new Blob([ics], { type: "text/calendar" }); var aa = document.createElement("a"); aa.href = URL.createObjectURL(bl); aa.download = "malemetrix-training.ics"; aa.click(); return; }
     });
@@ -416,6 +613,11 @@
         var week = (!p.active || p.notStarted) ? 0 : (p.week >= 12 ? 12 : p.week >= 8 ? 8 : p.week >= 4 ? 4 : 0);
         OS.savePhoto(week, angle, fi.files[0]).then(function () { var st = document.getElementById("ph_" + angle); if (st) st.textContent = "✓ gespeichert (W" + week + ")"; });
       }
+    });
+    // §61/§62 — Live-Refresh bei OS-Events (Score/Recheck/…): kein Reload nötig.
+    document.addEventListener("mm:os", function (e) {
+      var n = e.detail && e.detail.name;
+      if (n === "SCORE_COMPLETED" || n === "RECHECK_COMPLETED") { OS.prefillFromScore(); render(); }
     });
   }
 
@@ -435,7 +637,7 @@
     var w = num("txW") || (OS.latestMetric("weight") || {}).value;
     if (!w) { if (MM.toast) MM.toast("Aktuelles Gewicht fehlt."); return; }
     if (num("txW") && !OS.latestMetric("weight")) OS.logMetric("weight", num("txW"), "kg");
-    var input = { weightKg: w, bfPct: num("txBf"), heightCm: OS.getP("identity.height", 180), experience: (document.getElementById("txExp") || {}).value || "novice", targetWeightKg: num("txTW") || w, targetLeanness: (document.getElementById("txLean") || {}).value || "leaner", months: num("txM") || 12 };
+    var input = { weightKg: w, bfPct: num("txBf"), heightCm: OS.getP("identity.height", 180), experience: (document.getElementById("txExp") || {}).value || "novice", targetWeightKg: num("txTW") || w, targetLeanness: (document.getElementById("txLean") || {}).value || "leaner", months: num("txM") || 12, pathway: OS.pathway() };
     var result = E.transformation(input);
     MM.store.set("os_transformation", { input: input, result: result, created: todayYmd() });
     OS.setP("training.experience", input.experience);
@@ -448,35 +650,94 @@
     if (!w || !h) { if (MM.toast) MM.toast("Gewicht + Größe werden gebraucht."); return; }
     if (!OS.latestMetric("weight")) OS.logMetric("weight", w, "kg");
     if (!OS.getP("identity.height", null)) OS.setP("identity.height", h);
-    var t = E.nutritionTargets({ weightKg: w, heightCm: h, age: OS.getP("identity.age", 35), mode: d.mode || "recomp", activity: "moderate" });
+    var occ = (document.getElementById("npOcc") || {}).value || OS.getP("lifestyle.occupation", "sitting");
+    var steps = parseInt((document.getElementById("npSteps") || {}).value, 10) || OS.getP("lifestyle.stepTarget", 7000);
+    OS.setP("lifestyle.occupation", occ);
+    var daysArr = MM.store.get("c2_days", null);
+    var trainDays = Array.isArray(daysArr) ? daysArr.length : OS.getP("training.daysPerWeek", 3);
+    var t = E.nutritionTargets({ weightKg: w, heightCm: h, age: OS.getP("identity.age", 35), mode: d.mode || "recomp", activity: { trainDays: trainDays, stepsPerDay: steps, occupation: occ } });
     MM.store.set("os_nutrition_plan", t);
-    OS.emit("MEAL_LOGGED", { created: true });
+    render();
+  }
+  function useThisDay() {
+    var np = MM.store.get("os_nutrition_plan", null); if (!np) return;
+    var day = E.exampleDay(np, { maxCookMin: OS.getP("nutrition.cookMinutes", 40) });
+    MM.store.set("os_nutrition_days", { current: day.meals.map(function (m) { return m.id; }), saved: todayYmd() });
+    if (MM.toast) MM.toast("Tag gespeichert — ab jetzt swappst und loggst du DIESEN Plan.");
+    render();
+  }
+  function doSwap(mealId, want) {
+    var nd = currentMealDay();
+    var alt = E.swapMeal(mealId, want, nd ? nd.current : []);
+    if (!alt) { if (MM.toast) MM.toast("Keine passende Alternative gefunden."); return; }
+    if (nd) {
+      var idx = nd.current.indexOf(mealId);
+      if (idx >= 0) { nd.current[idx] = alt.id; MM.store.set("os_nutrition_days", nd); }
+      if (MM.toast) MM.toast("Getauscht: " + alt.name + " (" + (alt.delta.kcal >= 0 ? "+" : "") + alt.delta.kcal + " kcal · " + (alt.delta.p >= 0 ? "+" : "") + alt.delta.p + " g P)");
+      render();
+    } else {
+      if (MM.toast) MM.toast("Alternative: " + alt.name + " (" + (alt.delta.kcal >= 0 ? "+" : "") + alt.delta.kcal + " kcal · " + (alt.delta.p >= 0 ? "+" : "") + alt.delta.p + " g P). Mit „Diesen Tag verwenden“ wird der Plan swappbar.");
+    }
+  }
+  function acceptAdjustment(btn) {
+    var np = MM.store.get("os_nutrition_plan", null); if (!np) return;
+    var oldK = parseInt(btn.getAttribute("data-old"), 10), newK = parseInt(btn.getAttribute("data-new"), 10);
+    var code = btn.getAttribute("data-code");
+    np.kcal = newK; np.kcalRange = [newK - 150, newK + 150];
+    np.carbs = Math.max(0, Math.round((newK - np.protein * 4 - np.fat * 9) / 4));
+    MM.store.set("os_nutrition_plan", np);
+    var hist = MM.store.get("os_adjust_history", []) || [];
+    hist.push({ date: todayYmd(), oldKcal: oldK, newKcal: newK, reason: code, evidence: "weekly_review" });
+    MM.store.set("os_adjust_history", hist);
+    OS.emit("WEEKLY_REVIEW_COMPLETED", { oldKcal: oldK, newKcal: newK, code: code });
+    if (MM.toast) MM.toast("Übernommen: " + oldK + " → " + newK + " kcal.");
     render();
   }
   function createTrainingPlan() {
     var daysArr = MM.store.get("c2_days", null);
     var days = (Array.isArray(daysArr) && daysArr.length === 4) ? 4 : 3;   // SSOT: Programm-Tage
-    var plan = E.buildTrainingPlan({ daysPerWeek: days, minutes: OS.getP("training.minutes", 60), location: (document.getElementById("tpLoc") || {}).value || "gym", priority: (document.getElementById("tpPrio") || {}).value || "balanced", experience: OS.getP("training.experience", "novice") });
+    var lims = Array.prototype.slice.call(host.querySelectorAll("[data-tplim]:checked")).map(function (el) { return el.getAttribute("data-tplim"); });
+    var plan = E.buildTrainingPlan({ daysPerWeek: days, minutes: OS.getP("training.minutes", 60), location: (document.getElementById("tpLoc") || {}).value || "gym", priority: (document.getElementById("tpPrio") || {}).value || "balanced", experience: OS.getP("training.experience", "novice"), limitations: lims });
     MM.store.set("os_training_plan", plan);
     OS.setP("training.daysPerWeek", days);
     OS.setP("training.location", plan.location);
+    if (lims.length) OS.setP("health.limitations", lims);
     render();
   }
   function saveStack() {
     var d = MM.account.getDashboardState();
     var st = MM.store.get("os_stack", {}) || {};
-    var strat = E.stackStrategy({ mode: d.mode || "recomp", pathway: OS.pathway(), budget: st.budget || "optimal", current: (OS.getP("stack.currentText", "") || "").split(",") });
-    MM.store.set("os_stack", { budget: st.budget || "optimal", items: strat.items.map(function (s) { return { id: s.id, name: s.name, timing: s.timing }; }), saved: todayYmd() });
+    var strat = E.stackStrategy({ mode: d.mode || "recomp", pathway: OS.pathway(), budget: st.budget || "optimal", budgetEuro: st.budgetEuro, current: (OS.getP("stack.currentText", "") || "").split(",") });
+    MM.store.set("os_stack", { budget: st.budget || "optimal", budgetEuro: st.budgetEuro, items: strat.items.map(function (s) { return { id: s.id, name: s.name, timing: s.timing }; }), saved: todayYmd() });
     OS.emit("STACK_UPDATED", {});
     if (MM.toast) MM.toast("Stack-Routine gespeichert — erscheint in Today.");
     render();
   }
-  function finishWorkout() {
+  function saveEngine() {
+    var type = (document.getElementById("enType") || {}).value || "zone2";
+    var min = parseInt((document.getElementById("enMin") || {}).value, 10);
+    if (!min) { if (MM.toast) MM.toast("Dauer fehlt."); return; }
+    var log = MM.store.get("os_engine_log", []) || [];
+    log.push({ date: todayYmd(), type: type, min: min });
+    if (log.length > 120) log = log.slice(-120);
+    MM.store.set("os_engine_log", log);
+    var d = MM.account.getDashboardState(); var p = d.program || {};
+    var res = { ok: false };
+    if (p.active && !p.notStarted && !p.over) res = OS.completeEngineDay(p.day, { session: { type: type, min: min } });
+    if (MM.toast) MM.toast(res.ok ? "Engine-Session geloggt ✓ — Engine-Tag abgehakt." : "Engine-Session geloggt ✓ (heutiger Programm-Tag ist " + (res.dayType || "kein Engine-Tag") + " — nicht abgehakt).");
+    render();
+  }
+  /* §10/§14 — Workout beenden: strukturierter Log (workout_id, cycle_id,
+     session_plan_id, program_day) + Legacy-Historie je Übung; Programm-Tag
+     wird NUR über den Guard abgehakt (Kraft-Tag + gleicher Zyklus). */
+  function finishWorkout(btn) {
     var tp = MM.store.get("os_training_plan", null); if (!tp) return;
-    var s = currentSession(tp);
-    var logs = MM.store.get("os_workout_logs", {}) || {};
+    var psi = plannedSessionInfo(tp);
+    var s = psi.session;
+    var logs = wlogs();
     var dstr = todayYmd();
-    s.slots.forEach(function (sl) {
+    var exercises = [];
+    s.slots.forEach(function (sl, order) {
       var sets = [];
       for (var i = 0; i < sl.sets; i++) {
         var wEl = host.querySelector('[data-exw="' + sl.ex + '"][data-set="' + i + '"]');
@@ -484,14 +745,32 @@
         var w = wEl ? parseFloat(wEl.value) : NaN, r = rEl ? parseInt(rEl.value, 10) : NaN;
         if (!isNaN(w) && !isNaN(r)) sets.push({ w: w, r: r });
       }
-      if (sets.length) { logs[sl.ex] = logs[sl.ex] || []; logs[sl.ex].push({ date: dstr, sets: sets }); }
+      if (sets.length) {
+        logs[sl.ex] = logs[sl.ex] || [];
+        var prs = E.detectPRs(logs[sl.ex], { sets: sets });
+        logs[sl.ex].push({ date: dstr, sets: sets });
+        exercises.push({ ex: sl.ex, order: order, sets: sets, prs: prs });
+      }
     });
+    if (!exercises.length) { if (MM.toast) MM.toast("Keine Sätze eingetragen — nichts gespeichert."); return; }
     logs._sessions = logs._sessions || []; logs._sessions.push({ date: dstr, key: s.key });
+    logs._workouts = logs._workouts || [];
+    logs._workouts.push({ id: "wo_" + Date.now().toString(36), cycle: OS.cycleId(), spid: psi.spid, sessionKey: s.key, programDay: psi.isToday ? psi.programDay : null, date: dstr, exercises: exercises.map(function (x) { return { ex: x.ex, order: x.order, sets: x.sets }; }) });
+    if (logs._workouts.length > 200) logs._workouts = logs._workouts.slice(-200);
     MM.store.set("os_workout_logs", logs);
-    // Integration: Programm-Tag abhaken (EIN Eintrag, keine Doppel-Erfassung)
+    var allPrs = exercises.reduce(function (a, x) { return a.concat(x.prs || []); }, []);
+    var res = { ok: false, reason: "no_program" };
     var d = MM.account.getDashboardState(); var p = d.program || {};
-    if (p.active && !p.notStarted && !p.over) OS.completeProgramDay(p.day);
-    if (MM.toast) MM.toast("Workout gespeichert ✓ — Programm-Tag abgehakt.");
+    if (p.active && !p.notStarted && !p.over && psi.isToday) {
+      res = OS.completeProgramDay(psi.programDay, { cycleId: OS.cycleId(), sessionId: psi.spid });
+    } else if (p.active && !p.notStarted && !p.over) {
+      res = { ok: false, reason: "day_not_strength", dayType: PV ? PV.dayTypeAt(p.day) : null };
+    }
+    var msg = res.ok ? "Workout gespeichert ✓ — Programm-Tag abgehakt." :
+      res.reason === "day_not_strength" ? "Workout gespeichert ✓. Heutiger Programm-Tag (" + (res.dayType || "—") + ") wurde NICHT abgehakt — er ist kein Krafttag." :
+        "Workout gespeichert ✓.";
+    if (allPrs.length) msg += " " + allPrs[0].text;
+    if (MM.toast) MM.toast(msg);
     location.hash = "#today"; render();
   }
 
@@ -499,7 +778,8 @@
   skeleton();
   MM.account.onChange(render);
   MM.account.whenReady().then(function () {
-    OS.prefillFromScore();      // Score → Graph (nie doppelt fragen)
+    OS.prefillFromScore();
+    OS.ensureCycle();
     render();
   }).catch(render);
   if (MM.track) MM.track("dashboard_open", {});
