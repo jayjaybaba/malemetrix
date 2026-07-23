@@ -167,6 +167,29 @@ group("Auth · getUser(jwt) mit Service-Role, keine ungeprüften Claims");
     "Client mappt auth_missing/auth_invalid_token/auth_validation_failed auf klare Meldungen");
 })();
 
+/* ===== 12) Platform verify_jwt bewusst aus, App-Auth bleibt Pflicht ===== */
+group("Platform · verify_jwt=false + In-Handler-Auth erzwungen");
+(function () {
+  var cfgPath = path.join(ROOT, "supabase/config.toml");
+  ok(fs.existsSync(cfgPath), "supabase/config.toml existiert");
+  var cfg = fs.existsSync(cfgPath) ? fs.readFileSync(cfgPath, "utf8") : "";
+  ok(/\[functions\.mm-commerce\][\s\S]*?verify_jwt\s*=\s*false/.test(cfg), "mm-commerce: verify_jwt = false");
+  ok(/\[functions\.resolve-product-access\][\s\S]*?verify_jwt\s*=\s*false/.test(cfg), "resolve-product-access: verify_jwt = false");
+  // Trotz deaktivierter Platform-Prüfung MUSS der Handler Auth erzwingen:
+  ok(/auth_missing/.test(edge) && /service\.auth\.getUser\(jwt\)/.test(edge), "mm-commerce erzwingt Auth im Handler (nicht öffentlich)");
+})();
+
+/* ===== 13) resolve-product-access: gleicher Auth-Fix, user-scoped ===== */
+group("resolve-product-access · autoritative Auth + user-scoped Entitlement");
+(function () {
+  var rpa = read("supabase/functions/resolve-product-access/index.ts");
+  ok(!/Deno\.env\.get\("SUPABASE_ANON_KEY"\)/.test(rpa), "liest SUPABASE_ANON_KEY nicht mehr");
+  ok(/service\.auth\.getUser\(jwt\)/.test(rpa), "validiert Bearer-Token explizit via Service-Role");
+  ok(/error: "auth_missing"/.test(rpa) && /error: "auth_invalid_token"/.test(rpa), "konkrete Auth-Codes (auth_missing/auth_invalid_token)");
+  ok(/\.eq\("user_id", uid\)/.test(rpa), "Entitlement-Query strikt auf validierten user_id gefiltert (Service-Role umgeht RLS)");
+  ok(!/JSON\.stringify\(\{[^}]*material[^}]*\}[\s\S]*console/.test(rpa) && /Never log the material|material/.test(rpa), "Schlüsselmaterial wird nicht geloggt");
+})();
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 process.exit(failed ? 1 : 0);

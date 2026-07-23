@@ -1,0 +1,24 @@
+# MaleMetrix — Supabase-Projektkonfiguration (CLI).
+# Zweck dieser Datei: die Platform-JWT-Prüfung (verify_jwt) für mm-commerce
+# ausschalten. Grund: Dieses Projekt nutzt neue asymmetrische Signing Keys
+# (ES256). Die vorgeschaltete Legacy-verify_jwt-Ebene der Edge Functions kann
+# ES256-signierte User-Tokens nicht verifizieren und antwortet mit 401, BEVOR
+# der Function-Handler läuft (der Gateway-Log dekodiert den User nur fürs
+# Logging). Supabase empfiehlt für diesen Fall genau das hier:
+#   verify_jwt = false  +  Auth sicher IM Handler validieren.
+#
+# WICHTIG: Das macht mm-commerce NICHT öffentlich. Der Handler verlangt
+# zwingend einen Authorization-Bearer-Token und validiert ihn autoritativ
+# über service.auth.getUser(jwt); ohne gültigen User → 401. Kein Vertrauen
+# in ungeprüfte JWT-Claims.
+project_id = "vczhfyxltiyvtvppfodt"
+
+[functions.mm-commerce]
+verify_jwt = false
+
+# resolve-product-access hatte denselben Fehler (ANON_KEY + getUser() ohne
+# Token) und liegt im „Zugriff nach Login"-Pfad. Ebenfalls verify_jwt=false;
+# der Handler validiert den Bearer-Token autoritativ und filtert Entitlements
+# strikt auf user_id des validierten Nutzers.
+[functions.resolve-product-access]
+verify_jwt = false

@@ -22,27 +22,37 @@ Deno.serve(async (req) => {
     "Access-Control-Allow-Headers": "authorization, content-type",
     "Content-Type": "application/json",
   };
-  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  if (req.method === "OPTIONS") return new Response("ok", { status: 204, headers: cors });
   try {
-    const auth = req.headers.get("Authorization") ?? "";
-    // Client with the CALLER's JWT → RLS applies; no service role needed here.
-    const supa = createClient(
+    // Auth SERVER-AUTORITATIV validieren (neue ES256/Publishable-Key-Welt).
+    // Der frühere ANON_KEY-Client + getUser() ohne Token liefert hier keinen
+    // User. Deshalb: Bearer-Token explizit mit dem Service-Role-Client prüfen.
+    // Diese Funktion läuft mit verify_jwt=false (config.toml) — die Auth wird
+    // hier im Handler erzwungen, nie über ungeprüfte Claims.
+    const service = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: auth } } },
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false, autoRefreshToken: false } },
     );
-    const { data: userData, error: userErr } = await supa.auth.getUser();
-    if (userErr || !userData?.user) {
-      return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: cors });
+    const jwt = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+    if (!jwt) {
+      return new Response(JSON.stringify({ error: "auth_missing" }), { status: 401, headers: cors });
     }
+    const { data: userData, error: userErr } = await service.auth.getUser(jwt);
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: "auth_invalid_token" }), { status: 401, headers: cors });
+    }
+    const uid = userData.user.id;
     const { product_key } = await req.json().catch(() => ({}));
     if (!product_key || !(product_key in SECRET_BY_PRODUCT)) {
       return new Response(JSON.stringify({ error: "bad_request" }), { status: 400, headers: cors });
     }
-    // Entitlement check under RLS (caller sees only own rows).
-    const { data: ents, error: entErr } = await supa
+    // Entitlement-Check strikt auf den validierten Nutzer beschränkt (Service-
+    // Role umgeht RLS, deshalb user_id EXPLIZIT filtern — nur eigene Rechte).
+    const { data: ents, error: entErr } = await service
       .from("entitlements")
       .select("product_key,status,expires_at")
+      .eq("user_id", uid)
       .eq("product_key", product_key)
       .eq("status", "active");
     const now = new Date().toISOString();
