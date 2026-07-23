@@ -367,24 +367,8 @@
       onScroll();
     }
 
-    // Cinematic Ambient — sehr zurückhaltender Parallax der globalen Glow-Ebene.
-    // Nur Desktop + kein reduced-motion. rAF + passive Scroll, nur transform via CSS-Var.
-    try {
-      var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (!reduce && window.innerWidth > 820) {
-        var ticking = false;
-        var applyPar = function () {
-          ticking = false;
-          var y = window.scrollY || window.pageYOffset || 0;
-          var py = Math.min(48, y * 0.045); // max ~48px Tiefe über die ganze Seite
-          document.documentElement.style.setProperty("--mm-py", py.toFixed(1) + "px");
-        };
-        window.addEventListener("scroll", function () {
-          if (!ticking) { ticking = true; requestAnimationFrame(applyPar); }
-        }, { passive: true });
-        applyPar();
-      }
-    } catch (e) {}
+    // Cinematic Ambient ist bewusst STATISCH (Flagschiff-Prinzip wie in den
+    // Ebooks): der Hintergrund steht, nur der Inhalt scrollt. Kein Parallax.
 
     // Mobile Navigation
     const toggle = document.getElementById("navToggle");
