@@ -110,7 +110,8 @@
 /* Matrix / grid cards */
 .bp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin: 18px 0; }
 .bp-card { border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 14px; }
-.bp-card b { font-size: .92rem; } .bp-card p { font-size: .82rem; margin: 6px 0 0; }
+.bp-card b { font-size: .92rem; display: block; margin-bottom: 5px; color: #fff; } .bp-card p { font-size: .82rem; margin: 6px 0 0; }
+.bp-card b + span, .bp-card b ~ span { display: block; font-size: .84rem; color: var(--bp-mut, #93a3b2); }
 
 /* Verdict chips (hype graveyard) */
 .verdict { font-family: var(--font-mono, monospace); font-size: .6rem; letter-spacing: .1em; padding: 2px 8px; border-radius: 6px; }
@@ -183,6 +184,12 @@
 .bp .doc-footer { border-top-color: rgba(255,255,255,.1); color: #7f95a8; }
 .bp .doc-disclaimer { color: #7f95a8; }
 .bp .doc-diagram { background: #f7f9fc; border-color: #e6eaf1; }
+
+/* ---------- PROTOKOLL-RESTE (Chain-Pills + System-Grafiken) ---------- */
+.bp .p2chain { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px 26px; margin: 18px 0; }
+.bp .p2chain span { position: relative; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.12); border-radius: 10px; padding: 9px 13px; font-size: .86rem; font-weight: 600; color: #eaf3fb; white-space: nowrap; }
+.bp .p2chain span:not(:last-child)::after { content: "→"; position: absolute; right: -20px; top: 50%; transform: translateY(-50%); color: var(--bp-cyan); font-size: 1rem; }
+.bp .p2svg { display: block; width: 100%; height: auto; margin: 24px 0; background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.1); border-radius: 16px; padding: 12px; }
 
 /* ---------- DUNKLES GATE (Freischalt-Seite im bp-Look) ---------- */
 .bp-gate { max-width: 540px; margin: 60px auto; padding: 40px 28px; text-align: center; border: 1px solid rgba(255,255,255,.1); border-radius: 20px; background: linear-gradient(180deg, rgba(0,194,255,.05), rgba(7,9,13,.6)); }
