@@ -279,22 +279,13 @@
 
   /* ======================= ICS-EXPORT (Kalender) ======================= */
   // Ehrlich: ICS-Download + Deep-Link, KEIN Zwei-Wege-Sync.
+  // P1-FIX (Phase 6): früher erzeugte diese Funktion ein Event für JEDEN Tag —
+  // auch Ruhetage. Jetzt delegiert sie an MM.exec (nur echte Termine:
+  // Trainingstage, Nachhol-Sessions, Review, Messtag).
   function icsForNextDays(days, timeHHMM) {
-    var d = (window.MM && MM.account) ? MM.account.getDashboardState() : { program: {} };
-    var p = d.program || {};
-    if (!p.active || p.notStarted || p.over) return null;
-    var t = (timeHHMM || getP("calendar.trainTime", "18:00")).replace(":", "") + "00";
-    var lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//MaleMetrix//OS//DE"];
-    var now = new Date();
-    for (var i = 0; i < (days || 7); i++) {
-      var dt = new Date(now.getTime() + i * 86400000);
-      var ymd = dt.getFullYear() + String(dt.getMonth() + 1).padStart(2, "0") + String(dt.getDate()).padStart(2, "0");
-      var day = p.day + i; if (day > 84) break;
-      lines.push("BEGIN:VEVENT", "UID:mm-program-d" + day + "@malemetrix", "DTSTART:" + ymd + "T" + t,
-        "SUMMARY:MaleMetrix · Programm Tag " + day, "URL:https://www.malemetrix.com/kurs-programm.html", "END:VEVENT");
-    }
-    lines.push("END:VCALENDAR");
-    return lines.join("\r\n");
+    if (timeHHMM) setP("calendar.trainTime", timeHHMM);
+    if (window.MM && MM.exec && MM.exec.icsCalendar) return MM.exec.icsCalendar(days || 14);
+    return null;
   }
 
   MM.os = {
