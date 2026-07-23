@@ -166,7 +166,22 @@ Tests: `node tools-dev/tests/phase7.test.js` (51).
 | Coaching-Bridge | Coach-Paket-Export (strukturierter Snapshot, keine Fotos/Roh-Logs) + deterministische Eskalations-Trigger im Coach-Hub |
 | Paywall-Intelligenz | Kontextuelle Upgrade-Momente mit ECHTEN Vorschauwerten (nie erfunden), outcome-basierte Preisleiter FREE → PROTOKOLL → COACHING |
 
-Tests: `node tools-dev/tests/phase8.test.js` (62, inkl. 20-Kategorien-AI-Eval-Batterie + Commerce-/Privacy-Invarianten) — gesamt 357 Assertions über 5 Suiten. SW: mm-v83.
+Tests: `node tools-dev/tests/phase8.test.js` (62, inkl. 20-Kategorien-AI-Eval-Batterie + Commerce-/Privacy-Invarianten).
+
+## Phase 9 — Produktionswahrheit (`MM.entitlements`, `MM.billing`, `MM.productionStatus`, Evidenz)
+| Piece | What it does |
+|---|---|
+| MM.entitlements | Kanonische Fähigkeits-Facade `can(cap)` (Plan→Capability), eine Wahrheit aus account-Entitlements; Abo-Gate vorbereitet aber aus (ehrlich); Grandfathering-Provenance (LEGACY_LIFETIME schont Alt-Käufer) |
+| MM.billing | Deterministische Billing-Zustandsmaschine (9 Zustände); out-of-order/unbekannte Webhooks = No-Ops; identische Tabelle serverseitig in mm-commerce |
+| Commerce/Abo | Migration 0008 (subscriptions + subscription_events unique(provider,event_id)); mm-commerce subscription_event-Handler (Idempotenz-insert-first + Zustandsmaschine) — CONFIG REQUIRED |
+| Delivery-Vault-Remediation | §5: bei Server-Grant entschlüsselt checkout.js den Client-Vault NICHT mehr; rotate-vault.mjs + SECURITY.md (P1 + Historie-Klartextcode + Alt-Kunden-schonende Retire-Sequenz) |
+| MM.productionStatus() | Sichere Bereitschafts-Diagnose (configured/reachable je Abhängigkeit, nie Secrets) |
+| Knowledge-Evidenz | §27/§29: 5 real verifizierte Landmark-Quellen (DOI+URL), Publikations-Gate (PUBLISHED nur bei belegten Kern-Claims), UNRESOLVED wird nie zitiert; KV 1→2 (§30) |
+| Trust/Methodik | trust.html: Denk-Kreislauf, KI-Grenze, Evidenz-Stufen, Datenschutz — indexiert |
+| Falsifizierbarkeit + KEEP | §68 jeder Vorschlag mit erwartetem Signal + Reassess-Kriterium; §70 KEEP als Premium-Output mit Reassess-Datum |
+| Docs | BUSINESS-MODEL.md (Modell E Hybrid, AI-Kosten, Unit Economics), ACTIVATION.md (Wahrheitsmatrix + Founder-Checkliste WO/WAS/VERIFY/ROLLBACK) |
+
+Tests: `node tools-dev/tests/phase9.test.js` (44) — Billing-Determinismus + out-of-order, Capability-Gating, Vault-Neutralisierung, Evidenz-nicht-erfindbar, productionStatus-ohne-Secrets, Chaos. Gesamt 401 Assertions über 6 Suiten. SW: mm-v84.
 
 ## Future modules (contract)
 tracker · nutrition-logging · stack-adherence · labs · wearables:
