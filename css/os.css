@@ -781,3 +781,14 @@ a.os-stat:hover b { color: var(--status-active, #00c2ff); }
   .os-statstrip { grid-template-columns: repeat(2, 1fr); row-gap: 14px; }
   .os-stat:nth-child(odd) { border-left: 0; padding-left: 0; }
 }
+
+/* ---- P14 Command Center (Today-Kopf): Full-Bleed statt Karte.
+   Mono-Systemzeile, massives Tages-Readout, ruhige Meta-Zeile. ---- */
+.os14-cmd { padding: 6px 0 18px; border-bottom: 1px solid var(--hairline, rgba(255,255,255,0.07)); margin-bottom: 16px; }
+.os14-cmd .sys { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--font-mono, monospace); font-size: 0.6rem; letter-spacing: 0.22em; color: var(--status-active, #00c2ff); margin-bottom: 14px; }
+.os14-cmd .sys .who { color: var(--muted-2); letter-spacing: 0.12em; }
+.os14-cmd .day { font-family: var(--font-display, inherit); font-weight: 700; font-size: clamp(2.6rem, 10vw, 4.2rem); line-height: 0.95; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; margin: 0 0 10px; }
+.os14-cmd .day small { font-size: 0.36em; font-weight: 600; color: var(--muted-2); letter-spacing: 0.04em; }
+.os14-cmd .line { font-family: var(--font-mono, monospace); font-size: 0.66rem; letter-spacing: 0.14em; color: var(--muted); margin: 0 0 10px; }
+.os14-cmd .line strong { color: var(--text); }
+.os14-cmd.rest .day { color: var(--status-improving, #2dd4a7); }

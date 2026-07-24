@@ -182,11 +182,13 @@
           day.comeback.options.map(function (o) { return '<button class="os-comeback-opt" data-comeback="' + esc(o.key) + '"><b>' + esc(o.label) + '</b><span>' + esc(o.line) + '</span></button>'; }).join("") + '</div>';
       }
 
-      // HERO — mit ECHTEM Tagestyp (programView) + Overlay-Status
+      // P14 COMMAND CENTER — kein Karten-Hero mehr: Full-Bleed-Kommandokopf
+      // mit Mono-Systemzeile, massivem Tages-Readout und echtem Tagestyp.
       var heroLine = day.overlay && X.OVERLAYS[day.overlay.mode] ? X.OVERLAYS[day.overlay.mode].label : "";
-      html += '<div class="card os-hero-card' + (day.restDay ? " rest" : "") + '"><span class="small muted os-k">' + esc(greetTime()) + esc(name) + '</span>' +
-        '<h1 class="os-big">Woche ' + p.week + ' · Tag ' + p.day + '</h1>' +
-        '<p class="muted" style="margin:0 0 6px">' + esc(MODE[d.mode] || d.mode || "") + ' · Phase ' + p.phase + ' · ' + esc(PHASE[p.phase]) + (heroLine ? ' — <strong style="color:var(--text)">' + esc(heroLine) + '</strong>' : '') + '</p>' +
+      html += '<div class="os14-cmd' + (day.restDay ? " rest" : "") + '">' +
+        '<div class="sys">MM / PERFORMANCE OS<span class="who">' + esc(greetTime()) + esc(name) + '</span></div>' +
+        '<h1 class="day">TAG ' + p.day + '<small>/84</small></h1>' +
+        '<p class="line">' + esc(MODE[d.mode] || d.mode || "") + ' · WOCHE ' + p.week + ' · PHASE ' + p.phase + ' · ' + esc(PHASE[p.phase]).toUpperCase() + (heroLine ? ' — <strong>' + esc(heroLine) + '</strong>' : '') + '</p>' +
         (rx ? '<p class="os-daytype os-dt-' + esc(rx.dayType) + '"><span class="dt">' + esc(rx.title) + '</span><span class="dp">' + esc(rx.purpose) + '</span></p>' : '') + '</div>';
 
       // P11-COCKPIT: EINE ehrliche Statuszeile — nur Werte, die wirklich
