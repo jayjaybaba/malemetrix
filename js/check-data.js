@@ -2205,21 +2205,21 @@ window.MM_CHECK = {
     "metabolic", "cardiovascular", "hormonal", "energy", "dataQuality", "execution"];
 
   C.domainMeta = {
-    bodyComposition: { name: "Körperkomposition", w: 12, health: 1.0, action: 0.9 },
-    training:        { name: "Training",          w: 11, health: 0.8, action: 1.0 },
-    movement:        { name: "Alltagsbewegung",   w: 8,  health: 0.9, action: 1.0 },
-    sleep:           { name: "Schlaf",            w: 11, health: 1.0, action: 0.9 },
-    recovery:        { name: "Erholung & Stress", w: 8,  health: 0.8, action: 0.8 },
-    nutrition:       { name: "Ernährung",         w: 11, health: 0.9, action: 0.9 },
-    metabolic:       { name: "Stoffwechsel",      w: 9,  health: 1.1, action: 0.7 },
-    cardiovascular:  { name: "Herz-Kreislauf",    w: 11, health: 1.3, action: 0.8 },
-    hormonal:        { name: "Hormonell & Sexuell", w: 6, health: 0.9, action: 0.6 },
-    energy:          { name: "Energie & Antrieb", w: 7,  health: 0.7, action: 0.7 },
-    dataQuality:     { name: "Datenlage & Monitoring", w: 10, health: 1.0, action: 1.0 },
-    execution:       { name: "Umsetzung",         w: 10, health: 0.7, action: 1.0 },
-    enhancedControl: { name: "Enhanced Control",  w: 12, health: 1.3, action: 1.0 },
-    therapyControl:  { name: "Therapie-Kontrolle", w: 10, health: 1.2, action: 1.0 },
-    recoveryStatus:  { name: "Rückkehr-Status",   w: 9,  health: 1.0, action: 0.9 }
+    bodyComposition: { name: "Körperkomposition", short: "KÖRPER", w: 12, health: 1.0, action: 0.9 },
+    training:        { name: "Training",          short: "TRAINING", w: 11, health: 0.8, action: 1.0 },
+    movement:        { name: "Alltagsbewegung",   short: "BEWEGUNG", w: 8,  health: 0.9, action: 1.0 },
+    sleep:           { name: "Schlaf",            short: "SCHLAF", w: 11, health: 1.0, action: 0.9 },
+    recovery:        { name: "Erholung & Stress", short: "ERHOLUNG", w: 8,  health: 0.8, action: 0.8 },
+    nutrition:       { name: "Ernährung",         short: "ERNÄHRUNG", w: 11, health: 0.9, action: 0.9 },
+    metabolic:       { name: "Stoffwechsel",      short: "STOFFWECHSEL", w: 9,  health: 1.1, action: 0.7 },
+    cardiovascular:  { name: "Herz-Kreislauf",    short: "HERZ-KREISLAUF", w: 11, health: 1.3, action: 0.8 },
+    hormonal:        { name: "Hormonell & Sexuell", short: "HORMONELL", w: 6, health: 0.9, action: 0.6 },
+    energy:          { name: "Energie & Antrieb", short: "ENERGIE", w: 7,  health: 0.7, action: 0.7 },
+    dataQuality:     { name: "Datenlage & Monitoring", short: "DATENLAGE", w: 10, health: 1.0, action: 1.0 },
+    execution:       { name: "Umsetzung",         short: "UMSETZUNG", w: 10, health: 0.7, action: 1.0 },
+    enhancedControl: { name: "Enhanced Control",  short: "CONTROL", w: 12, health: 1.3, action: 1.0 },
+    therapyControl:  { name: "Therapie-Kontrolle", short: "THERAPIE", w: 10, health: 1.2, action: 1.0 },
+    recoveryStatus:  { name: "Rückkehr-Status",   short: "RÜCKKEHR", w: 9,  health: 1.0, action: 0.9 }
   };
 
   /* Frage → GENAU EINE Domain (kein Mehrfachzaehlen). Fragen mit eigenem
@@ -2311,6 +2311,11 @@ window.MM_CHECK = {
       apply: { metabolic: -5 }, why: "Sehr geringe Alltagsbewegung ist ein eigenständiger metabolischer Faktor." }
   ];
 
+  /* Bewertet werden ausschliesslich die Fragen, die fuer DIESE Antworten
+     sichtbar sind. Wer seinen Status im Wizard zurueck aendert, schleppt
+     keine Antworten aus einem verlassenen Zweig mit. */
+  C.scoredSteps = function (a) { return C.visibleSteps(a || {}); };
+
   C.domainScores = function (a) {
     a = a || {};
     var acc = {};
@@ -2319,7 +2324,7 @@ window.MM_CHECK = {
       if (!acc[dom]) acc[dom] = { p: 0, max: 0, n: 0 };
       acc[dom].p += p; acc[dom].max += max; acc[dom].n++;
     }
-    C.allSteps.forEach(function (st) {
+    C.scoredSteps(a).forEach(function (st) {
       var dom = C.domainOf(st.q);
       if (!dom) return;
       var r = qPoints(st.q, a[st.q.id]);
@@ -2381,7 +2386,7 @@ window.MM_CHECK = {
   C.signals = function (a) {
     a = a || {};
     var set = {};
-    C.allSteps.forEach(function (st) {
+    C.scoredSteps(a).forEach(function (st) {
       var q = st.q, ans = a[q.id];
       if (ans === undefined || ans === null) return;
       var vals = Array.isArray(ans) ? ans : [ans];
@@ -2436,7 +2441,7 @@ window.MM_CHECK = {
     var st = C.statusOf(a);
     var ids = {};
     /* 1) Luecken direkt aus Antworten (gap-Flag an der Option) */
-    C.allSteps.forEach(function (step) {
+    C.scoredSteps(a).forEach(function (step) {
       var q = step.q, ans = a[q.id];
       if (ans === undefined || ans === null) return;
       var vals = Array.isArray(ans) ? ans : [ans];

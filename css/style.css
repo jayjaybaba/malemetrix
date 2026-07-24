@@ -2577,6 +2577,20 @@ body > * { position: relative; z-index: 0; }
 .mm-sys .row.is-primary .val::after { content: " · PRIMARY"; font-size: 0.58rem; letter-spacing: 0.12em; color: var(--status-active); }
 .mm-sys .row.is-flag .id, .mm-sys .row.is-flag .val { color: var(--status-flag); }
 .mm-sys .row.is-flag .bar > span { background: var(--status-flag); }
+/* Score V2: mehr Domains, längere Namen — eigene Spaltenbreite statt Überlauf. */
+.mm-sys.wide .row { grid-template-columns: 104px 1fr auto; }
+.mm-sys .id { overflow-wrap: anywhere; }
+@media (max-width: 420px) { .mm-sys.wide .row { grid-template-columns: 92px 1fr auto; gap: 9px; } }
+
+/* ---- SCORE V2 · DATENLÜCKEN — unbekannt ist nicht „normal" ---- */
+.mm-gaps { display: flex; flex-direction: column; }
+.mm-gaps .g { padding: 12px 0; border-top: 1px solid var(--hairline); }
+.mm-gaps .g:first-child { border-top: 0; }
+.mm-gaps .k { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.mm-gaps .k b { font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.14em; font-weight: 500; color: var(--muted); }
+.mm-gaps .g.crit .k b { color: var(--status-flag); }
+.mm-gaps .k .lvl { font-family: var(--font-mono); font-size: 0.55rem; letter-spacing: 0.16em; color: var(--muted-2); }
+.mm-gaps .g p { margin: 5px 0 0; color: var(--muted-2); font-size: 0.88rem; max-width: 62ch; }
 
 /* ---- EMPTY / LOCKED STATES — Premium-Ruhe statt trauriger Platzhalter ---- */
 .mm-empty { padding: var(--space-4) 0; border-top: 1px solid var(--hairline); }

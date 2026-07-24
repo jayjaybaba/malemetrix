@@ -302,6 +302,21 @@ group("Domänen-Architektur · kein linearer Gesamttopf, kein Doppelzählen");
     "die 7 historischen Bereiche werden weiterhin abgeleitet (Radar/Report/Programm)");
 })();
 
+/* =============================================================== 14b */
+group("Zurück-Navigation · verlassene Zweige zählen nicht mehr mit");
+(function () {
+  var enh = mk({ perf_status: "enhanced", enh_categories: ["testosterone", "oral"],
+    enh_signals: ["bp"], enh_bp_routine: "nie", enh_hematology: "nein", enh_liver: "nein" });
+  var switched = Object.assign({}, enh, { perf_status: "natural" });
+  var a = C.evaluate(enh), b = C.evaluate(switched);
+  ok(a.domains.enhancedControl !== undefined, "Enhanced-Pfad erzeugt eine Kontroll-Domain");
+  ok(b.domains.enhancedControl === undefined,
+    "nach Statuswechsel im Wizard verschwindet sie wieder (keine Altlast aus dem verlassenen Zweig)");
+  ok(b.dataGaps.every(function (g) { return ["hematocrit", "liver"].indexOf(g.id) < 0; }),
+    "auch die kontextspezifischen Datenlücken verschwinden");
+  ok(b.signals.indexOf("bp") < 0, "und die Signale des verlassenen Zweigs ebenfalls");
+})();
+
 /* ==================================================================== 15 */
 group("Bottleneck-Engine · Priorität statt „niedrigster Wert“");
 (function () {

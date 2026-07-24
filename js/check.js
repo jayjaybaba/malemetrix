@@ -487,13 +487,13 @@
       html += '<div class="card dash-block" style="margin-bottom:22px">' +
         '<div class="mm-secthead" style="margin-top:0"><span class="sys">MM / SYSTEMS</span><span class="t">Deine Systeme im Einzelnen</span></div>' +
         '<p class="small muted" style="margin:0 0 12px">Nur die Bereiche, die für deinen Kontext tatsächlich erhoben wurden. Was nicht erfasst wurde, wird hier auch nicht behauptet.</p>' +
-        '<div class="mm-sys">';
+        '<div class="mm-sys wide">';
       rows.forEach(d => {
         const v = V.domains[d];
         const meta = C.domainMeta[d] || { name: d };
         const isPrimary = d === V.primaryBottleneck.domain;
-        html += '<div class="row' + (isPrimary ? ' is-primary' : (v < 40 ? ' is-flag' : '')) + '">' +
-          '<span class="id">' + esc(meta.name).toUpperCase() + '</span>' +
+        html += '<div class="row' + (isPrimary ? ' is-primary' : (v < 40 ? ' is-flag' : '')) + '" title="' + esc(meta.name) + '">' +
+          '<span class="id">' + esc(meta.short || meta.name).toUpperCase() + '</span>' +
           '<div class="bar"><span style="width:' + v + '%"></span></div>' +
           '<span class="val">' + v + '/100</span></div>';
       });
@@ -524,10 +524,11 @@
         html += '<p class="small muted" style="margin:6px 0 0">Keine relevanten Lücken: Deine zentralen Angaben sind vollständig. Deshalb ist deine Aussagesicherheit hoch — nicht, weil alles gut ist, sondern weil wir es wirklich wissen.</p>';
       } else {
         html += '<p class="small muted" style="margin:6px 0 12px">Kein Grund zur Panik — aber auch kein Grund, das Beste anzunehmen. Was hier steht, ist <strong>nicht gemessen</strong>. Nicht gemessen heißt nicht „normal".</p>' +
-          '<div class="mm-sys">' +
-          gaps.slice(0, 6).map(g => '<div class="row' + (g.severity >= 3 ? ' is-flag' : '') + '">' +
-            '<span class="id">' + esc(g.label).toUpperCase() + '</span>' +
-            '<span class="val" style="flex:1;text-align:left;font-family:var(--font-body);letter-spacing:0;color:var(--muted)">' + esc(g.why) + '</span></div>').join('') +
+          '<div class="mm-gaps">' +
+          gaps.slice(0, 6).map(g => '<div class="g' + (g.severity >= 3 ? ' crit' : '') + '">' +
+            '<div class="k"><b>' + esc(g.label).toUpperCase() + '</b>' +
+            '<span class="lvl">' + (g.severity >= 3 ? "ENTSCHEIDUNGSRELEVANT" : g.severity === 2 ? "RELEVANT" : "ERGÄNZEND") + '</span></div>' +
+            '<p>' + esc(g.why) + '</p></div>').join('') +
           '</div>';
       }
       html += '</div>';
