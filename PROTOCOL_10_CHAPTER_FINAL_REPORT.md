@@ -69,7 +69,13 @@ ULTRA-LOCKED-Vorgabe ohnehin entspricht. Kein Code angefordert, nichts umgangen.
 - Tests grün (visual-system 138/0, launch-readiness 76, i18n 26, commerce-e2e 85);
   Browser-QA 390/1440: 0 px Overflow, keine JS-Fehler.
 
-**PARTIAL / DEFERRED — tiefe redaktionelle Verschmelzung (bewusst nicht überstürzt):**
+> **UPDATE (P18):** Die beiden unten als PARTIAL/DEFERRED markierten Punkte sind
+> mit dem Final Editorial Depth Pass **abgeschlossen** — Kapitel 01 ist real zu
+> einem verdichteten Denkmodell (01.1–01.8) verschmolzen, und der Longevity-Content
+> (inkl. ApoB-Motion) ist physisch in Kapitel 04 integriert. Details:
+> `PROTOCOL_EDITORIAL_DEPTH_FINAL.md`. Danach: **CONTENT FREEZE V1**.
+
+**PARTIAL / DEFERRED — tiefe redaktionelle Verschmelzung (in P18 abgeschlossen):**
 - Die Prosa-**Verdichtung von Kapitel 01** (START HERE + Fundament +
   Körperkomposition zu EINEM verdichteten Fließtext) ist strukturell erreicht
   (ein Index-Eintrag „01 DAS FUNDAMENT" = blueprint; 00-start-here + fettabbau +
