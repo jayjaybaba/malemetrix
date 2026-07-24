@@ -75,6 +75,45 @@
     (r.whtr ? '<span><strong>Waist-to-Height:</strong> ' + whtrStr + '</span>' : '') +
     '</div></div></div>';
 
+  /* ---------- V2: Status, Engpass, Aussagesicherheit, Datenlücken ----------
+     Alte Ergebnisse ohne V2-Felder werden aus ihren Antworten nachgerechnet;
+     ein fehlender Status bleibt "unbekannt" und wird nicht als "natural"
+     oder "gesund" gedeutet. */
+  var V = (function () {
+    if (r.v === 2 && r.domains && r.confidence) {
+      return { status: r.status || "unknown", domains: r.domains, gaps: r.dataGaps || [],
+        conf: r.confidence, panel: r.contextPanel, bn: r.primaryBottleneck, legacy: false };
+    }
+    try {
+      var ev = C.evaluate(r.answers || {});
+      return { status: ev.status, domains: ev.domains, gaps: ev.dataGaps, conf: ev.confidence,
+        panel: ev.contextPanel, bn: ev.primaryBottleneck, legacy: true };
+    } catch (e) { return null; }
+  })();
+
+  if (V) {
+    var statusLbl = (C.statusLabels[V.status] || C.statusLabels.unknown).long;
+    html += '<div class="r-section"><h2>Kontext, Engpass & Aussagesicherheit</h2>' +
+      '<table>' +
+      '<tr><td>Status-Kontext</td><td>' + statusLbl + '</td></tr>' +
+      '<tr><td>Primärer Engpass</td><td>' + (V.bn ? V.bn.name : "—") + (V.bn && V.bn.value != null ? " (" + V.bn.value + "/100)" : "") + '</td></tr>' +
+      '<tr><td>Aussagesicherheit</td><td>' + (V.conf.label || V.conf.level) + '</td></tr>' +
+      '</table>' +
+      '<p style="margin-top:8px;font-size:0.9rem">' + (V.conf.reasons || []).join(" ") + '</p>' +
+      (V.panel ? '<div class="r-box" style="margin-top:12px;border-left:4px solid #2e7cf6"><h3>' + V.panel.title + ' — ' + V.panel.verdict + '</h3>' +
+        (V.panel.lines || []).map(function (l) { return '<p style="font-size:0.86rem;margin-top:6px">' + l + '</p>'; }).join('') + '</div>' : '') +
+      '<p style="font-size:0.82rem;color:#8893a7;margin-top:10px">Der Status ist ein Kontext, keine Bewertung. Er senkt deinen Score nicht — bewertet wird ausschließlich, wie gut dein aktuelles System kontrolliert ist.</p>' +
+      '</div>';
+
+    if (V.gaps.length) {
+      html += '<div class="r-section"><h2>Deine Datenlücken</h2>' +
+        '<p style="margin-bottom:10px">Diese Punkte sind <strong>nicht gemessen</strong>. Nicht gemessen heißt nicht „normal" — es heißt: hier ist die Aussage über dich schwächer als sie sein müsste.</p>' +
+        '<table><tr><th>Lücke</th><th>Warum sie zählt</th></tr>' +
+        V.gaps.slice(0, 8).map(function (g) { return '<tr><td>' + g.label + '</td><td style="font-weight:400">' + g.why + '</td></tr>'; }).join('') +
+        '</table></div>';
+    }
+  }
+
   /* ---------- Executive Summary ---------- */
   html += '<div class="r-section"><h2>01 — Executive Summary</h2>' +
     '<p>' + (firstName ? firstName + ", du" : "Du") + ' bist nicht undiszipliniert. Deine Antworten zeigen, wo dein System aktuell trägt und wo es bricht. ' +

@@ -93,15 +93,18 @@ window.MM_CHECK = {
         {
           id: "goal_pain", type: "single", module: null,
           title: "Was stört dich aktuell am meisten?",
+          sub: "Genau ein Punkt — der, den du am liebsten sofort loswerden würdest.",
           options: [
-            { v: "bauch", label: "Bauchansatz" },
-            { v: "muede", label: "Müdigkeit" },
+            { v: "bauch", label: "Bauch / Taille" },
+            { v: "muskelmasse", label: "Zu wenig Muskelmasse" },
+            { v: "kraft", label: "Geringe Kraft / Performance" },
+            { v: "muede", label: "Niedrige Energie" },
             { v: "schlaf", label: "Schlechter Schlaf" },
-            { v: "kraft", label: "Wenig Kraft" },
-            { v: "struktur", label: "Keine Struktur" },
+            { v: "libido", label: "Libido / Erektion" },
+            { v: "blutwerte", label: "Blutwerte / Gesundheitsrisiko" },
+            { v: "gewicht", label: "Gewicht" },
             { v: "essen", label: "Unkontrolliertes Essen" },
-            { v: "libido", label: "Niedriger Drive / Libido" },
-            { v: "blutwerte", label: "Blutwerte / Unsicherheit wegen Hormonen" },
+            { v: "struktur", label: "Keine Struktur" },
             { v: "neustart", label: "Ich fange immer wieder neu an" }
           ]
         },
@@ -210,9 +213,346 @@ window.MM_CHECK = {
         },
         {
           id: "body_satisfaction", type: "scale", module: "body", min: 1, max: 10,
+          when: function (a) { return !a.body_type || a.body_type === "unknown"; },
           title: "Wie zufrieden bist du mit deiner aktuellen Form?",
           sub: "1 = sehr unzufrieden · 10 = sehr zufrieden. Subjektiv — fließt bewusst nur schwach in den Score ein.",
           pointsMap: [[2, 3], [4, 5], [6, 7], [8, 8], [10, 7]]
+        }
+      ]
+    },
+
+    /* ---------- 3b. STATUS-ROUTING (V2) — die zentrale Weiche ----------
+       Diese Antwort ist KEINE Bewertung. Sie entscheidet, welche Fragen
+       überhaupt sinnvoll sind und wie das Ergebnis gelesen werden muss.
+       Sie erzeugt NIE einen direkten Punktabzug (siehe SCORE_V2_LOGIC.md). */
+    {
+      id: "status", label: "Dein Kontext",
+      questions: [
+        {
+          id: "perf_status", type: "single", module: null,
+          title: "Welcher Status beschreibt dich aktuell am besten?",
+          sub: "Ehrlich beantwortet, weil davon abhängt, welche Fragen und welche Einordnung für dich überhaupt sinnvoll sind. Dein Status kostet dich keinen einzigen Punkt — bewertet wird nur, wie gut dein aktuelles System kontrolliert ist.",
+          options: [
+            { v: "natural", label: "NATURAL — ich verwende aktuell keine hormonellen oder pharmakologischen Performance-Enhancer." },
+            { v: "former_enhanced", label: "FRÜHER ENHANCED — ich habe früher hormonelle / leistungssteigernde Substanzen verwendet, aktuell nicht." },
+            { v: "medical_trt", label: "TRT / ÄRZTLICHE HORMONTHERAPIE — ich erhalte aktuell eine medizinisch begleitete Testosteron- oder Hormontherapie." },
+            { v: "enhanced", label: "ENHANCED — ich verwende aktuell hormonelle oder pharmakologische Substanzen für Leistung, Körperkomposition oder Performance." },
+            { v: "uncertain", label: "NICHT SICHER — ich weiß nicht genau, welcher Kategorie ich mich zuordnen soll." }
+          ]
+        },
+        {
+          id: "unc_context", type: "single", module: null,
+          when: function (a) { return a.perf_status === "uncertain"; },
+          title: "Damit wir dich nicht falsch einsortieren: Was trifft am ehesten zu?",
+          sub: "Keine Zuordnung wird erzwungen. Wenn nichts passt, bleibt dein Status offen — das Ergebnis funktioniert trotzdem.",
+          options: [
+            { v: "supplements_only", label: "Ich nehme nur frei verkäufliche Supplements (z. B. Kreatin, Protein, Vitamine)" },
+            { v: "prescribed_unclear", label: "Ich nehme etwas ärztlich Verordnetes und weiß nicht, ob das dazuzählt" },
+            { v: "past_unclear", label: "Ich hatte früher etwas verwendet, bin mir bei der Einordnung aber unsicher" },
+            { v: "current_unclear", label: "Ich verwende aktuell etwas, bin mir bei der Einordnung aber unsicher" },
+            { v: "no_answer", label: "Möchte ich nicht angeben" }
+          ]
+        }
+      ]
+    },
+
+    /* ---------- 3c. NATURAL-PFAD ---------- */
+    {
+      id: "ctx_natural", label: "Natural-Kontext",
+      when: function (a) {
+        var st = window.MM_CHECK.statusOf(a);
+        /* Auch bei offenem Status: neutrale Fragen statt erzwungener Einordnung. */
+        return st === "natural" || st === "uncertain";
+      },
+      questions: [
+        {
+          id: "nat_training_response", type: "single", module: "strength", dom: "training",
+          title: "Wie reagiert dein Körper aktuell auf Training?",
+          sub: "Trainingsantwort ist einer der ehrlichsten Alltagsmarker — und kein Hormonbefund.",
+          options: [
+            { v: "gut", label: "Guter, sichtbarer Fortschritt", p: 12 },
+            { v: "langsam", label: "Langsamer Fortschritt", p: 8 },
+            { v: "stagniert", label: "Stagniert seit Längerem", p: 4, sig: "training_stall" },
+            { v: "verlust", label: "Deutlicher Leistungs-/Kraftverlust", p: 1, sig: "strength_loss" },
+            { v: "unknown", label: "Kann ich nicht einschätzen", p: 5, gap: "training_response" }
+          ]
+        },
+        {
+          id: "nat_recovery", type: "single", module: "recovery", dom: "recovery",
+          title: "Wie gut erholst du dich zwischen den Belastungen?",
+          options: [
+            { v: "gut", label: "Gut — ich bin am nächsten Tag wieder da", p: 14 },
+            { v: "mittel", label: "Mittel — es zieht sich manchmal", p: 9 },
+            { v: "schlecht", label: "Schlecht — ich bin dauerhaft angeschlagen", p: 3, sig: "poor_recovery" }
+          ]
+        }
+      ]
+    },
+
+    /* ---------- 3d. FRÜHER-ENHANCED-PFAD ---------- */
+    {
+      id: "ctx_former", label: "Rückkehr-Kontext",
+      when: function (a) { return window.MM_CHECK.statusOf(a) === "former_enhanced"; },
+      questions: [
+        {
+          id: "fe_last_use", type: "single", module: null, dom: "recoveryStatus",
+          title: "Wann war die letzte Anwendung?",
+          options: [
+            { v: "lt3m", label: "Vor weniger als 3 Monaten", p: 4 },
+            { v: "3to6m", label: "Vor 3–6 Monaten", p: 6 },
+            { v: "6to12m", label: "Vor 6–12 Monaten", p: 9 },
+            { v: "gt12m", label: "Vor mehr als 12 Monaten", p: 12 },
+            { v: "unknown", label: "Weiß ich nicht mehr genau", p: 6, gap: "former_timeline" }
+          ]
+        },
+        {
+          id: "fe_duration", type: "single", module: null, dom: "recoveryStatus",
+          title: "Wie lange hast du insgesamt angewendet?",
+          sub: "Gesamtdauer der Exposition — grobe Einordnung reicht.",
+          options: [
+            { v: "lt3m", label: "Unter 3 Monate", p: 12 },
+            { v: "3to12m", label: "3–12 Monate", p: 9 },
+            { v: "1to3y", label: "1–3 Jahre", p: 6 },
+            { v: "gt3y", label: "Über 3 Jahre", p: 4 },
+            { v: "unknown", label: "Weiß ich nicht", p: 6, gap: "former_exposure" }
+          ]
+        },
+        {
+          id: "fe_changes", type: "multi", module: null, dom: null, cap: 0,
+          title: "Was hat sich seit dem Absetzen verändert?",
+          sub: "Mehrfachauswahl. Diese Angaben erzeugen keine Diagnose — sie steuern, worauf wir dich hinweisen.",
+          options: [
+            { v: "libido", label: "Libido reduziert", sig: "sexual" },
+            { v: "erektion", label: "Erektionsfunktion verändert", sig: "sexual" },
+            { v: "energie", label: "Energie niedriger", sig: "energy" },
+            { v: "stimmung", label: "Stimmung verändert", sig: "mood" },
+            { v: "kraft", label: "Kraftverlust", sig: "strength_loss" },
+            { v: "koerper", label: "Körperkomposition verschlechtert", sig: "body" },
+            { v: "fertilitaet", label: "Kinderwunsch / Fruchtbarkeit ist ein Thema", sig: "fertility" },
+            { v: "keine", label: "Nichts davon", exclusive: true },
+            { v: "unsure", label: "Unsicher", exclusive: true, gap: "former_symptoms" }
+          ]
+        },
+        {
+          id: "fe_followup", type: "single", module: null, dom: "recoveryStatus",
+          title: "Gab es nach dem Absetzen eine ärztliche Nachkontrolle / Blutwerte?",
+          options: [
+            { v: "vollstaendig", label: "Ja, vollständig und ärztlich eingeordnet", p: 16 },
+            { v: "teilweise", label: "Teilweise", p: 9 },
+            { v: "nein", label: "Nein", p: 3, gap: "former_followup" },
+            { v: "unsure", label: "Weiß ich nicht", p: 5, gap: "former_followup" }
+          ]
+        }
+      ]
+    },
+
+    /* ---------- 3e. MEDIZINISCHE TRT ---------- */
+    {
+      id: "ctx_trt", label: "Therapie-Kontext",
+      when: function (a) { return window.MM_CHECK.statusOf(a) === "medical_trt"; },
+      questions: [
+        {
+          id: "trt_reason", type: "single", module: null, dom: null,
+          title: "Warum wurde die Therapie begonnen?",
+          sub: "Der Anlass verändert, was sinnvoll kontrolliert wird — nicht deinen Score.",
+          options: [
+            { v: "hypogonadismus", label: "Diagnostizierter Hypogonadismus" },
+            { v: "sekundaer", label: "Sekundär zu einer anderen Erkrankung" },
+            { v: "nach_aas", label: "Nach vorheriger Anwendung leistungssteigernder Substanzen" },
+            { v: "symptome", label: "Alters-/symptomgetrieben" },
+            { v: "unsure", label: "Weiß ich nicht genau", gap: "trt_indication" },
+            { v: "other", label: "Anderer Grund" }
+          ]
+        },
+        {
+          id: "trt_supervision", type: "single", module: null, dom: "therapyControl",
+          title: "Wie eng ist deine Therapie aktuell ärztlich begleitet?",
+          options: [
+            { v: "regelmaessig", label: "Regelmäßig ärztlich betreut", p: 22 },
+            { v: "gelegentlich", label: "Gelegentliche Betreuung", p: 14 },
+            { v: "selbst", label: "Rezept vorhanden, aber faktisch selbst gesteuert", p: 6, sig: "trt_unsupervised" },
+            { v: "keine", label: "Aktuell keine Betreuung", p: 2, sig: "trt_unsupervised" }
+          ]
+        },
+        {
+          id: "trt_duration", type: "single", module: null, dom: null,
+          title: "Wie lange läuft die Therapie bereits?",
+          options: [
+            { v: "lt6m", label: "Unter 6 Monate" },
+            { v: "6to12m", label: "6–12 Monate" },
+            { v: "1to3y", label: "1–3 Jahre" },
+            { v: "gt3y", label: "Über 3 Jahre" },
+            { v: "unsure", label: "Weiß ich nicht genau" }
+          ]
+        },
+        {
+          id: "trt_followup", type: "single", module: null, dom: "therapyControl",
+          title: "Wann waren die letzten Verlaufskontrollen (Blutwerte)?",
+          sub: "In der Einstellungsphase sind engere Kontrollen üblich, später meist jährlich — das entscheidet dein Arzt.",
+          options: [
+            { v: "lt3m", label: "Vor unter 3 Monaten", p: 20 },
+            { v: "3to6m", label: "Vor 3–6 Monaten", p: 18 },
+            { v: "6to12m", label: "Vor 6–12 Monaten", p: 13 },
+            { v: "gt12m", label: "Vor über 12 Monaten", p: 5, gap: "trt_labs" },
+            { v: "nie", label: "Nie / weiß ich nicht", p: 1, gap: "trt_labs" }
+          ]
+        },
+        {
+          id: "trt_response", type: "single", module: null, dom: null,
+          title: "Haben sich deine ursprünglichen Beschwerden unter der Therapie verändert?",
+          sub: "Therapie-ANSPRECHEN ist nicht dasselbe wie Therapie-KONTROLLE. Beides wird getrennt ausgewertet.",
+          options: [
+            { v: "klar", label: "Deutlich verbessert" },
+            { v: "teilweise", label: "Teilweise verbessert" },
+            { v: "nein", label: "Nicht verbessert", sig: "trt_no_response" },
+            { v: "schlechter", label: "Verschlechtert", sig: "trt_worse" },
+            { v: "unsure", label: "Kann ich nicht sagen", gap: "trt_response" }
+          ]
+        },
+        {
+          id: "trt_fertility", type: "single", module: null, dom: null,
+          title: "Ist Kinderwunsch für dich aktuell ein Thema?",
+          sub: "Relevant, weil Fruchtbarkeit unter Hormontherapie ärztlich mitgedacht werden sollte.",
+          options: [
+            { v: "ja", label: "Ja", sig: "fertility" },
+            { v: "nein", label: "Nein" },
+            { v: "unsure", label: "Unsicher", sig: "fertility" },
+            { v: "abgeschlossen", label: "Familienplanung abgeschlossen" },
+            { v: "no_answer", label: "Möchte ich nicht angeben" }
+          ]
+        }
+      ]
+    },
+
+    /* ---------- 3f. ENHANCED ----------
+       Kontext-Routing, KEIN Stack-Optimizer: keine Dosierungen, keine
+       Gegenmittel, keine „nimm X dazu"-Logik. Nur: was ist relevant zu
+       kontrollieren, und was davon fehlt aktuell. */
+    {
+      id: "ctx_enhanced", label: "Enhanced-Kontext",
+      when: function (a) { return window.MM_CHECK.statusOf(a) === "enhanced"; },
+      questions: [
+        {
+          id: "enh_context", type: "single", module: null, dom: null,
+          title: "Wie sieht dein aktueller Kontext aus?",
+          sub: "MaleMetrix bewertet nicht, WAS du tust — sondern wie gut das System kontrolliert ist.",
+          options: [
+            { v: "cruise", label: "TRT-ähnlich / Cruise" },
+            { v: "blast", label: "Aktive Aufbau-/Leistungsphase" },
+            { v: "blast_cruise", label: "Blast & Cruise" },
+            { v: "transition", label: "Übergangs-/Absetzphase" },
+            { v: "other", label: "Anderer Kontext" },
+            { v: "no_answer", label: "Möchte ich nicht angeben", gap: "enh_context" }
+          ]
+        },
+        {
+          id: "enh_categories", type: "multi", module: null, dom: null, cap: 0,
+          title: "Welche Kategorien sind aktuell beteiligt?",
+          sub: "Mehrfachauswahl. Wir fragen Kategorien, keine Präparate und keine Mengen — die Antwort steuert ausschließlich, welche Kontroll-Themen für dich relevant sind.",
+          options: [
+            { v: "testosterone", label: "Testosteron" },
+            { v: "aas", label: "Weitere anabol/androgen wirksame Substanzen" },
+            { v: "oral", label: "Orale anabole Substanzen" },
+            { v: "gh", label: "Wachstumshormon" },
+            { v: "glp1", label: "GLP-1 / GIP-Medikation" },
+            { v: "thyroid", label: "Schilddrüsenhormon" },
+            { v: "insulin", label: "Insulin / glukosewirksame Substanzen" },
+            { v: "stimulants", label: "Stimulanzien" },
+            { v: "peptides", label: "Peptide / sonstige Performance-Substanzen" },
+            { v: "other", label: "Anderes" },
+            { v: "no_answer", label: "Möchte ich nicht angeben", exclusive: true, gap: "enh_categories" }
+          ]
+        },
+        {
+          id: "enh_signals", type: "multi", module: null, dom: null, cap: 0,
+          title: "Hast du seit Beginn oder Änderung deines aktuellen Regimes etwas davon bemerkt?",
+          sub: "Mehrfachauswahl. Diese Angaben steuern Folgefragen — sie sind kein Punktabzug und keine Diagnose.",
+          options: [
+            { v: "bp", label: "Erhöhter Blutdruck", sig: "bp" },
+            { v: "kopfschmerz", label: "Kopfschmerzen", sig: "bp" },
+            { v: "atemnot", label: "Ungewohnte Luftnot", sig: "cardio_alarm" },
+            { v: "schlaf", label: "Schlaf verschlechtert", sig: "sleep" },
+            { v: "schnarchen", label: "Starkes Schnarchen / Tagesmüdigkeit", sig: "apnea" },
+            { v: "wasser", label: "Wassereinlagerungen", sig: "edema" },
+            { v: "libido", label: "Libido verändert", sig: "sexual" },
+            { v: "erektion", label: "Erektionsprobleme", sig: "sexual" },
+            { v: "akne", label: "Akne", sig: "derm" },
+            { v: "haar", label: "Haarausfall", sig: "derm" },
+            { v: "stimmung", label: "Stimmungsveränderungen", sig: "mood" },
+            { v: "brust", label: "Brust-/Brustwarzen-Symptome", sig: "hormonal" },
+            { v: "fertilitaet", label: "Fruchtbarkeit ist ein Thema", sig: "fertility" },
+            { v: "keine", label: "Nichts davon", exclusive: true },
+            { v: "unsure", label: "Unsicher", exclusive: true, gap: "enh_signals" }
+          ]
+        },
+        {
+          id: "enh_bp_routine", type: "single", module: null, dom: "enhancedControl",
+          title: "Wie regelmäßig misst du deinen Blutdruck?",
+          sub: "Unter anabol wirksamen Substanzen ist Blutdruck einer der wenigen Werte, die du selbst engmaschig kontrollieren kannst.",
+          options: [
+            { v: "regelmaessig", label: "Regelmäßig, eigenes Gerät", p: 20 },
+            { v: "gelegentlich", label: "Gelegentlich", p: 12 },
+            { v: "selten", label: "Selten", p: 5, gap: "bp" },
+            { v: "nie", label: "Nie", p: 1, gap: "bp" },
+            { v: "diagnostiziert", label: "Bekannt erhöht / in Behandlung", p: 8, sig: "bp_known" },
+            { v: "unsure", label: "Weiß ich nicht", p: 3, gap: "bp" }
+          ]
+        },
+        {
+          id: "enh_liver", type: "single", module: null, dom: "enhancedControl",
+          when: function (a) { return (a.enh_categories || []).indexOf("oral") >= 0; },
+          title: "Sind bei dir Leberwerte im Verlauf kontrolliert worden?",
+          sub: "Wird gefragt, weil du orale Substanzen angegeben hast — dort ist der Leber-/Lipid-Kontext besonders relevant.",
+          options: [
+            { v: "aktuell", label: "Ja, aktuell und ärztlich eingeordnet", p: 14 },
+            { v: "aelter", label: "Ja, aber ältere Werte", p: 8 },
+            { v: "nein", label: "Nein", p: 2, gap: "liver" },
+            { v: "unsure", label: "Weiß ich nicht", p: 3, gap: "liver" }
+          ]
+        },
+        {
+          id: "enh_glucose", type: "single", module: null, dom: "enhancedControl",
+          when: function (a) { var c = a.enh_categories || []; return c.indexOf("gh") >= 0 || c.indexOf("insulin") >= 0; },
+          title: "Wird dein Blutzucker (nüchtern oder HbA1c) kontrolliert?",
+          sub: "Wird gefragt, weil Wachstumshormon bzw. glukosewirksame Substanzen den Zuckerstoffwechsel direkt betreffen.",
+          options: [
+            { v: "aktuell", label: "Ja, aktuelle Werte vorhanden", p: 14 },
+            { v: "aelter", label: "Nur ältere Werte", p: 8 },
+            { v: "nein", label: "Nein", p: 2, gap: "glucose" },
+            { v: "unsure", label: "Weiß ich nicht", p: 3, gap: "glucose" }
+          ]
+        },
+        {
+          id: "enh_hematology", type: "single", module: null, dom: "enhancedControl",
+          when: function (a) { var c = a.enh_categories || []; return c.indexOf("testosterone") >= 0 || c.indexOf("aas") >= 0 || c.indexOf("oral") >= 0; },
+          title: "Kennst du deinen aktuellen Hämatokrit / Hämoglobin-Wert?",
+          sub: "Wird gefragt, weil androgen wirksame Substanzen das Blutbild verdicken können — einer der klassisch überwachten Werte.",
+          options: [
+            { v: "aktuell", label: "Ja, aktueller Wert bekannt", p: 16 },
+            { v: "aelter", label: "Nur ein älterer Wert", p: 9 },
+            { v: "nein", label: "Nein", p: 2, gap: "hematocrit" },
+            { v: "unsure", label: "Weiß ich nicht", p: 3, gap: "hematocrit" }
+          ]
+        }
+      ]
+    },
+
+    /* ---------- 3g. GLP-1-Kontext (statusunabhängig) ---------- */
+    {
+      id: "ctx_glp1", label: "GLP-1-Kontext",
+      when: function (a) { return window.MM_CHECK.usesGlp1(a); },
+      questions: [
+        {
+          id: "glp1_lean", type: "single", module: "fuel", dom: "nutrition",
+          title: "Wie sicherst du unter GLP-1 deine Muskelmasse ab?",
+          sub: "Unter starker Appetitreduktion ist Proteinzufuhr plus Krafttraining der entscheidende Hebel gegen Muskelverlust.",
+          options: [
+            { v: "beides", label: "Protein-Ziel + regelmäßiges Krafttraining", p: 18 },
+            { v: "protein", label: "Nur auf Protein geachtet", p: 11 },
+            { v: "training", label: "Nur Krafttraining", p: 10 },
+            { v: "nichts", label: "Weder noch", p: 3, sig: "lean_mass_risk" },
+            { v: "unsure", label: "Weiß ich nicht", p: 5, gap: "glp1_lean" }
+          ]
         }
       ]
     },
@@ -272,6 +612,7 @@ window.MM_CHECK = {
         },
         {
           id: "str_limit", type: "single", module: "strength",
+          when: function (a) { return !(a.str_freq === "4plus" && a.str_plan === "progression"); },
           title: "Was limitiert dich beim Training am meisten?",
           options: [
             { v: "zeit", label: "Zeit", p: 6 },
@@ -286,6 +627,7 @@ window.MM_CHECK = {
         },
         {
           id: "str_values", type: "single", module: "strength",
+          when: function (a) { return a.str_freq !== "0" && a.str_log !== "app"; },
           title: "Kennst du deine aktuellen Kraftwerte?",
           sub: "Z. B. Gewichte bei Kniebeuge, Bankdrücken, Kreuzheben — oder Liegestütze am Stück.",
           options: [
@@ -320,12 +662,44 @@ window.MM_CHECK = {
         },
         {
           id: "str_cardio_marker", type: "single", module: "strength",
+          when: function (a) { return ["2", "3plus"].indexOf(a.str_cardio_freq) >= 0 && a.str_log !== "nein"; },
           title: "Kennst du einen reproduzierbaren Ausdauer-Marker von dir?",
           sub: "Z. B. eine feste Strecke/Zeit, Ruhepuls, ein Wert von einem Cardio-Gerät.",
           options: [
             { v: "regelmaessig", label: "Ja, ich verfolge ihn", p: 6 },
             { v: "grob", label: "Grob / gelegentlich", p: 4 },
             { v: "nein", label: "Nein", p: 2 }
+          ]
+        }
+      ]
+    },
+
+    /* ---------- 4b. ALLTAGSBEWEGUNG (V2) ----------
+       Eigenes System, bewusst getrennt vom strukturierten Training:
+       3× Gym pro Woche bei 14 Stunden Sitzen ist NICHT „aktiv". */
+    {
+      id: "movement", label: "Alltagsbewegung",
+      questions: [
+        {
+          id: "mov_daily", type: "single", module: "strength", dom: "movement",
+          title: "Wie viel bewegst du dich außerhalb deiner Trainingseinheiten?",
+          sub: "Nicht das Workout — der Rest des Tages. Kein Wearable nötig.",
+          options: [
+            { v: "sehr_wenig", label: "Sehr wenig — praktisch nur die nötigen Wege", p: 3 },
+            { v: "sitzend_kurz", label: "Überwiegend sitzend, kurze Spaziergänge", p: 8 },
+            { v: "regelmaessig", label: "Regelmäßig aktiv über den Tag verteilt", p: 16 },
+            { v: "sehr_aktiv", label: "Sehr aktiv — ich bin ständig in Bewegung", p: 20 }
+          ]
+        },
+        {
+          id: "mov_sitting", type: "single", module: "strength", dom: "movement",
+          title: "Wie viele Stunden sitzt du an einem typischen Werktag?",
+          options: [
+            { v: "lt4", label: "Unter 4 Stunden", p: 16 },
+            { v: "4to8", label: "4–8 Stunden", p: 11 },
+            { v: "8to11", label: "8–11 Stunden", p: 5 },
+            { v: "gt11", label: "Über 11 Stunden", p: 2, sig: "sedentary" },
+            { v: "unknown", label: "Weiß ich nicht", p: 6, gap: "sitting" }
           ]
         }
       ]
@@ -360,6 +734,7 @@ window.MM_CHECK = {
         },
         {
           id: "fuel_calories", type: "single", module: "fuel",
+          when: function (a) { return a.fuel_structure !== "tracke"; },
           title: "Weißt du ungefähr, wie viele Kalorien du täglich isst?",
           options: [
             { v: "tracke", label: "Ja, ich tracke", p: 20 },
@@ -394,6 +769,7 @@ window.MM_CHECK = {
         },
         {
           id: "fuel_eatout", type: "single", module: "fuel",
+          when: function (a) { return ["chaotisch", "abends_viel", "geregelt"].indexOf(a.fuel_structure) >= 0; },
           title: "Wie oft isst du außer Haus (Kantine, Restaurant, unterwegs)?",
           options: [
             { v: "selten", label: "Selten", p: 5 },
@@ -404,6 +780,7 @@ window.MM_CHECK = {
         },
         {
           id: "fuel_problem", type: "single", module: null,
+          when: function (a) { return ["keine_ahnung", "lt80"].indexOf(a.fuel_protein) >= 0 || ["chaotisch", "abends_viel"].indexOf(a.fuel_structure) >= 0 || a.fuel_control !== "selten"; },
           title: "Was ist dein größtes Ernährungsproblem?",
           sub: "Hilft uns, deinen Plan zu personalisieren — zählt nicht in den Score.",
           options: [
@@ -448,6 +825,7 @@ window.MM_CHECK = {
         },
         {
           id: "rec_night", type: "single", module: "recovery",
+          when: function (a) { return a.rec_wake !== "erholt" || ["lt5", "5to6", "6to7"].indexOf(a.rec_duration) >= 0; },
           title: "Wie oft wachst du nachts auf?",
           options: [
             { v: "0", label: "Gar nicht", p: 15 },
@@ -484,7 +862,23 @@ window.MM_CHECK = {
             { v: "leicht", label: "Leichtes Schnarchen", p: 7 },
             { v: "stark", label: "Starkes Schnarchen", p: 3 },
             { v: "aussetzer", label: "Atemaussetzer wurden beobachtet", p: 0, flag: "Beobachtete Atemaussetzer im Schlaf sollten ärztlich abgeklärt werden (Stichwort Schlafapnoe). Das kann Energie, Erholung und Gesundheit stark beeinflussen." },
-            { v: "unknown", label: "Weiß ich nicht", p: 5 }
+            { v: "unknown", label: "Weiß ich nicht", p: 5, gap: "snoring" }
+          ]
+        },
+        {
+          id: "slp_daysleep", type: "single", module: "recovery", dom: "sleep",
+          when: function (a) {
+            return ["stark", "aussetzer", "unknown"].indexOf(a.rec_snore) >= 0
+              || (a.enh_signals || []).indexOf("schnarchen") >= 0
+              || (a.enh_signals || []).indexOf("schlaf") >= 0;
+          },
+          title: "Wie oft bist du tagsüber ungewollt müde — z. B. am Schreibtisch, im Auto, vor dem Fernseher?",
+          sub: "Wird gefragt, weil Schnarchen zusammen mit Tagesmüdigkeit ein Muster ist, das ärztlich abgeklärt gehört.",
+          options: [
+            { v: "nie", label: "Praktisch nie", p: 14 },
+            { v: "selten", label: "Selten", p: 11 },
+            { v: "oft", label: "Oft", p: 4, sig: "apnea" },
+            { v: "taeglich", label: "Fast täglich — ich kämpfe gegen das Einschlafen", p: 1, sig: "apnea" }
           ]
         }
       ]
@@ -505,30 +899,7 @@ window.MM_CHECK = {
             { v: "nein", label: "Nein / keine Ahnung", p: 2 }
           ]
         },
-        {
-          id: "blood_baseline", type: "single", module: "blood",
-          title: "Hast du eine sinnvolle Blutwerte-Basis passend zu deinem Alter/Risiko?",
-          sub: "Gemeint ist eine angemessene Baseline — nicht möglichst viele oder möglichst häufige Tests.",
-          options: [
-            { v: "aktuell_eingeordnet", label: "Ja, aktuell und ärztlich eingeordnet", p: 18 },
-            { v: "aktuell", label: "Ja, aktuelle Werte vorhanden", p: 14 },
-            { v: "nicht_noetig", label: "Bei mir aktuell kein Anlass — fit, jung, kein Risiko", p: 14 },
-            { v: "aelter", label: "Nur ältere Werte", p: 9 },
-            { v: "nie", label: "Noch nie bewusst", p: 3 }
-          ]
-        },
-        {
-          id: "blood_cardiometabolic", type: "single", module: "blood",
-          title: "Kennst du deine cardiometabolischen Basiswerte im Kontext deines Risikos?",
-          sub: "Blutzucker (Glukose/HbA1c) und Blutfette (Lipide) — die wenigen, die für die meisten wirklich zählen.",
-          options: [
-            { v: "eingeordnet", label: "Ja, kenne sie und weiß, was sie bedeuten", p: 16 },
-            { v: "kenne", label: "Ja, kenne die Werte grob", p: 11 },
-            { v: "kein_risiko", label: "Kein erhöhtes Risiko, letzte Basis war unauffällig", p: 13 },
-            { v: "nein", label: "Nein", p: 4 }
-          ]
-        },
-        {
+                        {
           id: "blood_prevention", type: "single", module: "blood",
           title: "Nimmst du alters-/risikogerechte Vorsorge wahr?",
           sub: "Z. B. Gesundheits-Check-up beim Hausarzt — nicht mehr als sinnvoll, aber nicht gar nichts.",
@@ -550,6 +921,7 @@ window.MM_CHECK = {
         },
         {
           id: "blood_doctor", type: "single", module: "blood",
+          when: function (a) { return ["nie", "unsure"].indexOf(a.lab_recency) < 0 && (a.blood_prevention !== "regelmaessig" || window.MM_CHECK.statusOf(a) !== "natural"); },
           title: "Werden auffällige Werte bei dir ärztlich eingeordnet?",
           options: [
             { v: "regelmaessig", label: "Ja, ich bespreche Auffälligkeiten mit dem Arzt", p: 12 },
@@ -560,6 +932,7 @@ window.MM_CHECK = {
         },
         {
           id: "blood_overtest", type: "single", module: "blood",
+          when: function (a) { return (a.lab_known || []).length >= 6; },
           title: "Wie gehst du mit Tests und Spezialmarkern um?",
           sub: "Mehr Tests sind nicht automatisch mehr Gesundheit — jede Messung braucht eine Frage.",
           options: [
@@ -571,6 +944,7 @@ window.MM_CHECK = {
         },
         {
           id: "blood_why", type: "single", module: null,
+          when: function (a) { var g = a.goal_main || []; return g.indexOf("blutwerte") >= 0 || g.indexOf("hormone") >= 0 || a.goal_pain === "blutwerte"; },
           title: "Warum interessieren dich Gesundheitsdaten?",
           sub: "Zählt nicht in den Score — hilft bei der Einordnung.",
           options: [
@@ -581,6 +955,110 @@ window.MM_CHECK = {
             { v: "blutzucker", label: "Blutzucker" },
             { v: "arzt", label: "Mein Arzt hat etwas erwähnt" },
             { v: "verstehen", label: "Ich verstehe meine Werte nicht" }
+          ]
+        }
+      ]
+    },
+
+    /* ---------- 7b. CARDIOVASKULÄR & METABOLISCH (V2) ---------- */
+    {
+      id: "cardiometabolic", label: "Herz-Kreislauf & Stoffwechsel",
+      questions: [
+        {
+          id: "cv_smoking", type: "single", module: "blood", dom: "cardiovascular",
+          title: "Rauchst du oder dampfst du (Nikotin)?",
+          options: [
+            { v: "nie", label: "Nie geraucht", p: 16 },
+            { v: "ex", label: "Früher, aktuell nicht mehr", p: 13 },
+            { v: "gelegentlich", label: "Gelegentlich", p: 6, sig: "nicotine" },
+            { v: "taeglich", label: "Täglich", p: 1, sig: "nicotine" },
+            { v: "no_answer", label: "Möchte ich nicht angeben", p: 8, gap: "nicotine" }
+          ]
+        },
+        {
+          id: "cv_bp_control", type: "single", module: "blood", dom: "cardiovascular",
+          when: function (a) {
+            return a.blood_bp === "kontrolliert" || a.enh_bp_routine === "diagnostiziert"
+              || (a.enh_signals || []).indexOf("bp") >= 0
+              || (a.redflags || []).indexOf("blutdruck") >= 0;
+          },
+          title: "Wie ist dein Blutdruck aktuell einzuordnen?",
+          sub: "Grobe Einordnung genügt — eine Diagnose stellen wir nicht.",
+          options: [
+            { v: "normal", label: "Im Normbereich (etwa unter 130/85)", p: 18 },
+            { v: "grenzwertig", label: "Grenzwertig / leicht erhöht", p: 10, sig: "bp_borderline" },
+            { v: "behandelt", label: "Erhöht, aber medikamentös eingestellt", p: 13 },
+            { v: "unbehandelt", label: "Erhöht und aktuell nicht behandelt", p: 2, sig: "bp_uncontrolled" },
+            { v: "unsure", label: "Weiß ich nicht", p: 5, gap: "bp" }
+          ]
+        },
+        {
+          id: "met_glucose", type: "single", module: "blood", dom: "metabolic",
+          title: "Ist bei dir etwas zum Blutzucker bekannt?",
+          sub: "Nüchternglukose oder HbA1c — falls du das schon einmal hast messen lassen.",
+          options: [
+            { v: "normal", label: "Ja, zuletzt unauffällig", p: 18 },
+            { v: "prediabetes", label: "Grenzwertig / Prädiabetes bekannt", p: 8, sig: "dysglycemia" },
+            { v: "diabetes", label: "Diabetes diagnostiziert", p: 6, sig: "diabetes" },
+            { v: "nie", label: "Noch nie gemessen", p: 4, gap: "glucose" },
+            { v: "unsure", label: "Weiß ich nicht", p: 4, gap: "glucose" }
+          ]
+        },
+        {
+          id: "met_medication", type: "multi", module: null, dom: null, cap: 0,
+          title: "Nimmst du aktuell eines dieser Medikamente?",
+          sub: "Mehrfachauswahl. Wird nur genutzt, um die richtigen Folgefragen zu stellen — keine Bewertung, keine Empfehlung.",
+          options: [
+            { v: "glp1", label: "GLP-1 / GIP (z. B. Abnehm-/Diabetesmedikation)" },
+            { v: "bp", label: "Blutdruckmedikament" },
+            { v: "lipid", label: "Cholesterin-/Lipidsenker" },
+            { v: "glucose", label: "Blutzuckermedikament" },
+            { v: "psych", label: "Psychopharmaka / Antidepressiva", sig: "med_sexual_context" },
+            { v: "other", label: "Anderes Dauermedikament" },
+            { v: "keine", label: "Keines davon", exclusive: true },
+            { v: "no_answer", label: "Möchte ich nicht angeben", exclusive: true }
+          ]
+        }
+      ]
+    },
+
+    /* ---------- 7c. LABOR & DATENLÜCKEN (V2) ----------
+       Kernprinzip: NICHT GEMESSEN ≠ NORMAL. Unbekannte Werte senken die
+       Aussagesicherheit, nicht automatisch den Gesundheits-Score. */
+    {
+      id: "labs", label: "Labor & Datenlage",
+      questions: [
+        {
+          id: "lab_recency", type: "single", module: "blood", dom: "dataQuality",
+          title: "Wann wurde zuletzt Blut bei dir abgenommen?",
+          options: [
+            { v: "lt3m", label: "Vor unter 3 Monaten", p: 20 },
+            { v: "3to6m", label: "Vor 3–6 Monaten", p: 18 },
+            { v: "6to12m", label: "Vor 6–12 Monaten", p: 13 },
+            { v: "gt12m", label: "Vor über 12 Monaten", p: 6, gap: "labs_old" },
+            { v: "nie", label: "Noch nie", p: 2, gap: "labs_none" },
+            { v: "unsure", label: "Weiß ich nicht", p: 4, gap: "labs_none" }
+          ]
+        },
+        {
+          id: "lab_known", type: "multi", module: "blood", dom: "dataQuality", cap: 22,
+          when: function (a) { return ["gt12m", "nie", "unsure"].indexOf(a.lab_recency) < 0; },
+          title: "Welche dieser Werte kennst du von dir?",
+          sub: "Mehrfachauswahl — es geht nicht um viele Werte, sondern um die wenigen, die für deinen Kontext zählen.",
+          options: [
+            { v: "blutbild", label: "Blutbild", p: 2 },
+            { v: "haematokrit", label: "Hämatokrit / Hämoglobin", p: 3 },
+            { v: "ldl", label: "LDL-Cholesterin", p: 3 },
+            { v: "hdl", label: "HDL-Cholesterin", p: 2 },
+            { v: "trig", label: "Triglyceride", p: 2 },
+            { v: "apob", label: "ApoB", p: 4 },
+            { v: "lpa", label: "Lp(a)", p: 3 },
+            { v: "glukose", label: "Glukose / HbA1c", p: 3 },
+            { v: "niere", label: "Nierenwerte", p: 2 },
+            { v: "leber", label: "Leberwerte", p: 2 },
+            { v: "hormone", label: "Hormonwerte (z. B. Testosteron)", p: 3 },
+            { v: "psa", label: "PSA", p: 2 },
+            { v: "keine", label: "Keiner davon / unsicher", p: 0, exclusive: true, gap: "markers_unknown" }
           ]
         }
       ]
@@ -603,6 +1081,7 @@ window.MM_CHECK = {
         },
         {
           id: "drv_focus", type: "single", module: "drive",
+          when: function (a) { return a.drv_energy !== "stabil"; },
           title: "Wie ist dein mentaler Fokus?",
           options: [
             { v: "klar", label: "Klar und fokussiert", p: 20 },
@@ -614,6 +1093,7 @@ window.MM_CHECK = {
         },
         {
           id: "drv_motivation", type: "single", module: "drive",
+          when: function (a) { return ["stabil", "nachmittag_tief"].indexOf(a.drv_energy) < 0; },
           title: "Wie ist deine Motivation?",
           options: [
             { v: "gut", label: "Gut", p: 20 },
@@ -648,7 +1128,36 @@ window.MM_CHECK = {
           ]
         },
         {
+          id: "drv_change", type: "single", module: null, dom: null,
+          when: function (a) { return window.MM_CHECK.sexualConcern(a); },
+          title: "Wie hat sich das entwickelt?",
+          sub: "Wird gefragt, weil der Verlauf für die ärztliche Einordnung wichtiger ist als der Momentzustand. Wir stellen keine Diagnose.",
+          options: [
+            { v: "schleichend", label: "Schleichend über Monate/Jahre" },
+            { v: "ploetzlich", label: "Relativ plötzlich", sig: "sexual_acute" },
+            { v: "schwankend", label: "Schwankend, mal besser mal schlechter" },
+            { v: "immer", label: "War eigentlich immer so" },
+            { v: "no_answer", label: "Möchte ich nicht angeben", gap: "sexual_course" }
+          ]
+        },
+        {
+          id: "drv_fertility", type: "single", module: null, dom: null,
+          when: function (a) {
+            var st = window.MM_CHECK.statusOf(a);
+            return st === "enhanced" || st === "former_enhanced" || (a.goal_main || []).indexOf("hormone") >= 0;
+          },
+          title: "Ist Kinderwunsch für dich aktuell oder perspektivisch ein Thema?",
+          options: [
+            { v: "ja", label: "Ja", sig: "fertility" },
+            { v: "unsure", label: "Unsicher / vielleicht später", sig: "fertility" },
+            { v: "nein", label: "Nein" },
+            { v: "abgeschlossen", label: "Familienplanung abgeschlossen" },
+            { v: "no_answer", label: "Möchte ich nicht angeben" }
+          ]
+        },
+        {
           id: "drv_caffeine", type: "single", module: "drive",
+          when: function (a) { return ["nachmittag", "abends"].indexOf(a.rec_caffeine) >= 0; },
           title: "Wie viel Koffein brauchst du, um zu funktionieren?",
           options: [
             { v: "0to1", label: "0–1 Getränke am Tag", p: 10 },
@@ -659,6 +1168,7 @@ window.MM_CHECK = {
         },
         {
           id: "drv_cause", type: "single", module: null,
+          when: function (a) { return window.MM_CHECK.driveConcern(a); },
           title: "Was vermutest du als Hauptursache, wenn Energie / Drive niedrig sind?",
           sub: "Zählt nicht in den Score.",
           options: [
@@ -704,6 +1214,7 @@ window.MM_CHECK = {
         },
         {
           id: "exe_after4w", type: "single", module: "execution",
+          when: function (a) { return a.exe_restarts !== "konstant"; },
           title: "Was passiert bei dir typischerweise nach 2–4 Wochen?",
           options: [
             { v: "durchziehen", label: "Ich ziehe durch", p: 14 },
@@ -715,6 +1226,7 @@ window.MM_CHECK = {
         },
         {
           id: "exe_enemy", type: "single", module: "execution",
+          when: function (a) { return a.exe_restarts !== "konstant" || a.exe_after4w !== "durchziehen"; },
           title: "Was ist dein größter Umsetzungsfeind?",
           options: [
             { v: "job", label: "Job", p: 12 },
@@ -783,6 +1295,7 @@ window.MM_CHECK = {
       questions: [
         {
           id: "qual_time", type: "single", module: null,
+          when: function (a) { return (parseInt(a.exe_ready, 10) || 0) < 8; },
           title: "Bist du bereit, in den nächsten 12 Wochen mindestens 3 Stunden pro Woche in Training, Tracking und Umsetzung zu investieren?",
           options: [
             { v: "ja", label: "Ja" },
@@ -793,6 +1306,7 @@ window.MM_CHECK = {
         },
         {
           id: "qual_support", type: "single", module: null,
+          when: function (a) { return !a.exe_support || a.exe_support === "unknown"; },
           title: "Welche Art von Unterstützung suchst du?",
           options: [
             { v: "allein", label: "Ich will es allein umsetzen" },
@@ -805,6 +1319,7 @@ window.MM_CHECK = {
         },
         {
           id: "qual_start", type: "single", module: null,
+          when: function (a) { return (parseInt(a.goal_urgency, 10) || 0) <= 3; },
           title: "Wie schnell willst du starten?",
           options: [
             { v: "sofort", label: "Sofort" },
@@ -1163,10 +1678,16 @@ window.MM_CHECK = {
     }
     if (bt === "skinny" && fat < 1) fat = 0;
 
-    var wantsMuscle = has("muskeln") || has("kraft");
-    var fatConcern = has("bauchfett") || a.goal_pain === "bauch"
+    /* V2: Der Trend zaehlt mit. Wer sichtbar zunimmt und dessen Taille
+       waechst, ist kein BUILD-Kandidat, auch wenn die Momentaufnahme
+       unauffaellig wirkt. */
+    if (a.body_waisttrend === "viel_mehr" || a.body_weighttrend === "plus8") fat = Math.max(fat, 1);
+
+    var wantsMuscle = has("muskeln") || has("kraft") || a.goal_pain === "muskelmasse";
+    var fatConcern = has("bauchfett") || a.goal_pain === "bauch" || a.goal_pain === "gewicht"
       || bt === "normal_bauch" || bt === "stark_fett" || bt === "uebergewicht"
-      || (whtr && whtr >= 0.53);
+      || (whtr && whtr >= 0.53)
+      || a.body_waisttrend === "viel_mehr" || a.body_waisttrend === "mehr";
     var beginner = a.str_freq === "0" || a.str_freq === "unregelmaessig"
       || a.str_plan === "nein" || a.str_plan === "selten";
 
@@ -1177,9 +1698,22 @@ window.MM_CHECK = {
         ? "Dein Körperfettanteil ist aktuell hoch. Ein klassischer Aufbau würde vor allem Fett dazupacken — deshalb zuerst CUT: Fett runter, Kraft und Muskeln mit viel Protein und hartem Training schützen. Der Aufbau kommt danach auf einer besseren Basis."
         : "Dein Körperfettanteil ist aktuell hoch — der größte Hebel ist, ihn kontrolliert zu senken (CUT), ohne dabei Kraft zu verlieren.";
     } else if (fatConcern && wantsMuscle) {
-      if (fat <= 0 && !beginner) {
+      /* V2-Fix: BUILD trotz Bauch-/Fettfokus NUR mit belegter Schlankheit.
+         Unbekannter Bauchumfang gilt NICHT als "schlank" — sonst bekommt
+         genau der Mann BUILD, den sein Bauchansatz stört. */
+      var leanProven = (whtr && whtr < 0.5) || (bt === "skinny" && bmi && bmi < 24);
+      if (fat <= 0 && !beginner && leanProven) {
         mode = "build";
-        reason = "Du willst muskulöser werden und trägst dabei wenig Fett — du hast die Reserve, um in einem kleinen Überschuss (BUILD) sauber aufzubauen, ohne den Bauch zu verlieren.";
+        reason = "Du willst muskulöser werden und trägst dabei nachweislich wenig Fett (Taille unter der Hälfte deiner Größe) — du hast die Reserve, um in einem kleinen Überschuss (BUILD) sauber aufzubauen, ohne den Bauch zu verlieren.";
+      } else if (fat >= 1 && ((whtr && whtr >= 0.55) || bt === "stark_fett" || bt === "uebergewicht")) {
+        /* Deutlich erhöhter Körperfett-Kontext: Muskelwunsch bleibt, aber der
+           Fettabbau geht voran — Muskeln werden über Protein und hartes
+           Training geschützt, nicht über einen Überschuss aufgebaut. */
+        mode = "cut";
+        reason = "Du willst Muskeln aufbauen — dein Körperfett-Kontext ist dafür aktuell aber klar zu hoch. Deshalb zuerst CUT: Fett runter, Kraft und Muskelmasse mit hohem Protein und hartem Training schützen. Der Aufbau kommt danach auf einer Basis, auf der er auch sichtbar wird.";
+      } else if (fat <= 0 && !beginner && !leanProven) {
+        mode = "recomp";
+        reason = "Du willst Muskeln aufbauen, gleichzeitig stört dich dein Bauch — und dein Körperfett-Kontext ist nicht belegt schlank. Ein Überschuss wäre hier ein Blindflug: RECOMP baut Muskeln auf, ohne den Bauch mitzufüttern. Miss deinen Bauchumfang, dann wird die Empfehlung präziser.";
       } else {
         mode = "recomp";
         reason = "Du willst gleichzeitig Muskeln aufbauen und Bauchfett verlieren" + (beginner ? " — und als (Wieder-)Einsteiger ist genau das besonders gut möglich" : ", was bei deinem Ausgangspunkt realistisch ist") + ". Deshalb RECOMP: nahe der Erhaltung, viel Protein, hart trainieren. Ein klassischer Aufbau würde deinem Ziel — weniger Bauch — wahrscheinlich entgegenlaufen.";
@@ -1203,14 +1737,25 @@ window.MM_CHECK = {
         : mode === "recomp" ? "RECOMP passt: definierter und muskulöser werden, ohne aggressive Diät."
         : "PERFORM: Form halten und Leistung, Schlaf und Gesundheit ausbauen.";
     }
-    return { mode: mode, reason: reason, fat: fat, beginner: beginner };
+    /* ---- V2: HEALTH FIRST ueberschreibt die Physique-Richtung ----
+       Nicht "du bist krank", sondern: erst das System klaeren/kontrollieren,
+       dann optimieren. Die Trainingsrichtung (trainingMode) bleibt erhalten,
+       damit Programm und Kalorienlogik weiterlaufen. */
+    var hf = (typeof C.healthFirstReason === "function") ? C.healthFirstReason(a) : null;
+    if (hf) {
+      return { mode: "health_first", trainingMode: mode, reason: hf.reason, healthFirst: hf,
+        bodyReason: reason, fat: fat, beginner: beginner };
+    }
+    return { mode: mode, trainingMode: mode, reason: reason, fat: fat, beginner: beginner };
   };
   C.goalMode = function (a) { return C.goalDecision(a).mode; };
+  C.trainingModeOf = function (a) { var d = C.goalDecision(a); return d.trainingMode || d.mode; };
   C.modeLabels = {
-    cut:     { label: "CUT",     desc: "moderates Kaloriendefizit — Fett runter, Kraft schützen" },
-    recomp:  { label: "RECOMP",  desc: "nahe Erhaltung — Taille runter, Kraft rauf" },
-    build:   { label: "BUILD",   desc: "kleiner kontrollierter Überschuss — Muskel & Kraft aufbauen" },
-    perform: { label: "PERFORM", desc: "Erhaltung — Leistung, Schlaf & Gesundheit fuelen" }
+    cut:          { label: "CUT",     desc: "moderates Kaloriendefizit — Fett runter, Kraft schützen" },
+    recomp:       { label: "RECOMP",  desc: "nahe Erhaltung — Taille runter, Kraft rauf" },
+    build:        { label: "BUILD",   desc: "kleiner kontrollierter Überschuss — Muskel & Kraft aufbauen" },
+    perform:      { label: "PERFORM", desc: "Erhaltung — Leistung, Schlaf & Gesundheit fuelen" },
+    health_first: { label: "HEALTH FIRST", desc: "zuerst klären und kontrollieren, dann Körper optimieren" }
   };
 
   /* ---------- Zielwerte als Bereiche (keine Scheingenauigkeit) ---------- */
@@ -1218,9 +1763,15 @@ window.MM_CHECK = {
     var age = num(a.age), h = num(a.height), w = num(a.weight), waist = num(a.waist);
     var dec = C.goalDecision(a);
     var mode = dec.mode;
+    /* HEALTH FIRST ist eine Prioritaets-Aussage, keine Kalorienstrategie —
+       die Energiewerte kommen weiter aus der Koerper-Richtung. */
+    var energyMode = dec.trainingMode || mode;
     var prot = C.proteinRange(a);
     var out = {
-      mode: mode, modeLabel: C.modeLabels[mode].label, modeDesc: C.modeLabels[mode].desc, modeReason: dec.reason,
+      mode: mode, trainingMode: energyMode,
+      modeLabel: C.modeLabels[mode].label, modeDesc: C.modeLabels[mode].desc, modeReason: dec.reason,
+      bodyReason: dec.bodyReason || dec.reason,
+      bodyModeLabel: C.modeLabels[energyMode] ? C.modeLabels[energyMode].label : "",
       proteinLo: prot.lo, proteinHi: prot.hi, proteinStr: prot.str,
       stepGoal: C.stepTargetNum(a),
       hasEnergy: false
@@ -1233,7 +1784,8 @@ window.MM_CHECK = {
       var r50 = function (x) { return Math.round(x / 50) * 50; };
       out.hasEnergy = true;
       out.maintLo = r50(tdee * 0.95); out.maintHi = r50(tdee * 1.05);
-      var adj = { cut: [0.78, 0.88], recomp: [0.90, 1.00], build: [1.03, 1.12], perform: [0.97, 1.03] }[mode];
+      var adj = { cut: [0.78, 0.88], recomp: [0.90, 1.00], build: [1.03, 1.12], perform: [0.97, 1.03] }[energyMode]
+        || [0.95, 1.05];
       out.targetLo = r50(tdee * adj[0]); out.targetHi = r50(tdee * adj[1]);
     }
     if (waist && h) { out.waist = waist; out.waistTarget = Math.round(h * 0.5); }
@@ -1536,5 +2088,847 @@ window.MM_CHECK = {
     ] });
 
     return days;
+  };
+})();
+
+/* ==========================================================================
+   SCORE V2 — ADAPTIVE INTELLIGENCE ENGINE
+   --------------------------------------------------------------------------
+   Vier Kontexte (natural / former_enhanced / medical_trt / enhanced) sind
+   unterschiedliche BIOLOGISCHE UND MONITORING-KONTEXTE, keine Wertung.
+   Der Status erzeugt NIEMALS einen direkten Punktabzug. Bewertet wird
+   ausschliesslich, wie gut das aktuelle System kontrolliert ist.
+
+   Architektur (vollstaendig dokumentiert in SCORE_V2_LOGIC.md):
+     statusOf        → Routing-Enum (nie Anzeigetexte als Logik-Key)
+     visibleSteps    → adaptive Fragenliste (progressive disclosure)
+     domainScores    → 12 Kern-Domains + 1 Kontext-Domain, je 0..100
+     dataGaps        → UNBEKANNT ≠ GUT: explizite Luecken statt Annahmen
+     assessmentConfidence → HIGH / MODERATE / LIMITED, getrennt vom Score
+     primaryBottleneck    → Prioritaet, nicht einfach "niedrigster Wert"
+     goalDecision    → CUT / RECOMP / BUILD / PERFORM / HEALTH FIRST
+   ========================================================================== */
+(function () {
+  "use strict";
+  var C = window.MM_CHECK;
+  var num = function (x) { var n = parseFloat(x); return isFinite(n) ? n : 0; };
+  var arr = function (x) { return Array.isArray(x) ? x : []; };
+
+  /* ---------------------------------------------------------------- STATUS */
+
+  C.STATUS = ["natural", "former_enhanced", "medical_trt", "enhanced", "uncertain", "unknown"];
+
+  /* Alte Ergebnisse haben kein perf_status. Sie werden NICHT als "natural"
+     und nicht als "gesund" interpretiert, sondern als "unknown" (Legacy). */
+  C.statusOf = function (a) {
+    a = a || {};
+    var s = a.perf_status;
+    return (C.STATUS.indexOf(s) >= 0 && s !== "unknown") ? s : "unknown";
+  };
+
+  C.statusLabels = {
+    natural:         { short: "NATURAL",         long: "Natural" },
+    former_enhanced: { short: "FRÜHER ENHANCED", long: "Früher Enhanced" },
+    medical_trt:     { short: "TRT",             long: "Ärztliche Hormontherapie" },
+    enhanced:        { short: "ENHANCED",        long: "Enhanced" },
+    uncertain:       { short: "STATUS OFFEN",    long: "Status offen" },
+    unknown:         { short: "STATUS UNBEKANNT", long: "Status nicht erfasst (Legacy-Ergebnis)" }
+  };
+
+  /* Kontext-Domain je Status — nur EINE ist jemals aktiv. */
+  C.contextDomainOf = function (st) {
+    return st === "enhanced" ? "enhancedControl"
+      : st === "medical_trt" ? "therapyControl"
+      : st === "former_enhanced" ? "recoveryStatus" : null;
+  };
+
+  /* --------------------------------------------------- ROUTING-PRAEDIKATE */
+
+  C.usesGlp1 = function (a) {
+    a = a || {};
+    return arr(a.enh_categories).indexOf("glp1") >= 0 || arr(a.met_medication).indexOf("glp1") >= 0;
+  };
+  C.bloodInterest = function (a) {
+    a = a || {};
+    var g = arr(a.goal_main);
+    return g.indexOf("blutwerte") >= 0 || g.indexOf("hormone") >= 0
+      || a.goal_pain === "blutwerte" || C.statusOf(a) !== "natural";
+  };
+  C.driveConcern = function (a) {
+    a = a || {};
+    return ["stabil"].indexOf(a.drv_energy) < 0
+      || ["sehr", "okay"].indexOf(a.drv_libido) < 0
+      || a.goal_pain === "muede" || a.goal_pain === "libido";
+  };
+  C.sexualConcern = function (a) {
+    a = a || {};
+    return ["schwankend", "niedrig"].indexOf(a.drv_libido) >= 0
+      || ["selten", "fast_nie"].indexOf(a.drv_morning) >= 0
+      || arr(a.enh_signals).indexOf("libido") >= 0 || arr(a.enh_signals).indexOf("erektion") >= 0
+      || arr(a.fe_changes).indexOf("libido") >= 0 || arr(a.fe_changes).indexOf("erektion") >= 0;
+  };
+
+  /* ------------------------------------------------- ADAPTIVE FRAGENLISTE */
+
+  C.stepVisible = function (mod, q, a) {
+    try { if (typeof mod.when === "function" && !mod.when(a)) return false; } catch (e) {}
+    try { if (typeof q.when === "function" && !q.when(a)) return false; } catch (e) {}
+    return true;
+  };
+
+  /* Flache, adaptive Schrittliste in Reihenfolge der Module. */
+  C.visibleSteps = function (a) {
+    a = a || {};
+    var out = [];
+    C.modules.forEach(function (m) {
+      m.questions.forEach(function (q) {
+        if (C.stepVisible(m, q, a)) out.push({ mod: m, q: q });
+      });
+    });
+    return out;
+  };
+
+  /* Alle Fragen (auch unsichtbare) — fuer Auswertung gespeicherter Antworten. */
+  C.allSteps = (function () {
+    var out = [];
+    C.modules.forEach(function (m) { m.questions.forEach(function (q) { out.push({ mod: m, q: q }); }); });
+    return out;
+  })();
+  C.questionById = function (id) {
+    for (var i = 0; i < C.allSteps.length; i++) if (C.allSteps[i].q.id === id) return C.allSteps[i].q;
+    return null;
+  };
+
+  /* ------------------------------------------------------------- DOMAINS */
+
+  C.domainKeys = ["bodyComposition", "training", "movement", "sleep", "recovery", "nutrition",
+    "metabolic", "cardiovascular", "hormonal", "energy", "dataQuality", "execution"];
+
+  C.domainMeta = {
+    bodyComposition: { name: "Körperkomposition", w: 12, health: 1.0, action: 0.9 },
+    training:        { name: "Training",          w: 11, health: 0.8, action: 1.0 },
+    movement:        { name: "Alltagsbewegung",   w: 8,  health: 0.9, action: 1.0 },
+    sleep:           { name: "Schlaf",            w: 11, health: 1.0, action: 0.9 },
+    recovery:        { name: "Erholung & Stress", w: 8,  health: 0.8, action: 0.8 },
+    nutrition:       { name: "Ernährung",         w: 11, health: 0.9, action: 0.9 },
+    metabolic:       { name: "Stoffwechsel",      w: 9,  health: 1.1, action: 0.7 },
+    cardiovascular:  { name: "Herz-Kreislauf",    w: 11, health: 1.3, action: 0.8 },
+    hormonal:        { name: "Hormonell & Sexuell", w: 6, health: 0.9, action: 0.6 },
+    energy:          { name: "Energie & Antrieb", w: 7,  health: 0.7, action: 0.7 },
+    dataQuality:     { name: "Datenlage & Monitoring", w: 10, health: 1.0, action: 1.0 },
+    execution:       { name: "Umsetzung",         w: 10, health: 0.7, action: 1.0 },
+    enhancedControl: { name: "Enhanced Control",  w: 12, health: 1.3, action: 1.0 },
+    therapyControl:  { name: "Therapie-Kontrolle", w: 10, health: 1.2, action: 1.0 },
+    recoveryStatus:  { name: "Rückkehr-Status",   w: 9,  health: 1.0, action: 0.9 }
+  };
+
+  /* Frage → GENAU EINE Domain (kein Mehrfachzaehlen). Fragen mit eigenem
+     dom-Feld (V2-Fragen) haben Vorrang; hier stehen die Bestandsfragen. */
+  C.domainMap = {
+    body_weighttrend: "bodyComposition", body_waisttrend: "bodyComposition",
+    body_type: "bodyComposition", body_satisfaction: "bodyComposition",
+    body_tracking: "dataQuality",
+
+    str_freq: "training", str_plan: "training", str_log: "training",
+    str_exercises: "training", str_limit: "training", str_values: "training",
+    str_cardio_freq: "training", str_cardio_capacity: "cardiovascular", str_cardio_marker: "dataQuality",
+
+    fuel_protein: "nutrition", fuel_structure: "nutrition", fuel_calories: "nutrition",
+    fuel_alcohol: "nutrition", fuel_control: "nutrition", fuel_eatout: "nutrition",
+
+    rec_duration: "sleep", rec_wake: "sleep", rec_night: "sleep",
+    rec_caffeine: "sleep", rec_snore: "sleep", rec_stress: "recovery",
+
+    blood_bp: "cardiovascular", blood_family: "cardiovascular",
+    blood_cardiometabolic: "metabolic",
+    blood_baseline: "dataQuality", blood_prevention: "dataQuality",
+    blood_doctor: "dataQuality", blood_overtest: "dataQuality",
+
+    drv_energy: "energy", drv_focus: "energy", drv_motivation: "energy", drv_caffeine: "energy",
+    drv_libido: "hormonal", drv_morning: "hormonal",
+
+    exe_slots: "execution", exe_restarts: "execution", exe_after4w: "execution",
+    exe_enemy: "execution", exe_support: "execution", exe_ready: "execution"
+  };
+  C.domainOf = function (q) { return q.dom || C.domainMap[q.id] || null; };
+
+  /* Punkte + Maximum einer beantworteten Frage. */
+  function qPoints(q, ans) {
+    if (ans === undefined || ans === null || ans === "") return null;
+    if (q.type === "single") {
+      var opt = (q.options || []).find(function (o) { return String(o.v) === String(ans); });
+      if (!opt || typeof opt.p !== "number") return null;
+      var max = 0;
+      q.options.forEach(function (o) { if (typeof o.p === "number" && o.p > max) max = o.p; });
+      return max > 0 ? { p: opt.p, max: max } : null;
+    }
+    if (q.type === "multi") {
+      var sel = arr(ans), sum = 0, maxAll = 0;
+      (q.options || []).forEach(function (o) { if (typeof o.p === "number" && !o.exclusive) maxAll += o.p; });
+      if (!maxAll) return null;
+      sel.forEach(function (v) {
+        var o = (q.options || []).find(function (x) { return String(x.v) === String(v); });
+        if (o && typeof o.p === "number") sum += o.p;
+      });
+      var cap = q.cap || maxAll;
+      return { p: Math.min(sum, cap), max: Math.min(maxAll, cap) };
+    }
+    if (q.type === "scale") {
+      var val = parseInt(ans, 10);
+      if (!isFinite(val) || !q.pointsMap) return null;
+      var got = 0, mx = 0;
+      q.pointsMap.forEach(function (pair) { if (pair[1] > mx) mx = pair[1]; });
+      for (var i = 0; i < q.pointsMap.length; i++) { if (val <= q.pointsMap[i][0]) { got = q.pointsMap[i][1]; break; } }
+      return mx > 0 ? { p: got, max: mx } : null;
+    }
+    return null;
+  }
+
+  /* Zusatzsignale aus den Basisdaten (keine eigenen Fragen). */
+  function extraInputs(a) {
+    var out = [];
+    var waist = num(a.waist), h = num(a.height);
+    if (waist && h) {
+      var ratio = waist / h;
+      var p = ratio < 0.5 ? 25 : ratio < 0.55 ? 17 : ratio < 0.6 ? 9 : 3;
+      out.push({ dom: "bodyComposition", p: p, max: 25 });
+    }
+    var stepP = { lt4: 2, "4to7": 8, "7to10": 14, gt10: 18 }[a.steps];
+    if (stepP !== undefined) out.push({ dom: "movement", p: stepP, max: 18 });
+    var jobP = { sitzend: 3, gemischt: 9, aktiv: 14, schicht: 6 }[a.job];
+    if (jobP !== undefined) out.push({ dom: "movement", p: jobP, max: 14 });
+    var histP = { nie: 2, lange_raus: 4, pausen: 7, aktiv: 12 }[a.history];
+    if (histP !== undefined) out.push({ dom: "training", p: histP, max: 12 });
+    return out;
+  }
+
+  /* Kontextmodifikatoren: bewusst wenige, klein, gedeckelt, dokumentiert.
+     Verhindert, dass EIN Problem fuenf Domains gleichzeitig bestraft. */
+  C.MODIFIERS = [
+    { id: "sleep_debt", when: function (a) { return ["lt5", "5to6"].indexOf(a.rec_duration) >= 0; },
+      apply: { recovery: -6, energy: -6 }, why: "Ausgeprägtes Schlafdefizit wirkt nachweislich auf Erholung und Energie." },
+    { id: "sedentary", when: function (a) { return a.mov_sitting === "gt11" || a.steps === "lt4"; },
+      apply: { metabolic: -5 }, why: "Sehr geringe Alltagsbewegung ist ein eigenständiger metabolischer Faktor." }
+  ];
+
+  C.domainScores = function (a) {
+    a = a || {};
+    var acc = {};
+    function add(dom, p, max) {
+      if (!dom || !max) return;
+      if (!acc[dom]) acc[dom] = { p: 0, max: 0, n: 0 };
+      acc[dom].p += p; acc[dom].max += max; acc[dom].n++;
+    }
+    C.allSteps.forEach(function (st) {
+      var dom = C.domainOf(st.q);
+      if (!dom) return;
+      var r = qPoints(st.q, a[st.q.id]);
+      if (r) add(dom, r.p, r.max);
+    });
+    extraInputs(a).forEach(function (x) { add(x.dom, x.p, x.max); });
+
+    var out = {}, applied = [];
+    Object.keys(acc).forEach(function (d) {
+      out[d] = Math.max(0, Math.min(100, Math.round(100 * acc[d].p / acc[d].max)));
+    });
+    C.MODIFIERS.forEach(function (m) {
+      var hit = false;
+      try { hit = !!m.when(a); } catch (e) { hit = false; }
+      if (!hit) return;
+      applied.push(m.id);
+      Object.keys(m.apply).forEach(function (d) {
+        if (out[d] === undefined) return;
+        out[d] = Math.max(0, Math.min(100, out[d] + m.apply[d]));
+      });
+    });
+    return { domains: out, coverage: acc, modifiers: applied };
+  };
+
+  /* Gesamtscore: gewichtetes Mittel ueber die VORHANDENEN Domains.
+     Der Status selbst zieht nie Punkte ab — er entscheidet nur, welche
+     Kontext-Domain zusaetzlich bewertet wird. */
+  C.totalFrom = function (domains) {
+    var sum = 0, wsum = 0;
+    Object.keys(domains).forEach(function (d) {
+      var meta = C.domainMeta[d];
+      if (!meta || domains[d] === null || domains[d] === undefined) return;
+      sum += domains[d] * meta.w; wsum += meta.w;
+    });
+    return wsum ? Math.round(sum / wsum) : 0;
+  };
+
+  /* V2-Domains → die 7 historischen Bereiche (Radar, Report, Programm). */
+  C.legacyScores = function (d) {
+    function g(k, fb) { return (d[k] === undefined || d[k] === null) ? fb : d[k]; }
+    function mix(parts) {
+      var s = 0, w = 0;
+      parts.forEach(function (p) { if (d[p[0]] !== undefined && d[p[0]] !== null) { s += d[p[0]] * p[1]; w += p[1]; } });
+      return w ? Math.round(s / w) : 50;
+    }
+    return {
+      body: Math.round(g("bodyComposition", 50)),
+      strength: mix([["training", 0.7], ["movement", 0.3]]),
+      fuel: Math.round(g("nutrition", 50)),
+      recovery: mix([["sleep", 0.6], ["recovery", 0.4]]),
+      blood: mix([["metabolic", 0.35], ["cardiovascular", 0.35], ["dataQuality", 0.3]]),
+      drive: mix([["energy", 0.6], ["hormonal", 0.4]]),
+      execution: Math.round(g("execution", 50))
+    };
+  };
+
+  /* ------------------------------------------------------------- SIGNALE */
+
+  C.signals = function (a) {
+    a = a || {};
+    var set = {};
+    C.allSteps.forEach(function (st) {
+      var q = st.q, ans = a[q.id];
+      if (ans === undefined || ans === null) return;
+      var vals = Array.isArray(ans) ? ans : [ans];
+      vals.forEach(function (v) {
+        var o = (q.options || []).find(function (x) { return String(x.v) === String(v); });
+        if (o && o.sig) set[o.sig] = true;
+      });
+    });
+    if (a.rec_snore === "aussetzer") set.apnea = true;
+    if (arr(a.redflags).indexOf("apnoe") >= 0) set.apnea = true;
+    if (arr(a.redflags).indexOf("blutdruck") >= 0) set.bp_uncontrolled = true;
+    if (C.sexualConcern(a)) set.sexual = true;
+    return Object.keys(set);
+  };
+
+  /* ----------------------------------------------------- DATA-GAP-ENGINE */
+  /* Zentrale Regel: NICHT GEMESSEN ist NICHT "normal". Eine Luecke senkt die
+     Aussagesicherheit (Confidence) — nicht automatisch den Score. */
+
+  C.GAP_LIB = {
+    waist:            { label: "Bauchumfang unbekannt", why: "Der Bauchumfang sagt über Stoffwechselrisiko mehr aus als das Gewicht allein.", dom: "bodyComposition", sev: 2 },
+    steps:            { label: "Alltagsbewegung nicht erfasst", why: "Ohne grobe Schritt-Orientierung fehlt der größte Hebel neben dem Training.", dom: "movement", sev: 1 },
+    sitting:          { label: "Sitzzeit unbekannt", why: "Sitzzeit wirkt unabhängig vom Training auf den Stoffwechsel.", dom: "movement", sev: 1 },
+    bp:               { label: "Blutdruck nicht bekannt", why: "Blutdruck ist der wichtigste einzelne, still verlaufende Gesundheitswert — und selbst messbar.", dom: "cardiovascular", sev: 3 },
+    labs_old:         { label: "Letzte Blutwerte über 12 Monate alt", why: "Ältere Werte beschreiben nicht deinen aktuellen Zustand.", dom: "dataQuality", sev: 2 },
+    labs_none:        { label: "Keine Blutwerte vorhanden", why: "Ohne Baseline bleibt jede Einordnung deiner Werte Schätzung.", dom: "dataQuality", sev: 3 },
+    markers_unknown:  { label: "Keine konkreten Marker bekannt", why: "Ohne bekannte Einzelwerte lässt sich kein Risikoprofil bilden.", dom: "dataQuality", sev: 2 },
+    apob:             { label: "ApoB unbekannt", why: "ApoB bildet die Zahl der atherogenen Partikel ab — im Risiko- oder Enhanced-Kontext besonders relevant.", dom: "cardiovascular", sev: 2 },
+    lipids:           { label: "Blutfette unbekannt", why: "Lipide gehören zu den wenigen Werten, die im Verlauf wirklich etwas verändern.", dom: "cardiovascular", sev: 2 },
+    glucose:          { label: "Blutzucker / HbA1c unbekannt", why: "Metabolische Verschiebungen laufen lange ohne Symptome.", dom: "metabolic", sev: 2 },
+    hematocrit:       { label: "Hämatokrit / Hämoglobin unbekannt", why: "Androgen wirksame Substanzen können das Blut verdicken — ein klassisch überwachter Wert.", dom: "enhancedControl", sev: 3 },
+    liver:            { label: "Leberwerte unbekannt", why: "Bei oralen Substanzen ist der Leber-Kontext besonders relevant.", dom: "enhancedControl", sev: 3 },
+    nicotine:         { label: "Nikotinstatus offen", why: "Nikotin ist einer der stärksten einzelnen kardiovaskulären Faktoren.", dom: "cardiovascular", sev: 1 },
+    snoring:          { label: "Schlafatmung unklar", why: "Schnarchen und Atemaussetzer beeinflussen Energie, Blutdruck und Erholung.", dom: "sleep", sev: 2 },
+    training_response:{ label: "Trainingsantwort nicht einschätzbar", why: "Die Reaktion auf Training ist ein ehrlicher Alltagsmarker.", dom: "training", sev: 1 },
+    sexual_course:    { label: "Verlauf der sexuellen Funktion offen", why: "Für die ärztliche Einordnung zählt der Verlauf mehr als der Momentzustand.", dom: "hormonal", sev: 1 },
+    former_timeline:  { label: "Zeitpunkt der letzten Anwendung unklar", why: "Ohne Zeitachse lässt sich der Rückkehr-Status nicht einordnen.", dom: "recoveryStatus", sev: 2 },
+    former_exposure:  { label: "Dauer der früheren Anwendung unklar", why: "Expositionsdauer ist ein zentraler Kontextfaktor.", dom: "recoveryStatus", sev: 2 },
+    former_symptoms:  { label: "Veränderungen seit dem Absetzen unklar", why: "Ohne Symptombild bleibt der Rückkehr-Status offen.", dom: "recoveryStatus", sev: 2 },
+    former_followup:  { label: "Keine Nachkontrolle nach dem Absetzen", why: "Zeit allein ist kein Beleg dafür, dass sich das System erholt hat.", dom: "recoveryStatus", sev: 3 },
+    trt_labs:         { label: "Keine aktuellen Verlaufskontrollen", why: "Eine Hormontherapie ohne Verlaufswerte ist nicht gesteuert, sondern nur begonnen.", dom: "therapyControl", sev: 3 },
+    trt_indication:   { label: "Indikation der Therapie unklar", why: "Der Anlass entscheidet mit, was sinnvoll kontrolliert wird.", dom: "therapyControl", sev: 2 },
+    trt_response:     { label: "Therapie-Ansprechen unklar", why: "Ohne Verlaufseinschätzung fehlt der wichtigste Wirksamkeitsmarker.", dom: "therapyControl", sev: 1 },
+    enh_context:      { label: "Aktueller Kontext nicht angegeben", why: "Ohne Kontext bleibt die Einordnung bewusst allgemein.", dom: "enhancedControl", sev: 1 },
+    enh_categories:   { label: "Beteiligte Kategorien nicht angegeben", why: "Ohne Kategorien können relevante Kontrollthemen nicht zugeordnet werden.", dom: "enhancedControl", sev: 2 },
+    enh_signals:      { label: "Mögliche Veränderungen unklar", why: "Ohne Symptomlage fehlt ein wichtiger Frühindikator.", dom: "enhancedControl", sev: 1 },
+    glp1_lean:        { label: "Muskelschutz unter GLP-1 unklar", why: "Unter starker Appetitreduktion ist Muskelerhalt der kritische Punkt.", dom: "nutrition", sev: 2 }
+  };
+
+  C.dataGaps = function (a) {
+    a = a || {};
+    var st = C.statusOf(a);
+    var ids = {};
+    /* 1) Luecken direkt aus Antworten (gap-Flag an der Option) */
+    C.allSteps.forEach(function (step) {
+      var q = step.q, ans = a[q.id];
+      if (ans === undefined || ans === null) return;
+      var vals = Array.isArray(ans) ? ans : [ans];
+      vals.forEach(function (v) {
+        var o = (q.options || []).find(function (x) { return String(x.v) === String(v); });
+        if (o && o.gap) ids[o.gap] = true;
+      });
+    });
+    /* 2) Strukturelle Luecken */
+    if (!num(a.waist)) ids.waist = true;
+    if (!a.steps || a.steps === "unknown") ids.steps = true;
+    if (a.blood_bp === "nein" || a.blood_bp === "lange_her") ids.bp = true;
+    var known = arr(a.lab_known);
+    var noLabs = ["gt12m", "nie", "unsure"].indexOf(a.lab_recency) >= 0 || !a.lab_recency;
+    var riskContext = st === "enhanced" || st === "medical_trt" || st === "former_enhanced"
+      || a.met_glucose === "prediabetes" || a.met_glucose === "diabetes"
+      || C.signals(a).indexOf("bp_uncontrolled") >= 0 || num(a.age) >= 40;
+    if (riskContext && (noLabs || (known.indexOf("apob") < 0 && known.indexOf("ldl") < 0))) ids.lipids = true;
+    if (riskContext && (noLabs || known.indexOf("apob") < 0)) ids.apob = true;
+    if (noLabs || (known.length && known.indexOf("glukose") < 0)) {
+      if (a.met_glucose === "nie" || a.met_glucose === "unsure") ids.glucose = true;
+    }
+    if (st === "enhanced" && (noLabs || (known.length && known.indexOf("haematokrit") < 0))) ids.hematocrit = true;
+    /* 3) Ausgeben, nach Schwere sortiert */
+    return Object.keys(ids).filter(function (k) { return !!C.GAP_LIB[k]; }).map(function (k) {
+      var g = C.GAP_LIB[k];
+      return { id: k, label: g.label, why: g.why, domain: g.dom, severity: g.sev };
+    }).sort(function (x, y) { return y.severity - x.severity; });
+  };
+
+  /* ------------------------------------------------------- RED-FLAG-LOGIK */
+
+  C.redFlags = function (a) {
+    a = a || {};
+    var flags = [];
+    var q = C.questionById("redflags");
+    arr(a.redflags).forEach(function (v) {
+      var o = q && (q.options || []).find(function (x) { return x.v === v; });
+      if (o && o.flag) flags.push(o.flag);
+    });
+    if (a.rec_snore === "aussetzer" && arr(a.redflags).indexOf("apnoe") < 0) {
+      flags.push("Beobachtete Atemaussetzer im Schlaf sollten ärztlich abgeklärt werden (Stichwort Schlafapnoe).");
+    }
+    if (arr(a.enh_signals).indexOf("atemnot") >= 0 && arr(a.redflags).indexOf("atemnot") < 0) {
+      flags.push("Ungewohnte Luftnot gehört ärztlich abgeklärt, bevor die Belastung weiter steigt.");
+    }
+    if (a.cv_bp_control === "unbehandelt") {
+      flags.push("Ein bekannt erhöhter, aktuell unbehandelter Blutdruck gehört ärztlich eingeordnet — er verläuft lange ohne Symptome.");
+    }
+    if (a.slp_daysleep === "taeglich" && ["stark", "aussetzer"].indexOf(a.rec_snore) >= 0) {
+      flags.push("Starkes Schnarchen zusammen mit ausgeprägter Tagesmüdigkeit ist ein Muster, das ärztlich abgeklärt gehört (Stichwort Schlafapnoe).");
+    }
+    return flags;
+  };
+
+  /* -------------------------------------------- ASSESSMENT CONFIDENCE V2 */
+  /* Getrennt vom Score: WIE SICHER ist die Einordnung? Keine Fake-Prozente. */
+
+  C.assessmentConfidence = function (a, gaps, flags) {
+    a = a || {};
+    gaps = gaps || C.dataGaps(a);
+    flags = flags || C.redFlags(a);
+    var st = C.statusOf(a);
+    var reasons = [], sev = 0, critical = [];
+    gaps.forEach(function (g) { sev += g.severity; if (g.severity >= 3) critical.push(g.label); });
+
+    /* Verweigerte Angaben in tragenden Bereichen */
+    var silent = ["drv_libido", "drv_morning", "enh_context", "enh_categories", "trt_fertility", "cv_smoking", "drv_change"]
+      .filter(function (k) { return a[k] === "keine_antwort" || a[k] === "no_answer" || arr(a[k]).indexOf("no_answer") >= 0; }).length;
+
+    /* Widersprueche */
+    var h = num(a.height), w = num(a.weight), waist = num(a.waist);
+    var whtr = (waist && h) ? waist / h : 0;
+    var contradictions = [];
+    if (a.body_type === "skinny" && whtr >= 0.56) contradictions.push("Selbstbild „schlank“ passt nicht zum Bauchumfang");
+    if (a.body_type === "uebergewicht" && whtr && whtr < 0.47) contradictions.push("Selbstbild „übergewichtig“ passt nicht zu den Messwerten");
+    if (a.str_freq === "0" && a.nat_training_response === "gut") contradictions.push("guter Trainingsfortschritt ohne aktuelles Training");
+
+    /* Kontextspezifische Mindestanforderung an Datenqualitaet */
+    var contextCritical = 0;
+    if (st === "enhanced") {
+      ["hematocrit", "bp", "labs_none", "labs_old", "liver", "apob"].forEach(function (id) {
+        if (gaps.some(function (g) { return g.id === id; })) contextCritical++;
+      });
+    } else if (st === "medical_trt") {
+      ["trt_labs", "bp", "labs_none"].forEach(function (id) {
+        if (gaps.some(function (g) { return g.id === id; })) contextCritical++;
+      });
+    } else if (st === "former_enhanced") {
+      ["former_followup", "former_timeline", "labs_none"].forEach(function (id) {
+        if (gaps.some(function (g) { return g.id === id; })) contextCritical++;
+      });
+    }
+
+    var level;
+    if (st === "unknown") {
+      level = "LIMITED";
+      reasons.push("Dieses Ergebnis stammt aus einer früheren Score-Version ohne Status-Kontext — es wird bewusst vorsichtig gelesen.");
+    } else if (critical.length >= 2 || contextCritical >= 2 || sev >= 10 || contradictions.length >= 2 || silent >= 3) {
+      level = "LIMITED";
+    } else if (critical.length === 1 || contextCritical === 1 || sev >= 4 || contradictions.length === 1 || silent >= 1) {
+      level = "MODERATE";
+    } else {
+      level = "HIGH";
+    }
+    if (level !== "LIMITED" && flags.length) {
+      level = "MODERATE";
+      reasons.push("Mögliche medizinische Warnzeichen — bis zur ärztlichen Klärung bleibt die Einordnung bewusst zurückhaltend.");
+    }
+    if (critical.length) reasons.push("Entscheidende Werte fehlen: " + critical.slice(0, 3).join(", ") + ".");
+    else if (gaps.length) reasons.push("Offene Punkte: " + gaps.slice(0, 3).map(function (g) { return g.label; }).join(", ") + ".");
+    if (contradictions.length) reasons.push("Widerspruch in deinen Angaben: " + contradictions[0] + ".");
+    if (silent) reasons.push("Einzelne Angaben hast du bewusst offen gelassen — das ist in Ordnung, kostet aber Genauigkeit.");
+    if (!reasons.length) reasons.push("Deine Angaben sind vollständig und in sich konsistent — die Einordnung ist gut belastbar.");
+
+    return {
+      level: level,
+      label: level === "HIGH" ? "HOCH" : level === "MODERATE" ? "MODERAT" : "EINGESCHRÄNKT",
+      reasons: reasons.slice(0, 3),
+      gapCount: gaps.length,
+      criticalGaps: critical,
+      contradictions: contradictions
+    };
+  };
+
+  /* ------------------------------------------------------ KONTEXT-PANEL */
+  /* Bewertet KONTROLLQUALITAET, nicht den Status an sich. */
+
+  function band(v) {
+    return v >= 78 ? { key: "good", label: "GUTE KONTROLLE" }
+      : v >= 58 ? { key: "partial", label: "TEILWEISE KONTROLLIERT" }
+      : v >= 38 ? { key: "gaps", label: "DEUTLICHE DATENLÜCKEN" }
+      : { key: "review", label: "ÜBERPRÜFUNG NÖTIG" };
+  }
+
+  C.contextPanel = function (a, domains, gaps) {
+    a = a || {}; domains = domains || {}; gaps = gaps || C.dataGaps(a);
+    var st = C.statusOf(a);
+    var dom = C.contextDomainOf(st);
+    var lines = [];
+    var openGaps = gaps.filter(function (g) { return g.domain === dom; }).map(function (g) { return g.label; });
+
+    if (st === "enhanced") {
+      var v = domains.enhancedControl;
+      var b = band(v == null ? 40 : v);
+      lines.push("Bewertet wird ausschließlich, wie gut dein aktuelles System kontrolliert ist — nicht, dass du es betreibst.");
+      if (a.enh_context) lines.push("Kontext: " + ({ cruise: "TRT-ähnlich / Cruise", blast: "aktive Leistungsphase", blast_cruise: "Blast & Cruise", transition: "Übergangs-/Absetzphase", other: "individuell", no_answer: "nicht angegeben" }[a.enh_context] || "individuell") + ".");
+      if (openGaps.length) lines.push("Offene Kontrollpunkte: " + openGaps.join(", ") + ".");
+      else lines.push("Deine Kontrollpunkte sind aktuell abgedeckt — das ist die Basis, auf der Leistung überhaupt tragfähig ist.");
+      var esig = C.signals(a).filter(function (s) { return ["bp", "cardio_alarm", "apnea", "sexual", "hormonal", "mood", "edema", "fertility"].indexOf(s) >= 0; });
+      if (esig.length) {
+        lines.push("Du hast Veränderungen angegeben, die in deinem Kontext ärztlich eingeordnet gehören. MaleMetrix bewertet Struktur und Kontrolle — die medizinische Beurteilung gehört zu einem Arzt.");
+      }
+      return { key: "enhanced", title: "ENHANCED CONTROL", verdict: b.label, band: b.key, value: v == null ? null : v, signals: esig, lines: lines };
+    }
+    if (st === "medical_trt") {
+      var tv = domains.therapyControl;
+      var tb = band(tv == null ? 40 : tv);
+      var resp = { klar: "deutlich verbessert", teilweise: "teilweise verbessert", nein: "nicht verbessert", schlechter: "verschlechtert", unsure: "unklar" }[a.trt_response];
+      lines.push("Therapie-ANSPRECHEN und Therapie-KONTROLLE sind zwei getrennte Dinge. Beides steht hier nebeneinander.");
+      if (resp) lines.push("Ansprechen laut deinen Angaben: " + resp + ".");
+      if (openGaps.length) lines.push("Kontroll-Lücken: " + openGaps.join(", ") + ".");
+      else lines.push("Die Verlaufskontrolle deiner Therapie ist aktuell schlüssig dokumentiert.");
+      return { key: "medical_trt", title: "THERAPIE-KONTROLLE", verdict: tb.label, band: tb.key, value: tv == null ? null : tv, response: resp || null, lines: lines };
+    }
+    if (st === "former_enhanced") {
+      var rv = domains.recoveryStatus;
+      var rb = band(rv == null ? 40 : rv);
+      var sigs = C.signals(a);
+      var unclear = (sigs.indexOf("sexual") >= 0 || sigs.indexOf("energy") >= 0 || sigs.indexOf("mood") >= 0 || sigs.indexOf("strength_loss") >= 0)
+        && (a.fe_followup === "nein" || a.fe_followup === "unsure");
+      lines.push("Vergangene Zeit allein ist kein Beleg dafür, dass sich dein System erholt hat.");
+      if (unclear) lines.push("Bei dir treffen Symptome nach dem Absetzen und fehlende Nachkontrolle zusammen — der Rückkehr-Status ist damit offen, nicht negativ.");
+      if (openGaps.length) lines.push("Offene Punkte: " + openGaps.join(", ") + ".");
+      return {
+        key: "former_enhanced", title: "RÜCKKEHR-STATUS",
+        verdict: unclear ? "RÜCKKEHR-STATUS UNKLAR" : rb.label, band: unclear ? "review" : rb.key,
+        value: rv == null ? null : rv, unclear: unclear, lines: lines
+      };
+    }
+    if (st === "uncertain" || st === "unknown") {
+      lines.push(st === "unknown"
+        ? "Dieses Ergebnis stammt aus einer früheren Score-Version. Der Kontext wurde damals nicht erfasst und wird nicht nachträglich unterstellt."
+        : "Du hast deinen Status offen gelassen — das ist völlig in Ordnung. Wir ordnen dich nicht zwangsweise ein und lesen dein Ergebnis entsprechend neutral.");
+      lines.push("Sobald du deinen Kontext kennst, wird die Einordnung präziser — der Score funktioniert auch ohne.");
+      return { key: st, title: "STATUS OFFEN", verdict: "NEUTRALE EINORDNUNG", band: "neutral", value: null, lines: lines };
+    }
+    /* natural */
+    var sig = C.signals(a);
+    var cluster = ["sexual", "energy", "training_stall", "strength_loss", "poor_recovery"].filter(function (s) { return sig.indexOf(s) >= 0; });
+    lines.push("Natural heißt: dein System muss die Regeneration selbst leisten. Genau daran messen wir es.");
+    if (cluster.length >= 2) {
+      lines.push("Mehrere deiner Angaben (" + cluster.length + " Bereiche) zeigen dasselbe Muster. Das ist KEIN Hormonbefund — aber es rechtfertigt eine genauere ärztliche Abklärung, statt weiter zu raten.");
+    } else {
+      lines.push("Ein einzelner schwacher Bereich ist kein Alarmsignal — er ist dein nächster Hebel.");
+    }
+    return {
+      key: "natural", title: "NATURAL PERFORMANCE CONTEXT",
+      verdict: cluster.length >= 2 ? "HORMONELLER KONTEXT SOLLTE GEPRÜFT WERDEN" : "SYSTEM SELBSTREGULIERT",
+      band: cluster.length >= 2 ? "gaps" : "good", value: null, clusterCount: cluster.length, lines: lines
+    };
+  };
+
+  /* --------------------------------------------- PRIMARY BOTTLENECK V2 */
+  /* Nicht "niedrigster Wert", sondern hoechste Kombination aus Schwere,
+     Gesundheitsrelevanz, Umsetzbarkeit und Zielbezug — mit klaren
+     Vorrangregeln fuer harte Kontrollprobleme. */
+
+  C.LEGACY_DOMAIN_KEY = {
+    bodyComposition: "body", training: "strength", movement: "strength",
+    sleep: "recovery", recovery: "recovery", nutrition: "fuel",
+    metabolic: "blood", cardiovascular: "blood", dataQuality: "blood",
+    hormonal: "drive", energy: "drive", execution: "execution",
+    enhancedControl: "blood", therapyControl: "blood", recoveryStatus: "drive"
+  };
+
+  C.bottleneckCopy = {
+    bodyComposition: { name: "Körperkomposition", text: "Mehr Muskelaufbau ist möglich. Dein aktueller Engpass ist jedoch die Körperkomposition — sie entscheidet gerade über Stoffwechsel, Optik und Risiko gleichzeitig." },
+    training:        { name: "Trainingsstruktur", text: "Du hast kein Motivationsproblem, dir fehlt planbare Progression: feste Tage, feste Muster, dokumentierte Steigerung." },
+    movement:        { name: "Alltagsbewegung", text: "Dein Training ist nicht das Problem — der Rest deines Tages ist es. Drei Einheiten pro Woche kompensieren keine 13 Stunden Sitzen." },
+    sleep:           { name: "Schlaf", text: "Schlaf ist bei dir der erste Hebel. Alles andere — Appetit, Erholung, Energie, Trainingsleistung — hängt daran." },
+    recovery:        { name: "Erholung & Stress", text: "Du bekommst Reize, aber keine Erholung. Ohne Regeneration wird aus Belastung kein Fortschritt." },
+    nutrition:       { name: "Ernährungssystem", text: "Du hast kein Trainingsproblem, sondern ein Ernährungssystem-Problem: Protein, Mengen und Wochenenden müssen messbar werden." },
+    metabolic:       { name: "Stoffwechsel-Kontext", text: "Dein metabolischer Kontext ist der Engpass — er entscheidet langfristig mehr über Gesundheit und Körperbild als jedes Trainingsdetail." },
+    cardiovascular:  { name: "Herz-Kreislauf-Kontrolle", text: "Deine Performance ist nicht der limitierende Faktor. Dein Herz-Kreislauf-Kontext ist es — und er verläuft lange ohne Symptome." },
+    hormonal:        { name: "Hormonell-sexueller Kontext", text: "Deine Angaben rechtfertigen eine genauere Abklärung dieses Bereichs — keine Selbstdiagnose, sondern eine saubere Klärung." },
+    energy:          { name: "Energie-Management", text: "Deine Energie ist der Engpass — und sie hängt fast immer an Schlaf, Bewegung, Ernährung und Stress." },
+    dataQuality:     { name: "Datenlage & Monitoring", text: "Dein größter Hebel ist nicht mehr Training. Es ist die Qualität deiner Daten — du steuerst gerade ohne Instrumente." },
+    execution:       { name: "Umsetzung", text: "Du weißt wahrscheinlich genug. Was fehlt, ist ein System, das deinen Alltag überlebt." },
+    enhancedControl: { name: "Enhanced Control", text: "Deine Performance ist hoch. Deine Kontrolltiefe hält aktuell nicht Schritt — genau das ist dein Engpass, nicht dein Status." },
+    therapyControl:  { name: "Therapie-Kontrolle", text: "Deine Therapie wirkt, aber sie ist aktuell nicht ausreichend gesteuert. Ansprechen ersetzt keine Verlaufskontrolle." },
+    recoveryStatus:  { name: "Rückkehr-Status", text: "Nach dem Absetzen fehlt dir die Rückmeldung, ob dein System wirklich wieder trägt. Diese Lücke ist dein aktueller Engpass." }
+  };
+
+  C.primaryBottleneck = function (a, domains, gaps, flags) {
+    a = a || {}; domains = domains || {}; gaps = gaps || C.dataGaps(a); flags = flags || C.redFlags(a);
+    var st = C.statusOf(a);
+    var sig = C.signals(a);
+    var goals = arr(a.goal_main);
+    var goalDomains = {};
+    goals.forEach(function (g) { (C.goalDomainMap[g] || []).forEach(function (d) { goalDomains[d] = true; }); });
+    (C.painDomainMap[a.goal_pain] || []).forEach(function (d) { goalDomains[d] = true; });
+
+    var gapSeverityByDomain = {};
+    gaps.forEach(function (g) { gapSeverityByDomain[g.domain] = (gapSeverityByDomain[g.domain] || 0) + g.severity; });
+
+    var ranked = Object.keys(domains).map(function (d) {
+      var meta = C.domainMeta[d] || { health: 1, action: 1, w: 8, name: d };
+      var severity = (100 - domains[d]) / 100;
+      var gapBoost = Math.min(0.35, (gapSeverityByDomain[d] || 0) * 0.06);
+      var goalBoost = goalDomains[d] ? 0.25 : 0;
+      var score = (severity + gapBoost) * meta.health * meta.action * (1 + goalBoost);
+      return { domain: d, value: domains[d], score: score };
+    }).sort(function (x, y) { return y.score - x.score; });
+
+    /* Vorrangregeln — harte Kontrollprobleme schlagen den reinen Zahlenwert */
+    var forced = null;
+    if (sig.indexOf("bp_uncontrolled") >= 0 || a.cv_bp_control === "unbehandelt") forced = "cardiovascular";
+    else if (sig.indexOf("apnea") >= 0) forced = "sleep";
+    else if (st === "enhanced" && domains.enhancedControl != null && domains.enhancedControl < 55) forced = "enhancedControl";
+    else if (st === "medical_trt" && domains.therapyControl != null && domains.therapyControl < 55) forced = "therapyControl";
+    else if (st === "former_enhanced" && domains.recoveryStatus != null && domains.recoveryStatus < 55) forced = "recoveryStatus";
+    else if (gaps.filter(function (g) { return g.severity >= 3; }).length >= 2) forced = "dataQuality";
+
+    var primaryKey = forced && domains[forced] !== undefined ? forced : (ranked[0] ? ranked[0].domain : "execution");
+    var copy = C.bottleneckCopy[primaryKey] || { name: primaryKey, text: "" };
+    var secondary = ranked.filter(function (r) { return r.domain !== primaryKey; }).slice(0, 3).map(function (r) {
+      return { domain: r.domain, name: (C.domainMeta[r.domain] || {}).name || r.domain, value: r.value };
+    });
+
+    return {
+      domain: primaryKey,
+      key: C.LEGACY_DOMAIN_KEY[primaryKey] || "execution",
+      name: copy.name,
+      text: copy.text,
+      value: domains[primaryKey] != null ? domains[primaryKey] : null,
+      forced: !!forced,
+      secondary: secondary,
+      ranked: ranked
+    };
+  };
+
+  C.goalDomainMap = {
+    bauchfett: ["bodyComposition", "nutrition"],
+    muskeln: ["training", "nutrition"],
+    kraft: ["training"],
+    energie: ["sleep", "energy"],
+    schlaf: ["sleep"],
+    ernaehrung: ["nutrition"],
+    blutwerte: ["dataQuality", "cardiovascular"],
+    hormone: ["hormonal", "dataQuality"],
+    disziplin: ["execution"],
+    attraktiv: ["bodyComposition", "training"]
+  };
+  C.painDomainMap = {
+    bauch: ["bodyComposition"], muskelmasse: ["training"], kraft: ["training"],
+    muede: ["energy", "sleep"], schlaf: ["sleep"], libido: ["hormonal"],
+    blutwerte: ["dataQuality", "cardiovascular"], gewicht: ["bodyComposition"],
+    essen: ["nutrition"], struktur: ["execution"], neustart: ["execution"]
+  };
+})();
+
+/* ==========================================================================
+   SCORE V2 — HEALTH FIRST, DEEP LINKS, ERGEBNIS-PIPELINE
+   ========================================================================== */
+(function () {
+  "use strict";
+  var C = window.MM_CHECK;
+  var arr = function (x) { return Array.isArray(x) ? x : []; };
+  var num = function (x) { var n = parseFloat(x); return isFinite(n) ? n : 0; };
+
+  /* ------------------------------------------------------- HEALTH FIRST */
+  /* Bewusst konservativ und regelbasiert. Kein Urteil ueber den Menschen,
+     sondern eine Reihenfolge-Aussage: erst klaeren/kontrollieren, dann
+     Physique optimieren. Keine Diagnose, keine Therapieempfehlung. */
+
+  C.SEVERE_FLAGS = ["brust", "ohnmacht", "atemnot", "blut", "gewichtsverlust", "blutdruck", "labor", "hormone"];
+
+  C.healthFirstReason = function (a) {
+    a = a || {};
+    var st = C.statusOf(a);
+    var flags = arr(a.redflags).filter(function (v) { return C.SEVERE_FLAGS.indexOf(v) >= 0; });
+    var sig = C.signals(a);
+    var gaps = C.dataGaps(a);
+    var hasGap = function (id) { return gaps.some(function (g) { return g.id === id; }); };
+    var reasons = [];
+
+    if (flags.length) {
+      reasons.push("Mindestens eine deiner Angaben gehört ärztlich abgeklärt, bevor ein Trainings- oder Ernährungsprogramm sinnvoll startet.");
+    }
+    if (a.cv_bp_control === "unbehandelt") {
+      reasons.push("Ein bekannt erhöhter, aktuell unbehandelter Blutdruck hat Vorrang vor jedem Körperziel.");
+    }
+    if (sig.indexOf("apnea") >= 0 && (a.slp_daysleep === "oft" || a.slp_daysleep === "taeglich" || a.rec_snore === "aussetzer")) {
+      reasons.push("Auffällige Schlafatmung zusammen mit Tagesmüdigkeit sollte geklärt werden — sie verändert Energie, Blutdruck und Körperkomposition gleichzeitig.");
+    }
+    if (st === "enhanced") {
+      var enhCrit = ["hematocrit", "bp", "labs_none", "labs_old", "liver"].filter(hasGap).length;
+      if (enhCrit >= 2) reasons.push("In deinem Kontext fehlen mehrere der wenigen Werte, die tatsächlich engmaschig kontrolliert gehören. Deine Kontrolltiefe hält deiner Performance aktuell nicht stand.");
+    }
+    if (st === "medical_trt" && hasGap("trt_labs") && (a.trt_supervision === "selbst" || a.trt_supervision === "keine")) {
+      reasons.push("Eine laufende Hormontherapie ohne aktuelle Verlaufskontrolle und ohne ärztliche Begleitung ist nicht gesteuert — das kommt vor jedem Körperziel.");
+    }
+    if (st === "former_enhanced" && hasGap("former_followup")
+        && (sig.indexOf("sexual") >= 0 || sig.indexOf("energy") >= 0 || sig.indexOf("strength_loss") >= 0 || sig.indexOf("mood") >= 0)) {
+      reasons.push("Symptome nach dem Absetzen ohne jede Nachkontrolle lassen deinen Rückkehr-Status offen. Diese Klärung kommt zuerst.");
+    }
+    if ((a.met_glucose === "diabetes" || a.met_glucose === "prediabetes") && hasGap("bp") && (hasGap("labs_none") || hasGap("labs_old"))) {
+      reasons.push("Bekannter Blutzucker-Kontext ohne aktuellen Blutdruck und ohne aktuelle Werte: dir fehlt gerade die Steuerung, nicht die Motivation.");
+    }
+    if (!reasons.length) return null;
+    return {
+      reason: "HEALTH FIRST: " + reasons[0] + " Das ist kein Urteil über dich — es ist eine Reihenfolge. Körperziele laufen danach auf sicherem Fundament weiter.",
+      reasons: reasons,
+      severeFlags: flags
+    };
+  };
+
+  /* --------------------------------------------------------- DEEP LINKS */
+  /* Nicht jeder Link fuer jeden. Genau der naechste sinnvolle Weg. */
+
+  C.CHAPTERS = {
+    training:   { label: "Training",           href: "ebooks/training-system.html" },
+    body:       { label: "Körperkomposition",  href: "ebooks/fettabbau.html" },
+    protein:    { label: "Protein & Ernährung", href: "ebooks/protein-system.html" },
+    sleep:      { label: "Schlaf",             href: "ebooks/schlaf-energie.html" },
+    sleepStack: { label: "Schlaf-Stack",       href: "ebooks/schlaf-stack.html" },
+    blood:      { label: "Blutwerte",          href: "ebooks/blutwerte-guide.html" },
+    hormones:   { label: "Hormone",            href: "ebooks/testosteron.html" },
+    sexual:     { label: "Sexuelle Gesundheit", href: "ebooks/sexuelle-gesundheit.html" },
+    glp1:       { label: "GLP-1",              href: "ebooks/glp1-agonisten.html" },
+    stack:      { label: "Ultimate Stack",     href: "ebooks/ultimate-stack.html" },
+    habits:     { label: "Umsetzung",          href: "ebooks/gewohnheiten.html" },
+    daily:      { label: "Tägliche Bewegung",  href: "ebooks/taeglich-trainieren.html" }
+  };
+
+  C.DOMAIN_CHAPTER = {
+    bodyComposition: "body", training: "training", movement: "daily", sleep: "sleep",
+    recovery: "sleepStack", nutrition: "protein", metabolic: "blood", cardiovascular: "blood",
+    hormonal: "hormones", energy: "sleep", dataQuality: "blood", execution: "habits",
+    enhancedControl: "blood", therapyControl: "hormones", recoveryStatus: "hormones"
+  };
+
+  C.deepLinks = function (a, bottleneck, gaps) {
+    a = a || {}; gaps = gaps || [];
+    var st = C.statusOf(a);
+    var out = [];
+    var seen = {};
+    function push(key, why) {
+      var ch = C.CHAPTERS[key];
+      if (!ch || seen[key]) return;
+      seen[key] = true;
+      out.push({ key: key, label: ch.label, href: ch.href, why: why });
+    }
+    /* 1) Der Engpass fuehrt */
+    if (bottleneck && C.DOMAIN_CHAPTER[bottleneck.domain]) {
+      push(C.DOMAIN_CHAPTER[bottleneck.domain], "Erklärt, warum " + bottleneck.name + " gerade dein Fortschritt bestimmt.");
+    }
+    /* 2) Kontextspezifisch */
+    if (st === "enhanced" || st === "medical_trt" || st === "former_enhanced") {
+      push("blood", "Die wenigen Werte, die in deinem Kontext wirklich kontrolliert gehören.");
+    }
+    if (C.sexualConcern(a)) push("sexual", "Ordnet Libido und Erektion ein, ohne daraus eine Diagnose zu machen.");
+    if (C.usesGlp1(a)) push("glp1", "Was unter GLP-1 über Muskelerhalt und Proteinzufuhr entscheidet.");
+    if (gaps.some(function (g) { return g.id === "steps" || g.id === "sitting"; })) push("daily", "Warum der Rest des Tages mehr wiegt als das Workout.");
+    return out.slice(0, 3);
+  };
+
+  /* Konkreter naechster Produktweg (Score findet, Protokoll erklaert,
+     Programm fuehrt, Tracker misst). */
+  C.nextPath = function (ctx) {
+    ctx = ctx || {};
+    if (ctx.healthFirst) {
+      return { key: "medical", label: "Zuerst ärztlich klären", href: null,
+        note: "Danach läuft alles Weitere auf einem Fundament, dem du trauen kannst." };
+    }
+    if (ctx.bigDataGaps) {
+      return { key: "measure", label: "Blutwerte & Blutdruck erfassen", href: "blutwerte.html",
+        note: "Dein Score steigt nicht durch mehr Aufwand, sondern durch bessere Daten." };
+    }
+    return C.nextStep(ctx);
+  };
+
+  /* ------------------------------------------------------------ PIPELINE */
+  /* EINE Quelle der Wahrheit fuer Dashboard, Report und Programm. */
+
+  C.evaluate = function (a) {
+    a = a || {};
+    var st = C.statusOf(a);
+    var ds = C.domainScores(a);
+    var domains = ds.domains;
+    var gaps = C.dataGaps(a);
+    var flags = C.redFlags(a);
+    var signals = C.signals(a);
+    var total = C.totalFrom(domains);
+    var legacy = C.legacyScores(domains);
+    var bottleneck = C.primaryBottleneck(a, domains, gaps, flags);
+    var confidence = C.assessmentConfidence(a, gaps, flags);
+    var panel = C.contextPanel(a, domains, gaps);
+    var dec = C.goalDecision(a);
+    var links = C.deepLinks(a, bottleneck, gaps);
+    return {
+      version: 2,
+      status: st,
+      statusLabel: (C.statusLabels[st] || C.statusLabels.unknown).short,
+      domains: domains,
+      domainCoverage: ds.coverage,
+      modifiers: ds.modifiers,
+      total: total,
+      scores: legacy,
+      dataGaps: gaps,
+      signals: signals,
+      flags: flags,
+      confidence: confidence,
+      contextPanel: panel,
+      primaryBottleneck: bottleneck,
+      secondaryPriorities: bottleneck.secondary,
+      goalRecommendation: {
+        mode: dec.mode,
+        trainingMode: dec.trainingMode || dec.mode,
+        label: (C.modeLabels[dec.mode] || {}).label || String(dec.mode).toUpperCase(),
+        desc: (C.modeLabels[dec.mode] || {}).desc || "",
+        reason: dec.reason,
+        bodyReason: dec.bodyReason || dec.reason
+      },
+      deepLinks: links
+    };
+  };
+
+  /* Reihenfolge-Block "DEINE REIHENFOLGE" auf der Ergebnisseite. */
+  C.orderOfOperations = function (ev) {
+    var steps = [];
+    var crit = (ev.dataGaps || []).filter(function (g) { return g.severity >= 3; });
+    if (ev.flags && ev.flags.length) {
+      steps.push({ t: "KLÄREN", d: "Die markierten Punkte ärztlich einordnen lassen. Alles Weitere läuft danach auf sicherem Fundament." });
+    }
+    steps.push({
+      t: "MESSEN",
+      d: crit.length
+        ? "Diese Lücken zuerst schließen: " + crit.slice(0, 2).map(function (g) { return g.label; }).join(" · ") + "."
+        : "Baseline sichern: Bauchumfang, Blutdruck, Gewichtstrend — gleiche Bedingungen, gleicher Tag."
+    });
+    steps.push({
+      t: "ENGPASS LÖSEN",
+      d: ev.primaryBottleneck.name + " ist dein Hebel Nummer eins. Nicht alles gleichzeitig — das hier zuerst."
+    });
+    steps.push({
+      t: "TRAINING & ERNÄHRUNG AUSRICHTEN",
+      d: "Richtung " + (ev.goalRecommendation.trainingMode || "").toUpperCase() + ": " +
+         ((C.modeLabels[ev.goalRecommendation.trainingMode] || {}).desc || "") + "."
+    });
+    steps.push({ t: "NEU BEWERTEN", d: "In 4–6 Wochen erneut messen. Was sich nicht messen lässt, lässt sich nicht steuern." });
+    return steps;
   };
 })();

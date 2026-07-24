@@ -8,123 +8,40 @@
   const C = window.MM_CHECK;
   const $ = (sel) => document.querySelector(sel);
 
-  /* Flache Liste aller Fragen-Schritte */
-  const steps = [];
-  C.modules.forEach(m => m.questions.forEach(q => steps.push({ mod: m, q })));
+  /* Adaptive Schrittliste (V2): welche Fragen ueberhaupt sinnvoll sind,
+     haengt von den bisherigen Antworten ab — Status, Kontext, Signale.
+     Wird nach JEDER Antwort neu berechnet (progressive disclosure). */
+  let steps = C.visibleSteps({});
 
   const state = {
     idx: 0,
     answers: MM.store.get("check_draft", {}) || {}
   };
 
+  function currentId() { return steps[state.idx] ? steps[state.idx].q.id : null; }
+
+  /* Schrittliste neu bauen und dabei die aktuelle Frage nicht verlieren. */
+  function resyncSteps(keepId) {
+    const id = keepId || currentId();
+    steps = C.visibleSteps(state.answers);
+    if (!steps.length) { state.idx = 0; return; }
+    let i = steps.findIndex(s => s.q.id === id);
+    if (i < 0) i = Math.min(state.idx, steps.length - 1);
+    state.idx = Math.max(0, i);
+  }
+
   /* ======================================================================
-     SCORING
+     SCORING — vollstaendig in der Engine (check-data.js), damit Dashboard,
+     Report und Programm nie auseinanderlaufen.
      ====================================================================== */
 
-  function whtrPoints(a) {
-    const waist = parseFloat(a.waist), height = parseFloat(a.height);
-    if (!waist || !height) return { pts: 0, ratio: null, missing: true };
-    const ratio = waist / height;
-    let pts;
-    if (ratio < 0.5) pts = 25;
-    else if (ratio < 0.55) pts = 17;
-    else if (ratio < 0.6) pts = 9;
-    else pts = 3;
-    return { pts, ratio: Math.round(ratio * 100) / 100 };
-  }
-
   function computeScores(a) {
-    const scores = { body: 0, strength: 0, fuel: 0, recovery: 0, blood: 0, drive: 0, execution: 0 };
-
-    steps.forEach(({ q }) => {
-      if (!q.module) return;
-      const ans = a[q.id];
-      if (ans === undefined || ans === null) return;
-
-      if (q.type === "single") {
-        const opt = q.options.find(o => String(o.v) === String(ans));
-        if (opt && typeof opt.p === "number") scores[q.module] += opt.p;
-      } else if (q.type === "multi") {
-        const sel = Array.isArray(ans) ? ans : [];
-        if (q.bucket) {
-          const count = sel.filter(v => {
-            const o = q.options.find(x => x.v === v);
-            return o && !o.exclusive;
-          }).length;
-          for (const [max, pts] of q.bucket) {
-            if (count <= max) { scores[q.module] += pts; break; }
-          }
-        } else {
-          let sum = 0;
-          sel.forEach(v => {
-            const o = q.options.find(x => x.v === v);
-            if (o && typeof o.p === "number") sum += o.p;
-          });
-          scores[q.module] += Math.min(sum, q.cap || sum);
-        }
-      } else if (q.type === "scale") {
-        const val = parseInt(ans, 10);
-        for (const [max, pts] of q.pointsMap) {
-          if (val <= max) { scores[q.module] += pts; break; }
-        }
-      }
-    });
-
-    const wh = whtrPoints(a);
-    if (wh.ratio !== null) {
-      scores.body += wh.pts;
-    } else {
-      // Fehlender Bauchumfang ist KEIN schlechter Wert: Body über die vorhandenen
-      // Fragen normalisieren (Nicht-WHtR-Maximum ~68 → auf ~93 hochskalieren),
-      // statt eine feste, niedrige Ersatzbewertung einzurechnen.
-      scores.body = Math.round(scores.body * (93 / 68));
-    }
-
-    Object.keys(scores).forEach(k => { scores[k] = Math.max(0, Math.min(100, Math.round(scores[k]))); });
-
     const h = parseFloat(a.height), w = parseFloat(a.weight);
     a._bmi = (h && w) ? Math.round(w / Math.pow(h / 100, 2) * 10) / 10 : 0;
-
-    let total = 0;
-    Object.keys(C.weights).forEach(k => { total += scores[k] * C.weights[k]; });
-    total = Math.round(total / 100);
-
-    return { scores, total, whtr: wh.ratio };
-  }
-
-  /* ---------- Engpass-Algorithmus ---------- */
-
-  function findBottleneck(s, a) {
-    // Spezialregeln (in Prioritätsreihenfolge)
-    if (s.drive <= 45 && s.recovery <= 45 && s.blood <= 45) {
-      return { key: "recovery", name: "Schlaf & Datenbasis", text: "Bevor du Hormone oder Energie überinterpretierst, müssen Schlaf und Datenbasis sauberer werden. Erst Erholung stabilisieren, dann messen, dann optimieren." };
-    }
-    if (s.strength >= 60 && s.body <= 45 && s.fuel <= 45) {
-      return { key: "fuel", name: "Ernährungssystem", text: "Du hast kein Trainingsproblem. Du hast ein Ernährungssystem-Problem: Protein, Mengen und Wochenenden müssen messbar werden." };
-    }
-    if (s.body <= 45 && s.strength <= 45 && s.fuel <= 45) {
-      return { key: "strength", name: "Fundament (Körper, Training & Ernährung)", text: "Du brauchst keinen Spezialplan. Du brauchst ein starkes Fundament: feste Trainingstage, Proteinziel, Baseline-Messung. Genau in dieser Reihenfolge." };
-    }
-    if (s.blood >= 60 && s.drive <= 45 && s.recovery <= 45) {
-      return { key: "recovery", name: "Umsetzung statt Overthinking", text: "Du hast Daten, aber deine Basis ist nicht stabil genug. Mehr Messung ersetzt keine Umsetzung — Schlaf und Routine sind dein erster Hebel." };
-    }
-    const others = Object.keys(s).filter(k => k !== "execution");
-    if (s.execution <= 40 && others.every(k => s[k] >= 45)) {
-      return { key: "execution", name: "Umsetzung", text: "Du weißt wahrscheinlich genug. Was fehlt, ist Kontrolle und ein System, das deinen Alltag überlebt." };
-    }
-
-    // Fallback: gewichtete Schwäche, Ziel-relevante Module zählen stärker
-    const goals = a.goal_main || [];
-    const boosted = new Set();
-    goals.forEach(g => (C.goalModuleMap[g] || []).forEach(m => boosted.add(m)));
-
-    let best = null, bestVal = -1;
-    Object.keys(s).forEach(k => {
-      const val = (100 - s[k]) * C.weights[k] * (boosted.has(k) ? 1.3 : 1);
-      if (val > bestVal) { bestVal = val; best = k; }
-    });
-    const bt = C.bottleneckTexts[best];
-    return { key: best, name: bt.name, text: bt.text };
+    const ev = C.evaluate(a);
+    const waist = parseFloat(a.waist);
+    const whtr = (waist && h) ? Math.round((waist / h) * 100) / 100 : null;
+    return { ev, scores: ev.scores, total: ev.total, whtr };
   }
 
   /* ---------- Archetyp ---------- */
@@ -137,20 +54,9 @@
     return C.archetypes.find(x => x.id === fbId) || C.archetypes[C.archetypes.length - 1];
   }
 
-  /* ---------- Red Flags ---------- */
+  /* ---------- Red Flags (eine Quelle: C.redFlags) ---------- */
 
-  function collectRedFlags(a) {
-    const flags = [];
-    (a.redflags || []).forEach(v => {
-      const q = steps.find(st => st.q.id === "redflags").q;
-      const o = q.options.find(x => x.v === v);
-      if (o && o.flag) flags.push(o.flag);
-    });
-    if (a.rec_snore === "aussetzer" && !(a.redflags || []).includes("apnoe")) {
-      flags.push("Beobachtete Atemaussetzer im Schlaf sollten ärztlich abgeklärt werden (Stichwort Schlafapnoe).");
-    }
-    return flags;
-  }
+  function collectRedFlags(a) { return C.redFlags(a); }
   /* ======================================================================
      WIZARD-RENDERING
      ====================================================================== */
@@ -164,13 +70,16 @@
   }
 
   function renderProgress() {
-    const pct = Math.round((state.idx / steps.length) * 100);
+    const progressPct = Math.round((state.idx / steps.length) * 100);
     $("#wizModule").textContent = steps[state.idx].mod.label;
-    $("#wizCount").textContent = "Frage " + (state.idx + 1) + " / " + steps.length;
-    $("#wizBar").style.width = pct + "%";
+    /* Die Gesamtzahl ist adaptiv — deshalb "ca.", statt eine feste Zahl
+       zu versprechen, die sich je nach Antwort noch ändert. */
+    $("#wizCount").textContent = "Frage " + (state.idx + 1) + " / ca. " + steps.length;
+    $("#wizBar").style.width = progressPct + "%";
   }
 
   function renderStep() {
+    if (!steps[state.idx]) resyncSteps();
     const { q } = steps[state.idx];
     const wrap = $("#wizBody");
     renderProgress();
@@ -235,6 +144,7 @@
         btn.addEventListener("click", () => {
           state.answers[q.id] = isNaN(btn.dataset.val) ? btn.dataset.val : (q.options.some(o => typeof o.v === "number") ? Number(btn.dataset.val) : btn.dataset.val);
           saveDraft();
+          resyncSteps(q.id);
           wrap.querySelectorAll(".option-card").forEach(b => b.classList.remove("selected"));
           btn.classList.add("selected");
           setTimeout(next, 220);
@@ -262,6 +172,7 @@
           }
           state.answers[q.id] = cur;
           saveDraft();
+          resyncSteps(q.id);
           wrap.querySelectorAll(".option-card").forEach(b => {
             b.classList.toggle("selected", cur.includes(b.dataset.val));
           });
@@ -286,6 +197,7 @@
           state.answers[el.dataset.field] = el.value;
           el.classList.remove("invalid");
           saveDraft();
+          resyncSteps();
         });
       });
     }
@@ -340,14 +252,17 @@
 
   function finish() {
     const a = state.answers;
-    const { scores, total, whtr } = computeScores(a);
+    const { ev, scores, total, whtr } = computeScores(a);
     const level = C.levelFor(total);
-    const bottleneck = findBottleneck(scores, a);
+    const bn = ev.primaryBottleneck;
+    const bottleneck = { key: bn.key, domain: bn.domain, name: bn.name, text: bn.text };
     const arch = findArchetype(scores, a, bottleneck);
-    const flags = collectRedFlags(a);
+    const flags = ev.flags;
 
     const sorted = Object.keys(scores).sort((x, y) => scores[x] - scores[y]);
     const result = {
+      /* ---- Bestandsfelder: Form bleibt exakt erhalten (Report, Programm,
+         Konto-Sync, Buchung, Ebook-Empfehlung lesen weiter dasselbe) ---- */
       date: new Date().toISOString(),
       total, scores, whtr,
       level: level.name,
@@ -358,7 +273,19 @@
       weakest: sorted.slice(0, 3),
       strongest: sorted[sorted.length - 1],
       flags,
-      answers: a
+      answers: a,
+      /* ---- V2-Felder ---- */
+      v: 2,
+      status: ev.status,
+      domains: ev.domains,
+      dataGaps: ev.dataGaps,
+      signals: ev.signals,
+      confidence: ev.confidence,
+      contextPanel: ev.contextPanel,
+      primaryBottleneck: bn,
+      secondaryPriorities: ev.secondaryPriorities,
+      goalRecommendation: ev.goalRecommendation,
+      deepLinks: ev.deepLinks
     };
 
     MM.store.set("check_result", result);
@@ -435,6 +362,49 @@
   const personalInsights = C.personalInsights;
   const dynamicPlan = C.dynamicPlan;
 
+  /* ---------- V2: gespeichertes Ergebnis in die aktuelle Struktur heben ---
+     Alte Ergebnisse (ohne V2-Felder) werden NICHT als "natural" oder
+     "gesund" interpretiert. Sie werden aus ihren Antworten nachgerechnet;
+     was damals nicht gefragt wurde, bleibt ausdrücklich unbekannt. */
+  function hydrate(r) {
+    if (r && r.v === 2 && r.domains && r.confidence && r.primaryBottleneck) {
+      return {
+        status: r.status || "unknown",
+        domains: r.domains,
+        dataGaps: r.dataGaps || [],
+        confidence: r.confidence,
+        contextPanel: r.contextPanel || C.contextPanel(r.answers || {}, r.domains, r.dataGaps || []),
+        primaryBottleneck: r.primaryBottleneck,
+        secondaryPriorities: r.secondaryPriorities || r.primaryBottleneck.secondary || [],
+        goalRecommendation: r.goalRecommendation,
+        deepLinks: r.deepLinks || C.deepLinks(r.answers || {}, r.primaryBottleneck, r.dataGaps || []),
+        legacy: false
+      };
+    }
+    const a = (r && r.answers) || {};
+    try {
+      const ev = C.evaluate(a);
+      return {
+        status: ev.status, domains: ev.domains, dataGaps: ev.dataGaps, confidence: ev.confidence,
+        contextPanel: ev.contextPanel, primaryBottleneck: ev.primaryBottleneck,
+        secondaryPriorities: ev.secondaryPriorities, goalRecommendation: ev.goalRecommendation,
+        deepLinks: ev.deepLinks, legacy: true
+      };
+    } catch (e) {
+      return {
+        status: "unknown", domains: {}, dataGaps: [],
+        confidence: { level: "LIMITED", label: "EINGESCHRÄNKT", reasons: ["Dieses Ergebnis stammt aus einer früheren Score-Version."] },
+        contextPanel: { key: "unknown", title: "STATUS OFFEN", verdict: "NEUTRALE EINORDNUNG", band: "neutral", lines: [] },
+        primaryBottleneck: { domain: (r && r.bottleneck && r.bottleneck.key) || "execution", key: (r && r.bottleneck && r.bottleneck.key) || "execution", name: (r && r.bottleneck && r.bottleneck.name) || "Umsetzung", text: (r && r.bottleneck && r.bottleneck.text) || "", secondary: [] },
+        secondaryPriorities: [],
+        goalRecommendation: { mode: (r && r.plan) || "recomp", trainingMode: (r && r.plan) || "recomp", label: "", desc: "", reason: "" },
+        deepLinks: [], legacy: true
+      };
+    }
+  }
+
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
   /* ---------- Ergebnis rendern ---------- */
 
   function renderResult(r) {
@@ -443,6 +413,7 @@
     const prev = (MM.store.get("check_history", []) || []).slice(0, -1).pop();
     const firstName = ((r.answers && r.answers.name) || "").trim().split(/\s+/)[0].slice(0, 24);
 
+    const V = hydrate(r);
     const nm = (k) => (C.moduleNamesDe && C.moduleNamesDe[k]) || C.moduleNames[k];
     const sortedDesc = keys.slice().sort((x, y) => r.scores[y] - r.scores[x]);
     const strengths = sortedDesc.slice(0, 3);
@@ -451,6 +422,8 @@
     const ans = r.answers || {};
     const dc = C.dataConfidence(ans);
     const tv = C.targetValues(ans);
+    const statusLabel = (C.statusLabels[V.status] || C.statusLabels.unknown).short;
+    const confColorOf = (lvl) => lvl === "HIGH" ? "var(--status-improving,#2dd4a7)" : lvl === "MODERATE" ? "var(--status-attention,#f5b54a)" : "var(--status-flag,#f06a6a)";
 
     let html = '';
 
@@ -462,28 +435,23 @@
       '<div class="read"><span class="num">' + r.total + '<small>/100</small></span>' +
       '<div class="lvl"><b>' + r.level + '</b><span>' + r.levelText + '</span>' +
       (prev ? '<span class="delta ' + (r.total >= prev.total ? 'up' : 'down') + '">LETZTER CHECK ' + prev.total + ' → ' + r.total + '</span>' : '') + '</div></div>' +
-      '<div class="limiter"><span class="k">PRIMARY LIMITER</span><b>' + r.bottleneck.name.toUpperCase() + '</b><span class="v">' + (r.scores[bKey] != null ? r.scores[bKey] : "") + '</span></div>' +
+      '<div class="limiter"><span class="k">PRIMARY LIMITER</span><b>' + esc(V.primaryBottleneck.name).toUpperCase() + '</b><span class="v">' + (V.primaryBottleneck.value != null ? V.primaryBottleneck.value : "") + '</span></div>' +
       '</div>';
 
-    /* ---------- Datenqualität (NICHT Gesundheitsstatus) ---------- */
-    html += '<div class="card" style="margin-bottom:22px;border-left:3px solid ' +
-      (dc.level === 'hoch' ? 'var(--green)' : dc.level === 'mittel' ? 'var(--accent-2)' : 'var(--red)') + '">' +
-      '<span class="card-num">DATENQUALITÄT: ' + dc.level.toUpperCase() + '</span>' +
-      '<p class="small muted" style="margin:6px 0 0">' + dc.text +
-      (dc.missing.indexOf('Bauchumfang') >= 0 ? ' <a href="check.html" style="color:var(--accent)">Bauchumfang nachtragen und Ergebnis präzisieren →</a>' : '') +
-      '</p></div>';
-
-    /* ---------- Empfohlener Weg (Modus) + Confidence + Begründung (P13) ---
-       Confidence ist deterministisch (C.decisionConfidence): HIGH/MEDIUM/
-       LIMITED aus Vollständigkeit, Widersprüchen, Red Flags — nie Fake-%. */
-    const conf = C.decisionConfidence(ans, r.flags);
-    const confColor = conf.level === "HIGH" ? "var(--status-improving,#2dd4a7)" : conf.level === "MEDIUM" ? "var(--status-attention,#f5b54a)" : "var(--status-flag,#f06a6a)";
-    html += '<div class="card" style="margin-bottom:22px;border-color:var(--accent-line);background:var(--accent-soft)">' +
-      '<span class="card-num">DEIN EMPFOHLENER WEG</span>' +
-      '<h3 style="font-size:1.3rem;margin:4px 0 6px">' + tv.modeLabel + ' — ' + tv.modeDesc + '</h3>' +
-      '<p class="small" style="margin:0 0 10px">' + tv.modeReason + '</p>' +
-      '<p class="small" style="margin:0 0 10px;font-family:var(--font-mono);font-size:0.66rem;letter-spacing:0.14em">CONFIDENCE: <strong style="color:' + confColor + '">' + conf.level + '</strong><span class="muted" style="letter-spacing:0;font-family:var(--font-body);font-size:0.8rem"> — ' + conf.reasons.join(" ") + '</span></p>' +
-      '<p class="small muted" style="margin:0"><strong>Bewegung:</strong> Jeden Tag ein Reiz oder gezielte Bewegung — 3 Tage gezieltes Krafttraining, die übrigen Tage Zone 2, Mobility, Spaziergänge/Steps oder aktive Regeneration. Nicht jeden Tag maximale Belastung.</p>' +
+    /* ---------- V2-Kopfzeile: STATUS · ZIEL · CONFIDENCE ----------
+       Drei Aussagen, die zusammen erst ein Ergebnis ergeben: In welchem
+       Kontext lesen wir das, wohin geht die Richtung, und wie sicher
+       ist die Einordnung überhaupt. */
+    html += '<div class="grid-3 mm-v2-meta" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:22px">' +
+      '<div class="card" style="padding:14px 16px"><span class="card-num">STATUS</span>' +
+      '<h3 style="font-size:1.05rem;margin:4px 0 2px">' + esc(statusLabel) + '</h3>' +
+      '<p class="small muted" style="margin:0">Kontext, kein Urteil — er kostet dich keinen Punkt.</p></div>' +
+      '<div class="card" style="padding:14px 16px"><span class="card-num">EMPFOHLENE RICHTUNG</span>' +
+      '<h3 style="font-size:1.05rem;margin:4px 0 2px">' + esc(V.goalRecommendation.label || tv.modeLabel) + '</h3>' +
+      '<p class="small muted" style="margin:0">' + esc(V.goalRecommendation.desc || tv.modeDesc) + '</p></div>' +
+      '<div class="card" style="padding:14px 16px;border-left:3px solid ' + confColorOf(V.confidence.level) + '"><span class="card-num">AUSSAGESICHERHEIT</span>' +
+      '<h3 style="font-size:1.05rem;margin:4px 0 2px;color:' + confColorOf(V.confidence.level) + '">' + esc(V.confidence.label || V.confidence.level) + '</h3>' +
+      '<p class="small muted" style="margin:0">' + esc((V.confidence.reasons || [])[0] || "") + '</p></div>' +
       '</div>';
 
     /* ---------- Red Flags (Sicherheit zuerst) ---------- */
@@ -493,6 +461,106 @@
         r.flags.map(f => '<li>' + f + '</li>').join('') +
         '</ul><p style="margin-top:10px;font-size:0.85rem">MaleMetrix unterstützt dich bei Training, Ernährung, Schlaf und Struktur — ersetzt aber keine medizinische Diagnostik oder Behandlung.</p></div></div>';
     }
+
+    /* ---------- V2: DEIN PRIMÄRER ENGPASS ----------
+       Nicht der niedrigste Wert, sondern die höchste Kombination aus
+       Schwere, Gesundheitsrelevanz, Umsetzbarkeit und Zielbezug. */
+    html += '<div class="card dash-block bottleneck-card" style="margin-bottom:22px">' +
+      '<span class="card-num" style="color:var(--red)">DEIN PRIMÄRER ENGPASS' +
+      (V.primaryBottleneck.value != null ? ' · ' + V.primaryBottleneck.value + '/100' : '') + '</span>' +
+      '<h3 style="font-size:1.4rem;margin:2px 0 8px">' + esc(V.primaryBottleneck.name) + '</h3>' +
+      '<p>' + esc(V.primaryBottleneck.text) + '</p>' +
+      (V.primaryBottleneck.forced
+        ? '<p class="small" style="margin-top:10px;color:var(--muted)"><strong style="color:var(--text)">Warum das vorgeht:</strong> Deine Angaben enthalten einen Kontrollpunkt, der Vorrang vor der reinen Punktzahl hat.</p>'
+        : '') +
+      ((V.secondaryPriorities || []).length
+        ? '<p class="small" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted)"><strong style="color:var(--text)">Danach:</strong> ' +
+            V.secondaryPriorities.slice(0, 3).map(s => esc(s.name) + (s.value != null ? ' (' + s.value + ')' : '')).join(' · ') + '</p>'
+        : '') +
+      '</div>';
+
+    /* ---------- V2: SYSTEM SCORES (nur relevante Domains) ---------- */
+    (function () {
+      const order = C.domainKeys.concat(["enhancedControl", "therapyControl", "recoveryStatus"]);
+      const rows = order.filter(d => V.domains[d] !== undefined && V.domains[d] !== null);
+      if (!rows.length) return;
+      html += '<div class="card dash-block" style="margin-bottom:22px">' +
+        '<div class="mm-secthead" style="margin-top:0"><span class="sys">MM / SYSTEMS</span><span class="t">Deine Systeme im Einzelnen</span></div>' +
+        '<p class="small muted" style="margin:0 0 12px">Nur die Bereiche, die für deinen Kontext tatsächlich erhoben wurden. Was nicht erfasst wurde, wird hier auch nicht behauptet.</p>' +
+        '<div class="mm-sys">';
+      rows.forEach(d => {
+        const v = V.domains[d];
+        const meta = C.domainMeta[d] || { name: d };
+        const isPrimary = d === V.primaryBottleneck.domain;
+        html += '<div class="row' + (isPrimary ? ' is-primary' : (v < 40 ? ' is-flag' : '')) + '">' +
+          '<span class="id">' + esc(meta.name).toUpperCase() + '</span>' +
+          '<div class="bar"><span style="width:' + v + '%"></span></div>' +
+          '<span class="val">' + v + '/100</span></div>';
+      });
+      html += '</div></div>';
+    })();
+
+    /* ---------- V2: KONTEXT-PANEL (Natural / TRT / Enhanced / Rückkehr) --
+       Misst KONTROLLQUALITÄT, nicht den Status. */
+    (function () {
+      const p = V.contextPanel;
+      if (!p) return;
+      const col = p.band === "good" ? "var(--green)" : p.band === "partial" ? "var(--accent-2)"
+        : p.band === "neutral" ? "var(--accent)" : "var(--status-attention,#f5b54a)";
+      html += '<div class="card dash-block" style="margin-bottom:22px;border-left:3px solid ' + col + '">' +
+        '<span class="card-num" style="color:' + col + '">' + esc(p.title) + '</span>' +
+        '<h3 style="font-size:1.2rem;margin:2px 0 8px">' + esc(p.verdict) +
+        (p.value != null ? ' <span class="mono" style="color:var(--muted);font-size:0.9rem">· ' + p.value + '/100</span>' : '') + '</h3>' +
+        (p.lines || []).map(l => '<p class="small muted" style="margin:0 0 6px">' + esc(l) + '</p>').join('') +
+        '</div>';
+    })();
+
+    /* ---------- V2: DATENLÜCKEN — unbekannt ist nicht "normal" ---------- */
+    (function () {
+      const gaps = V.dataGaps || [];
+      html += '<div class="card dash-block" style="margin-bottom:22px">' +
+        '<span class="card-num">DATENLÜCKEN</span>';
+      if (!gaps.length) {
+        html += '<p class="small muted" style="margin:6px 0 0">Keine relevanten Lücken: Deine zentralen Angaben sind vollständig. Deshalb ist deine Aussagesicherheit hoch — nicht, weil alles gut ist, sondern weil wir es wirklich wissen.</p>';
+      } else {
+        html += '<p class="small muted" style="margin:6px 0 12px">Kein Grund zur Panik — aber auch kein Grund, das Beste anzunehmen. Was hier steht, ist <strong>nicht gemessen</strong>. Nicht gemessen heißt nicht „normal".</p>' +
+          '<div class="mm-sys">' +
+          gaps.slice(0, 6).map(g => '<div class="row' + (g.severity >= 3 ? ' is-flag' : '') + '">' +
+            '<span class="id">' + esc(g.label).toUpperCase() + '</span>' +
+            '<span class="val" style="flex:1;text-align:left;font-family:var(--font-body);letter-spacing:0;color:var(--muted)">' + esc(g.why) + '</span></div>').join('') +
+          '</div>';
+      }
+      html += '</div>';
+    })();
+
+    /* ---------- V2: DEINE REIHENFOLGE ---------- */
+    (function () {
+      let orderSteps = [];
+      try {
+        orderSteps = C.orderOfOperations({
+          flags: r.flags, dataGaps: V.dataGaps, primaryBottleneck: V.primaryBottleneck,
+          goalRecommendation: V.goalRecommendation
+        });
+      } catch (e) { orderSteps = []; }
+      if (!orderSteps.length) return;
+      html += '<div class="card dash-block priority1" style="margin-bottom:22px">' +
+        '<span class="card-num" style="color:var(--accent-2)">DEINE REIHENFOLGE</span>' +
+        '<p class="small muted" style="margin:2px 0 14px">Nicht alles gleichzeitig. In dieser Reihenfolge.</p><ol class="prio-steps">' +
+        orderSteps.map((s, i) => '<li><span class="prio-num">' + (i + 1) + '</span><span><strong>' + esc(s.t) + '</strong> — ' + esc(s.d) + '</span></li>').join('') +
+        '</ol></div>';
+    })();
+
+    /* ---------- Empfohlener Weg (Modus) + Begründung ---------- */
+    html += '<div class="card" style="margin-bottom:22px;border-color:var(--accent-line);background:var(--accent-soft)">' +
+      '<span class="card-num">DEIN EMPFOHLENER WEG</span>' +
+      '<h3 style="font-size:1.3rem;margin:4px 0 6px">' + esc(tv.modeLabel) + ' — ' + esc(tv.modeDesc) + '</h3>' +
+      '<p class="small" style="margin:0 0 10px">' + esc(tv.modeReason) + '</p>' +
+      (tv.mode === "health_first" && tv.bodyModeLabel
+        ? '<p class="small" style="margin:0 0 10px;color:var(--muted)"><strong style="color:var(--text)">Körperrichtung parallel:</strong> ' + esc(tv.bodyModeLabel) + ' — ' + esc(tv.bodyReason) + '</p>'
+        : '') +
+      '<p class="small" style="margin:0 0 10px;font-family:var(--font-mono);font-size:0.66rem;letter-spacing:0.14em">CONFIDENCE: <strong style="color:' + confColorOf(V.confidence.level) + '">' + esc(V.confidence.label || V.confidence.level) + '</strong><span class="muted" style="letter-spacing:0;font-family:var(--font-body);font-size:0.8rem"> — ' + esc((V.confidence.reasons || []).join(" ")) + '</span></p>' +
+      '<p class="small muted" style="margin:0"><strong>Bewegung:</strong> Jeden Tag ein Reiz oder gezielte Bewegung — 3 Tage gezieltes Krafttraining, die übrigen Tage Zone 2, Mobility, Spaziergänge/Steps oder aktive Regeneration. Nicht jeden Tag maximale Belastung.</p>' +
+      '</div>';
 
     /* ---------- 2. PROFIL: Radar + diagnostische Systemliste (VS2) ----------
        Die 7 Bereiche sprechen die MaleMetrix-Systemsprache (.mm-sys):
@@ -523,20 +591,20 @@
     });
     html += '</div></div>';
 
-    /* ---------- 4. GRÖSSTER ENGPASS ---------- */
-    html += '<div class="card dash-block bottleneck-card">' +
-      '<span class="card-num" style="color:var(--red)">DEIN GRÖSSTER ENGPASS · ' + r.scores[bKey] + '/100</span>' +
-      '<h3 style="font-size:1.4rem;margin:2px 0 8px">' + r.bottleneck.name + '</h3>' +
-      '<p>' + r.bottleneck.text + '</p>' +
-      (C.bottleneckAffects[bKey] ? '<p style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted)"><strong style="color:var(--text)">Warum jetzt Priorität:</strong> ' + C.bottleneckAffects[bKey] + '</p>' : '') +
-      // Fix 1D + P16-G/H — Rollen-treue Vertiefung: der Plan führt, DAS PROTOKOLL
-      // erklärt. Ruhiger Textlink (kein Kaufbutton) auf das GENAU passende Kapitel
-      // zu diesem Engpass — das Kapitel selbst trägt am Ende die Produkt-CTA.
-      (function () {
-        var ch = C.bottleneckChapter[bKey] || C.bottleneckChapter.execution;
-        return '<p class="small" style="margin-top:12px"><a href="' + ch.href + '" data-track="protokoll_chapter_' + bKey + '" style="color:var(--accent-2);text-decoration:none">DAS PROTOKOLL · Kapitel ' + ch.label + ': warum ' + r.bottleneck.name + ' deinen Fortschritt bestimmt →</a></p>';
-      })() +
-      '</div>';
+    /* ---------- V2: KONTEXTUELLE VERTIEFUNG ----------
+       Der Score findet den Engpass, DAS PROTOKOLL erklärt ihn. Nur die
+       Kapitel, die zu Engpass UND Kontext passen — kein Link-Spam. */
+    (function () {
+      const links = (V.deepLinks || []).slice(0, 3);
+      if (!links.length) return;
+      html += '<div class="card dash-block" style="margin-bottom:22px">' +
+        '<span class="card-num">WARUM DAS SO IST — DAS PROTOKOLL</span>' +
+        '<p class="small muted" style="margin:2px 0 12px">Der Score findet den Engpass. Diese Kapitel erklären, warum er entsteht.</p>' +
+        '<div style="display:grid;gap:10px">' +
+        links.map(l => '<a href="' + l.href + '" data-track="protokoll_chapter_' + esc(l.key) + '" style="color:var(--accent-2);text-decoration:none;display:block">' +
+          '<strong>Kapitel ' + esc(l.label) + '</strong> <span class="muted" style="color:var(--muted)">— ' + esc(l.why) + '</span> →</a>').join('') +
+        '</div></div>';
+    })();
 
     /* ---------- P13/P1.6 — DEIN NÄCHSTER SCHRITT: GENAU EINE Handlung ----
        Deterministisches Routing (C.nextStep): Red Flag → medizinisch;
@@ -545,7 +613,12 @@
     (function () {
       const snap = (window.MM && MM.account && MM.account.snapshot) ? MM.account.snapshot() : { state: "local" };
       const activeCycle = !!((MM.store && MM.store.get("c2_start", "")) && MM.store.get("c2_goal", ""));
-      const step = C.nextStep({ hasScore: true, signedIn: snap.state === "signed_in", activeCycle: activeCycle, redFlags: r.flags.length > 0 });
+      const step = C.nextPath({
+        hasScore: true, signedIn: snap.state === "signed_in", activeCycle: activeCycle,
+        redFlags: r.flags.length > 0,
+        healthFirst: V.goalRecommendation && V.goalRecommendation.mode === "health_first",
+        bigDataGaps: (V.dataGaps || []).filter(g => g.severity >= 3).length >= 2
+      });
       html += '<div class="card" style="margin-bottom:22px;text-align:center;border-color:var(--accent-line)">' +
         '<span class="card-num" style="justify-content:center;color:var(--accent-2)">DEIN NÄCHSTER SCHRITT</span>' +
         (step.href

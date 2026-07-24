@@ -240,7 +240,13 @@
   function goalRecommend() {
     var r = scoreResult();
     if (r && r.answers && window.MM_CHECK && MM_CHECK.goalDecision) {
-      try { var dec = MM_CHECK.goalDecision(r.answers); if (dec && MODES[dec.mode]) return { mode: dec.mode, reason: dec.reason || "", src: "score" }; } catch (e) {}
+      /* Score V2: HEALTH FIRST ist eine Prioritäts-Aussage, keine Trainings-
+         richtung — fürs Programm zählt dann die parallele Körperrichtung. */
+      try {
+        var dec = MM_CHECK.goalDecision(r.answers);
+        var m = (dec && MODES[dec.mode]) ? dec.mode : (dec && MODES[dec.trainingMode] ? dec.trainingMode : "");
+        if (m) return { mode: m, reason: (dec && dec.reason) || "", src: "score" };
+      } catch (e) {}
     }
     // Fallback für alte/unvollständige Ergebnisse
     if (r && r.plan && MODES[r.plan]) return { mode: r.plan, reason: "", src: "legacy" };

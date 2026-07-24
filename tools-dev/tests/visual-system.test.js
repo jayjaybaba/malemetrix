@@ -170,7 +170,11 @@ ok(/bottleneckChapter:\s*\{/.test(checkData), "check-data.js: bottleneckChapter-
   var block = checkData.split("bottleneckChapter:")[1].slice(0, 700);
   ok(new RegExp(pair[0] + ":\\s*\\{[^}]*ebooks/" + pair[1] + "\\.html").test(block), "Engpass '" + pair[0] + "' → ebooks/" + pair[1] + ".html");
 });
-ok(/C\.bottleneckChapter\[bKey\]/.test(checkJs), "check.js nutzt C.bottleneckChapter[bKey] im Diagnose-Block");
+/* Score V2: die Kapitel-Vertiefung läuft über die kontextuelle Deep-Link-Engine
+   (Engpass-Domain × Status × Datenlücken) statt über eine feste 1:1-Map.
+   Der Vertrag bleibt: passendes Kapitel statt generischer Produktseite. */
+ok(/V\.deepLinks/.test(checkJs), "check.js nutzt die kontextuelle Deep-Link-Engine im Diagnose-Block");
+ok(/data-track="protokoll_chapter_/.test(checkJs), "… und trackt das konkrete Kapitel weiterhin");
 ok(/data-track="protokoll_chapter_/.test(checkJs), "Diagnose-Link trackt kapitelspezifisch (protokoll_chapter_<engpass>)");
 ok(!/href="protokoll\.html" data-track="protokoll_from_result"/.test(checkJs), "generischer protokoll.html-Link im Diagnose-Block ersetzt");
 ok(/data-track="cta_protokoll"/.test(checkJs), "Produkt-CTA (49 €) auf der Ergebnisseite bleibt erhalten");
