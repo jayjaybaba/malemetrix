@@ -1,7 +1,13 @@
 # CONTINUATION_STATE — Phase 16: DAS PROTOKOLL 2.0 (Flagship Rebuild)
 
-## PHASE 16 STAND (A-C erledigt, D-J offen)
+## PHASE 16 STAND (A-D1 erledigt, D2-J offen)
 ERLEDIGT:
+- D1 KAPITEL-RAHMUNG: alle 14 freien Ebooks tragen jetzt Protokoll-Systemkopf
+  (os14-sysline „MM / PROTOCOL · KAPITEL NN") + Ende-CTA-Plane („Teil von DAS
+  PROTOKOLL", Rollen getrennt, 49 € · einmalig). Styles .bp-protohead/.bp-protocta
+  in blueprint.css. PROTOCOL_MIGRATION_MAP.md geschrieben. Test-Gruppe P16/D1 in
+  visual-system.test.js (51/0). Browser-QA 390/1440 = 0px Overflow, keine Fehler.
+  SW mm-v119. masterguide = ÜBERBLICK (kein Nummern-Kapitel, Redundanz zu 01).
 - A INVENTORY: PROTOCOL_CONTENT_INVENTORY.md — Kernbefund: Premium-Werke
   (protokoll 230KB, master-ebook 442KB, ultimate-stack 208KB) liegen NUR
   verschlüsselt vor (Keys nicht in dieser Umgebung!). 13 freie Ebooks

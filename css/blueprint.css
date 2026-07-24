@@ -210,3 +210,23 @@
   .bp-chain .arrow { transform: rotate(90deg); width: 100%; justify-content: center; }
 }
 @media print { .bp-cover { min-height: auto; } .bp-progress, .bp-cta { display: none; } .bp p, .bp li { color: #111; } }
+
+/* ---------- PROTOKOLL-RAHMUNG: freie Ebooks sind Kapitel des Systems (P16-D1) ---------- */
+.bp-protohead { margin: 30px 0 6px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.bp-protohead .os14-sysline { margin-bottom: 10px; }
+.bp-protohead-t { font-family: var(--font-mono, monospace); font-size: .72rem; line-height: 1.5; letter-spacing: .04em; color: #93a3b2; margin: 0; text-transform: none; }
+.bp-protohead-t strong { color: #eaf3fb; font-weight: 600; letter-spacing: .01em; }
+.bp-protohead-t a { color: var(--bp-cyan); text-decoration: none; border-bottom: 1px solid rgba(0,194,255,.32); }
+.bp-protohead-t a:hover { border-bottom-color: var(--bp-cyan); }
+
+.bp-protocta { margin: 44px 0 10px; padding: 26px 24px; border: 1px solid rgba(0,194,255,.28); border-radius: 18px; background: linear-gradient(160deg, rgba(0,194,255,.07), rgba(7,9,13,.4) 72%); }
+.bp-protocta .os14-sysline { margin-bottom: 14px; }
+.bp-protocta-h { font-size: 1.35rem; line-height: 1.22; color: #fff; margin: 0 0 10px; letter-spacing: -.01em; font-weight: 700; }
+.bp-protocta-p { color: #a9bccb; margin: 0 0 18px; font-size: .98rem; line-height: 1.55; }
+.bp-protocta-p strong { color: #eaf3fb; font-weight: 600; }
+.bp-protocta-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+@media (max-width: 560px) {
+  .bp-protocta { padding: 22px 18px; }
+  .bp-protocta-h { font-size: 1.2rem; }
+  .bp-protocta-actions .btn { flex: 1 1 auto; text-align: center; }
+}

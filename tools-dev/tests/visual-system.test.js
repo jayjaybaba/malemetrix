@@ -72,6 +72,26 @@ ok(/PRIMARY BOTTLENECK/.test(course) && /DAY 01/.test(course), "zeigt Mode/Bottl
 ok(/program_initialized/.test(course) && /day1_started/.test(course), "Funnel-Events program_initialized + day1_started (keine Gesundheitsdaten)");
 ok(/mm-access/.test(course) && /mm-metric/.test(course), "nutzt VS2-Systemklassen, kein eigenes Design");
 
+group("P16/D1 · Freie Ebooks als Protokoll-Kapitel gerahmt");
+var bpcss = read("css/blueprint.css");
+ok(/\.bp-protohead/.test(bpcss) && /\.bp-protocta/.test(bpcss), "Rahmungs-Styles (Kopf + Ende-CTA) existieren in blueprint.css");
+var CHAPTERS = {
+  "blueprint.html": "KAPITEL 01", "fettabbau.html": "KAPITEL 02", "protein-system.html": "KAPITEL 02",
+  "taeglich-trainieren.html": "KAPITEL 03", "training-system.html": "KAPITEL 03",
+  "schlaf-energie.html": "KAPITEL 04", "schlaf-stack.html": "KAPITEL 04", "blutwerte-guide.html": "KAPITEL 05",
+  "testosteron.html": "KAPITEL 06", "glp1-agonisten.html": "KAPITEL 07", "supplements.html": "KAPITEL 09",
+  "sexuelle-gesundheit.html": "KAPITEL 10", "gewohnheiten.html": "KAPITEL 13", "masterguide.html": "ÜBERBLICK"
+};
+Object.keys(CHAPTERS).forEach(function (fn) {
+  var h = read("ebooks/" + fn);
+  var head = /<main class="bp">\s*<div class="bp-protohead">/.test(h);
+  var label = h.indexOf("MM / PROTOCOL · " + CHAPTERS[fn]) >= 0;
+  var cta = h.indexOf('class="bp-protocta"') >= 0 && h.indexOf("protokoll.html") >= 0;
+  var oneEach = (h.match(/class="bp-protohead"/g) || []).length === 1 && (h.match(/class="bp-protocta"/g) || []).length === 1;
+  ok(head && label && cta && oneEach, fn + ": Systemkopf (" + CHAPTERS[fn] + ") + Ende-CTA genau einmal, Link auf protokoll.html");
+});
+ok(!/DAS 12-WOCHEN-PROGRAMM.{0,40}erklärt/i.test(read("ebooks/testosteron.html")), "Rollen bleiben getrennt (Programm 'erklärt' nicht) — Positionierung intakt");
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 process.exit(failed ? 1 : 0);
