@@ -131,3 +131,25 @@ Markup gesichert.
 - **Deploy-Status:** ✅ DEPLOYED (master+main FF → www.malemetrix.com live 200)
 - **Bekannte Issues:** Cyan bewusst zurückhaltend; laut aktualisierter Vorgabe darf Cyan bei menschlichen Szenen künftig etwas selbstbewusster sein (gilt ab MM-03+).
 - **Style-Consistency-Gate:** ✅ JA — gleiche visuelle DNA wie ApoB #01.
+
+### mm-02-muscle-glucose-sink  — Kapitel 02 · Funktion MECHANISM
+- **Modell KV / Video:** `nano-banana-pro` (16:9, 2K) / `seedance-2` (i2v)
+- **KV-Generierungen:** 1 (0 Korrekturen) · **Video-Generierungen:** 1 · **Retries:** 0
+- **Source / End-Dauer:** 6,04 s / 6,04 s — **one-way, kein Loop** (Rückwärts würde die Glukose-Flussrichtung umkehren und wäre irreführend)
+- **1280×720 · 24 fps · H.264 High / yuv420p · 2,25 MB · Poster 82 KB** (Frame 0)
+- **Placement:** `s9` direkt vor dem Insight „Muskel als Glukose-Senke"
+- **Mobile:** ✅ 0 px Overflow, 16:9 · **Playback:** Live-Asset (HTTP 200 + ffmpeg-Decode); Browser-Pixel in Sandbox nicht verifizierbar · **Deploy:** DEPLOYED (Runde 2)
+- **Wissenschaft:** Caption stellt klar: dämpft die Spitze, ersetzt NICHT Insulin/Medikament, Muskel leert das Blut nicht vollständig (GLUT4/Kontraktion).
+- **Style-Consistency-Gate:** ✅ JA — ApoB-Register (konzeptionelle Anatomie + Cyan-Partikel).
+
+### mm-02-daily-walk  — Kapitel 02 · Funktion APPLICATION
+- **Modell KV / Video:** `nano-banana-pro` (16:9, 2K) / `seedance-2` (i2v)
+- **KV-Generierungen:** 1 (0 Korrekturen) · **Video-Generierungen:** 2 (1. Versuch technisch fehlgeschlagen — korrupter Start-Frame-Token → Moderation-INTERNAL; via `init_upload` sauber neu eingespielt) · **kreative Retries:** 0
+- **Source / End-Dauer:** 6,04 s / 6,04 s — **one-way push-in, kein Loop** (Rückwärts = Moonwalk)
+- **1280×720 · 24 fps · H.264 High / yuv420p · 0,69 MB · Poster 36 KB** (Frame 0)
+- **Placement:** `s10` nach „der lockere Spaziergang draußen"
+- **Cyan:** bewusst etwas selbstbewusster (menschliche Szene, laut aktualisierter Vorgabe) — kräftiger Rim-Akzent, kein Neon.
+- **Mobile:** ✅ · **Playback:** Live-Asset (HTTP 200 + ffmpeg-Decode); Browser-Pixel in Sandbox nicht verifizierbar · **Deploy:** DEPLOYED (Runde 2)
+- **Style-Consistency-Gate:** ✅ JA.
+
+**Kapitel 02 = KOMPLETT (3/3):** HERO (mm-02-daily-movement-system) · MECHANISM (mm-02-muscle-glucose-sink) · APPLICATION (mm-02-daily-walk).
