@@ -197,3 +197,81 @@ Bindend ab jetzt: Motion-Dichte = **editorischer Wert** (Bible §0 „Why does t
 **Empfohlene Produktions-Reihenfolge (NACH iPhone-Review):** 04 → 05 → 06 → 09 → 10 → 07 → 08 → Abschluss. Pro Kapitel ESSENTIAL zuerst, dann STRONG; **ein Asset nach dem anderen** (Keyvisual → Video → QA → Serien-Vergleich → nächstes). Ch01 nicht in dieser Gate-Runde (Scope 04+).
 
 **STATUS: GENERIERUNG PAUSIERT** bis Owner-iPhone-Review der bestehenden 6 (= Baseline). Danach chapter-by-chapter skalieren.
+
+---
+## 10 · ULTIMATE STACK FLAGSHIP PASS (Kapitel 07 · DER ULTIMATIVE STACK)
+
+> **Inhalts-Diskretion:** Kapitel 07 ist Vault-Premium. Dieser Report dokumentiert
+> die **Motion-Arbeit** (operativ), **ohne** die bezahlte Prosa, die Substanzen oder
+> Dosen zu reproduzieren — konsistent mit dem bestehenden „Vault-Lock" (§9). Aufgeführt
+> sind nur die von mir erstellten kurzen Motion-Captions/Titel und technische Fakten.
+
+**Auftrag:** Kapitel 07 bekommt die BESTEN Motion-Assets des gesamten Protokolls —
+nicht die meisten, die besten. Höchste Durchschnittsqualität, Flaggschiff-Look.
+
+**Quelle:** Der **echte, finale, bezahlte** Ultimate-Stack-Inhalt wurde vollständig
+gelesen — über den **bestehenden autorisierten lokalen Vault-Workflow** lokal
+entschlüsselt (Delivery-Vault → Kundencode → `stackVault`). Zugangscode wurde **nie**
+geloggt/committet; Klartext nur temporär lokal (außerhalb des Repos), danach **sicher
+gelöscht**; `stackVault`-Payload mit **identischem Kundencode** re-verschlüsselt →
+**Käufer-Zugang unverändert** (Round-Trip verifiziert).
+
+**Motion-Map:** Für jede Sektion „Why does this need to move?" gefragt. Gewählt wurden
+ausschließlich **abstrakte/konzeptuelle** Assets (keine Anatomie, keine Substanzen,
+keine Pillen/Spritzen, **kein DIY**, keine falsche Biologie, kein Modell-Text) — höchste
+temporale Stabilität + Flaggschiff-HMI-Look. Verworfen wurde alles Dekorative bzw.
+Unsichere: substanz-literale Molekül-/Rezeptor-Animationen, alles No-DIY-relevante,
+zu Kap.09 redundante Mechanik, reine Daten-/Tabellen-Inhalte (= STATIC) und jede
+Darstellung, die eine **falsche/irreführende Biologie** suggeriert.
+
+**Modelle (real geprüft via `runway whoami`):** Keyvisual **nano-banana-pro** (16:9, 2K)
+→ Video **seedance-2** (image-to-video, 720p, 5 s). Begründung: bewiesene Serien-Konsistenz
+mit MM-02/03 (Stil-Konsistenz = harte Vorgabe), abstrakte Assets → temporale Stabilität
+entscheidend, credit-effizient; **nicht** das neueste Modell per Default. Tech-Ziel aller
+Clips: 1280×720 · H.264 High · yuv420p · 24 fps · **stumm (0 Audiospuren)** · Poster aus Frame 0.
+
+| # | ID | Caption/Titel (meine Ergänzung) | Funktion · Label | Placement (Sektion) | KV-Gen | Video-Gen | Retries | Dauer | Datei | Commit | LIVE |
+|---|----|--------------------------------|------------------|--------------------|--------|-----------|---------|-------|-------|--------|------|
+| 1 | mm-07-stack-system | „Keine Liste. Ein System." | HERO/Signature · MM/SYSTEM | Kap.02 „auf einen Blick", vor dem Ebenen-Raster | 1 (0 Korr.) | 1 | 0 | 10,08 s Loop | MP4 1,27 MB · Poster 41 KB | 78a0994 | ✅ VERIFIED |
+| 2 | mm-07-synergy-gears | „Verschiedene Achsen, die ineinandergreifen." | System/Synergy · MM/SYSTEM | Kap.08 Synergie-Sektion, nach dem Kerngedanken | 1 (0 Korr.) | 1 | 0 | 5,04 s one-way | MP4 1,40 MB · Poster 65 KB | fcaae29 | ✅ VERIFIED |
+| 3 | mm-07-health-shield | „Leistung und Schutz sind zwei Systeme." | Protection/Risk · MM/SYSTEM | Kap.07 Schutz-Layer-Sektion, nach dem Kerngedanken | 2 (1 Korr.) | 1 | 0 | 5,04 s one-way | MP4 0,59 MB · Poster 31 KB | eecf2e4 | ✅ VERIFIED |
+| 4 | mm-07-two-axes | „Zwei Systeme, ein Ergebnis." | Bio-Mechanism · MM/SYSTEM | Kap.06 Recovery-Sektion (vorbereitet) | 2 (1 Korr., **KV akzeptiert**) | 0 | 3 blockiert | — | — | — | ⛔ CREDIT-BLOCKER |
+| 5 | mm-07-bottleneck (optional) | „Erst der Flaschenhals. Dann der Stack." | Decision · MM/SYSTEM | Kap.-Intro (Entscheidungslogik) | 0 | 0 | — | — | — | — | nicht gebaut |
+
+**Per-Asset-Verifikation (1–3):** je **MP4 HTTP 200 `video/mp4`** + **Poster HTTP 200 `image/jpeg`**,
+**sha256 live==lokal ✅**, chapter-page **HTTP 200** (byte-/hash-identisch zu lokal), **kein 404**;
+korrektes `muted/loop|—/playsinline/preload=none`-Markup; **reduced-motion = Poster statt Autoplay**;
+**Mobile-QA 390/430/768/1440 = 0 px Overflow**, Poster+Caption lesbar, keine JS-Fehler.
+Playback-Ebene: valides H.264 + korrektes Markup (Sandbox-Chromium ohne H.264-Decoder → „POSTER
+VERIFIED"-Präzedenz wie bei allen Bestands-Assets).
+
+**Wiedergabe-Integration (technisch):** `initMechVideos()` in der Seiten-Shell (nicht im Vault-Inhalt),
+da `innerHTML` keine Skript-Tags ausführt; Viewport-Autoplay via IntersectionObserver, respektiert
+`prefers-reduced-motion`. Bestehende `figure.bp-mech`-Komponente + `blueprint.css` wiederverwendet
+(kein neues Komponentensystem, kein Redesign).
+
+### TOTALS
+- **Motion-Kandidaten (Ch07) gesichtet:** ~10 · **als dekorativ/unsicher VERWORFEN:** ~5.
+- **SELECTED:** 5 (Rollen-Mix Hero · System/Synergy · Protection/Risk · Bio-Mechanism · Decision).
+- **GENERATED & akzeptiert (Video):** 3 · **LIVE VERIFIED:** **3 / 3 gebaute**.
+- **Runway-Generierungen erfolgreich:** 6 Keyvisuals + 3 Videos = **9** · **kreative Retries:** 0 · **Keyvisual-Korrekturen:** 2.
+- **CREDIT-BLOCKER:** ✅ JA — „Runway workspace limit reached" ab Asset-4-Video (3 blockierte
+  Submissions über 2 Modelle; Credits erschöpft). Das ist der im Brief benannte **gültige externe
+  Blocker**. Kein Silent-Fallback auf Fremd-Provider/Konten.
+- **CONTENT PROSE CHANGES:** **0** (difflib bei jedem Schritt: 0 Zeichen entfernt, nur Figure-Markup
+  ergänzt; Round-Trip-Decrypt == Arbeits-Klartext; alle Frozen-Anker intakt).
+- **COMMERCE CHANGES:** **0** · **VAULT SECURITY CHANGES:** **0** (nur `stackVault`-Payload mit
+  identischem Kundencode re-verschlüsselt; Vault-Architektur/`checkout.js`/`vault.*`/Auth/Supabase
+  unangetastet; Zugangs-Gate intakt). **Regression-Guard:** vs. Baseline nur 7 Dateien geändert.
+- **Style-Consistency-Gate:** ✅ JA — alle 3 Assets teilen dieselbe Marken-DNA (MM/SYSTEM-Label,
+  tiefes Schwarz/Charcoal/Off-White, **semantisch sparsames Cyan**, präzise HMI/Architektur),
+  konsistent mit ApoB/MM-02/03, bewusst premium-er/„flagship".
+
+### EHRLICHE ANTWORT — „Beste Motion-Erfahrung im Protokoll?"
+**Nach Durchschnittsqualität: JA.** Die 3 gebauten Assets sind präzise Flaggschiff-HMI
+(der Hero „Keine Liste. Ein System." ist plausibel das stärkste Einzel-Asset des Protokolls),
+mit höchster Cyan-Disziplin und Stil-Konsistenz, klar über dem Menschen-Szenen-Register von
+MM-02/03. **Nach Anzahl** liegt das Set (1 Hero + 2 Mechanismen) am unteren Rand des
+„~4–6"-Korridors — offen bleiben #4 (Keyvisual liegt bereit) und optional #5, **ausschließlich**
+wegen des Runway-Credit-Blockers, nicht wegen Qualität oder fehlender Content-Deckung. Bei
+Credit-Top-up in ≤ 1 Session komplettierbar (finalize → integrate → deploy → verify).
