@@ -92,14 +92,16 @@ Object.keys(CHAPTERS).forEach(function (fn) {
 });
 ok(!/DAS 12-WOCHEN-PROGRAMM.{0,40}erklärt/i.test(read("ebooks/testosteron.html")), "Rollen bleiben getrennt (Programm 'erklärt' nicht) — Positionierung intakt");
 
-group("P16/D2 · Modul-Hub: Produktseite-Previews + Bottleneck-Empfehlung");
+group("P16/CORR-B · EINE kanonische Kapitel-Architektur (14, kein 10-vs-14)");
 var proto = read("protokoll.html");
-ok(/id="frei-lesen"/.test(proto) && /Frei lesbar/.test(proto), "protokoll.html hat eigene 'Frei lesbar'-Preview-Sektion");
-ok(/Die 10 Module/.test(proto), "die ECHTE 10-Modul-Übersicht bleibt bestehen (kein Überversprechen)");
-ok((proto.match(/class="preview-ch"/g) || []).length >= 8, "Preview-Grid verlinkt ≥8 freie Kapitel");
-ok(/ebooks\/blueprint\.html/.test(proto) && /ebooks\/testosteron\.html/.test(proto), "Previews zeigen auf echte freie Kapitel-URLs");
-ok(/Erklärwerk/.test(proto) && /12-Wochen-Programm/.test(proto) && /führt/.test(proto), "Rollen getrennt (Erklärwerk erklärt · Programm führt)");
-ok(/\.preview-ch \{/.test(style) && /\.preview-grid \{/.test(style), "Preview-Kachel-Styles zentral in style.css");
+ok(/id="kapitel"/.test(proto) && /class="proto-index"/.test(proto), "protokoll.html hat EINEN kanonischen Kapitel-Index (#kapitel)");
+ok(!/Die 10 Module/.test(proto) && !/pillar-tag">Modul /.test(proto), "kein konkurrierendes '10 Module'-Modell mehr");
+ok((proto.match(/class="proto-chap/g) || []).length === 14, "Index listet exakt 14 kanonische Kapitel (00–13)");
+ok(/ebooks\/00-start-here\.html/.test(proto) && /ebooks\/ultimate-stack\.html/.test(proto) && /ebooks\/12-longevity-risk\.html/.test(proto), "Index verlinkt echte Kapitel-URLs inkl. Ultimate Stack (08)");
+ok(/DAS PROTOKOLL erklärt/.test(proto) && /12-Wochen-Programm/.test(proto) && /führt/.test(proto), "Rollen getrennt (Protokoll erklärt · Programm führt)");
+ok(/pc-tag paid">IM PROTOKOLL/.test(proto) && /pc-tag free">FREI LESEN/.test(proto), "ehrliche Frei/Premium-Kennzeichnung je Kapitel");
+ok(/\.proto-index \{/.test(style) && /\.proto-chap/.test(style), "Index-Styles zentral in style.css");
+ok(!/id="frei-lesen"/.test(proto), "redundantes D2-Preview-Grid entfernt (dedupliziert in den Index)");
 var eb = read("ebooks.html");
 ok(/id="ebRecommendSec"/.test(eb) && /display:none/.test(eb.split("ebRecommendSec")[1].slice(0, 80)), "ebooks.html Empfehlungssektion existiert, per Default verborgen");
 ok(/EMPFOHLEN FÜR DICH/.test(eb), "Mono-Header 'EMPFOHLEN FÜR DICH'");

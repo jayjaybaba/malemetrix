@@ -623,6 +623,25 @@ h1, h2, h3, h4 {
 .pillar h3 { font-size: 1.05rem; margin-bottom: 8px; }
 .pillar p { font-size: 0.86rem; color: var(--muted); }
 
+/* Kanonischer Kapitel-Index (P16-CORR-B) — EIN Werk, 14 Kapitel, editorial */
+.proto-index { list-style: none; margin: 8px 0 0; padding: 0; border-top: 1px solid var(--line); }
+.proto-chap { border-bottom: 1px solid var(--line); }
+.proto-chap > a { display: grid; grid-template-columns: 54px 1fr auto; gap: 16px; align-items: center; padding: 16px 6px; text-decoration: none; color: inherit; transition: background .18s; }
+.proto-chap > a:hover { background: rgba(255,255,255,.02); }
+.proto-chap .pc-n { font-family: var(--font-mono); font-size: 1.35rem; font-weight: 400; color: rgba(255,255,255,.16); letter-spacing: .02em; text-align: center; }
+.proto-chap .pc-b b { display: block; font-size: 1rem; color: var(--text); margin-bottom: 2px; letter-spacing: .01em; }
+.proto-chap .pc-b span { display: block; font-size: .86rem; color: var(--muted); line-height: 1.4; }
+.proto-chap .pc-tag { font-family: var(--font-mono); font-size: .56rem; letter-spacing: .16em; padding: 4px 9px; border-radius: 999px; border: 1px solid; white-space: nowrap; }
+.proto-chap .pc-tag.free { color: var(--muted-2); border-color: var(--line); }
+.proto-chap .pc-tag.paid { color: var(--accent-2); border-color: rgba(0,194,255,.4); }
+.proto-chap.is-hero .pc-n { color: var(--accent-2); }
+.proto-chap.is-hero .pc-b b { font-size: 1.12rem; }
+.proto-chap.is-hero > a { background: linear-gradient(100deg, rgba(0,194,255,.05), transparent 60%); }
+@media (max-width: 560px) {
+  .proto-chap > a { grid-template-columns: 40px 1fr; gap: 12px; padding: 14px 4px; }
+  .proto-chap .pc-tag { grid-column: 2; justify-self: start; margin-top: 6px; }
+}
+
 /* Frei lesbare Kapitel-Previews (P16-D2) — klickbare Kapitel-Kacheln */
 .preview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 10px; }
 @media (max-width: 900px) { .preview-grid { grid-template-columns: repeat(2, 1fr); } }
