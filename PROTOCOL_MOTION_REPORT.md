@@ -201,6 +201,17 @@ Bindend ab jetzt: Motion-Dichte = **editorischer Wert** (Bible §0 „Why does t
 ---
 ## 10 · ULTIMATE STACK FLAGSHIP PASS (Kapitel 07 · DER ULTIMATIVE STACK)
 
+> **⛔ NACHTRAG — OWNER-CREATIVE-REJECT (bindend).** Die unten dokumentierten drei
+> Assets (mm-07-stack-system, mm-07-synergy-gears, mm-07-health-shield) wurden vom
+> Owner **kreativ abgelehnt** (zu mechanisch/abstrakt — Zahnräder/Platten/Schilde
+> statt menschlicher Physiologie) und **aus dem sichtbaren Kapitel 07 entfernt**
+> (Commit 234c637; Prosa byte-für-byte unverändert, Vault-Round-Trip verifiziert,
+> Zugangs-Gate intakt). Ihr `LIVE VERIFIED`-Status unten ist damit **historisch**
+> (technische Auslieferung war korrekt), das **kreative Ergebnis ist VERWORFEN**.
+> Die MP4/JPG bleiben als ungenutzte Archiv-Assets im Repo (nicht referenziert).
+> Neue Kreativ-Richtung: **`PROTOCOL_MOTION_BIBLE.md` V2** (Cinematic Human Biology
+> als Motiv; Maschinen-Motive verboten; verpflichtende Owner-Approval vor Video).
+
 > **Inhalts-Diskretion:** Kapitel 07 ist Vault-Premium. Dieser Report dokumentiert
 > die **Motion-Arbeit** (operativ), **ohne** die bezahlte Prosa, die Substanzen oder
 > Dosen zu reproduzieren — konsistent mit dem bestehenden „Vault-Lock" (§9). Aufgeführt
