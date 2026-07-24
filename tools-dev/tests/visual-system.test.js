@@ -169,6 +169,26 @@ ok(/data-track="protokoll_chapter_/.test(checkJs), "Diagnose-Link trackt kapitel
 ok(!/href="protokoll\.html" data-track="protokoll_from_result"/.test(checkJs), "generischer protokoll.html-Link im Diagnose-Block ersetzt");
 ok(/data-track="cta_protokoll"/.test(checkJs), "Produkt-CTA (49 €) auf der Ergebnisseite bleibt erhalten");
 
+group("Flagship Motion #01 · MM/MECHANISM ApoB-Clip in Kapitel 12");
+var motion = read("ebooks/12-longevity-risk.html");
+var mSeg = motion.split('id="s4"')[1].split('id="s5"')[0];
+ok(/<figure class="bp-mech">/.test(mSeg) && /MM \/ MECHANISM/.test(mSeg), "MM/MECHANISM-Instrument sitzt im ApoB-Abschnitt (§4)");
+ok(/<video[^>]*class="bp-mech-video"/.test(mSeg), "Video-Element vorhanden");
+ok(/preload="none"/.test(mSeg), "Performance: preload=none (Videodaten erst beim Abspielen)");
+ok(/\bmuted\b/.test(mSeg) && /\bloop\b/.test(mSeg) && /\bplaysinline\b/.test(mSeg), "muted + loop + playsinline (stiller, ruhiger Loop)");
+ok(!/\bautoplay\b/.test(mSeg), "kein hartes autoplay-Attribut (Auto-Play nur per JS im Viewport)");
+ok(/poster="\.\.\/assets\/protocol\/motion\/apob-arterial-retention\.jpg"/.test(mSeg), "Posterframe gesetzt (funktioniert ohne Playback)");
+ok(/assets\/protocol\/motion\/apob-arterial-retention\.mp4/.test(mSeg), "MP4-Quelle korrekt verlinkt");
+ok(/aria-label=/.test(mSeg), "Video hat aria-label (Accessibility)");
+ok(/prefers-reduced-motion/.test(motion) && /IntersectionObserver/.test(motion), "JS respektiert reduced-motion + lädt/spielt nur im Viewport");
+ok(/Visualisierung/.test(mSeg), "Caption kennzeichnet den Clip ehrlich als Visualisierung");
+ok(/\bAnzahl\b/.test(mSeg), "Kernaussage bleibt korrekt: es zählt die ANZAHL der ApoB-Partikel");
+ok(!/bohr|Löcher|löchert|durchbohr/i.test(mSeg), "keine unwissenschaftliche 'Partikel bohren Löcher'-Darstellung");
+ok(!/[0-9]+\s*(mg\/dl|nmol\/l)/i.test(mSeg), "kein erfundener Lipid-Grenzwert im Motion-Abschnitt");
+ok(/\.bp-mech \{/.test(bpcss2) && /\.bp-mech-stage video/.test(bpcss2), "MM/MECHANISM-Styles in blueprint.css");
+ok(fs.existsSync(path.join(ROOT, "assets/protocol/motion/apob-arterial-retention.mp4")), "Video-Asset existiert im Repo");
+ok(fs.existsSync(path.join(ROOT, "assets/protocol/motion/apob-arterial-retention.jpg")), "Poster-Asset existiert im Repo");
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 process.exit(failed ? 1 : 0);
