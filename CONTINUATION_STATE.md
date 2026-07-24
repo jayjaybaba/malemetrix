@@ -1,5 +1,17 @@
 # CONTINUATION_STATE — Phase 14 (Visible Redesign) · davor Phase 13
 
+## BRAND: SPLIT-X FINAL (Commit d361446 — NICHT regressieren)
+- Identität: MALEMETRI + Custom-Split-X-SVG (links Off-White #eef2f7,
+  rechts Cyan #00c2ff, runde Kappen, Negativraum). Assets: assets/brand/
+  (mark + mono + app-icon + maskable). Header/Footer-Markup uniform in
+  allen Seiten; Legacy .logo-mark/.x entfernt. Favicon = Split-X-Data-URI.
+  Icons 512/192/180 + 512-maskable aus SVG generiert (scratchpad/
+  genicons.js). manifest: any/maskable getrennt. JSON-LD logo = icon-512.
+- OFFEN: og-image.png trägt alte Marke → neues 1200×630-Social-Asset
+  rendern (playwright, Wordmark + PERFORMANCE OS + Split-X auf Deep
+  Black); Footer-Subline PERFORMANCE OS optional; tiktok-app-icon-1024
+  ungenutzt prüfen.
+
 ## PHASE 15 FOUNDER-QA (echter Browser-Pass — NEU)
 - Tooling: scratchpad/qa.js (playwright-core + /opt/pw-browsers/chromium-
   1194/chrome-linux/chrome, python3 -m http.server 8899, localStorage-Seed).
