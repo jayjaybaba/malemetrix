@@ -189,6 +189,17 @@
         '<p class="muted" style="margin:0 0 6px">' + esc(MODE[d.mode] || d.mode || "") + ' · Phase ' + p.phase + ' · ' + esc(PHASE[p.phase]) + (heroLine ? ' — <strong style="color:var(--text)">' + esc(heroLine) + '</strong>' : '') + '</p>' +
         (rx ? '<p class="os-daytype os-dt-' + esc(rx.dayType) + '"><span class="dt">' + esc(rx.title) + '</span><span class="dp">' + esc(rx.purpose) + '</span></p>' : '') + '</div>';
 
+      // P11-COCKPIT: EINE ehrliche Statuszeile — nur Werte, die wirklich
+      // existieren (getDashboardState = Single Source of Truth). Kein Widget
+      // fürs Design: fehlt der Score, fehlt die Kachel.
+      var strip = [];
+      if (d.hasScore && d.score != null) strip.push('<a class="os-stat" href="#map"><span class="k">SCORE</span><b>' + esc(String(d.score)) + '<i>/100</i></b></a>');
+      if (d.mode) strip.push('<span class="os-stat"><span class="k">MODE</span><b>' + esc((MODE[d.mode] || d.mode).toUpperCase()) + '</b></span>');
+      if (d.bottleneckName || d.bottleneck) strip.push('<span class="os-stat"><span class="k">ENGPASS</span><b>' + esc((d.bottleneckName || BN[d.bottleneck] || d.bottleneck).toUpperCase()) + '</b></span>');
+      strip.push('<span class="os-stat"><span class="k">PROGRAMM</span><b>TAG ' + p.day + '<i>/84</i></b></span>');
+      if (p.nextReviewDays != null) strip.push('<a class="os-stat" href="#review"><span class="k">CHECK-IN</span><b>' + (p.nextReviewDays === 0 ? "HEUTE" : "IN " + p.nextReviewDays + (p.nextReviewDays === 1 ? " TAG" : " TAGEN")) + '</b></a>');
+      html += '<div class="os-statstrip">' + strip.join("") + '</div>';
+
       // KONTEXT-BADGE (aktives Overlay, jederzeit beendbar)
       html += contextBadge(day);
 

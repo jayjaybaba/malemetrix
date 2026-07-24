@@ -764,3 +764,13 @@
 .os-wouldchange { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
 .os-wouldchange .wk { display: block; font-family: var(--font-mono, monospace); font-size: 0.6rem; letter-spacing: 0.12em; color: var(--muted-2); margin-bottom: 2px; }
 .os-wouldchange span:last-child { font-size: 0.8rem; color: var(--muted); }
+
+/* ---- P11 Cockpit-Statuszeile (Today): Score · Mode · Engpass · Tag · Check-in.
+   Performance-Lab-Look: monospaced Micro-Labels, harte Kanten, kein Schmuck.
+   Kacheln erscheinen NUR, wenn der Wert real existiert (kein Fake-KPI). ---- */
+.os-statstrip { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; margin: 0 0 14px; }
+.os-stat { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: rgba(127,127,127,0.05); text-decoration: none; color: var(--text); min-width: 0; }
+.os-stat .k { font-family: var(--font-mono, monospace); font-size: 0.58rem; letter-spacing: 0.14em; color: var(--muted-2); }
+.os-stat b { font-size: 1rem; font-weight: 700; letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.os-stat b i { font-style: normal; font-size: 0.7rem; color: var(--muted-2); }
+a.os-stat:hover { border-color: rgba(0,194,255,0.4); }
