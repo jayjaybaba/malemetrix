@@ -119,3 +119,75 @@ CSS-Regressionstest abgesichert.
 - Premium-Vertiefungen für die neuen Themen verschlüsselt einspielen (Vault-Key).
 - EN-Übersetzung der neuen Kapitel, falls internationaler Launch.
 - SEO: Indexierung der neuen Kapitel + eigene og-images entscheiden.
+
+---
+
+# CORRECTION PASS (P16-CORR) — „from framed collection to one work"
+
+Ziel: der Nutzer soll nicht mehr merken, dass die Inhalte früher getrennte
+E-Books waren. Ehrlicher Status je Punkt.
+
+## DONE
+
+- **Eine kanonische Architektur (CORR-B).** Das konkurrierende „10 Module + Bonus"-
+  Modell ist von der Produktseite entfernt; es gibt EINEN kanonischen
+  14-Kapitel-Index (#kapitel, 00–13) mit editorialer Hierarchie und ehrlicher
+  Frei/Premium-Kennzeichnung. Kein „10 vs 14" mehr.
+- **Ebook-Identität entfernt (CORR-D).** „← Ebooks" → „← DAS PROTOKOLL" (17
+  Seiten); „…-Ebook"-Cover-Kicklines → „DAS PROTOKOLL · Kapitel NN"; innere
+  Doppel-Nummerierung „KAPITEL 01/02…" → Modul.Unterkapitel (06.1, 11.3).
+- **Reader-Shell (CORR-C).** Kapitel-Fußnavigation (Vorher / KAPITELÜBERSICHT /
+  Nächstes) in allen 17 Kapiteln, kanonische Reihenfolge; Übersicht = #kapitel.
+- **Ultimate Stack + Injektionen (CORR-G).** Beide als Hero-Kapitel im Index
+  sichtbar; Ultimate Stack als „kuratierte Entscheidungsarchitektur", getrennt
+  vom Nachschlagewerk „Supplemente mit Evidenz".
+- **Library aufgelöst (CORR-H).** „Library"/„Ebooks" → „Freie Kapitel" (Nav,
+  Footer, Homepage); Homepage-Kachel führt in den Kapitel-Index, nicht in ein
+  Zweitprodukt. ebooks.html bleibt erreichbar (SEO/Legacy).
+- **Free/Paid ehrlich (CORR-B/H).** „Alle Kapitel bleiben dauerhaft kostenlos"
+  entfernt; Kauf-Wert = Premium-Kern + Ultimate Stack + 12-Wochen-Programm klar
+  benannt; freie Kapitel als offene Vorschau/Deep-Dive markiert.
+- **Medical (CORR-J).** GLP-1-Zulassungsstatus per Quelle (Juli 2026) geprüft:
+  Retatrutid/Orforglipron weder FDA noch EMA zugelassen (Phase 3) → dateierte,
+  regionsspezifische Statuszeile ergänzt. Aromatase konsistent mehrpfadig (keine
+  „Fett = E2"-Kette). Commerce/Entitlements/Vaults unangetastet.
+
+## BLOCKED — MANUAL OWNER ACTION REQUIRED
+
+- **Redaktioneller Merge des verschlüsselten Premium-Kerns (CORR-E/F, Phasen 4/5).**
+  `tools-dev/vault.mjs decrypt <payload.json> <CODE>` benötigt den Kunden-/
+  Vault-CODE als Argument. In dieser Umgebung ist **kein** Key als Env-Var
+  vorhanden; `ebooks/protokoll.html`, `master-ebook.html`, `ultimate-stack.html`
+  liegen weiter ausschließlich verschlüsselt vor (`"iv":"` bestätigt). Damit ist
+  ein Entschlüsseln / Deduplizieren / Neu-Schreiben / Neu-Verschlüsseln des
+  Premium-Kerns hier **technisch nicht möglich** — und wurde NICHT als „erledigt"
+  ausgegeben. Es wurde **kein** Key angefordert und nichts umgangen.
+  **Owner-Schritt (lokal, ohne Key im Chat/Git):** den vorgesehenen Vault-CODE
+  lokal setzen und `node tools-dev/vault.mjs decrypt <payload> <CODE>` /
+  `encrypt` ausführen, um die Premium-Inhalte redaktionell in die kanonische
+  14-Kapitel-Struktur zu überführen und wieder zu verschlüsseln.
+  Konsequenz solange BLOCKED: die interne Kapitel-Nummerierung *innerhalb* des
+  verschlüsselten Kerns kann nicht an 00–13 angeglichen werden (Sales-Seite und
+  freie Kapitel sind kanonisch; der Vault-Innenaufbau bleibt bis zum Owner-Schritt).
+
+## PARTIAL / DEFERRED (sicher, aber nicht in diesem Pass abgeschlossen)
+
+- **Continue-Reading / Fortschritt / clientseitige Suche (CORR-C, Phase 3 D–H):**
+  Fußnavigation + kanonischer Index sind da; eine persistente Leseposition,
+  Prozent-Fortschritt und eine lokale Volltextsuche sind noch offen (rein additiv,
+  kein Blocker).
+- **Redaktionelle Deduplizierung der freien Kapitel (CORR-F, Phase 5):** die
+  freien Quellen sind als EIN System gerahmt und nummeriert; eine echte inhaltliche
+  Verschmelzung (z. B. Schlaf: schlaf-energie ⟷ schlaf-stack) ist noch nicht
+  durchgeführt.
+- **i18n der neuen Fließtexte** bleibt DE-first (bestehender PARTIAL-Stand).
+
+## Ehrliche Antwort auf das Kernkriterium
+
+„Would a new customer know that these used to be separate ebooks?" — Auf der
+**Produktseite, in der Navigation und im Reader-Rahmen (Kopf, Nummerierung,
+Kapitel-Navigation): NEIN mehr** — es wirkt wie ein Werk. **Innerhalb der
+Fließtexte** der freien Kapitel gibt es noch Spuren getrennter Herkunft
+(eigenständige Intros, Themen-Redundanz zwischen Companion-Seiten). Der letzte
+Schritt zur vollständigen redaktionellen Verschmelzung hängt am Premium-Vault-
+Key (BLOCKED) bzw. an einem dedizierten Editorial-Merge-Pass (DEFERRED).
