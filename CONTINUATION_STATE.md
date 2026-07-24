@@ -1,4 +1,65 @@
-# CONTINUATION_STATE — Phase 14 (Visible Redesign) · davor Phase 13
+# CONTINUATION_STATE — Phase 16: DAS PROTOKOLL 2.0 (Flagship Rebuild)
+
+## PHASE 16 STAND (A-C erledigt, D-J offen)
+ERLEDIGT:
+- A INVENTORY: PROTOCOL_CONTENT_INVENTORY.md — Kernbefund: Premium-Werke
+  (protokoll 230KB, master-ebook 442KB, ultimate-stack 208KB) liegen NUR
+  verschlüsselt vor (Keys nicht in dieser Umgebung!). 13 freie Ebooks
+  (~590KB Klartext, bp-Design) sind die redaktionelle Arbeitsmasse.
+  ⇒ Kein Entschlüsseln/Concatenieren möglich; Flaggschiff = Modul-System.
+- B ARCHITECTURE: PROTOCOL_MASTER_ARCHITECTURE.md — 14 Module mit realen
+  Quellen, Reader Journey, Crosslink-Matrix, Editorial-Standards,
+  Zugangs-Logik (FREE-Previews bleiben frei — kein Pseudo-Paywalling).
+- C SITE: Hauptnav ist jetzt System·Score·Das Protokoll·1:1·Über·MyMM —
+  Library ins Über-Dropdown verschoben (25 Seiten; URL ebooks.html bleibt,
+  launch-readiness weiter grün). Wordmark Teil 26: weight 500,
+  letter-spacing 0.13em (mobil 0.1em).
+
+WICHTIGE PRODUKT-EHRLICHKEITSREGEL für Phase G (Produktseite):
+protokoll.html zeigt bereits die ECHTEN 10 Module des verschlüsselten
+Kaufinhalts. NICHT durch die 14-Kapitel-Architektur ersetzen (würde
+überversprechen). Stattdessen: eigene Sektion „Frei lesbare
+Kapitel-Previews" (Links auf die 13 freien Kapitel) UNTER der
+10-Modul-Übersicht.
+
+## NEXT EXACT ACTION (Phase 16 D-J, Reihenfolge)
+1. **D1 Kapitel-Rahmung:** Jede der 13 freien Ebook-Seiten bekommt einen
+   Protokoll-Systemkopf: os14-sysline "MM / PROTOCOL · KAPITEL NN — TITEL"
+   (Nummern aus MASTER_ARCHITECTURE) + Ende-CTA-Plane „Dieses Kapitel ist
+   Teil von DAS PROTOKOLL → protokoll.html". Uniform per Python-Replace.
+   PROTOCOL_MIGRATION_MAP.md (ALT→NEU je URL) mitschreiben. Tests: neue
+   Gruppe in visual-system.test.js (13 Seiten tragen Kopf+CTA).
+2. **D2 Modul-Hub:** protokoll.html Preview-Sektion (s. Regel oben) +
+   ebooks.html Kopf: "EMPFOHLEN FÜR DICH" nach Bottleneck (localStorage
+   check_result lesen) vor dem Katalog.
+3. **E NEUE KAPITEL (je ebooks/<name>.html, bp-Design, FREE):**
+   00-start-here (MEASURE→UNDERSTAND→PRIORITIZE→ACT→REASSESS, kurz),
+   11-injektionen (Gauge/Länge/Routen korrekt, KEINE Universalnadel-Regel,
+   keine Dosier-Individualisierung, Angstabbau, MM/SAFETY-Notes,
+   Body-Comp-Crosslink: weniger subkutanes Fett ⇒ Zielgewebe ggf.
+   oberflächlicher, Nadelwahl bleibt von Präparat/Route/Stelle/Anatomie
+   abhängig), 12-longevity-risk (ApoB/RR/VO2max/Screening, keine
+   erfundenen Ranges). PROTOCOL_MEDICAL_QA.md anlegen.
+4. **F BEFORE-TRT-Sektion** in ebooks/testosteron.html: Adipositas↔T
+   mehrpfadig korrekt (Aromatase ALS EIN Pfad neben Insulinresistenz/
+   Entzündung/SHBG/Schlafapnoe/HPG — nie „Fett=hohes E2"); Reihenfolge
+   Body-Comp→Sleep→Training→Labs→Reassess→Diagnose; kein Anti/Pro-TRT.
+5. **G/H** Score-Result-Link je Bottleneck aufs PASSENDE Kapitel
+   (recovery→04 schlaf-energie, body→02 fettabbau, metabolic→05/07,
+   strength→03, drive→06/10) statt generisch protokoll.html.
+6. **J QA:** qa.js-Pass (390/1440) über protokoll.html + 3 Kapitel +
+   ebooks.html; PROTOCOL_FLAGSHIP_REPORT.md ehrlich (DoD-Punkte 1-25).
+Jedes Paket: Suiten + sw.js-Bump + Commit (P16-X) + Push beider Branches
++ diese Datei aktualisieren.
+
+## DO NOT REGRESS (Phase 16)
+- protocol/twelve_week-Entitlements + Vaults UNVERÄNDERT (Teil 18).
+- Keine Library-/Ebook-URL löschen (SEO); ebooks.html bleibt erreichbar.
+- Produktseite nie mehr versprechen als der Vault-Inhalt liefert.
+- Score bleibt primärer kostenloser Funnel-Einstieg.
+
+# ÄLTERE PHASEN (14/15/Brand) — weiterhin gültig
+
 
 ## BRAND: SPLIT-X FINAL (Commit d361446 — NICHT regressieren)
 - Identität: MALEMETRI + Custom-Split-X-SVG (links Off-White #eef2f7,
