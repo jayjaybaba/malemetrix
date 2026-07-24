@@ -10,6 +10,12 @@ Nach Commit "P13-A1" (siehe git log --oneline -5). Branch:
 
 # COMPLETED (Phase 13)
 
+- **A2 SYSTEM-READY-Moment (P2.3):** js/course.js Onboarding-Abschluss
+  (c2ObGo) rendert jetzt statt Toast+Redirect einen VS2-Ready-Screen:
+  Mono-Stamp SYSTEM READY (cyan), .mm-metric-row mit MODE / PRIMARY
+  BOTTLENECK / 12 WEEKS / DAY 01 (echte Setup-Werte), EIN CTA
+  „START DAY 1" → render() des Today-Views. Funnel-Events
+  program_initialized + day1_started. Tests: visual-system 35/0.
 - **A5 Weekly-Review-UX (P5.2):** vReview (js/os/app.js) zeigt die
   Wochenentscheidung jetzt ZUERST als größtes Element (.mm-metric,
   Statusfarbe nach Entscheidung: KEEP neutral, EXECUTION/RECOVERY watch,
@@ -44,7 +50,7 @@ Nach Commit "P13-A1" (siehe git log --oneline -5). Branch:
   (.mm-metric/.mm-sys/.mm-secthead/.mm-access/.mm-empty/.mm-locked,
   --status-*-Tokens). IMMER diese Klassen nutzen, keine neuen Varianten.
 - Cache-Disziplin: jede ausgelieferte JS/CSS-Änderung ⇒ sw.js VERSION bump
-  (aktuell mm-v109) + ggf. ?v= auf checkout.html (aktuell v106).
+  (aktuell mm-v110) + ggf. ?v= auf checkout.html (aktuell v106).
 - Tests: node tools-dev/tests/<suite>.test.js — Suiten: chaos, integration,
   intelligence, phase7/8/9/95/96, launch-readiness, i18n, commerce-e2e,
   commerce-fulfillment, edge-functions, score-engine, user-state,
@@ -101,15 +107,7 @@ Nach Commit "P13-A1" (siehe git log --oneline -5). Branch:
 
 # NEXT EXACT ACTION
 
-1. **A2 SYSTEM-READY-Moment:** In js/course.js das Setup-Ende finden
-   (grep -n "start\|setup\|c2_start" js/course.js | head). Nach dem
-   Anlegen des Zyklus (c2_start gesetzt) einen Bestätigungs-Screen im
-   VS2-Stil rendern: Mono-Stamp "SYSTEM READY" (Muster .mm-access, aber
-   cyan statt grün), darunter .mm-metric-row mit MODE / PRIMARY
-   BOTTLENECK / PROGRAM 12 WEEKS / TODAY DAY 01, EIN CTA
-   "START DAY 1" → mein-protokoll.html#today. Kein neues CSS erfinden —
-   .mm-access/.mm-metric wiederverwenden oder minimal .mm-ready ergänzen.
-2. **A4 Daily Check-in 2.0:** js/os/app.js closeDayCard auditieren
+1. **A4 Daily Check-in 2.0 (EINZIGER offener Priority-A-Punkt):** js/os/app.js closeDayCard auditieren
    (grep -n "closeDayCard" js/os/app.js). Auf One-Tap umbauen:
    Training DONE/PARTIAL/MISSED, Schlaf-Buckets, Energie LOW/OK/HIGH,
    Protein ja/nein — Feedback "X/5 CORE ACTIONS", Hinweis "Ein Tag ändert

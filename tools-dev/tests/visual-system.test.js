@@ -64,6 +64,14 @@ ok(/mm-sys/.test(check) && /is-primary/.test(check), "Ergebnisseite nutzt .mm-sy
 ok(/MM \/ SYSTEMS/.test(check), "Mono-Systemheader auf der Ergebnisseite");
 ok((check.match(/is-primary/g) || []).length >= 1 && /k === bKey/.test(check), "genau der Engpass wird als PRIMARY markiert (datengetrieben)");
 
+group("P13/A2 · SYSTEM-READY-Moment nach Programm-Setup");
+var course = read("js/course.js");
+ok(/SYSTEM READY/.test(course), "SYSTEM-READY-Screen existiert nach dem Setup");
+ok(/START DAY 1/.test(course), "genau EIN CTA: START DAY 1");
+ok(/PRIMARY BOTTLENECK/.test(course) && /DAY 01/.test(course), "zeigt Mode/Bottleneck/12 Weeks/Day 01 aus ECHTEN Setup-Werten");
+ok(/program_initialized/.test(course) && /day1_started/.test(course), "Funnel-Events program_initialized + day1_started (keine Gesundheitsdaten)");
+ok(/mm-access/.test(course) && /mm-metric/.test(course), "nutzt VS2-Systemklassen, kein eigenes Design");
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 process.exit(failed ? 1 : 0);

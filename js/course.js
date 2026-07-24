@@ -792,8 +792,25 @@
         S.set("c2_nutrition", obState.nutrition); S.set("c2_days", obState.days.slice().sort(function (a, b) { return a - b; }));
         S.set("c2_start", obState.start === "monday" ? nextMonday() : todayYmd());
         if (MM.track) MM.track("course_onboarded", { goal: obState.goal, bottleneck: obState.bottleneck });
-        MM.toast(EN() ? "Your 12-week system is set up." : "Dein 12-Wochen-System ist eingerichtet.");
-        view = "today"; S.set("c2_view", "today"); render(); window.scrollTo({ top: 0, behavior: "smooth" }); return;
+        if (MM.track) MM.track("program_initialized", {});
+        // P13/A2 — SYSTEM-READY-Moment (VS2): der Start ist ein Upgrade-
+        // Moment, keine stille Weiterleitung. Nur ECHTE Setup-Werte, EIN CTA.
+        view = "today"; S.set("c2_view", "today");
+        var mLbl = (MODES[obState.goal] && (MODES[obState.goal].label || MODES[obState.goal].name)) || obState.goal.toUpperCase();
+        mount.innerHTML =
+          '<div class="mm-access" style="padding-top:56px">' +
+          '<span class="stamp" style="color:var(--status-active,#00c2ff);border-color:rgba(0,194,255,0.35)">SYSTEM READY</span>' +
+          '<div class="mm-metric-row" style="max-width:640px;margin:28px auto 0;text-align:left">' +
+          '<div class="mm-metric"><span class="v" style="font-size:1.3rem">' + String(mLbl).toUpperCase() + '</span><span class="k">MODE</span></div>' +
+          '<div class="mm-metric"><span class="v" style="font-size:1.3rem">' + String(obState.bottleneck).toUpperCase() + '</span><span class="k">PRIMARY BOTTLENECK</span></div>' +
+          '<div class="mm-metric"><span class="v" style="font-size:1.3rem">12 WEEKS</span><span class="k">PROGRAM</span></div>' +
+          '<div class="mm-metric"><span class="v" style="font-size:1.3rem">DAY 01</span><span class="k">TODAY</span></div>' +
+          '</div>' +
+          '<button class="btn btn-primary" id="c2StartDay1" style="margin-top:30px">START DAY 1 →</button>' +
+          '<p class="assigned" style="margin-top:14px">DEIN PLAN IST AUS SCORE + SETUP ABGELEITET</p></div>';
+        var sd1 = document.getElementById("c2StartDay1");
+        if (sd1) sd1.addEventListener("click", function () { if (MM.track) MM.track("day1_started", {}); render(); window.scrollTo({ top: 0, behavior: "smooth" }); });
+        window.scrollTo({ top: 0, behavior: "smooth" }); return;
       }
       var pr = t2.closest("[data-pulse-run]"); if (pr) { runPulse(Number(pr.getAttribute("data-pulse-run"))); return; }
       var prd = t2.closest("[data-pulse-redo]"); if (prd) { var pp = pulses(); delete pp[prd.getAttribute("data-pulse-redo")]; S.set("c2_pulse", pp); render(); return; }
