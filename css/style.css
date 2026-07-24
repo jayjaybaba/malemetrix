@@ -2499,3 +2499,82 @@ body > * { position: relative; z-index: 0; }
 
 /* Hinweis: Ambient ist überall statisch — keine Parallax-Sonderfälle mehr
    nötig (reduced-motion und Mobile verhalten sich identisch zum Desktop). */
+
+/* ==========================================================================
+   VISUAL SYSTEM 2.0 — MALEMETRIX PERFORMANCE OS
+   40% Automotive HMI · 25% Medical Lab · 20% Editorial Science · 15% Cinematic
+   Zentrale Tokens + Instrument-Komponenten. KEINE Seite erfindet eigene
+   Varianten — diese Klassen sind das System.
+   ========================================================================== */
+:root {
+  /* COLOR HAS MEANING — semantische Status-Ebene (nie dekorativ mischen) */
+  --status-active: var(--accent-2);      /* Cyan: Brand / aktiv / primär */
+  --status-improving: var(--green);      /* Grün: Verbesserung / Erfolg */
+  --status-attention: var(--amber);      /* Amber: Aufmerksamkeit */
+  --status-flag: var(--red);             /* Rot: hohe Priorität / Medical Flag */
+  --status-neutral: var(--muted-2);      /* Grau: neutral */
+  /* Flächen statt Card-in-Card: eine ruhige Ebene + Hairlines */
+  --surface: rgba(255,255,255,0.025);
+  --hairline: rgba(255,255,255,0.07);
+  --space-1: 6px; --space-2: 10px; --space-3: 16px; --space-4: 24px; --space-5: 40px;
+}
+
+/* ---- SECTION HEADER — editoriale Mono-Mikrotypografie (MM / SCORE) ---- */
+.mm-secthead { display: flex; align-items: baseline; gap: 10px; margin: var(--space-5) 0 var(--space-3); }
+.mm-secthead .sys { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.18em; color: var(--status-active); }
+.mm-secthead h2, .mm-secthead .t { font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; letter-spacing: 0.02em; color: var(--text); }
+.mm-secthead::after { content: ""; flex: 1; height: 1px; background: var(--hairline); align-self: center; }
+
+/* ---- STRUKTUR STATT KARTEN ---- */
+.mm-hr { border: 0; height: 1px; background: var(--hairline); margin: var(--space-4) 0; }
+.mm-plane { padding: var(--space-4) 0; border-top: 1px solid var(--hairline); }
+
+/* ---- DATA AS DESIGN — große Werte sind das Layout, keine Mini-Boxen ---- */
+.mm-metric { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mm-metric .v { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.6rem, 6vw, 2.4rem); line-height: 1.05; letter-spacing: -0.01em; color: var(--text); font-variant-numeric: tabular-nums; }
+.mm-metric .v small, .mm-metric .v i { font-style: normal; font-size: 0.45em; font-weight: 600; color: var(--muted-2); letter-spacing: 0.04em; }
+.mm-metric .k { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.16em; color: var(--muted-2); text-transform: uppercase; }
+.mm-metric.is-up .v { color: var(--status-improving); }
+.mm-metric.is-watch .v { color: var(--status-attention); }
+.mm-metric.is-flag .v { color: var(--status-flag); }
+.mm-metric-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-4) var(--space-3); padding: var(--space-3) 0; }
+.mm-metric-row > .mm-metric { border-left: 1px solid var(--hairline); padding-left: 14px; }
+.mm-metric-row > .mm-metric:first-child { border-left: 0; padding-left: 0; }
+
+/* ---- DIAGNOSTIC SYSTEM LANGUAGE — BODY/ENGINE/RECOVERY/METABOLIC/STRENGTH.
+   Primary Bottleneck wird EIN Mal klar markiert — keine Gamification. ---- */
+.mm-sys { display: flex; flex-direction: column; }
+.mm-sys .row { display: grid; grid-template-columns: 84px 1fr auto; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid var(--hairline); }
+.mm-sys .row:first-child { border-top: 0; }
+.mm-sys .id { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.16em; color: var(--muted-2); }
+.mm-sys .bar { height: 3px; background: rgba(255,255,255,0.07); border-radius: 2px; overflow: hidden; }
+.mm-sys .bar > span { display: block; height: 100%; background: var(--status-neutral); border-radius: 2px; }
+.mm-sys .val { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.mm-sys .row.is-primary .id { color: var(--status-active); }
+.mm-sys .row.is-primary .bar > span { background: var(--status-active); }
+.mm-sys .row.is-primary .val::after { content: " · PRIMARY"; font-size: 0.58rem; letter-spacing: 0.12em; color: var(--status-active); }
+.mm-sys .row.is-flag .id, .mm-sys .row.is-flag .val { color: var(--status-flag); }
+.mm-sys .row.is-flag .bar > span { background: var(--status-flag); }
+
+/* ---- EMPTY / LOCKED STATES — Premium-Ruhe statt trauriger Platzhalter ---- */
+.mm-empty { padding: var(--space-4) 0; border-top: 1px solid var(--hairline); }
+.mm-empty .k { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.16em; color: var(--muted-2); display: block; margin-bottom: 6px; }
+.mm-empty p { color: var(--muted); max-width: 46ch; }
+.mm-locked { position: relative; padding: var(--space-4) 0; border-top: 1px solid var(--hairline); }
+.mm-locked .k { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.16em; color: var(--muted-2); }
+.mm-locked .k::before { content: "LOCKED · "; color: var(--status-attention); }
+
+/* ---- PREMIUM ACCESS MOMENT — Kauf = Produkt-Upgrade, kein Formular-Ende ---- */
+.mm-access { text-align: center; padding: var(--space-5) 0; }
+.mm-access .stamp { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.26em; color: var(--status-improving); display: inline-block; padding: 8px 16px; border: 1px solid rgba(45,212,167,0.35); border-radius: 3px; animation: mm-unlock 700ms cubic-bezier(.2,.8,.2,1) both; }
+.mm-access .grant { margin-top: 18px; }
+.mm-access .grant b { display: block; font-family: var(--font-display); font-size: clamp(1.3rem, 5vw, 1.9rem); font-weight: 700; letter-spacing: 0.06em; animation: mm-rise 600ms 150ms cubic-bezier(.2,.8,.2,1) both; }
+.mm-access .grant b + b { animation-delay: 280ms; }
+.mm-access .assigned { margin-top: 16px; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.2em; color: var(--muted-2); animation: mm-rise 600ms 420ms both; }
+@keyframes mm-unlock { from { opacity: 0; transform: scale(0.94); letter-spacing: 0.5em; } to { opacity: 1; transform: scale(1); letter-spacing: 0.26em; } }
+@keyframes mm-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ---- MOTION — funktional, nie dekorativ; respektiert reduced motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  .mm-access .stamp, .mm-access .grant b, .mm-access .assigned { animation: none; }
+}

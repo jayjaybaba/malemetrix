@@ -339,10 +339,14 @@
     // Server-Grant: Zugang liegt im Konto — kein Client-Code, kein Vault.
     if (serverGrant) {
       const hasCourse = (order.productIds || []).some(id => id === "protokoll" || id === "kurs-12w");
-      var accountBlock = '<div class="card" style="text-align:left;margin-bottom:24px;border-color:var(--accent-line)">' +
-        '<span class="card-num" style="color:var(--green)">✓ ZUGANG IM KONTO FREIGESCHALTET</span>' +
-        '<p class="muted" style="margin:6px 0 14px">Deine Zahlung ist bestätigt und dein Zugang ist serverseitig deinem Konto zugeordnet — kein Code nötig, auf allen deinen Geräten verfügbar.</p>' +
-        (hasCourse ? '<a class="btn btn-primary btn-block" href="mein-protokoll.html">My MaleMetrix öffnen →</a>' : '') + '</div>';
+      // VS2 — PREMIUM ACCESS MOMENT: der Kauf ist ein Produkt-Upgrade, kein
+      // Formularabschluss. ACCESS GRANTED → freigeschaltete Systeme →
+      // ASSIGNED TO YOUR ACCOUNT, mit kurzer funktionaler Unlock-Animation.
+      var accountBlock = '<div class="mm-access">' +
+        '<span class="stamp">ACCESS GRANTED</span>' +
+        '<div class="grant">' + (hasCourse ? '<b>DAS PROTOKOLL</b><b>12-WEEK SYSTEM</b>' : '<b>DEIN ZUGANG</b>') + '</div>' +
+        '<p class="assigned">ASSIGNED TO YOUR ACCOUNT · ALLE GERÄTE</p>' +
+        (hasCourse ? '<a class="btn btn-primary" style="margin-top:22px" href="mein-protokoll.html">Jetzt starten →</a>' : '') + '</div>';
     }
     const isPaypalMe = order.payMethod === "PayPal" && CFG.paypalMe && !paypalPaid;
     const amountRaw = order.total.replace(/[^\d,]/g, "").replace(",", ".");
@@ -487,10 +491,11 @@
       '<div class="card" style="text-align:left;margin:0 auto 16px;max-width:560px;border-color:var(--accent-line)">' +
       '<span class="card-num" style="color:var(--green)">✓ ZAHLUNG ERHALTEN</span>' +
       '<p class="muted" style="margin-top:6px">Deine PayPal-Zahlung ist serverseitig verifiziert' + (data && data.amount_cents ? " (" + MM.eur(data.amount_cents / 100) + ")" : "") + (data && data.replay ? " — war bereits verarbeitet, kein doppelter Zugriff vergeben" : "") + '.</p></div>' +
-      '<div class="card" style="text-align:left;margin:0 auto 24px;max-width:560px;border-color:var(--accent-line)">' +
-      '<span class="card-num" style="color:var(--green)">✓ ZUGANG IM KONTO FREIGESCHALTET</span>' +
-      '<p class="muted" style="margin:6px 0 0">Freigeschaltet: <strong style="color:var(--text)">' + ((data && data.entitlements) || []).join(", ") + '</strong> — deinem Konto zugeordnet, auf allen Geräten verfügbar.</p></div>' +
-      '<a href="mein-protokoll.html" class="btn btn-primary">My MaleMetrix öffnen →</a>' +
+      '<div class="mm-access" style="padding-top:8px">' +
+      '<span class="stamp">ACCESS GRANTED</span>' +
+      '<div class="grant">' + (((data && data.entitlements) || []).indexOf("protocol") >= 0 ? '<b>DAS PROTOKOLL</b>' : '') + (((data && data.entitlements) || []).indexOf("twelve_week") >= 0 ? '<b>12-WEEK SYSTEM</b>' : '') + '</div>' +
+      '<p class="assigned">ASSIGNED TO YOUR ACCOUNT · ALLE GERÄTE</p></div>' +
+      '<a href="mein-protokoll.html" class="btn btn-primary">Jetzt starten →</a>' +
       '</div>';
     window.scrollTo({ top: 0, behavior: "smooth" });
   }

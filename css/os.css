@@ -765,12 +765,19 @@
 .os-wouldchange .wk { display: block; font-family: var(--font-mono, monospace); font-size: 0.6rem; letter-spacing: 0.12em; color: var(--muted-2); margin-bottom: 2px; }
 .os-wouldchange span:last-child { font-size: 0.8rem; color: var(--muted); }
 
-/* ---- P11 Cockpit-Statuszeile (Today): Score · Mode · Engpass · Tag · Check-in.
-   Performance-Lab-Look: monospaced Micro-Labels, harte Kanten, kein Schmuck.
-   Kacheln erscheinen NUR, wenn der Wert real existiert (kein Fake-KPI). ---- */
-.os-statstrip { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; margin: 0 0 14px; }
-.os-stat { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: rgba(127,127,127,0.05); text-decoration: none; color: var(--text); min-width: 0; }
-.os-stat .k { font-family: var(--font-mono, monospace); font-size: 0.58rem; letter-spacing: 0.14em; color: var(--muted-2); }
-.os-stat b { font-size: 1rem; font-weight: 700; letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.os-stat b i { font-style: normal; font-size: 0.7rem; color: var(--muted-2); }
-a.os-stat:hover { border-color: rgba(0,194,255,0.4); }
+/* ---- P11/VS2 Cockpit-Instrumente (Today): Score · Mode · Engpass · Tag ·
+   Check-in. Automotive-HMI statt Karten-Grid: große Werte als Layout,
+   Hairline-Trenner statt Boxen, Mono-Mikrolabels. Kacheln erscheinen NUR,
+   wenn der Wert real existiert (kein Fake-KPI). ---- */
+.os-statstrip { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 0; margin: 0 0 18px; padding: 14px 0; border-top: 1px solid var(--hairline, rgba(255,255,255,0.07)); border-bottom: 1px solid var(--hairline, rgba(255,255,255,0.07)); }
+.os-stat { display: flex; flex-direction: column-reverse; gap: 4px; padding: 2px 14px; border-left: 1px solid var(--hairline, rgba(255,255,255,0.07)); background: none; text-decoration: none; color: var(--text); min-width: 0; }
+.os-stat:first-child { border-left: 0; padding-left: 0; }
+.os-stat .k { font-family: var(--font-mono, monospace); font-size: 0.56rem; letter-spacing: 0.16em; color: var(--muted-2); }
+.os-stat b { font-family: var(--font-display, inherit); font-size: clamp(1.05rem, 3.6vw, 1.45rem); font-weight: 700; letter-spacing: 0; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.os-stat b i { font-style: normal; font-size: 0.62em; font-weight: 600; color: var(--muted-2); }
+a.os-stat b { transition: color 120ms; }
+a.os-stat:hover b { color: var(--status-active, #00c2ff); }
+@media (max-width: 560px) {
+  .os-statstrip { grid-template-columns: repeat(2, 1fr); row-gap: 14px; }
+  .os-stat:nth-child(odd) { border-left: 0; padding-left: 0; }
+}
