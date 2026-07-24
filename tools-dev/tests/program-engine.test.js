@@ -110,6 +110,16 @@ group("P3.2 · Jeden Tag eine Aufgabe — periodisiert, nicht jeden Tag hart");
   ok(/engine/.test(c), "CUT-Woche enthält Engine-/Cardio-Tage (Bewegung statt nur Diät)");
 })();
 
+group("P13/P5.2 · Review-UX: DECISION zuerst, dann WHY/CHANGES/NEXT");
+(function () {
+  var app = require("node:fs").readFileSync(path.join(ROOT, "js/os/app.js"), "utf8");
+  var rv = app.split("function vReview")[1].split("function vTwin")[0];
+  ok(/DECISION FIRST/.test(rv) && /WEEK .*DECISION/.test(rv.replace(/\n/g, " ")), "Wochenentscheidung ist erstes, groesstes Element (mm-metric)");
+  ok(rv.indexOf("DECISION") < rv.indexOf("Verdict"), "DECISION kommt VOR den Detail-Sektionen");
+  ok(/NICHT ÄNDERN/.test(rv) && /NÄCHSTER REVIEW/.test(rv), "WHAT CHANGES/NO CHANGE + NEXT WEEK vorhanden");
+  ok(/is-watch|is-flag/.test(rv), "Statusfarbe folgt der Entscheidung (Token, keine Deko)");
+})();
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 process.exit(failed ? 1 : 0);

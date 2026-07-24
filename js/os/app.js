@@ -1258,6 +1258,12 @@
     html += '<section class="os-sec"><span class="tag">WEEKLY INTELLIGENCE REVIEW</span>' +
       '<h1 class="os-big" style="font-size:1.6rem">Woche ' + (rev.week || "—") + '</h1>' +
       '<div class="intel-revconf">' + confDot(rev.confidence.level) + '<span>' + esc(rev.confidence.level.toUpperCase()) + ' CONFIDENCE · ' + esc(rev.confidence.factors.join(" · ")) + '</span></div></section>';
+    // P13/P5.2 — DECISION FIRST: die Wochenentscheidung ist das größte
+    // Element, bevor irgendein Detail kommt (VS2 Data-as-Design). Reihenfolge
+    // der Seite: DECISION → WHY (Verdict-Karte) → WHAT CHANGES → NEXT WEEK.
+    var decisionWord = String(rev.verdict || rev.decisionTitle || "KEEP").toUpperCase();
+    var decTone = /KEEP|WEITER/.test(decisionWord) ? "" : (/EXECUTION|RECOVERY/.test(decisionWord) ? " is-watch" : " is-flag");
+    html += '<div class="mm-plane" style="padding-top:10px"><div class="mm-metric' + decTone + '"><span class="v" style="font-size:clamp(1.5rem,7vw,2.2rem)">' + esc(decisionWord) + '</span><span class="k">WEEK ' + esc(String(rev.week || "—")) + ' · DECISION</span></div></div>';
     // Sections
     html += '<div class="intel-revsections">' + rev.sections.map(function (s) { return '<div class="intel-revsec ' + toneClass(s.tone) + '"><span>' + esc(s.label) + '</span><b>' + esc(s.value) + '</b></div>'; }).join("") + '</div>';
     // Expected vs Actual — the wow moment (§174)
