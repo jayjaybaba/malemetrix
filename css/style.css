@@ -2645,3 +2645,11 @@ body > * { position: relative; z-index: 0; }
 .os14-score-hero .limiter .k { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.2em; color: var(--status-active); }
 .os14-score-hero .limiter b { font-family: var(--font-display); font-size: clamp(1.2rem, 4vw, 1.7rem); font-weight: 700; letter-spacing: 0.04em; }
 .os14-score-hero .limiter .v { font-family: var(--font-mono); font-size: 1.1rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ---- P14 12-Week System-Rail: Programmfortschritt 01…12 als Instrument. */
+.os14-prograil { display: flex; align-items: center; gap: 18px; padding: 12px 0; border-bottom: 1px solid var(--hairline); margin-bottom: 18px; flex-wrap: wrap; }
+.os14-prograil .sys { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.2em; color: var(--status-active); }
+.os14-prograil .rail { display: flex; gap: 10px; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.06em; color: var(--muted-2); flex-wrap: wrap; }
+.os14-prograil .rail span.done { color: var(--muted); }
+.os14-prograil .rail span.cur { color: var(--status-active); font-weight: 700; position: relative; }
+.os14-prograil .rail span.cur::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; background: var(--status-active); }

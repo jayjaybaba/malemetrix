@@ -510,7 +510,13 @@
     var wins = winMet(week);
     var primary = DAY[dayTypeToday()];
 
+    // P14: 12-Wochen-Fortschritt als System-Rail (01…12, aktuelle Woche
+    // markiert) + Mono-Systemzeile — das Programm wirkt wie ein System,
+    // nicht wie eine Inhaltsseite. Nur echte Wochenposition.
+    var rail = "";
+    for (var wi = 1; wi <= 12; wi++) rail += '<span class="' + (wi === week ? "cur" : (wi < week ? "done" : "")) + '">' + (wi < 10 ? "0" + wi : wi) + '</span>';
     var html = pausedBanner() + phaseBar() +
+      '<div class="os14-prograil"><span class="sys">MM / 12-WEEK SYSTEM</span><div class="rail">' + rail + '</div></div>' +
       '<div class="c2-today">' +
       '<span class="c2-greet">' + (name ? (EN() ? "GOOD DAY, " : "GUTEN TAG, ") + esc(name.toUpperCase()) : (EN() ? "YOUR DAY" : "DEIN TAG")) + '</span>' +
       '<div class="c2-daybig"><h1>' + t("c2.day") + ' ' + clampedDay() + '</h1><span>' + t("c2.phase") + ' ' + ph.key + ' · ' + esc(tr(ph.name)) + '</span></div>' +
