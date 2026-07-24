@@ -67,11 +67,12 @@
     <div class="hero-grid-bg"></div>
     <div class="container-narrow" style="position:relative">
 
-      <div id="existingResult" class="alert alert-info" style="display:none;margin-bottom:28px">
-        <span class="alert-icon">📊</span>
-        <div style="flex:1">
-          <strong>Du hast bereits ein Ergebnis:</strong> <span data-score class="mono"></span><br>
-          <button class="btn btn-sm btn-dark" data-show style="margin-top:10px">Letztes Ergebnis ansehen</button>
+      <!-- P15: VS2-Instrument statt Legacy-Alert (kein Emoji, Mono-Systemzeile) -->
+      <div id="existingResult" style="display:none;margin-bottom:28px;border-top:1px solid var(--hairline);border-bottom:1px solid var(--hairline);padding:16px 0">
+        <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+          <span style="font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.2em;color:var(--status-active)">MM / SCORE · GESPEICHERT</span>
+          <span data-score class="mono" style="font-weight:700"></span>
+          <button class="btn btn-sm btn-dark" data-show style="margin-left:auto">Letztes Ergebnis ansehen</button>
         </div>
       </div>
 

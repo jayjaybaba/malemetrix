@@ -1,5 +1,21 @@
 # CONTINUATION_STATE — Phase 14 (Visible Redesign) · davor Phase 13
 
+## PHASE 15 FOUNDER-QA (echter Browser-Pass — NEU)
+- Tooling: scratchpad/qa.js (playwright-core + /opt/pw-browsers/chromium-
+  1194/chrome-linux/chrome, python3 -m http.server 8899, localStorage-Seed).
+  Screenshots in scratchpad/shots/. WIEDERVERWENDEN, nicht neu bauen.
+- Messergebnis: 0px horizontaler Overflow auf 9 Seiten × 390/1440px;
+  Konsole ohne JS-Fehler (nur geblockte Supabase-Calls in der Sandbox).
+- Behobene P1-Funde (visuell nachverifiziert): (1) My MaleMetrix zeigt
+  Status VOR Pathway-Frage (app.js pathwayCta-Flag); (2) check.html
+  "bereits ein Ergebnis" ohne Emoji-Alert, jetzt VS2-Instrumentzeile.
+- FOUNDER_VISUAL_QA.md: Scorecards + priorisierte Restliste (P2: FAB-
+  Padding mobil, qa.js-Klick zur Result-View + Entitlement-Seed für
+  Aktiv-State, Cinematic-Slot REQUIRES EXTERNAL GENERATION; P3-Liste).
+- NEXT EXACT ACTION (Phase 15): Punkte 3+4 der Fixliste in
+  FOUNDER_VISUAL_QA.md umsetzen, dann Tracker/Labs/Library-Screenshots
+  bewerten, dann PHASE15_REPORT.md.
+
 ## PHASE 14 STATUS (ehrliche Labels)
 - Homepage: VISIBLY REDESIGNED (statisch) — OS-Hero (os14-hero, Mono-
   Sysline, Diagnose-Instrument statt dash-card), Data-Band statt Stats-
@@ -16,7 +32,7 @@
 - BROWSER/VISUAL QA: NICHT durchgeführt (kein Browser-Run) — alle Labels
   oben sind statische Einschätzungen. Nächster Schritt: 390px/1440px-Pass.
 - CSS: style.css Blöcke "PHASE 14 — HOMEPAGE OS COMPOSITION" + Score-Hero
-  + Prograil; os.css os14-cmd. SW mm-v114.
+  + Prograil; os.css os14-cmd. SW mm-v115.
 - PHASE14_VISUAL_TRANSFORMATION_REPORT.md: NICHT erstellt (Credits) —
   Struktur siehe Phase-14-Brief P47.
 

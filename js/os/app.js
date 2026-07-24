@@ -166,9 +166,12 @@
       }
     }
 
-    if (!OS.pathway() && (d.hasScore || (d.access && d.access.twelve_week))) {
-      html += '<a class="card os-pathway-cta" href="#pathway"><span class="tag">PATHWAY</span><b>Was willst du wirklich erreichen?</b><span class="s">Health · Performance · Enhanced — 30 Sekunden, prägt dein ganzes System.</span></a>';
-    }
+    // P15-Founder-QA: Der persönliche Status kommt IMMER vor der Pathway-
+    // Frage — above the fold zuerst „wo stehe ich", danach Aufgaben. Die
+    // Pathway-CTA wird deshalb erst NACH dem Statusblock angehängt (Flag).
+    var pathwayCta = (!OS.pathway() && (d.hasScore || (d.access && d.access.twelve_week)))
+      ? '<a class="card os-pathway-cta" href="#pathway"><span class="tag">PATHWAY</span><b>Was willst du wirklich erreichen?</b><span class="s">Health · Performance · Enhanced — 30 Sekunden, prägt dein ganzes System.</span></a>'
+      : "";
 
     if (d.access.twelve_week && p.active && !p.notStarted && !p.over) {
       /* ---- PHASE 6: EIN BESTER TAG (Hero → NBA 2.0 → Plan → Kontext → 1 Signal) ---- */
@@ -336,6 +339,9 @@
         '<li><b>Plan bauen</b><span>Programm, Nutrition, Training, Stack.</span></li></ol>' +
         '<a href="check.html" class="btn btn-primary">MaleMetrix Score starten →</a></div>';
     }
+
+    // Pathway-Frage NACH dem persönlichen Status (P15-Founder-QA).
+    html += pathwayCta;
 
     // Kontext läuft seit Phase 6 über Overlays („Mein Tag hat sich geändert“ +
     // Badge oben) — die alten Kontext-Chips sind dadurch abgelöst.
