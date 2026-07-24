@@ -2578,3 +2578,52 @@ body > * { position: relative; z-index: 0; }
 @media (prefers-reduced-motion: reduce) {
   .mm-access .stamp, .mm-access .grant b, .mm-access .assigned { animation: none; }
 }
+
+/* ==========================================================================
+   PHASE 14 — HOMEPAGE OS COMPOSITION (sichtbares Redesign)
+   Der Einstieg wirkt wie ein Performance-Betriebssystem: massive Typo,
+   Mono-Systemzeilen, Diagnose-Instrument, Kapitel-Dramaturgie, Data-Bands.
+   ========================================================================== */
+.os14-sysline { display: flex; align-items: center; gap: 12px; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.24em; color: var(--status-active); margin-bottom: 22px; }
+.os14-sysline::after { content: ""; flex: 0 0 64px; height: 1px; background: linear-gradient(90deg, var(--status-active), transparent); }
+
+.os14-hero { position: relative; padding: calc(var(--header-h) + 64px) 0 72px; overflow: hidden; }
+.os14-hero .h-display { font-size: clamp(2.7rem, 8.5vw, 5.4rem); line-height: 0.98; letter-spacing: -0.02em; text-transform: none; }
+.os14-hero .lead { max-width: 52ch; margin-top: 26px; font-size: 1.02rem; color: var(--muted); }
+.os14-hero-inner { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.9fr); gap: clamp(28px, 6vw, 84px); align-items: center; }
+@media (max-width: 900px) { .os14-hero-inner { grid-template-columns: 1fr; } }
+
+/* Diagnose-Instrument im Hero: kein Card-Dashboard, ein Messgerät. */
+.os14-diag { border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline); padding: 26px 0 20px; position: relative; }
+.os14-diag .head { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.18em; color: var(--muted-2); margin-bottom: 18px; }
+.os14-diag .head .live { color: var(--status-active); }
+.os14-diag .readout { display: flex; align-items: baseline; gap: 16px; margin-bottom: 6px; }
+.os14-diag .readout .num { font-family: var(--font-display); font-weight: 700; font-size: clamp(3.4rem, 9vw, 5rem); line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.os14-diag .readout .num small { font-size: 0.32em; color: var(--muted-2); font-weight: 600; letter-spacing: 0.04em; }
+.os14-diag .readout .meta b { display: block; font-size: 0.92rem; }
+.os14-diag .readout .meta span { font-size: 0.78rem; color: var(--muted-2); }
+.os14-diag .mm-sys .row { grid-template-columns: 96px 1fr auto; padding: 9px 0; }
+
+/* Data-Band: große Zahlen als Fläche, keine Kacheln. */
+.os14-band { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline); }
+.os14-band > div { padding: 26px 22px; border-left: 1px solid var(--hairline); }
+.os14-band > div:first-child { border-left: 0; }
+.os14-band .stat-num { font-size: clamp(1.9rem, 5vw, 2.8rem); font-family: var(--font-display); font-weight: 700; line-height: 1; }
+.os14-band .stat-label { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.16em; color: var(--muted-2); text-transform: uppercase; margin-top: 8px; }
+@media (max-width: 640px) { .os14-band { grid-template-columns: 1fr 1fr; } .os14-band > div:nth-child(odd) { border-left: 0; } .os14-band > div { border-top: 1px solid var(--hairline); } .os14-band > div:nth-child(-n+2) { border-top: 0; } }
+
+/* Kapitel-Dramaturgie: jede Story-Sektion beginnt mit einer Systemmarke. */
+.os14-ch { display: flex; align-items: baseline; gap: 14px; margin-bottom: 18px; }
+.os14-ch .n { font-family: var(--font-mono); font-weight: 400; font-size: clamp(1.6rem, 4vw, 2.2rem); color: rgba(255,255,255,0.14); letter-spacing: 0.04em; }
+.os14-ch .t { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.24em; color: var(--status-active); }
+.os14-ch::after { content: ""; flex: 1; height: 1px; background: var(--hairline); }
+.section-head.center .os14-ch { justify-content: center; }
+.section-head.center .os14-ch::after { display: none; }
+
+/* Friction-Rows: editoriale Zeilen statt drei identischer Cards. */
+.os14-frictions { border-top: 1px solid var(--hairline); }
+.os14-frictions .fr { display: grid; grid-template-columns: 64px 200px 1fr; gap: 18px; align-items: baseline; padding: 22px 0; border-bottom: 1px solid var(--hairline); }
+.os14-frictions .fr .no { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted-2); letter-spacing: 0.14em; }
+.os14-frictions .fr h3 { font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; }
+.os14-frictions .fr p { color: var(--muted); margin: 0; }
+@media (max-width: 700px) { .os14-frictions .fr { grid-template-columns: 44px 1fr; } .os14-frictions .fr p { grid-column: 2; } }

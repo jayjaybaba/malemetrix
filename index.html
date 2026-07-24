@@ -95,14 +95,13 @@
 <main>
 
   <!-- ============================ HERO ============================ -->
-  <section class="hero">
+  <section class="hero os14-hero">
     <div class="hero-bg"></div>
     <div class="hero-grid-bg"></div>
-    <div class="container hero-inner">
+    <div class="container os14-hero-inner">
       <div>
-        <div class="hero-badge"><span data-i18n="home.badge">Männergesundheit als System — nicht nach Bauchgefühl</span> <span class="dot"></span></div>
+        <div class="os14-sysline">MM / PERFORMANCE OS</div>
         <h1 class="h-display" data-i18n-html="home.h1">Bau den Körper.<br><span class="text-grad">Schütz das System.</span></h1>
-        <div class="mm-coord" aria-hidden="true"><span class="tick"></span><span class="lbl">BODY</span><span class="tick"></span><span class="lbl">ENGINE</span><span class="tick"></span><span class="lbl">RECOVERY</span><span class="tick"></span><span class="lbl">HORMONES</span><span class="tick"></span><span class="lbl">EXECUTION</span><span class="tick"></span></div>
         <p class="lead" data-i18n="home.lead">Training, Ernährung, Schlaf, Hormone und Gesundheit für Männer, die Job und Familie haben — datenbasiert statt nach Bauchgefühl. MaleMetrix findet zuerst deinen größten Engpass, bevor du Zeit, Geld oder Energie in die falschen Dinge steckst.</p>
         <div class="hero-ctas">
           <a href="check.html" class="btn btn-primary btn-lg btn-arrow" data-track="score_start_click" data-i18n="cta.startCheck">Kostenlosen MaleMetrix Score starten</a>
@@ -110,39 +109,35 @@
         <p class="small" style="color:var(--muted-2);margin-top:14px" data-i18n="home.trustline">~10 Minuten · kostenlos · sofortige Auswertung · kein E-Mail-Zwang</p>
         <p style="margin-top:12px"><a href="#system" style="color:var(--muted);text-decoration:none;font-size:0.95rem" data-i18n="home.howLink">So funktioniert MaleMetrix&nbsp;↓</a></p>
       </div>
-      <div class="dash-card js-bars">
-        <div class="dash-head">
-          <span class="dash-title">MaleMetrix Score · Beispiel</span>
-          <span class="dash-tag">LIVE-ANALYSE</span>
+      <!-- Diagnose-Instrument (Beispieldaten, als solche markiert): das
+           Produktversprechen als Messgerät, nicht als Dashboard-Karte. -->
+      <div class="os14-diag" aria-label="Beispiel einer MaleMetrix Score-Analyse">
+        <div class="head"><span>MM / SYSTEMS · BEISPIEL</span><span class="live">DIAGNOSTIC</span></div>
+        <div class="readout">
+          <div class="num">52<small>/100</small></div>
+          <div class="meta"><b>Solide Basis, klare Engpässe</b><span>Typ: Der müde Leistungsträger</span></div>
         </div>
-        <div class="dash-score-row">
-          <div class="dash-score-num">52<small>/100</small></div>
-          <div>
-            <div style="font-weight:600;font-size:0.95rem">Solide Basis mit klaren Engpässen</div>
-            <div class="muted small">Typ: Der müde Leistungsträger</div>
-          </div>
-        </div>
-        <div class="dash-bars">
-          <div class="dash-bar-row"><span class="label">Körper</span><div class="bar-track"><div class="bar-fill mid" data-width="54"></div></div><span class="val">54</span></div>
-          <div class="dash-bar-row"><span class="label">Training</span><div class="bar-track"><div class="bar-fill mid" data-width="61"></div></div><span class="val">61</span></div>
-          <div class="dash-bar-row"><span class="label">Ernährung</span><div class="bar-track"><div class="bar-fill low" data-width="38"></div></div><span class="val">38</span></div>
-          <div class="dash-bar-row"><span class="label">Schlaf</span><div class="bar-track"><div class="bar-fill low" data-width="31"></div></div><span class="val">31</span></div>
-          <div class="dash-bar-row"><span class="label">Blutwerte</span><div class="bar-track"><div class="bar-fill low" data-width="24"></div></div><span class="val">24</span></div>
-          <div class="dash-bar-row"><span class="label">Energie</span><div class="bar-track"><div class="bar-fill mid" data-width="47"></div></div><span class="val">47</span></div>
-          <div class="dash-bar-row"><span class="label">Umsetzung</span><div class="bar-track"><div class="bar-fill high" data-width="72"></div></div><span class="val">72</span></div>
+        <div class="mm-sys">
+          <div class="row"><span class="id">BODY</span><div class="bar"><span style="width:54%"></span></div><span class="val">54</span></div>
+          <div class="row"><span class="id">STRENGTH</span><div class="bar"><span style="width:61%"></span></div><span class="val">61</span></div>
+          <div class="row"><span class="id">FUEL</span><div class="bar"><span style="width:38%"></span></div><span class="val">38</span></div>
+          <div class="row is-primary"><span class="id">RECOVERY</span><div class="bar"><span style="width:31%"></span></div><span class="val">31</span></div>
+          <div class="row"><span class="id">BLOOD</span><div class="bar"><span style="width:24%"></span></div><span class="val">24</span></div>
+          <div class="row"><span class="id">DRIVE</span><div class="bar"><span style="width:47%"></span></div><span class="val">47</span></div>
+          <div class="row"><span class="id">EXECUTION</span><div class="bar"><span style="width:72%"></span></div><span class="val">72</span></div>
         </div>
       </div>
     </div>
   </section>
 
-<!-- ============================ STATS ============================ -->
+<!-- ============================ DATA BAND ============================ -->
   <section class="section-tight">
     <div class="container">
-      <div class="stats-strip reveal">
-        <div><div class="stat-num text-grad">7</div><div class="stat-label">Bereiche, ein System</div></div>
-        <div><div class="stat-num text-grad">12</div><div class="stat-label">Wochen bis zum Re-Check</div></div>
-        <div><div class="stat-num text-grad">10 Min</div><div class="stat-label">bis zu deinem Score</div></div>
-        <div><div class="stat-num text-grad">0 €</div><div class="stat-label">Score &amp; Analysegespräch</div></div>
+      <div class="os14-band reveal">
+        <div><div class="stat-num">7</div><div class="stat-label">Systeme · eine Diagnose</div></div>
+        <div><div class="stat-num">12</div><div class="stat-label">Wochen bis zum Re-Check</div></div>
+        <div><div class="stat-num">10<small style="font-size:0.45em"> MIN</small></div><div class="stat-label">bis zu deinem Score</div></div>
+        <div><div class="stat-num">0<small style="font-size:0.45em"> €</small></div><div class="stat-label">Score &amp; Analysegespräch</div></div>
       </div>
     </div>
   </section>
@@ -151,17 +146,16 @@
   <section class="section">
     <div class="container container-narrow">
       <div class="section-head center reveal">
+        <div class="os14-ch"><span class="n">01</span><span class="t">THE DIAGNOSIS</span></div>
         <span class="eyebrow" data-i18n="home.s.problem.k">Das eigentliche Problem</span>
         <h2 class="h-section" data-i18n-html="home.s.problem.h">Du brauchst nicht mehr Informationen. Du brauchst die richtige <span class="text-grad">Reihenfolge</span>.</h2>
       </div>
-      <div class="grid-3" style="margin-top:8px">
-        <div class="card fcard reveal"><span class="card-num">01 · REIBUNG</span><h3 class="h-card">Training</h3><p>Du trainierst regelmäßig, aber dein Körper verändert sich kaum.</p></div>
-        <div class="card fcard reveal reveal-d1"><span class="card-num">02 · REIBUNG</span><h3 class="h-card">Energie &amp; Gesundheit</h3><p>Du funktionierst im Alltag, fühlst dich aber nicht wirklich leistungsfähig.</p></div>
-        <div class="card fcard reveal reveal-d2"><span class="card-num">03 · REIBUNG</span><h3 class="h-card">Optimierung</h3><p>Du liest über Supplemente, Testosteron, Schlaf und Blutwerte — weißt aber nicht, wo du anfangen sollst.</p></div>
+      <div class="os14-frictions reveal" style="margin-top:8px">
+        <div class="fr"><span class="no">01 / REIBUNG</span><h3>Training</h3><p>Du trainierst regelmäßig, aber dein Körper verändert sich kaum.</p></div>
+        <div class="fr"><span class="no">02 / REIBUNG</span><h3>Energie &amp; Gesundheit</h3><p>Du funktionierst im Alltag, fühlst dich aber nicht wirklich leistungsfähig.</p></div>
+        <div class="fr"><span class="no">03 / REIBUNG</span><h3>Optimierung</h3><p>Du liest über Supplemente, Testosteron, Schlaf und Blutwerte — weißt aber nicht, wo du anfangen sollst.</p></div>
       </div>
-      <div class="card reveal" style="margin-top:22px;border-left:3px solid var(--accent)">
-        <p style="font-size:1.1rem;color:var(--text);font-weight:600;font-family:var(--font-display)">MaleMetrix identifiziert zuerst deinen größten Engpass — bevor du Zeit, Geld oder Energie in die falschen Dinge investierst.</p>
-      </div>
+      <p class="reveal" style="margin-top:28px;font-size:clamp(1.15rem,2.6vw,1.45rem);color:var(--text);font-weight:600;font-family:var(--font-display);max-width:34ch">MaleMetrix identifiziert zuerst deinen größten Engpass — bevor du Zeit, Geld oder Energie in die falschen Dinge investierst.</p>
       <div style="text-align:center;margin-top:26px" class="reveal">
         <a href="check.html" class="btn btn-primary btn-lg btn-arrow" data-track="score_start_click" data-i18n="cta.findBottleneck">Meinen Engpass finden</a>
       </div>
@@ -172,6 +166,7 @@
   <section class="section section-alt" id="system">
     <div class="container">
       <div class="section-head center reveal">
+        <div class="os14-ch"><span class="n">02</span><span class="t">THE SYSTEM</span></div>
         <span class="eyebrow" data-i18n="home.s.system.k">Das MaleMetrix System</span>
         <h2 class="h-section" data-i18n="home.s.system.h">Ein System. Vier klare Rollen.</h2>
         <p class="lead">Keine lose Sammlung aus Score, Tracker und Ebooks. Ein Kreislauf, in dem jeder Teil genau eine Aufgabe hat — und so lange läuft, bis die Zahlen stimmen.</p>
@@ -192,6 +187,7 @@
   <section class="section">
     <div class="container">
       <div class="section-head center reveal">
+        <div class="os14-ch"><span class="n">01</span><span class="t">THE DIAGNOSIS · SCORE</span></div>
         <span class="eyebrow" data-i18n="home.s.score.k">Der MaleMetrix Score</span>
         <h2 class="h-section" data-i18n-html="home.s.score.h">Deine Performance besteht aus <span class="text-grad">mehreren Systemen</span>.</h2>
         <p class="lead">Der kostenlose Check misst sieben Bereiche und zeigt dir, welcher davon dich gerade am meisten bremst — oft ist es nicht der, den du vermutest.</p>
@@ -220,6 +216,7 @@
   <section class="section section-alt" id="wege">
     <div class="container">
       <div class="section-head center reveal">
+        <div class="os14-ch"><span class="n">03</span><span class="t">THE PATH</span></div>
         <span class="eyebrow" data-i18n="home.s.wege.k">Nach dem Score</span>
         <h2 class="h-section" data-i18n="home.s.wege.h">Wie möchtest du MaleMetrix nutzen?</h2>
         <p class="lead"><strong style="color:var(--text)">Kostenlos:</strong> verstehen, wo du stehst (Score, Rechner, Library). Danach zwei Wege — selbstständig oder mit persönlicher Begleitung. Beide bauen auf demselben System.</p>
@@ -261,6 +258,7 @@
   <section class="section">
     <div class="container">
       <div class="section-head center reveal">
+        <div class="os14-ch"><span class="n">04</span><span class="t">THE KNOWLEDGE</span></div>
         <span class="eyebrow" data-i18n="home.s.lib.k">Sekundär · zum Vertiefen</span>
         <h2 class="h-section" data-i18n="home.s.lib.h">MaleMetrix Library &amp; Tools</h2>
         <p class="lead">Das System steht oben. Hier vertiefst du einzelne Themen und rechnest bei Bedarf nach.</p>
@@ -313,6 +311,7 @@
   <section class="section">
     <div class="container">
       <div class="section-head reveal">
+        <div class="os14-ch"><span class="n">05</span><span class="t">THE PROOF</span></div>
         <span class="eyebrow" data-i18n="home.s.trust.k">Transparenz statt Hochglanz</span>
         <h2 class="h-section" data-i18n="home.s.trust.h">Warum du MaleMetrix vertrauen kannst — gerade weil es neu ist.</h2>
         <p class="lead">MaleMetrix arbeitet nicht mit Crash-Diäten, Angstmarketing oder medizinischen Versprechen. Der Fokus liegt auf messbaren Lifestyle-Hebeln: Training, Ernährung, Schlaf, Tracking und strukturierter Umsetzung.</p>
