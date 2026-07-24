@@ -92,8 +92,8 @@ INTEGRATED LOCALLY → BROWSER VERIFIED → DEPLOYED → LIVE VERIFIED`
 | Asset | Status |
 |---|---|
 | ApoB (Kap. 04) | ✅ LIVE VERIFIED (bestehend, KEEP) |
-| mm-02-daily-movement-system | **BRIEFED** (Preflight + Brief fertig; Generierung ausstehend — Freigabe Spend) |
-| übrige Shortlist (03–10) | PLANNED |
+| mm-02-daily-movement-system | ✅ **DEPLOYED / LIVE** (Runway produziert, integriert, www.malemetrix.com 200 — Detail-Log §8) |
+| übrige Shortlist (03–10) | IN PRODUKTION (Kapitel-für-Kapitel, je 3 Assets HERO/MECHANISM/APPLICATION) |
 
 ## 7 · Offene Punkte / Nächster Schritt
 
@@ -103,3 +103,31 @@ INTEGRATED LOCALLY → BROWSER VERIFIED → DEPLOYED → LIVE VERIFIED`
 3. Hinweis QA-Grenze: Sandbox-Chromium hat **keinen H.264-Decoder** → MP4 zeigt nur
    Poster. Playback-Qualität wird ehrlich als „POSTER VERIFIED" berichtet, nicht als
    „PLAYBACK VERIFIED" (wie beim ApoB-Präzedenzfall).
+
+---
+
+## 8 · PRODUKTIONS-LOG (LIVE-Produktion über offizielle Runway-MCP)
+
+Ziel: **pro relevantem Kapitel genau 3 Assets** — HERO / MECHANISM / APPLICATION.
+Verifikations-Hinweis (bindend, alle Assets): Der Sandbox-Chromium hat **keinen
+H.264-Decoder** (`canPlayType('avc1…')=""`). Echtes Pixel-Playback im Browser ist
+hier daher nicht verifizierbar. Stattdessen verifiziert (Live): HTTP-200,
+Byte-Identität, **vollständige H.264-Dekodierung via ffmpeg (Decoder-Ebene)**,
+korrektes Autoplay-Markup, reduced-motion, Overflow/Layout auf byte-identischem
+Inhalt @390/430/768/1440. Endnutzer-Playback ist durch valides H.264 + korrektes
+Markup gesichert.
+
+### MM-02 · ONE WORKOUT VS 23 HOURS  — Kapitel 02 · Funktion HERO
+- **ID:** mm-02-daily-movement-system
+- **Modell Keyvisual / Video:** Runway `nano-banana-pro` (16:9, 2K) / Runway `seedance-2` (image-to-video)
+- **Keyvisual-Generierungen:** 2 (1 initial + 1 gezielte Relight-Korrektur: warmes Amber → kühles Off-White + Cyan)
+- **Video-Generierungen:** 1 · **Retries:** 0
+- **Source-Dauer:** 6,04 s · **End-Dauer:** 12,08 s (nahtloser Boomerang-Loop, lokale ffmpeg-Postproduktion)
+- **Auflösung / FPS / Codec:** 1280×720 · 24 fps · H.264 High / yuv420p
+- **Dateigröße:** MP4 1,02 MB · Poster 48 KB (aus echtem Video-Frame 0)
+- **Placement:** `ebooks/taeglich-trainieren.html` · s2 „Die Lösung: täglich statt selten" · bp-mech
+- **Mobile-Status:** ✅ 390/430/768/1440 — 0 px Overflow, 16:9 center-safe, Caption lesbar
+- **Playback-Status:** Live-Asset verifiziert (HTTP 200, byte-identisch, ffmpeg-Decode fehlerfrei, korrektes muted/loop/playsinline/preload-Markup + reduced-motion + Viewport-Autoplay). Browser-Pixel-Playback in Sandbox nicht verifizierbar.
+- **Deploy-Status:** ✅ DEPLOYED (master+main FF → www.malemetrix.com live 200)
+- **Bekannte Issues:** Cyan bewusst zurückhaltend; laut aktualisierter Vorgabe darf Cyan bei menschlichen Szenen künftig etwas selbstbewusster sein (gilt ab MM-03+).
+- **Style-Consistency-Gate:** ✅ JA — gleiche visuelle DNA wie ApoB #01.
