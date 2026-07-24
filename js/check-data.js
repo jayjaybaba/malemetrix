@@ -1241,6 +1241,68 @@ window.MM_CHECK = {
     return { level: level, missing: missing, text: text };
   };
 
+  /* ---------- P13/P1.5 — DECISION CONFIDENCE (deterministisch) ----------
+     Wie sicher ist die Mode-/Engpass-Einordnung? KEINE Fake-Prozente:
+     HIGH/MEDIUM/LIMITED aus Vollständigkeit (dataConfidence), inneren
+     Widersprüchen der Angaben und Red Flags. Rein regelbasiert, testbar. */
+  C.decisionConfidence = function (a, knownFlags) {
+    a = a || {};
+    var reasons = [];
+    var dc = C.dataConfidence(a);
+    var contradictions = [];
+    var h = num(a.height), w = num(a.weight), waist = num(a.waist);
+    var whtr = (waist && h) ? waist / h : 0;
+    var bmi = (h && w) ? w / Math.pow(h / 100, 2) : 0;
+    // Selbstbild vs. Messwerte widersprechen sich
+    if (a.body_type === "skinny" && whtr >= 0.56) contradictions.push("Selbstbild „schlank“ passt nicht zum Bauchumfang");
+    if (a.body_type === "uebergewicht" && whtr && whtr < 0.47) contradictions.push("Selbstbild „übergewichtig“ passt nicht zu den Messwerten");
+    if (bmi && bmi < 18.5 && (a.goal_main || []).indexOf("bauchfett") >= 0) contradictions.push("Bauchfett-Ziel bei sehr niedrigem Körpergewicht");
+    // Antwortverweigerung in tragenden Bereichen
+    var silent = ["drv_libido", "drv_morning", "rec_quality"].filter(function (k) { return a[k] === "keine_antwort"; }).length;
+    if (silent >= 2) contradictions.push("mehrere Selbsteinschätzungen ohne Antwort");
+    var flags = knownFlags || ((typeof C.redFlags === "function") ? C.redFlags(a) : []);
+    var level;
+    if (flags.length) {
+      level = "LIMITED";
+      reasons.push("Mögliche medizinische Warnzeichen — die Einordnung ist bewusst vorsichtig, bis das ärztlich geklärt ist.");
+    } else if (contradictions.length >= 2 || dc.level === "eingeschränkt") {
+      level = "LIMITED";
+      if (contradictions.length) reasons.push("Widersprüche: " + contradictions.join("; ") + ".");
+      if (dc.missing.length) reasons.push("Fehlende Daten: " + dc.missing.join(", ") + ".");
+    } else if (contradictions.length === 1 || dc.level === "mittel") {
+      level = "MEDIUM";
+      if (contradictions.length) reasons.push(contradictions[0] + ".");
+      if (dc.missing.length) reasons.push("Es fehlt: " + dc.missing.join(", ") + ".");
+      if (!reasons.length) reasons.push("Die Richtung ist klar, einzelne Angaben sind uneindeutig.");
+    } else {
+      level = "HIGH";
+      reasons.push("Mehrere konsistente Antworten zeigen dasselbe Muster.");
+    }
+    return { level: level, reasons: reasons.slice(0, 3), contradictions: contradictions, missing: dc.missing };
+  };
+
+  /* ---------- P13/P1.6 — NEXT STEP ROUTING (genau EINE primäre Handlung) --
+     state: { hasScore, signedIn, activeCycle, redFlags } — deterministisch,
+     von Result-Seite UND Post-Purchase nutzbar. */
+  C.nextStep = function (state) {
+    state = state || {};
+    if (state.redFlags) {
+      return { key: "medical", label: "Punkte ärztlich abklären", href: null,
+        note: "Gesundheit vor Optimierung — das Programm läuft danach auf sicherem Fundament." };
+    }
+    if (!state.hasScore) {
+      return { key: "score", label: "Kostenlosen MaleMetrix Score starten", href: "check.html" };
+    }
+    if (!state.signedIn) {
+      return { key: "account", label: "Ergebnis sichern & System starten", href: "mein-protokoll.html",
+        note: "Dein Score bleibt erhalten und wird deinem Konto zugeordnet." };
+    }
+    if (!state.activeCycle) {
+      return { key: "start_program", label: "Dein 12-Wochen-System starten", href: "kurs-programm.html" };
+    }
+    return { key: "today", label: "Weiter mit HEUTE", href: "mein-protokoll.html#today" };
+  };
+
   /* ---------- Risikobasierte Blutwerte-/Gesundheitsdaten-Struktur ---------- */
   C.healthDashboard = function (a) {
     var age = num(a.age);

@@ -477,11 +477,16 @@
       (dc.missing.indexOf('Bauchumfang') >= 0 ? ' <a href="check.html" style="color:var(--accent)">Bauchumfang nachtragen und Ergebnis präzisieren →</a>' : '') +
       '</p></div>';
 
-    /* ---------- Empfohlener Weg (Modus) + transparente Begründung ---------- */
+    /* ---------- Empfohlener Weg (Modus) + Confidence + Begründung (P13) ---
+       Confidence ist deterministisch (C.decisionConfidence): HIGH/MEDIUM/
+       LIMITED aus Vollständigkeit, Widersprüchen, Red Flags — nie Fake-%. */
+    const conf = C.decisionConfidence(ans, r.flags);
+    const confColor = conf.level === "HIGH" ? "var(--status-improving,#2dd4a7)" : conf.level === "MEDIUM" ? "var(--status-attention,#f5b54a)" : "var(--status-flag,#f06a6a)";
     html += '<div class="card" style="margin-bottom:22px;border-color:var(--accent-line);background:var(--accent-soft)">' +
       '<span class="card-num">DEIN EMPFOHLENER WEG</span>' +
       '<h3 style="font-size:1.3rem;margin:4px 0 6px">' + tv.modeLabel + ' — ' + tv.modeDesc + '</h3>' +
       '<p class="small" style="margin:0 0 10px">' + tv.modeReason + '</p>' +
+      '<p class="small" style="margin:0 0 10px;font-family:var(--font-mono);font-size:0.66rem;letter-spacing:0.14em">CONFIDENCE: <strong style="color:' + confColor + '">' + conf.level + '</strong><span class="muted" style="letter-spacing:0;font-family:var(--font-body);font-size:0.8rem"> — ' + conf.reasons.join(" ") + '</span></p>' +
       '<p class="small muted" style="margin:0"><strong>Bewegung:</strong> Jeden Tag ein Reiz oder gezielte Bewegung — 3 Tage gezieltes Krafttraining, die übrigen Tage Zone 2, Mobility, Spaziergänge/Steps oder aktive Regeneration. Nicht jeden Tag maximale Belastung.</p>' +
       '</div>';
 
@@ -529,6 +534,23 @@
       '<p>' + r.bottleneck.text + '</p>' +
       (C.bottleneckAffects[bKey] ? '<p style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted)"><strong style="color:var(--text)">Warum jetzt Priorität:</strong> ' + C.bottleneckAffects[bKey] + '</p>' : '') +
       '</div>';
+
+    /* ---------- P13/P1.6 — DEIN NÄCHSTER SCHRITT: GENAU EINE Handlung ----
+       Deterministisches Routing (C.nextStep): Red Flag → medizinisch;
+       kein Konto → sichern; Konto ohne Zyklus → System starten;
+       Zyklus aktiv → HEUTE. Alles andere ist sekundär. */
+    (function () {
+      const snap = (window.MM && MM.account && MM.account.snapshot) ? MM.account.snapshot() : { state: "local" };
+      const activeCycle = !!((MM.store && MM.store.get("c2_start", "")) && MM.store.get("c2_goal", ""));
+      const step = C.nextStep({ hasScore: true, signedIn: snap.state === "signed_in", activeCycle: activeCycle, redFlags: r.flags.length > 0 });
+      html += '<div class="card" style="margin-bottom:22px;text-align:center;border-color:var(--accent-line)">' +
+        '<span class="card-num" style="justify-content:center;color:var(--accent-2)">DEIN NÄCHSTER SCHRITT</span>' +
+        (step.href
+          ? '<a class="btn btn-primary" style="margin:10px 0 6px" href="' + step.href + '" data-track="next_step_' + step.key + '">' + step.label + ' →</a>'
+          : '<p style="font-weight:700;margin:10px 0 6px">' + step.label + '</p>') +
+        (step.note ? '<p class="small muted" style="margin:4px 0 0">' + step.note + '</p>' : '') +
+        '</div>';
+    })();
 
     /* ---------- 5. PRIORITÄT #1 + 3 Schritte ---------- */
     const stepsArr = C.nextSteps[bKey] || C.nextSteps.execution;

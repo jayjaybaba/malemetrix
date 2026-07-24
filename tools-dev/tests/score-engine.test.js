@@ -113,6 +113,40 @@ group("Determinismus · gleiche Eingabe ⇒ gleiche Entscheidung, alle Modi erre
   });
 })();
 
+/* ===== 7) P13 · Decision Confidence — deterministisch, keine Fake-% ===== */
+group("P13 · Confidence: HIGH/MEDIUM/LIMITED aus Daten, nie erfunden");
+(function () {
+  var full = { height: 180, weight: 88, waist: 96, body_type: "normal_bauch", steps: "8000", blood_bp: "ja", drv_libido: "ok", drv_morning: "ok", rec_quality: "ok" };
+  var c1 = C.decisionConfidence(full, []);
+  ok(c1.level === "HIGH", "vollständige, konsistente Daten ⇒ HIGH: " + c1.level);
+  ok(/konsistent/.test(c1.reasons.join(" ")), "HIGH hat ehrliche Begründung");
+  var c2 = C.decisionConfidence({ height: 180, weight: 88, body_type: "normal_bauch", steps: "8000", blood_bp: "ja", drv_libido: "ok", drv_morning: "ok" }, []);
+  ok(c2.level === "MEDIUM", "eine fehlende Kernangabe (Bauchumfang) ⇒ MEDIUM: " + c2.level);
+  var c3 = C.decisionConfidence({ height: 180, weight: 95, waist: 104, body_type: "skinny", drv_libido: "keine_antwort", drv_morning: "keine_antwort", rec_quality: "keine_antwort" }, []);
+  ok(c3.level === "LIMITED", "Widerspruch (skinny + WHtR 0.58) + verweigerte Antworten ⇒ LIMITED: " + c3.level);
+  ok(c3.contradictions.length >= 1, "Widersprüche werden benannt, nicht kaschiert");
+  var c4 = C.decisionConfidence(full, ["Brustschmerz bei Belastung"]);
+  ok(c4.level === "LIMITED" && /ärztlich/.test(c4.reasons.join(" ")), "Red Flag ⇒ LIMITED mit medizinischem Hinweis");
+  ok(!JSON.stringify(c1).match(/%|percent/i), "keine Fake-Prozentwerte im Confidence-Objekt");
+  var again = C.decisionConfidence(full, []);
+  ok(again.level === c1.level, "deterministisch: gleiche Eingabe ⇒ gleiches Level");
+})();
+
+/* ===== 8) P13 · Next-Step-Routing — GENAU EINE primäre Handlung ===== */
+group("P13 · Next Step: eine Handlung, klare Präzedenz");
+(function () {
+  ok(C.nextStep({ hasScore: true, signedIn: true, activeCycle: false, redFlags: true }).key === "medical", "Red Flag schlägt alles ⇒ medical");
+  ok(C.nextStep({ hasScore: false }).key === "score", "kein Score ⇒ Score starten");
+  var acc = C.nextStep({ hasScore: true, signedIn: false, activeCycle: false });
+  ok(acc.key === "account" && /sichern/i.test(acc.label), "Score ohne Konto ⇒ Ergebnis sichern (Score geht nie verloren)");
+  ok(C.nextStep({ hasScore: true, signedIn: true, activeCycle: false }).key === "start_program", "Konto ohne Zyklus ⇒ 12-Wochen-System starten");
+  ok(C.nextStep({ hasScore: true, signedIn: true, activeCycle: true }).key === "today", "aktiver Zyklus ⇒ HEUTE");
+  ok(C.nextStep({ hasScore: true, signedIn: true, activeCycle: true, redFlags: false }).href.indexOf("#today") > 0, "HEUTE führt direkt ins Cockpit");
+  ["medical", "score", "account", "start_program", "today"].forEach(function () {});
+  var m = C.nextStep({ redFlags: true });
+  ok(m.href === null, "medical hat KEINEN Verkaufslink als primäre Aktion");
+})();
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 process.exit(failed ? 1 : 0);
