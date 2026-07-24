@@ -174,3 +174,26 @@ Markup gesichert.
 **Kapitel 03 = KOMPLETT (3/3):** HERO (mm-03-morning-light) · MECHANISM (mm-03-adenosine-caffeine) · APPLICATION (mm-03-evening-routine).
 
 > **Deploy-Hinweis (Runde 2/3):** Alle Assets sind byte-verifiziert lokal + ffmpeg-decode-clean und auf `master`/`main` gepusht. GitHub Pages hat nach dem PHASE-1-Build (MM-02, live 200) verzögert nachgezogen (Pages-Publish-Latenz, extern). Live-200-Bestätigung für Kap. 02/03 erfolgt, sobald Pages den neuesten Commit baut.
+
+---
+
+## 9 · MOTION GATE V2 — Editorial (QUALITY > COUNT, kein 3er-Quota)
+
+Bindend ab jetzt: Motion-Dichte = **editorischer Wert** (Bible §0 „Why does this need to move?"), NICHT Kapitel-Symmetrie. Kein Zwang zu 3 Assets/Kapitel. Read-only-Gate über Kap. 04–10 + Abschluss (parallel klassifiziert; **keine Generierung**). Klassen: **ESSENTIAL** (Idee fundamental dynamisch — Zeit/Ursache→Wirkung/Akkumulation/Fluss/räumlicher Reveal) · **STRONG** (wertvoll, statisch fast machbar) · **OPTIONAL** (dekorativ/marginal → NICHT bauen).
+
+| Kap | Money | Bestehend | NEU bauen (Funktion·Klasse) | Übersprungen (Kurzgrund) |
+|---|---|---|---|---|
+| 04 | ✓ | ApoB (MECH, live) | `mm-04-risk-exposure-time` (HERO·ESS) · `mm-04-insulin-compensation-curve` (MECH·STRONG) | ldl-vs-apob (redundant zu ApoB); hba1c/bp/vo2max/dashboard (statisch); **Blutabnahme-Szene = OPTIONAL → verworfen** |
+| 05 | ✓ | — | `mm-05-hpg-axis` (MECH·ESS) · `mm-05-fat-multipath` (MECH·ESS) · `mm-05-sleep-t-curve` (MECH·STRONG) | exo-shutdown (=HPG-Variante), brakes/SHBG (statisch), aromatase (REJECT: irreführend) |
+| 06 | ✓ | — | `mm-06-glp1-satiety` (MECH·ESS) · `mm-06-weight-not-only-fat` (MECH·ESS) · `mm-06-three-axes` (MECH·STRONG) | native-vs-agonist/slowed-emptying/muscle/rebound/glucose/food-noise (statisch/redundant) |
+| 07 | ✓ VAULT | — | `mm-07-stack-hierarchy` (HERO·ESS) — **nur**, auf öffentl. Framework-Struktur, keine erfundenen Tiers | Rest: Vault-Lock |
+| 08 | lean | — | `mm-08-phosphocreatine` (MECH·ESS) — **nur** | adenosine-caffeine (Dedup Kap.03), dose-response/pyramid (STATIC) |
+| 09 | ✓ | — | `mm-09-no-cascade` (MECH·ESS) · `mm-09-penile-artery` (MECH·STRONG) · [`pelvic-floor-valve` MECH·STRONG = Swing #3] | pde5/autonomic/libido/dopamine/14day (redundant/dekorativ). Klinisch-schematisch, keine fotoreale Genitalanatomie |
+| 10 | ✓ | — | `mm-10-target-tissue` (HERO·ESS) · `mm-10-no-universal-needle` (MECH·ESS) | bodycomp/sc-vs-im/gauge/rotation/fear (subsumiert/statisch; **keine Injektionssequenz, kein DIY**) |
+| Absch | lean | — | `mm-abschluss-habit-loop` (MECH·STRONG) — **nur** | whole-system-Montage (dekorativ, passt nicht zum Habit-Content); dopamine/effort/identity/routine/friction (statisch) |
+
+**Summe NEU (04–Abschluss): ~15** (Kap.09: 2 fest + 1 Swing). Statt naiver 3×11 = 33. **~⅔ der Money-Chapter-Assets sind MECHANISMEN**, nicht Lifestyle-APPLICATION — die „HERO/MECH/APP"-Triade passt NICHT auf jedes Kapitel; Wissenschaftskapitel sind mechanismus-dominant.
+
+**Empfohlene Produktions-Reihenfolge (NACH iPhone-Review):** 04 → 05 → 06 → 09 → 10 → 07 → 08 → Abschluss. Pro Kapitel ESSENTIAL zuerst, dann STRONG; **ein Asset nach dem anderen** (Keyvisual → Video → QA → Serien-Vergleich → nächstes). Ch01 nicht in dieser Gate-Runde (Scope 04+).
+
+**STATUS: GENERIERUNG PAUSIERT** bis Owner-iPhone-Review der bestehenden 6 (= Baseline). Danach chapter-by-chapter skalieren.
