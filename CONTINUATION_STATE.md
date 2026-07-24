@@ -1,7 +1,15 @@
 # CONTINUATION_STATE — Phase 16: DAS PROTOKOLL 2.0 (Flagship Rebuild)
 
-## PHASE 16 STAND (A-D1 erledigt, D2-J offen)
+## PHASE 16 STAND (A-D2 erledigt, E-J offen)
 ERLEDIGT:
+- D2 MODUL-HUB: protokoll.html hat eigene Sektion „Frei lesbar · bevor du
+  kaufst" (9 Preview-Kacheln → freie Kapitel) UNTER der echten 10-Modul-
+  Übersicht (nicht ersetzt = kein Überversprechen). ebooks.html: „EMPFOHLEN
+  FÜR DICH"-Sektion (verborgen bis Score da), liest MM.store check_result,
+  mappt alle 7 Bottlenecks → 2 freie Kapitel, sendet nichts. Styles
+  .preview-grid/.preview-ch in style.css. Tests P16/D2 (68/0). Browser-QA
+  390/1440: 0px Overflow, keine Fehler, no-seed = Sektion bleibt verborgen.
+  SW mm-v120.
 - D1 KAPITEL-RAHMUNG: alle 14 freien Ebooks tragen jetzt Protokoll-Systemkopf
   (os14-sysline „MM / PROTOCOL · KAPITEL NN") + Ende-CTA-Plane („Teil von DAS
   PROTOKOLL", Rollen getrennt, 49 € · einmalig). Styles .bp-protohead/.bp-protocta

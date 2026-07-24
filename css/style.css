@@ -623,6 +623,17 @@ h1, h2, h3, h4 {
 .pillar h3 { font-size: 1.05rem; margin-bottom: 8px; }
 .pillar p { font-size: 0.86rem; color: var(--muted); }
 
+/* Frei lesbare Kapitel-Previews (P16-D2) — klickbare Kapitel-Kacheln */
+.preview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 10px; }
+@media (max-width: 900px) { .preview-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .preview-grid { grid-template-columns: 1fr; } }
+.preview-ch { display: block; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 18px 16px; text-decoration: none; color: inherit; transition: border-color 0.2s, transform 0.2s; }
+.preview-ch:hover { border-color: var(--accent-line); transform: translateY(-3px); }
+.preview-ch .pk { display: block; font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent-2); margin-bottom: 8px; }
+.preview-ch b { display: block; font-size: 1rem; color: var(--text); margin-bottom: 5px; }
+.preview-ch .pd { display: block; font-size: 0.86rem; color: var(--muted); line-height: 1.45; }
+.preview-ch .pgo { display: inline-block; margin-top: 11px; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.14em; color: var(--accent-2); }
+
 /* --------------------------------------------------------------------------
    Listen mit Häkchen / Kreuzen
    -------------------------------------------------------------------------- */

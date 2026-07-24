@@ -92,6 +92,23 @@ Object.keys(CHAPTERS).forEach(function (fn) {
 });
 ok(!/DAS 12-WOCHEN-PROGRAMM.{0,40}erklärt/i.test(read("ebooks/testosteron.html")), "Rollen bleiben getrennt (Programm 'erklärt' nicht) — Positionierung intakt");
 
+group("P16/D2 · Modul-Hub: Produktseite-Previews + Bottleneck-Empfehlung");
+var proto = read("protokoll.html");
+ok(/id="frei-lesen"/.test(proto) && /Frei lesbar/.test(proto), "protokoll.html hat eigene 'Frei lesbar'-Preview-Sektion");
+ok(/Die 10 Module/.test(proto), "die ECHTE 10-Modul-Übersicht bleibt bestehen (kein Überversprechen)");
+ok((proto.match(/class="preview-ch"/g) || []).length >= 8, "Preview-Grid verlinkt ≥8 freie Kapitel");
+ok(/ebooks\/blueprint\.html/.test(proto) && /ebooks\/testosteron\.html/.test(proto), "Previews zeigen auf echte freie Kapitel-URLs");
+ok(/Erklärwerk/.test(proto) && /12-Wochen-Programm/.test(proto) && /führt/.test(proto), "Rollen getrennt (Erklärwerk erklärt · Programm führt)");
+ok(/\.preview-ch \{/.test(style) && /\.preview-grid \{/.test(style), "Preview-Kachel-Styles zentral in style.css");
+var eb = read("ebooks.html");
+ok(/id="ebRecommendSec"/.test(eb) && /display:none/.test(eb.split("ebRecommendSec")[1].slice(0, 80)), "ebooks.html Empfehlungssektion existiert, per Default verborgen");
+ok(/EMPFOHLEN FÜR DICH/.test(eb), "Mono-Header 'EMPFOHLEN FÜR DICH'");
+ok(/MM\.store\.get\("check_result"/.test(eb), "Empfehlung liest den echten lokalen Score (keine Fake-Personalisierung)");
+["recovery", "body", "fuel", "blood", "strength", "drive", "execution"].forEach(function (k) {
+  ok(new RegExp(k + ":\\s*\\{").test(eb), "Bottleneck '" + k + "' hat ein Empfehlungs-Mapping");
+});
+ok(!/mm-ai|fetch\(|XMLHttpRequest/.test(eb.split("EMPFOHLEN FÜR DICH")[1] || ""), "Empfehlung sendet nichts nach außen (nur lokal)");
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 process.exit(failed ? 1 : 0);

@@ -72,6 +72,16 @@
     </div>
   </section>
 
+  <!-- EMPFOHLEN FÜR DICH (P16-D2) — nur sichtbar, wenn ein Score existiert -->
+  <section class="section-tight" id="ebRecommendSec" style="display:none;padding-top:8px;padding-bottom:0">
+    <div class="container">
+      <div class="os14-sysline">MM / EMPFOHLEN FÜR DICH</div>
+      <h2 class="h-card" style="margin:0 0 4px">Nach deinem Score zuerst: <span id="ebRecBn" style="color:var(--accent-2)"></span></h2>
+      <p class="muted" style="font-size:0.92rem;margin:0 0 16px">Basierend auf deinem stärksten Engpass — vollständig und kostenlos lesbar.</p>
+      <div class="preview-grid" id="ebRecGrid"></div>
+    </div>
+  </section>
+
   <section class="section-tight" style="padding-top:8px;padding-bottom:0">
     <div class="container">
       <div class="card" id="unlockBox" style="border-color:var(--accent-line);background:var(--accent-soft)">
@@ -197,5 +207,61 @@
 <script src="js/unlock.js"></script>
 <script src="js/ebooks-data.js"></script>
 <script src="js/ebooks.js"></script>
+<script>
+/* P16-D2: „Empfohlen für dich" nach Score-Engpass. Liest nur den bereits
+   lokal gespeicherten Score (MM.store), sendet nichts, rendert nur bei Treffer. */
+(function () {
+  "use strict";
+  var REC = {
+    recovery: { name: "Schlaf & Erholung", items: [
+      ["ebooks/schlaf-energie.html", "Schlaf & Energie", "Der Multiplikator, der alles andere trägt."],
+      ["ebooks/blueprint.html", "Das Fundament", "Die richtige Reihenfolge vor jedem Hack."]
+    ]},
+    body: { name: "Körper & Komposition", items: [
+      ["ebooks/fettabbau.html", "Fettabbau ohne Hunger", "Fett runter, Muskel und Kraft halten."],
+      ["ebooks/protein-system.html", "Das Protein-System", "Der wichtigste Hebel im Defizit."]
+    ]},
+    fuel: { name: "Ernährung", items: [
+      ["ebooks/fettabbau.html", "Fettabbau ohne Hunger", "Energiebilanz und Sättigung ohne Verzicht."],
+      ["ebooks/glp1-agonisten.html", "GLP-1 ehrlich eingeordnet", "Nutzen, Grenzen, Muskelschutz."]
+    ]},
+    blood: { name: "Blutwerte", items: [
+      ["ebooks/blutwerte-guide.html", "Blutwerte verstehen", "Welche Werte Entscheidungen verändern."],
+      ["ebooks/testosteron.html", "Hormone & Testosteron", "Diagnose statt Internet-Gefühl."]
+    ]},
+    strength: { name: "Kraft & Training", items: [
+      ["ebooks/training-system.html", "Das Trainings-System", "Volumen, Progression und RIR."],
+      ["ebooks/taeglich-trainieren.html", "Trainingsfrequenz", "Wie oft Training wirklich sinnvoll ist."]
+    ]},
+    drive: { name: "Drive & Hormone", items: [
+      ["ebooks/testosteron.html", "Hormone & Testosteron", "Das Fundament vor jeder Hormon-Frage."],
+      ["ebooks/sexuelle-gesundheit.html", "Sexuelle Gesundheit", "Libido und Erektion als Marker."]
+    ]},
+    execution: { name: "Umsetzung", items: [
+      ["ebooks/gewohnheiten.html", "Gewohnheiten", "Wie aus Wissen dauerhafte Umsetzung wird."],
+      ["ebooks/blueprint.html", "Das Fundament", "Das System, das alles verbindet."]
+    ]}
+  };
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  try {
+    if (!(window.MM && MM.store && typeof MM.store.get === "function")) return;
+    var r = MM.store.get("check_result", null);
+    if (!r || typeof r !== "object" || !r.bottleneck || !r.bottleneck.key) return;
+    var rec = REC[r.bottleneck.key];
+    if (!rec) return;
+    var sec = document.getElementById("ebRecommendSec");
+    var grid = document.getElementById("ebRecGrid");
+    var bn = document.getElementById("ebRecBn");
+    if (!sec || !grid || !bn) return;
+    bn.textContent = r.bottleneck.name || rec.name;
+    grid.innerHTML = rec.items.map(function (it) {
+      return '<a class="preview-ch" href="' + it[0] + '"><span class="pk">' + esc(rec.name) +
+        '</span><b>' + esc(it[1]) + '</b><span class="pd">' + esc(it[2]) +
+        '</span><span class="pgo">KAPITEL LESEN →</span></a>';
+    }).join("");
+    sec.style.display = "";
+  } catch (e) { /* still: kein Empfehlungsblock, kein Fehler für den Nutzer */ }
+})();
+</script>
 </body>
 </html>
