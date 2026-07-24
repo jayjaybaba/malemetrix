@@ -493,17 +493,21 @@
         '</ul><p style="margin-top:10px;font-size:0.85rem">MaleMetrix unterstützt dich bei Training, Ernährung, Schlaf und Struktur — ersetzt aber keine medizinische Diagnostik oder Behandlung.</p></div></div>';
     }
 
-    /* ---------- 2. PROFIL: Radar + Einzel-Scores ---------- */
+    /* ---------- 2. PROFIL: Radar + diagnostische Systemliste (VS2) ----------
+       Die 7 Bereiche sprechen die MaleMetrix-Systemsprache (.mm-sys):
+       Mono-IDs, Hairlines, genau EIN Primary-Bottleneck-Highlight —
+       Diagnose-Instrument statt Karten-Balken-Stapel. */
     html += '<div class="result-grid">' +
       '<div class="card"><h3 style="margin-bottom:6px">Dein Performance-Profil</h3><p class="small muted" style="margin-bottom:10px">7 Bereiche, ein Bild: je weiter außen, desto stärker.</p>' +
       '<div class="radar-wrap">' + radarSVG(r.scores) + '</div></div>' +
-      '<div class="card js-bars"><h3 style="margin-bottom:18px">Deine 7 Bereiche</h3><div class="score-rows">';
+      '<div class="card"><div class="mm-secthead" style="margin-top:0"><span class="sys">MM / SYSTEMS</span><span class="t">Deine 7 Bereiche</span></div><div class="mm-sys">';
     keys.forEach(k => {
       const v = r.scores[k];
-      html += '<div class="score-row"><div class="score-row-top">' +
-        '<span class="name">' + nm(k) + ' <span class="muted small">· ' + C.moduleSubtitles[k] + '</span></span>' +
-        '<span class="pts">' + v + '/100</span></div>' +
-        '<div class="bar-track"><div class="bar-fill ' + levelClass(v) + '" data-width="' + v + '"></div></div></div>';
+      const flag = v < 40 && k !== bKey;
+      html += '<div class="row' + (k === bKey ? ' is-primary' : (flag ? ' is-flag' : '')) + '" title="' + C.moduleSubtitles[k] + '">' +
+        '<span class="id">' + nm(k).toUpperCase() + '</span>' +
+        '<div class="bar"><span style="width:' + v + '%"></span></div>' +
+        '<span class="val">' + v + '/100</span></div>';
     });
     html += '</div></div></div>';
 

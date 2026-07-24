@@ -58,6 +58,12 @@ group("Empty/Locked States · Premium-Ruhe");
 ok(/\.mm-empty/.test(vs2) && /\.mm-locked/.test(vs2), "Empty- und Locked-States sind Systemkomponenten");
 ok(/LOCKED · /.test(vs2), "Locked-State spricht Mono-Systemsprache");
 
+group("Score Result · diagnostische Systemliste statt Balken-Stapel");
+var check = read("js/check.js");
+ok(/mm-sys/.test(check) && /is-primary/.test(check), "Ergebnisseite nutzt .mm-sys mit Primary-Bottleneck-Highlight");
+ok(/MM \/ SYSTEMS/.test(check), "Mono-Systemheader auf der Ergebnisseite");
+ok((check.match(/is-primary/g) || []).length >= 1 && /k === bKey/.test(check), "genau der Engpass wird als PRIMARY markiert (datengetrieben)");
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 process.exit(failed ? 1 : 0);
