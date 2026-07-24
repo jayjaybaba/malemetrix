@@ -2627,3 +2627,21 @@ body > * { position: relative; z-index: 0; }
 .os14-frictions .fr h3 { font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; }
 .os14-frictions .fr p { color: var(--muted); margin: 0; }
 @media (max-width: 700px) { .os14-frictions .fr { grid-template-columns: 44px 1fr; } .os14-frictions .fr p { grid-column: 2; } }
+
+/* ---- P14 Score-Result-Hero: die Zahl dominiert, EIN Limiter-Band. ---- */
+.os14-score-hero { padding: 10px 0 4px; margin-bottom: 26px; }
+.os14-score-hero .sys { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.22em; color: var(--status-active); margin-bottom: 16px; }
+.os14-score-hero .sys .who { color: var(--muted-2); letter-spacing: 0.14em; }
+.os14-score-hero .read { display: flex; align-items: flex-end; gap: clamp(18px, 4vw, 40px); flex-wrap: wrap; padding-bottom: 22px; }
+.os14-score-hero .num { font-family: var(--font-display); font-weight: 700; font-size: clamp(4.4rem, 16vw, 8rem); line-height: 0.9; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; }
+.os14-score-hero .num small { font-size: 0.22em; font-weight: 600; color: var(--muted-2); letter-spacing: 0.06em; }
+.os14-score-hero .lvl { max-width: 42ch; padding-bottom: 8px; }
+.os14-score-hero .lvl b { display: block; font-family: var(--font-display); font-size: clamp(1.15rem, 3vw, 1.5rem); letter-spacing: 0.08em; text-transform: uppercase; }
+.os14-score-hero .lvl > span { display: block; color: var(--muted); font-size: 0.92rem; margin-top: 6px; }
+.os14-score-hero .lvl .delta { display: inline-block; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.14em; margin-top: 10px; }
+.os14-score-hero .lvl .delta.up { color: var(--status-improving); }
+.os14-score-hero .lvl .delta.down { color: var(--status-attention); }
+.os14-score-hero .limiter { display: grid; grid-template-columns: auto 1fr auto; align-items: baseline; gap: 16px; border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline); padding: 16px 0; }
+.os14-score-hero .limiter .k { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.2em; color: var(--status-active); }
+.os14-score-hero .limiter b { font-family: var(--font-display); font-size: clamp(1.2rem, 4vw, 1.7rem); font-weight: 700; letter-spacing: 0.04em; }
+.os14-score-hero .limiter .v { font-family: var(--font-mono); font-size: 1.1rem; color: var(--muted); font-variant-numeric: tabular-nums; }

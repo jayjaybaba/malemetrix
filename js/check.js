@@ -454,20 +454,16 @@
 
     let html = '';
 
-    /* ---------- 1. HERO: Gesamt-Score + Status ---------- */
-    html += '<div class="result-hero">' +
-      '<div class="score-ring">' + ringSVG(r.total) +
-      '<div class="score-ring-center"><div class="num">' + r.total + '</div><div class="of">VON 100</div></div></div>' +
-      '<div class="result-meta">' +
-      '<span class="eyebrow" style="margin-bottom:6px">' + (firstName ? firstName + ', dein MaleMetrix Score' : 'Dein MaleMetrix Score') + '</span>' +
-      '<div class="result-status">' + r.level + '</div>' +
-      '<p class="muted" style="margin-top:8px">' + r.levelText + '</p>' +
-      '<div class="result-chips">' +
-      '<span class="chip">Stärkster Bereich: <strong>' + nm(strengths[0]) + '</strong></span>' +
-      '<span class="chip warn">Größter Hebel: <strong>' + r.bottleneck.name + '</strong></span>' +
-      '<span class="chip">Empfohlener Modus: <strong>' + tv.modeLabel + '</strong></span>' +
-      (prev ? '<span class="chip ' + (r.total >= prev.total ? 'accent' : 'warn') + '">Letzter Check: <strong>' + prev.total + ' → ' + r.total + '</strong></span>' : '') +
-      '</div></div></div>';
+    /* ---------- 1. HERO (P14): Data-as-Design — die Zahl IST das Layout ---
+       Massives Score-Readout + Mono-Systemzeile statt Ring-in-Karte.
+       Darunter EIN Limiter-Band: der Engpass dominiert, nicht 4 Chips. */
+    html += '<div class="os14-score-hero">' +
+      '<div class="sys">MM / SCORE' + (firstName ? '<span class="who">' + firstName.toUpperCase() + '</span>' : '') + '</div>' +
+      '<div class="read"><span class="num">' + r.total + '<small>/100</small></span>' +
+      '<div class="lvl"><b>' + r.level + '</b><span>' + r.levelText + '</span>' +
+      (prev ? '<span class="delta ' + (r.total >= prev.total ? 'up' : 'down') + '">LETZTER CHECK ' + prev.total + ' → ' + r.total + '</span>' : '') + '</div></div>' +
+      '<div class="limiter"><span class="k">PRIMARY LIMITER</span><b>' + r.bottleneck.name.toUpperCase() + '</b><span class="v">' + (r.scores[bKey] != null ? r.scores[bKey] : "") + '</span></div>' +
+      '</div>';
 
     /* ---------- Datenqualität (NICHT Gesundheitsstatus) ---------- */
     html += '<div class="card" style="margin-bottom:22px;border-left:3px solid ' +
