@@ -1002,7 +1002,7 @@
     }
     html += sec("Learn · verstehe dein System",
       '<div class="os-learn-grid">' +
-      '<a class="os-learn" href="ebooks/protokoll.html"><b>DAS PROTOKOLL</b><span>Das Referenzwerk — warum dein System funktioniert.</span></a>' +
+      '<a class="os-learn" href="protokoll.html"><b>DAS PROTOKOLL</b><span>Das Referenzwerk — 10 Kapitel, eine Reihenfolge. Warum dein System funktioniert.</span></a>' +
       '<a class="os-learn" href="ebooks.html"><b>Library</b><span>Deep Dives: Body · Engine · Recovery · Hormone · Health.</span></a>' +
       '<a class="os-learn" href="labor.html"><b>MaleMetrix Labs</b><span>Deine Biologie über die Zeit — Werte werden zu Kontext.</span></a>' +
       '<a class="os-learn" href="blutwerte.html"><b>Blood &amp; Labs (Guide)</b><span>Die Biomarker, die für Männer zählen.</span></a>' +

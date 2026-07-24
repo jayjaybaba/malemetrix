@@ -536,7 +536,7 @@
       }).join("") + '</div>' +
       '<div class="c2-energy"><label for="c2en">' + t("c2.energy_today") + '</label><input id="c2en" type="range" min="1" max="5" value="' + (rec.energy || 3) + '" data-energy><span id="c2eVal">' + (rec.energy || 3) + '/5</span></div>' +
       '</div>' +
-      '<div class="c2-card2 c2-why"><span class="k">' + t("c2.why") + '</span><p>' + esc(tr(dt.why)) + '</p><p class="c2-muted" style="margin-top:8px"><a href="ebooks/protokoll.html" style="color:var(--c2-blue2)">' + t("c2.more_protocol") + '</a></p></div>' +
+      '<div class="c2-card2 c2-why"><span class="k">' + t("c2.why") + '</span><p>' + esc(tr(dt.why)) + '</p><p class="c2-muted" style="margin-top:8px"><a href="protokoll.html" style="color:var(--c2-blue2)">' + t("c2.more_protocol") + '</a></p></div>' +
       '<div class="c2-card2"><span class="k">' + esc(nutritionMode().toUpperCase()) + ' · ' + (EN() ? "Nutrition today" : "Ernährung heute") + '</span><p>' + esc(tr(NUTRI[nutritionMode()].card)) + '</p></div>' +
       '<div class="c2-card2 c2-mission"><span class="k">' + t("c2.mission") + ' · ' + t("c2.week") + ' ' + week + '</span><h3>' + esc(MISSIONS[week] || "") + '</h3><p class="c2-muted" style="margin-top:6px">' + t("c2.focus_bn") + ': ' + esc(tr(BOTTLENECKS[bottleneck()].focus)) + '</p></div>' +
       '<div class="c2-card2 c2-win"><span class="k">' + t("c2.win") + '</span><ul>' + wins.map(function (w) { return '<li class="' + (w.hit ? "hit" : "") + '">' + esc(w.label) + ' <span class="c2-muted">(' + w.cur + '/' + w.target + ')</span></li>'; }).join("") + '</ul></div>' +
@@ -561,7 +561,7 @@
       }
       html += '</div>';
     });
-    html += '<p class="c2-muted" style="text-align:center;margin-top:16px"><a href="ebooks/protokoll.html" style="color:var(--c2-blue2)">' + (EN() ? "Open THE PROTOCOL for the science →" : "Tiefe & Wissenschaft: DAS PROTOKOLL öffnen →") + '</a></p>';
+    html += '<p class="c2-muted" style="text-align:center;margin-top:16px"><a href="protokoll.html" style="color:var(--c2-blue2)">' + (EN() ? "Open THE PROTOCOL for the science →" : "Tiefe & Wissenschaft: DAS PROTOKOLL öffnen →") + '</a></p>';
     return html;
   }
   function navBarNote() { return ""; }
