@@ -211,6 +211,21 @@
 }
 @media print { .bp-cover { min-height: auto; } .bp-progress, .bp-cta { display: none; } .bp p, .bp li { color: #111; } }
 
+/* ---------- COVER OHNE FOTO: neue Kapitel (00/11/12) im System-Look (P16-E) ---------- */
+.bp-cover.nofoto { min-height: 66vh; align-items: center; background: radial-gradient(130% 90% at 50% 0%, rgba(0,194,255,.13), transparent 58%), var(--bp-ink); }
+.bp-cover.nofoto::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px); background-size: 46px 46px; -webkit-mask-image: radial-gradient(circle at 50% 32%, #000, transparent 72%); mask-image: radial-gradient(circle at 50% 32%, #000, transparent 72%); }
+.bp-cover.nofoto .cap { padding: calc(var(--header-h) + 46px) 20px 54px; }
+.bp-cover.nofoto .bp-cover-title { margin-top: 8px; }
+.bp-cover.nofoto .kick { display: inline-block; }
+
+/* Evidenz-Label als Mono-Chip (KNOWN / LIKELY / …) */
+.ev { display: inline-block; font-family: var(--font-mono, monospace); font-size: .58rem; letter-spacing: .16em; padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,.16); color: #cfe0ee; margin-right: 6px; vertical-align: middle; }
+.ev.known { border-color: rgba(61,220,132,.4); color: #7ee6a8; }
+.ev.likely { border-color: rgba(0,194,255,.4); color: #8fd6ff; }
+.ev.plausible { border-color: rgba(245,166,35,.4); color: #f5c06a; }
+.ev.uncertain { border-color: rgba(255,255,255,.2); color: #9fb2c2; }
+.ev.experimental { border-color: rgba(179,136,255,.4); color: #c3a8ff; }
+
 /* ---------- PROTOKOLL-RAHMUNG: freie Ebooks sind Kapitel des Systems (P16-D1) ---------- */
 .bp-protohead { margin: 30px 0 6px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,.08); }
 .bp-protohead .os14-sysline { margin-bottom: 10px; }

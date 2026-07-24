@@ -32,6 +32,42 @@
 window.MM_EBOOKS = [
 
   {
+    id: "start-here",
+    kicker: { de: "MaleMetrix · DAS PROTOKOLL", en: "MaleMetrix · THE PROTOCOL" },
+    cover: "linear-gradient(150deg,#062033,#05070b)",
+    badge: { de: "Neu · Start", en: "New · Start" },
+    title: { de: "Start here — wie das System funktioniert", en: "Start here — how the system works" },
+    desc: { de: "Das Betriebssystem in fünf Minuten: Optimiere zuerst das System, bevor du ein Signal von außen ersetzt. Messen, verstehen, priorisieren, umsetzen, neu bewerten — plus die Ein-Engpass-Regel und wie Score, Protokoll, Programm und Tracker zusammenpassen.",
+            en: "The operating system in five minutes: optimise the system before you replace a signal from outside. Measure, understand, prioritise, act, reassess — plus the one-bottleneck rule and how Score, Protocol, Program and Tracker fit together." },
+    minutes: 5,
+    read: "ebooks/00-start-here.html",
+    gated: false
+  },
+  {
+    id: "injektionen",
+    kicker: { de: "MaleMetrix · Aufklärung", en: "MaleMetrix · Education" },
+    cover: "linear-gradient(150deg,#0a1e34,#05070b)",
+    badge: { de: "Neu · Aufklärung", en: "New · Education" },
+    title: { de: "Injektionen verstehen — Angst raus, Präzision rein", en: "Understanding injections — fear out, precision in" },
+    desc: { de: "Was subkutan und intramuskulär bedeuten, warum es keine Universalnadel gibt und wie Route, Gauge und Länge medizinisch gewählt werden. Sachliche Aufklärung, damit du auf Augenhöhe mit deinem Arzt sprichst — keine Dosierungen, keine Selbstanwendungsanleitung.",
+            en: "What subcutaneous and intramuscular mean, why there is no universal needle and how route, gauge and length are chosen medically. Factual education so you can talk to your doctor on eye level — no doses, no self-administration guide." },
+    minutes: 9,
+    read: "ebooks/11-injektionen.html",
+    gated: false
+  },
+  {
+    id: "longevity-risk",
+    kicker: { de: "MaleMetrix · Longevity", en: "MaleMetrix · Longevity" },
+    cover: "linear-gradient(150deg,#08283a,#05070b)",
+    badge: { de: "Neu · Longevity", en: "New · Longevity" },
+    title: { de: "Longevity & Risk — Risiken früh erkennen", en: "Longevity & Risk — spot risk early" },
+    desc: { de: "Longevity ehrlich: nicht NAD-Hype, sondern Risiken früh erkennen. Blutdruck, ApoB & Lipide, Glukose, VO₂max und Vorsorge als System — miss, was Entscheidungen verändert, und geh vorbereitet zum Arzt. Ohne erfundene Grenzwerte.",
+            en: "Longevity honestly: not NAD hype but spotting risk early. Blood pressure, ApoB & lipids, glucose, VO₂max and screening as a system — measure what changes decisions and go prepared to your doctor. No made-up cutoffs." },
+    minutes: 11,
+    read: "ebooks/12-longevity-risk.html",
+    gated: false
+  },
+  {
     id: "glp1-agonisten",
     kicker: { de: "MaleMetrix · Aufklärung", en: "MaleMetrix · Education" },
     cover: "linear-gradient(150deg,#0a2440,#0c1320)",

@@ -1,7 +1,16 @@
 # CONTINUATION_STATE — Phase 16: DAS PROTOKOLL 2.0 (Flagship Rebuild)
 
-## PHASE 16 STAND (A-D2 erledigt, E-J offen)
+## PHASE 16 STAND (A-E erledigt, F-J offen)
 ERLEDIGT:
+- E NEUE KAPITEL (bp-Design, FREE, foto-freies nofoto-Cover):
+  ebooks/00-start-here.html (Reader-Journey + Rollen-Trennung + Ein-Engpass),
+  ebooks/11-injektionen.html (Angstabbau, KEINE Universalnadel, KEINE Dosis,
+  Body-Comp-Crosslink, MM/SAFETY), ebooks/12-longevity-risk.html (ApoB/RR/
+  VO₂max/Screening, KEINE erfundenen Ranges). In Library-Katalog
+  (ebooks-data.js) aufgenommen. PROTOCOL_MEDICAL_QA.md dokumentiert jede
+  Leitplanke. Tests P16/E (89/0) inkl. medizinischer Negativ-Guards (kein mg,
+  kein mm/G, kein mmHg/mgdl). Browser-QA 390/1440: 0px Overflow, keine Fehler.
+  blueprint.css: .bp-cover.nofoto + .ev-Evidenz-Chips. SW mm-v121.
 - D2 MODUL-HUB: protokoll.html hat eigene Sektion „Frei lesbar · bevor du
   kaufst" (9 Preview-Kacheln → freie Kapitel) UNTER der echten 10-Modul-
   Übersicht (nicht ersetzt = kein Überversprechen). ebooks.html: „EMPFOHLEN

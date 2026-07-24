@@ -109,6 +109,34 @@ ok(/MM\.store\.get\("check_result"/.test(eb), "Empfehlung liest den echten lokal
 });
 ok(!/mm-ai|fetch\(|XMLHttpRequest/.test(eb.split("EMPFOHLEN FÜR DICH")[1] || ""), "Empfehlung sendet nichts nach außen (nur lokal)");
 
+group("P16/E · Neue Kapitel 00/11/12 (bp-Design, FREE) + medizinische Leitplanken");
+["00-start-here", "11-injektionen", "12-longevity-risk"].forEach(function (fn) {
+  var h = read("ebooks/" + fn + ".html");
+  ok(/<body class="bp-wrap">/.test(h) && /blueprint\.css/.test(h), fn + ": bp-Design (blueprint.css)");
+  ok(/<div class="bp-protohead">/.test(h) && /class="bp-protocta"/.test(h), fn + ": Protokoll-Rahmung (Kopf + Ende-CTA)");
+  ok(/bp-cover nofoto/.test(h) && /rel="canonical"/.test(h), fn + ": Foto-freies Cover + canonical gesetzt");
+});
+// Kapitel 00 — Produkt-Rollen getrennt
+var c00 = read("ebooks/00-start-here.html");
+ok(/SCORE findet/.test(c00) && /PROTOKOLL erklärt/.test(c00) && /PROGRAMM führt/.test(c00) && /TRACKER misst/.test(c00), "00: Produkt-Rollen sauber getrennt (findet/erklärt/führt/misst)");
+ok(/Optimiere zuerst das System/.test(c00), "00: Leitmotiv 'erst System, dann Signal'");
+// Kapitel 11 — medizinische Leitplanken (Injektionen)
+var c11 = read("ebooks/11-injektionen.html");
+ok(/Universalnadel/.test(c11) && /MM \/ SAFETY/.test(c11), "11: 'keine Universalnadel' + MM/SAFETY-Note");
+ok(/keine\s+<strong>Dosierungen<\/strong>|keine Dosierungen/i.test(c11), "11: explizit keine Dosierungen");
+ok(!/[0-9][.,]?[0-9]*\s*mg\b/.test(c11), "11: KEINE Dosierangabe (kein 'x mg')");
+ok(!/[0-9]+\s*(mm|G)\b/.test(c11), "11: KEINE konkrete Nadelgröße (kein 'x mm' / 'x G')");
+ok(/Präparat/.test(c11) && /Route/.test(c11) && /Anatomie/.test(c11), "11: Nadelwahl an Präparat/Route/Stelle/Anatomie gebunden");
+// Kapitel 12 — Longevity ohne erfundene Ranges
+var c12 = read("ebooks/12-longevity-risk.html");
+ok(/ApoB/.test(c12) && /(VO₂max|VO2max)/.test(c12), "12: ApoB + VO₂max behandelt");
+ok(/keine[^.]{0,30}(Zielwert|Grenzwert|Zielwerte|Pauschal-Zielwerte)/i.test(c12), "12: explizit keine Pauschal-Zielwerte");
+ok(!/[0-9]{2,3}\s*\/\s*[0-9]{2,3}\s*mmhg/i.test(c12) && !/[0-9]+\s*mmhg/i.test(c12), "12: KEINE erfundene Blutdruck-Range (mmHg)");
+ok(!/[0-9][.,]?[0-9]*\s*mg\s*\/\s*dl/i.test(c12), "12: KEINE erfundene Lipid-/Glukose-Range (mg/dl)");
+// Katalog-Discovery
+var ebd = read("js/ebooks-data.js");
+ok(/00-start-here\.html/.test(ebd) && /11-injektionen\.html/.test(ebd) && /12-longevity-risk\.html/.test(ebd), "E: neue Kapitel in der Library (ebooks-data.js) auffindbar");
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 process.exit(failed ? 1 : 0);
