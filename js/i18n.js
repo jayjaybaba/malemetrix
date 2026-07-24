@@ -23,6 +23,7 @@
     "nav.more":    { de: "Wissen", en: "Knowledge" },
     "nav.ebooks":  { de: "Library", en: "Library" },
     "nav.library": { de: "Library", en: "Library" },
+    "nav.protocol": { de: "Das Protokoll", en: "The Protocol" },
     "nav.magazine":{ de: "Magazin", en: "Magazine" },
     "nav.blood":   { de: "Blutwerte", en: "Blood Values" },
     "nav.about":   { de: "Über", en: "About" },
