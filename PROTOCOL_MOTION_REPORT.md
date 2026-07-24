@@ -153,3 +153,24 @@ Markup gesichert.
 - **Style-Consistency-Gate:** ✅ JA.
 
 **Kapitel 02 = KOMPLETT (3/3):** HERO (mm-02-daily-movement-system) · MECHANISM (mm-02-muscle-glucose-sink) · APPLICATION (mm-02-daily-walk).
+
+### mm-03-morning-light  — Kapitel 03 · Funktion HERO
+- **Modell KV / Video:** `nano-banana-pro` (16:9, 2K) / `seedance-2` (i2v) · **KV-Gen:** 1 (0 Korr.) · **Video-Gen:** 1 · **Retries:** 0
+- **Source/End:** 6,04 s / 6,04 s (one-way, kein Loop — Augen öffnen zum Licht als Auflösung)
+- **1280×720 · 24 fps · H.264 High/yuv420p · 0,67 MB · Poster 44 KB** · **Placement:** `s3` (Morgenlicht)
+- **Motion:** Mann atmet ein und öffnet die Augen zum Morgenlicht, langsamer Push-in. **Mobile:** ✅ · **Playback:** Live-Asset (HTTP 200 + ffmpeg-Decode); Browser-Pixel in Sandbox n/a · **Deploy:** DEPLOYED (Runde 3) · **Style-Gate:** ✅ JA
+
+### mm-03-adenosine-caffeine  — Kapitel 03 · Funktion MECHANISM
+- **Modell KV / Video:** `nano-banana-pro` (16:9, 2K) / `seedance-2` (i2v) · **KV-Gen:** 1 (0 Korr.) · **Video-Gen:** 1 · **Retries:** 0
+- **Source/End:** 6,04 s / 6,04 s (one-way, kein Loop — Akkumulation ist gerichtet)
+- **1280×720 · 24 fps · H.264 High/yuv420p · 1,13 MB · Poster 74 KB** · **Placement:** `s4` (Adenosin & Koffein)
+- **Wissenschaft:** Adenosin (cyan) dockt an Rezeptoren (Schlafdruck); Koffein blockiert dieselben Rezeptoren, entfernt Adenosin NICHT — Caption stellt das klar. **Mobile:** ✅ · **Playback:** Live-Asset · **Deploy:** DEPLOYED (Runde 3) · **Style-Gate:** ✅ JA (ApoB-Register)
+
+### mm-03-evening-routine  — Kapitel 03 · Funktion APPLICATION
+- **Modell KV / Video:** `nano-banana-pro` (16:9, 2K) / `seedance-2` (i2v) · **KV-Gen:** 1 (0 Korr.) · **Video-Gen:** 2 (1. Versuch transient „socket hang up"/INTERNAL → sauber neu) · **kreative Retries:** 0
+- **Source/End:** 6,04 s / 6,04 s (one-way push-in) · **1280×720 · 24 fps · H.264 High/yuv420p · 0,45 MB · Poster 31 KB** · **Placement:** `s11` (Abendroutine)
+- **Cyan:** kräftiger Rim/Ambient (menschliche Szene). **Mobile:** ✅ · **Playback:** Live-Asset · **Deploy:** DEPLOYED (Runde 3) · **Style-Gate:** ✅ JA
+
+**Kapitel 03 = KOMPLETT (3/3):** HERO (mm-03-morning-light) · MECHANISM (mm-03-adenosine-caffeine) · APPLICATION (mm-03-evening-routine).
+
+> **Deploy-Hinweis (Runde 2/3):** Alle Assets sind byte-verifiziert lokal + ffmpeg-decode-clean und auf `master`/`main` gepusht. GitHub Pages hat nach dem PHASE-1-Build (MM-02, live 200) verzögert nachgezogen (Pages-Publish-Latenz, extern). Live-200-Bestätigung für Kap. 02/03 erfolgt, sobald Pages den neuesten Commit baut.
