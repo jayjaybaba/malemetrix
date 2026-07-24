@@ -1,7 +1,13 @@
 # CONTINUATION_STATE — Phase 16: DAS PROTOKOLL 2.0 (Flagship Rebuild)
 
-## PHASE 16 STAND (A-H erledigt, J offen)
+## PHASE 16 STAND (A-J ERLEDIGT — Flaggschiff-Rebuild abgeschlossen)
 ERLEDIGT:
+- J FINALE QA + REPORT: konsolidierter Browser-Pass 11 Seiten × 390/1440
+  (+ 430/768 auf 6 Kernseiten) = 0 px Overflow, keine echten JS-Fehler.
+  PROTOCOL_FLAGSHIP_REPORT.md (ehrlich, DoD 1-16, offene Inhaber-Punkte).
+  Alle 5 Phase-16-Docs vorhanden. 18 Suiten grün (visual-system 116/0).
+  Nächste Schritte = Inhaber-Entscheidungen (Premium-Vertiefungen
+  verschlüsseln, EN-Übersetzung, SEO-Indexierung neuer Kapitel).
 - G/H SCORE-ERGEBNIS → PASSENDES KAPITEL: Diagnose-Block-Link führt jetzt
   je Engpass auf das genau erklärende Kapitel statt generisch protokoll.html.
   Neue Map C.bottleneckChapter (check-data.js): body→fettabbau, strength→
