@@ -97,6 +97,18 @@
 
   <!-- ============================ HERO ============================ -->
   <section class="hero os14-hero">
+    <!-- Signature-Hero-Video: Mann mit driftendem Cyan-Koordinatenraster
+         (PERFORMANCE COORDINATE SYSTEM). Muted/loop/playsinline, Poster als
+         Fallback, respektiert prefers-reduced-motion (JS unten). -->
+    <div class="os14-hero-media" aria-hidden="true">
+      <video class="os14-hero-video" muted loop playsinline preload="none"
+             poster="assets/hero/mm-home-hero.jpg"
+             aria-label="Athletischer Mann in dunklem Studio, über den Oberkörper driftet ein cyanfarbenes Koordinaten- und Kalibrierungsraster — MaleMetrix vermisst den Körper wie ein Instrument.">
+        <source src="assets/hero/mm-home-hero.mp4" type="video/mp4">
+        <source src="assets/hero/mm-home-hero.webm" type="video/webm">
+      </video>
+      <div class="os14-hero-scrim"></div>
+    </div>
     <div class="hero-bg"></div>
     <div class="hero-grid-bg"></div>
     <div class="container os14-hero-inner">
@@ -500,5 +512,24 @@
 <script src="js/shop-data.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/main.js"></script>
+<script>
+/* Hero-Video: nur abspielen, wenn im Viewport und nicht reduced-motion.
+   preload=none → Daten laden erst beim Start; pausiert außerhalb/versteckt. */
+(function(){
+  var v=document.querySelector(".os14-hero-video");
+  if(!v)return;
+  var reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(reduce)return; /* Poster bleibt stehen */
+  function play(){ var p=v.play(); if(p&&p.catch)p.catch(function(){}); v.classList.add("is-live"); }
+  function pause(){ try{v.pause();}catch(e){} }
+  if("IntersectionObserver" in window){
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){ e.isIntersecting ? play() : pause(); });
+    },{threshold:0.15});
+    io.observe(v);
+  } else { play(); }
+  document.addEventListener("visibilitychange",function(){ document.hidden?pause():play(); });
+})();
+</script>
 </body>
 </html>

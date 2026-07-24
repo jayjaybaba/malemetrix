@@ -7,12 +7,14 @@
     {
       "id": "home_metrix_hero",
       "page": "index.html",
-      "purpose": "Hero: 'Dein Körper ist ein System'",
-      "aspect": "21:9 desktop / 4:5 mobile",
+      "purpose": "Hero: 'Bau den Körper. Schütz das System.'",
+      "aspect": "16:9 (cover, object-position rechts/oben-Crop mobil)",
       "prompt": "Cinematic editorial photograph, athletic man in his 40s standing in a dark studio, subtle cyan coordinate grid light projection across his torso mapping body systems, precision-instrument mood, Hasselblad look, deep shadows, no text",
-      "motion": "langsamer Koordinaten-Drift",
-      "status": "REQUIRES_EXTERNAL_GENERATION",
-      "alt": "Mann im dunklen Studio mit Koordinatenlicht auf dem Oberkörper"
+      "motion": "Cyan-Kalibrier-Scanlinie driftet langsam über das Koordinatenraster, kaum wahrnehmbares Atmen, sehr langsamer Push-in; Motion via Runway (nano-banana-pro Keyvisual → seedance-2 image-to-video)",
+      "assetVideo": "assets/hero/mm-home-hero.mp4 (+ .webm Fallback)",
+      "assetPoster": "assets/hero/mm-home-hero.jpg",
+      "status": "INTEGRATED · BROWSER VERIFIED (local · 390/768/1440, reduced-motion-Guard, muted/loop/playsinline, ~0.8 MB)",
+      "alt": "Mann im dunklen Studio mit driftendem Cyan-Koordinatenraster auf dem Oberkörper"
     },
     {
       "id": "today_environment",
