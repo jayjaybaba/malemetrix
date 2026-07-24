@@ -22,18 +22,38 @@ MaleMetrix komplexe Dinge **besser erklärt** als andere.
 
 ---
 
-## 1 · VISUAL DNA
+## 1 · VISUAL DNA (V2 — korrigiert nach Owner-Creative-Reject, Kap.07)
 
-Als Creative Direction (nicht mathematisch):
+> **KORREKTUR (bindend).** Die V1-Formel „40 % Automotive HMI" wurde zu **literal**
+> gelesen und produzierte abstrakte Technik (Zahnräder, Platten, Maschinen-Architektur,
+> Schild-/System-Objekte). Das wirkt wie Corporate-Tech / Engineering-Visualisierung /
+> Software-Architektur — **NICHT** wie MaleMetrix. **Automotive HMI ist NICHT das Motiv.**
+> Es liefert nur **Disziplin** (Restraint, Typografie, Framing, Präzision, Informations-
+> hierarchie, Bewegungsglätte, Premium-Finish) — niemals Zahnräder, Maschinen oder Platten.
 
-- **40 % High-End Automotive HMI** — präzise Instrumente, ruhige Übergänge, Kontrolle.
-- **25 % Medical Performance Lab** — saubere Anatomie, klinische Klarheit.
-- **20 % Editorial Science Documentary** — erklärend, souverän, unaufgeregt.
-- **15 % Cinematic Biohacking** — Tiefe, Materialität, hoher Anspruch.
+**Die zentrale Frage bei jedem Asset:** **WAS PASSIERT IM MANN?** —
+nicht „Wie machen wir daraus eine technische Metapher?"
 
-Gesamteindruck: **premium · maskulin · kontrolliert · präzise · wissenschaftlich ·
-cinematic**. Hoher Kontrast, tiefe Schwarztöne, realistische Anatomie/Materialien,
-kontrollierte Highlights, minimales visuelles Rauschen.
+**PRIMÄR — CINEMATIC HUMAN BIOLOGY (das Motiv):**
+realistischer erwachsener Männerkörper · anatomische Cutaways · Organe · Gefäße ·
+Muskel · Fettgewebe · Gehirn · endokrine Organe · Zellen · Zirkulation ·
+Rezeptoren/Signalwege **nur wo wissenschaftlich sinnvoll** · reale Lifestyle-/
+Performance-Umgebungen. Das Subjekt kommt aus **Körper, Physiologie, Anatomie,
+männlicher Performance, Stoffwechsel, hormonellen/vaskulären/zellulären Mechanismen,
+realem menschlichem Kontext**.
+
+**SEKUNDÄR — PREMIUM MEDICAL VISUALIZATION (hilft erklären):**
+dezente Cyan-Highlights · saubere Daten-Overlays · zurückhaltende Labels · präzise
+Diagramme · elegante Übergänge. Darf die Biologie *unterstützen*, nie ersetzen.
+
+**TERTIÄR — AUTOMOTIVE-HMI-DISZIPLIN (nur Haltung, kein Motiv):**
+NUR in Spacing · Typografie · Informationsarchitektur · Bewegungsglätte · Restraint.
+**NICHT** als literale Zahnräder, Maschinen, Platten, Schilde oder Technik-Blöcke.
+
+Gesamteindruck: **cinematic human physiology** — premium · maskulin · kontrolliert ·
+präzise · wissenschaftlich. Hoher Kontrast, tiefe Schwarztöne, **realistische
+menschliche Anatomie/Physiologie**, kontrollierte Highlights, minimales Rauschen.
+**Denke: cinematic human biology — nicht: abstract engineering.**
 
 ---
 
@@ -55,14 +75,23 @@ Risiko markiert (z. B. RED FLAG) — nie zusätzlich „zur Deko".
 
 ## 3 · LOOK — JA / NEIN
 
-**JA:** premium, maskulin, kontrolliert, präzise, wissenschaftlich, cinematic,
-hoher Kontrast, tiefe Schwarztöne, realistische Anatomie, realistische Materialien,
-kontrollierte Highlights, minimales Rauschen.
+**JA:** **menschliche Physiologie/Anatomie als Motiv**, premium, maskulin,
+kontrolliert, präzise, wissenschaftlich, cinematic, hoher Kontrast, tiefe
+Schwarztöne, realistische Anatomie/Gewebe/Zellen/Gefäße, realer menschlicher
+Kontext, kontrollierte Highlights, minimales Rauschen.
 
 **NEIN:** Cyberpunk · Gaming · Marvel · Sci-Fi-Kitsch · Hologramm-Overload ·
 Random HUDs · Neon-Partikel · billige Fitnesswerbung · Wellness-Stock-Look ·
 AI-Glow überall · hektische Kamera · Random Morphing · generative Textfehler ·
 unnötige Lens Flares.
+
+**AUSDRÜCKLICH VERBOTEN als dominante Motive (Owner-Reject Kap.07 — bindend):**
+Zahnräder / Getriebe · schwebende mechanische Platten · abstrakte Maschinen-
+Architektur · generische Schilde · technische System-Blöcke · Server-artige
+Strukturen · Circuit-Board-Metaphern · Industriemaschinen · futuristische
+Engineering-Objekte · generische HMI-Welten · abstrakte „Systeme" **ohne
+menschlich-biologischen Anker**. Ein Asset ist **nicht** akzeptabel, nur weil
+es poliert ist — wenn kein Körper/keine Physiologie darin vorkommt, ist es falsch.
 
 ---
 
@@ -156,6 +185,16 @@ Nie Autoplay mit Ton. Information nie nur über Ton transportieren.
 
 ## 11 · KEYVISUAL FIRST + GENERATION DISCIPLINE
 
+> **BINDENDE OWNER-APPROVAL-REGEL (neu, nach Kap.07-Reject).**
+> **Kein Ultimate-Stack-Video — und kein Hero-/teures Signature-Video — darf
+> autonom generiert werden, bevor ein einzelnes STATIC-Keyvisual vom Owner
+> visuell freigegeben ist.** Ablauf: 1) exakte Sektion lesen · 2) Visual-Konzept
+> vorschlagen · 3) **NUR EIN** Still/Keyvisual erzeugen · 4) **STOP** · 5) Owner
+> gibt visuell frei oder lehnt ab · 6) **erst nach ausdrücklicher Freigabe** genau
+> dieses Visual animieren. **Nie mehr** Keyvisual → automatisches Video → Deploy
+> ohne menschliche visuelle Freigabe. Gilt besonders für: Ultimate Stack, Hero-
+> Assets, teure Signature-Clips.
+
 - **Keyvisual first:** bei komplexen Mechanismen zuerst einen kontrollierten
   Startframe (Still) erzeugen/wählen, dann **image-to-video**. Kein blindes
   Text-to-Video, wenn Anatomie/Komposition/Markenstil/Kamera dadurch schlechter
@@ -235,6 +274,29 @@ Frozen editorial content · Ultimate-Stack-Prosa · Commerce · PayPal · Orders
 Entitlements · Auth · Vault-Architektur · Score-Logik. Keine neuen großen
 Textblöcke, keine neue Kapitelstruktur, kein Redesign. Text nur minimal für
 Caption / Motion-Intro / Alt-Text / technisch nötige Übergänge.
+
+---
+
+## 18b · ULTIMATE STACK — CREATIVE PRINCIPLE (V2, bindend)
+
+Der Ultimate Stack darf **NICHT** als abstrakte Maschine visualisiert werden.
+Er wird visualisiert über **DEN MANN** und **die biologischen Systeme, die
+beeinflusst werden.**
+
+Mögliche visuelle Territorien (nur wo vom frozen Content gedeckt):
+- Männerkörper mit mehreren hervorgehobenen physiologischen Systemen
+- Interaktionen von Muskel / Leber / Fettgewebe / kardiovaskulär / endokrin
+- Körperkomposition und metabolischer Kontext
+- Blutlipide / vaskulärer Schutz
+- hormonelle Signalgebung
+- Recovery / Performance
+- Risiko vs. Nutzen über **echte Physiologie** ausgedrückt
+- mehrere Interventionen, die auf **denselben menschlichen Organismus** einzahlen
+
+**Zentrale Frage:** **„Was passiert IM Mann?"** — nie „Wie machen wir aus dem
+Stack eine technische Metapher?" Wenn der Owner Kap.07 neu bespielt, gilt: erst
+EIN Keyvisual (§11-Approval-Regel), Motiv = menschliche Biologie, dann Freigabe,
+dann Animation.
 
 ---
 
