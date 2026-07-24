@@ -22,6 +22,18 @@
   <meta name="twitter:title" content="DAS PROTOKOLL — das Referenzwerk hinter MaleMetrix">
   <meta name="twitter:description" content="Das gesamte MaleMetrix-Wissen als digitales System — Kraft, Cardio & VO₂, Körperkomposition (Cut · Recomp · Build · Perform), Schlaf, Longevity, Hormone und das interaktive 12-Week System. 49 € einmalig.">
   <meta name="twitter:image" content="https://www.malemetrix.com/og-image.png">
+  <style>
+    /* Hero-Motion — Signature-Frame im MM/MECHANISM-Look (mirrors .bp-mech aus blueprint.css,
+       hier eigenständig, da protokoll.html nur style.css lädt). */
+    .proto-hero-video { margin: 34px 0 6px; border: 1px solid rgba(255,255,255,.1); border-radius: 16px; overflow: hidden; background: #05070b; }
+    .phv-head { display: flex; align-items: center; gap: 12px; padding: 13px 16px 12px; font-family: var(--font-mono); font-size: .6rem; letter-spacing: .24em; color: var(--accent-2); border-bottom: 1px solid rgba(255,255,255,.07); text-transform: uppercase; }
+    .phv-head .sub { color: #6f8698; letter-spacing: .18em; text-transform: none; }
+    .phv-head::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(0,194,255,.4), transparent); }
+    .phv-stage { position: relative; aspect-ratio: 16 / 9; background: #05070b; }
+    .phv-stage video { display: block; width: 100%; height: 100%; object-fit: cover; background: #05070b; }
+    .phv-cap { padding: 13px 16px 15px; font-size: .9rem; line-height: 1.6; color: #93a3b2; background: rgba(255,255,255,.02); }
+    .phv-cap strong { color: #cfe0ee; font-weight: 600; }
+  </style>
 </head>
 <body>
 
@@ -79,6 +91,16 @@
           <li>✓ 30 Tage Geld-zurück-Garantie</li>
         </ul>
       </div>
+
+      <figure class="proto-hero-video" style="max-width:940px;margin-inline:auto">
+        <div class="phv-head">MM / SYSTEM <span class="sub">· Das Referenzwerk hinter deinem Körper</span></div>
+        <div class="phv-stage">
+          <video class="phv-video" muted loop playsinline preload="none" poster="assets/protocol/motion/mm-protokoll-hero.jpg" aria-label="Visualisierung: Ein durchtrainierter Mann steht ruhig und kontrolliert in tiefem Schwarz, während die Kamera langsam näher fährt und eine präzise cyanfarbene Kalibrierungslinie einmal über seinen Körper wandert — der Körper als vermessenes System.">
+            <source src="assets/protocol/motion/mm-protokoll-hero.mp4" type="video/mp4">
+          </video>
+        </div>
+        <figcaption class="phv-cap"><strong>Ein System, keine Sammlung von Hacks.</strong> DAS PROTOKOLL liest deinen Körper wie ein Instrument — Körperkomposition, Kraft, Schlaf, Blutwerte, Hormone: erst messen, dann die richtige Reihenfolge. Diese Visualisierung steht für genau das: Präzision statt Bro-Science.</figcaption>
+      </figure>
     </div>
   </section>
 
@@ -263,6 +285,22 @@
     b.addEventListener("click", buy);
   });
 })();
+</script>
+<script>
+  /* Hero-Motion — Auto-Play nur im Viewport, muted, kein Ton, respektiert
+     prefers-reduced-motion. preload=none: Videodaten laden erst beim Abspielen. */
+  (function(){
+    var vids=document.querySelectorAll(".phv-video");if(!vids.length)return;
+    var reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if(reduce)return;
+    if(!("IntersectionObserver" in window))return;
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){
+      var v=e.target;
+      if(e.isIntersecting){if(v.ended){try{v.currentTime=0;}catch(x){}}var pr=v.play();if(pr&&pr.catch)pr.catch(function(){});}
+      else{try{v.pause();}catch(x){}}
+    });},{threshold:0.35});
+    vids.forEach(function(v){io.observe(v);});
+  })();
 </script>
 </body>
 </html>
