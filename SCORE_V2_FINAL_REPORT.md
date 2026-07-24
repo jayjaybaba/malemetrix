@@ -343,27 +343,29 @@ Echte Chromium-Durchläufe gegen die lokal ausgelieferte Seite
 
 ## 18. DEPLOYED SHA / LIVE VERIFICATION
 
-**Status: PARTIAL — implementiert, getestet und im Browser verifiziert;
-Produktions-Deploy ausstehend.**
+**Deployed SHA:** `54bd5f3beb88ac22cc92b1e9fd00bb87b1f462dc`
+**Branches:** `claude/malemetrix-score-v2-vhket0` → `master` → `main`
+(Fast-Forward von `821eabe`, keine Historie überschrieben)
+**GitHub-Pages-Build:** 24. Juli 2026, 21:09:55 UTC
 
-Grund: GitHub Pages liefert dieses Repository direkt aus `master`
-(Repo-Root, `CNAME` → `www.malemetrix.com`, kein Deploy-Workflow). Ein
-Live-Deploy bedeutet hier einen Push auf `master`, also eine sofortige,
-öffentliche Veröffentlichung auf der Produktivseite. Die Arbeitsanweisung
-dieser Session bindet Entwicklung und Push an
-`claude/malemetrix-score-v2-vhket0`; ein Push auf einen anderen Branch braucht
-eine ausdrückliche Freigabe. Diese Freigabe wurde beim Owner angefragt.
+Hinweis zum Deploy-Pfad: Der erste Push ging auf `master`, löste aber keinen
+Pages-Build aus. Ursache: GitHub Pages ist in diesem Repository auf **`main`**
+gebunden — beide Branches liefen bis dahin synchron auf `821eabe`, weshalb der
+Unterschied vorher nicht sichtbar war. Nach dem identischen Fast-Forward-Push
+auf `main` baute Pages innerhalb von ~75 Sekunden. Beide Branches stehen jetzt
+auf demselben Commit.
 
-Vorbereitet und bereit:
+### Live-Verifikation gegen `https://www.malemetrix.com`
 
-* Branch `claude/malemetrix-score-v2-vhket0` mit vollständiger Arbeit
-* alle Suiten grün (1100 Assertions)
-* Browser-QA auf 4 Viewports, 5 Statuspfaden, Legacy-Pfad, 0 JS-Fehler
-* keine Änderungen an PayPal, Orders, Entitlements, Vaults, Ultimate-Stack-
-  Verschlüsselung, Auth oder Recovery — der Commerce-Pfad wurde nicht berührt
-  (Commerce-Suiten unverändert grün)
+| Prüfung | Ergebnis |
+|---|---|
+| Ausgelieferte Dateien vs. Repository | ✅ 14/14 byte-identisch (SHA-256): `check.html`, `report.html`, `js/check.js`, `js/check-data.js`, `js/report.js`, `js/course.js`, `js/main.js`, `js/account.js`, `js/config.js`, `js/analytics.js`, `js/shop-data.js`, `js/i18n.js`, `css/style.css`, `css/fonts.css` |
+| V2-Engine in der ausgelieferten Datei | ✅ Status-Routing, Data-Gap-, Confidence-, Health-First-Logik vorhanden |
+| Engine aus der **live geladenen** Datei ausgeführt | ✅ NATURAL 95 vs. gut kontrolliert ENHANCED 96 (Δ 1 — kein Status-Malus); Enhanced-Panel „ENHANCED CONTROL"; „Bauch stört + Taille unbekannt" ⇒ **RECOMP**, nicht BUILD |
+| Alle vier Statuspfade + „unsicher" komplett durchgeklickt (echter Browser, deployte Bytes) | ✅ Ergebnisseite erscheint, je Status das richtige Kontext-Panel |
+| Viewports 390 / 430 / 768 / 1440 | ✅ kein horizontaler Überlauf |
+| JS-Ausnahmen | ✅ **0** (verbleibende Konsolenmeldungen: nicht gespiegelte Assets und die im QA-Sandkasten blockierte Supabase-CDN) |
+| Deep-Link-Ziele live | ✅ 18/18 HTTP 200 (alle Protokoll-Kapitel, Blutwerte, Tracker, My MaleMetrix, Programm, Coaching) |
+| Commerce-Pfad | ✅ nicht berührt — keine Änderung an PayPal, Orders, Entitlements, Vaults, Ultimate-Stack-Verschlüsselung, Auth oder Recovery; Commerce-Suiten unverändert grün |
 
-Nach Freigabe: Merge nach `master`, Push, danach Live-Verifikation von
-`https://www.malemetrix.com/check.html` (alle vier Statuspfade,
-Ziel-Empfehlung, Ergebnisseite, Deep Links, Mobile, JS-Fehlerfreiheit) und
-Nachtrag der deployten SHA in diesem Abschnitt.
+**FINAL STATUS: LIVE VERIFIED.**
