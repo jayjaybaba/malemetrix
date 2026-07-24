@@ -107,12 +107,31 @@ Nach Commit "P13-A1" (siehe git log --oneline -5). Branch:
 
 # NEXT EXACT ACTION
 
-1. **A4 Daily Check-in 2.0 (EINZIGER offener Priority-A-Punkt):** js/os/app.js closeDayCard auditieren
-   (grep -n "closeDayCard" js/os/app.js). Auf One-Tap umbauen:
-   Training DONE/PARTIAL/MISSED, Schlaf-Buckets, Energie LOW/OK/HIGH,
-   Protein ja/nein — Feedback "X/5 CORE ACTIONS", Hinweis "Ein Tag ändert
-   deinen Plan nicht". Speichert in bestehende Stores (c2_daily/c2_pulse),
-   KEINE neue Datenquelle. Tests in user-state/program-engine ergänzen.
+1. **A4 Daily Check-in 2.0 (EINZIGER offener Priority-A-Punkt).**
+   AUDIT-ERGEBNIS (Fable, damit nichts doppelt gemacht wird):
+   - js/os/app.js:133 closeDayCard(day) — Evening Close existiert und ist
+     bereits EIN Klick (~15 s): Training/Protein werden ABGELEITET, nie
+     doppelt gefragt. Verdicts COMPLETE/PARTIAL/RECOVERY/REST via
+     X.dayLog/X.closeDay (js/os/execution.js — dort "closeDay" greppen).
+   - Der data-closeday-Klick-Handler liegt weiter unten in app.js
+     (grep -n "data-closeday" js/os/app.js).
+   VERBLEIBENDE ARBEIT (chirurgisch, NICHT neu bauen):
+   a) closeDayCard um 2 One-Tap-Zeilen erweitern: SCHLAF-Bucket
+      (<5 / 5-6 / 6-7 / 7-8 / 8+) und ENERGIE (LOW/OK/HIGH) als
+      .os-chip-Buttons mit data-Attributen; Auswahl in einer lokalen
+      Variable/dataset halten.
+   b) Im data-closeday-Handler die zwei Werte mit an X.closeDay übergeben
+      bzw. zusätzlich in c2_pulse für den Tag speichern (bestehendes
+      Format ansehen: MM.store.get("c2_pulse")) — KEINE neue Datenquelle.
+   c) Nach dem Schließen Feedback ohne Konfetti: "X/N CORE ACTIONS" aus
+      dem Verdict + Satz "Ein einzelner Tag ändert deinen Plan nicht."
+      (bei PARTIAL/MISSED) — Texte kurz, VS2-Ton.
+   d) Tests: program-engine.test.js Gruppe "P13/A4": statisch prüfen, dass
+      closeDayCard Schlaf-/Energie-Chips enthält, keine Pflicht-Textfelder,
+      und dass der Ein-Tag-ändert-nichts-Satz existiert. Verhaltenstest
+      falls X.closeDay in Node ladbar (execution.js braucht DOM-Shims wie
+      in user-state.test.js).
+   e) sw.js bump + Commit + Push (Muster unten) + diese Datei updaten.
 4. Nach jedem Paket: Suiten laufen lassen, sw.js bump, Commit im Stil der
    letzten Commits (deutsch, Co-Authored-By Claude Opus 4.8 + Session-Link),
    `git push -u origin claude/malemetrix-phase-6-execution-przdvm &&
