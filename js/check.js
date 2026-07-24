@@ -529,9 +529,13 @@
       '<h3 style="font-size:1.4rem;margin:2px 0 8px">' + r.bottleneck.name + '</h3>' +
       '<p>' + r.bottleneck.text + '</p>' +
       (C.bottleneckAffects[bKey] ? '<p style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted)"><strong style="color:var(--text)">Warum jetzt Priorität:</strong> ' + C.bottleneckAffects[bKey] + '</p>' : '') +
-      // Fix 1D — Rollen-treue Vertiefung: der Plan führt, DAS PROTOKOLL erklärt.
-      // Bewusst ein ruhiger Textlink, kein Kaufbutton im Diagnose-Block.
-      '<p class="small" style="margin-top:12px"><a href="protokoll.html" data-track="protokoll_from_result" style="color:var(--accent-2);text-decoration:none">DAS PROTOKOLL erklärt, warum ' + r.bottleneck.name + ' deinen Fortschritt bestimmt →</a></p>' +
+      // Fix 1D + P16-G/H — Rollen-treue Vertiefung: der Plan führt, DAS PROTOKOLL
+      // erklärt. Ruhiger Textlink (kein Kaufbutton) auf das GENAU passende Kapitel
+      // zu diesem Engpass — das Kapitel selbst trägt am Ende die Produkt-CTA.
+      (function () {
+        var ch = C.bottleneckChapter[bKey] || C.bottleneckChapter.execution;
+        return '<p class="small" style="margin-top:12px"><a href="' + ch.href + '" data-track="protokoll_chapter_' + bKey + '" style="color:var(--accent-2);text-decoration:none">DAS PROTOKOLL · Kapitel ' + ch.label + ': warum ' + r.bottleneck.name + ' deinen Fortschritt bestimmt →</a></p>';
+      })() +
       '</div>';
 
     /* ---------- P13/P1.6 — DEIN NÄCHSTER SCHRITT: GENAU EINE Handlung ----

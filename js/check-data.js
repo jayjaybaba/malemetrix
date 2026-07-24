@@ -942,6 +942,20 @@ window.MM_CHECK = {
     execution: { read: { label: "Gewohnheiten, die bleiben", href: "ebooks/gewohnheiten.html" },   track: { label: "Fortschritts-Tracker", href: "tracker.html" } }
   },
 
+  /* Engpass → PASSENDES Protokoll-Kapitel (P16-G/H): der Erklär-Link im
+     Diagnose-Block führt gezielt auf das Kapitel, das genau diesen Engpass
+     erklärt — statt generisch auf die Produktseite. Die freien Kapitel tragen
+     die Protokoll-Rahmung inkl. Kauf-CTA am Ende. */
+  bottleneckChapter: {
+    body:      { href: "ebooks/fettabbau.html",       label: "Körperkomposition" },
+    strength:  { href: "ebooks/training-system.html", label: "Training" },
+    fuel:      { href: "ebooks/fettabbau.html",       label: "Körperkomposition" },
+    recovery:  { href: "ebooks/schlaf-energie.html",  label: "Schlaf" },
+    blood:     { href: "ebooks/blutwerte-guide.html", label: "Blutwerte" },
+    drive:     { href: "ebooks/testosteron.html",     label: "Hormone" },
+    execution: { href: "ebooks/gewohnheiten.html",    label: "Umsetzung" }
+  },
+
   /* ==========================================================================
      ARCHETYPEN
      ========================================================================== */

@@ -155,6 +155,20 @@ var bpcss2 = read("css/blueprint.css");
 ok((bpcss2.match(/^\.ev \{/gm) || []).length === 1, "genau EINE .ev-Basisregel in blueprint.css (kein Override der Pill-Basis)");
 ok(/\.ev\.known/.test(bpcss2) && /\.ev-a \{/.test(bpcss2) && /\.ev-red \{/.test(bpcss2), "Evidenz-Farbmodifier (.ev.known) + Bestands-Chips (.ev-a/.ev-red) koexistieren");
 
+group("P16/G-H · Score-Ergebnis: Engpass → PASSENDES Kapitel statt generisch");
+var checkData = read("js/check-data.js");
+var checkJs = read("js/check.js");
+ok(/bottleneckChapter:\s*\{/.test(checkData), "check-data.js: bottleneckChapter-Map existiert");
+[["body", "fettabbau"], ["strength", "training-system"], ["fuel", "fettabbau"], ["recovery", "schlaf-energie"], ["blood", "blutwerte-guide"], ["drive", "testosteron"], ["execution", "gewohnheiten"]].forEach(function (pair) {
+  var seg = checkData.split("bottleneckChapter:")[1].split("},")[0] + checkData.split("bottleneckChapter:")[1].split("}")[1];
+  var block = checkData.split("bottleneckChapter:")[1].slice(0, 700);
+  ok(new RegExp(pair[0] + ":\\s*\\{[^}]*ebooks/" + pair[1] + "\\.html").test(block), "Engpass '" + pair[0] + "' → ebooks/" + pair[1] + ".html");
+});
+ok(/C\.bottleneckChapter\[bKey\]/.test(checkJs), "check.js nutzt C.bottleneckChapter[bKey] im Diagnose-Block");
+ok(/data-track="protokoll_chapter_/.test(checkJs), "Diagnose-Link trackt kapitelspezifisch (protokoll_chapter_<engpass>)");
+ok(!/href="protokoll\.html" data-track="protokoll_from_result"/.test(checkJs), "generischer protokoll.html-Link im Diagnose-Block ersetzt");
+ok(/data-track="cta_protokoll"/.test(checkJs), "Produkt-CTA (49 €) auf der Ergebnisseite bleibt erhalten");
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 process.exit(failed ? 1 : 0);

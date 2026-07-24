@@ -1,7 +1,15 @@
 # CONTINUATION_STATE — Phase 16: DAS PROTOKOLL 2.0 (Flagship Rebuild)
 
-## PHASE 16 STAND (A-F erledigt, G-J offen)
+## PHASE 16 STAND (A-H erledigt, J offen)
 ERLEDIGT:
+- G/H SCORE-ERGEBNIS → PASSENDES KAPITEL: Diagnose-Block-Link führt jetzt
+  je Engpass auf das genau erklärende Kapitel statt generisch protokoll.html.
+  Neue Map C.bottleneckChapter (check-data.js): body→fettabbau, strength→
+  training-system, fuel→fettabbau, recovery→schlaf-energie, blood→blutwerte-
+  guide, drive→testosteron, execution→gewohnheiten. check.js rendert Link
+  „DAS PROTOKOLL · Kapitel <X>: warum <Engpass>…", data-track protokoll_chapter_<key>.
+  Produkt-CTA (cta_protokoll, 49 €) bleibt erhalten. Browser-verifiziert für
+  recovery/body/drive/blood. Tests P16/G-H (116/0). SW mm-v123.
 - F BEFORE-TRT (ebooks/testosteron.html): neue Sektion #before-trt VOR s12
   (TRT-Red-Zone) + TOC. Adipositas↔T MEHRPFADIG korrekt — Aromatase als EIN
   Pfad neben Insulinresistenz/Entzündung/SHBG-Verschiebung/Schlafapnoe/
