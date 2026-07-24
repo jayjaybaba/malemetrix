@@ -175,10 +175,10 @@ ok(/data-track="protokoll_chapter_/.test(checkJs), "Diagnose-Link trackt kapitel
 ok(!/href="protokoll\.html" data-track="protokoll_from_result"/.test(checkJs), "generischer protokoll.html-Link im Diagnose-Block ersetzt");
 ok(/data-track="cta_protokoll"/.test(checkJs), "Produkt-CTA (49 €) auf der Ergebnisseite bleibt erhalten");
 
-group("Flagship Motion #01 · MM/MECHANISM ApoB-Clip in Kapitel 12");
-var motion = read("ebooks/12-longevity-risk.html");
-var mSeg = motion.split('id="s4"')[1].split('id="s5"')[0];
-ok(/<figure class="bp-mech">/.test(mSeg) && /MM \/ MECHANISM/.test(mSeg), "MM/MECHANISM-Instrument sitzt im ApoB-Abschnitt (§4)");
+group("Flagship Motion #01 · MM/MECHANISM ApoB-Clip in Kapitel 04 (Blutwerte)");
+var motion = read("ebooks/blutwerte-guide.html");
+var mSeg = motion.split('id="s3"')[1].split('id="s4"')[0];
+ok(/<figure class="bp-mech">/.test(mSeg) && /MM \/ MECHANISM/.test(mSeg), "MM/MECHANISM-Instrument sitzt im ApoB-/Herz-Kreislauf-Abschnitt (Kapitel 04)");
 ok(/<video[^>]*class="bp-mech-video"/.test(mSeg), "Video-Element vorhanden");
 ok(/preload="none"/.test(mSeg), "Performance: preload=none (Videodaten erst beim Abspielen)");
 ok(/\bmuted\b/.test(mSeg) && /\bloop\b/.test(mSeg) && /\bplaysinline\b/.test(mSeg), "muted + loop + playsinline (stiller, ruhiger Loop)");
