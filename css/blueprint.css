@@ -218,8 +218,8 @@
 .bp-cover.nofoto .bp-cover-title { margin-top: 8px; }
 .bp-cover.nofoto .kick { display: inline-block; }
 
-/* Evidenz-Label als Mono-Chip (KNOWN / LIKELY / …) */
-.ev { display: inline-block; font-family: var(--font-mono, monospace); font-size: .58rem; letter-spacing: .16em; padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,.16); color: #cfe0ee; margin-right: 6px; vertical-align: middle; }
+/* Evidenz-Label KNOWN/LIKELY/… — nutzt die bestehende .ev-Pill-Basis (oben),
+   nur eigene Farbmodifier. KEIN erneutes .ev { } (würde .ev-a/.ev-red brechen). */
 .ev.known { border-color: rgba(61,220,132,.4); color: #7ee6a8; }
 .ev.likely { border-color: rgba(0,194,255,.4); color: #8fd6ff; }
 .ev.plausible { border-color: rgba(245,166,35,.4); color: #f5c06a; }

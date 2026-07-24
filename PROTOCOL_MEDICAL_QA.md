@@ -66,10 +66,30 @@ Programm führt · Tracker misst · My MaleMetrix verbindet).
 
 ---
 
-## Kapitel 06 — BEFORE TRT / Adipositas ↔ Testosteron (Phase F)
+## Kapitel 06 — BEFORE TRT / Adipositas ↔ Testosteron (ebooks/testosteron.html, Phase F)
 
-Wird in Phase F ergänzt. Leitplanke bereits fixiert: **Aromatase ist EIN Pfad
-neben** Insulinresistenz, systemischer Entzündung, SHBG-Veränderung,
-Schlafapnoe und HPG-Achsen-Suppression — **niemals** die Verkürzung
-„Fett = hohes Estradiol". Reihenfolge: Body-Comp → Schlaf → Training → Labor →
-Reassess → (ärztliche) Diagnose. Kein Pro-/Anti-TRT.
+**Auftrag:** Adipositas↔T mehrpfadig korrekt (Aromatase als EIN Pfad),
+Reihenfolge Body-Comp → Sleep → Training → Labs → Reassess → Diagnose, kein
+Pro-/Anti-TRT. Umsetzung: neue Sektion `#before-trt` VOR der TRT-Red-Zone (s12)
++ TOC-Eintrag; zusätzlich zwei bestehende Stellen entschärft, die Aromatase als
+alleinige Mechanik darstellten (s6-Tabelle, s8-Schluss).
+
+| Pfad Adipositas → niedriges T | Status | Korrektheit |
+|---|---|---|
+| Aromatase (T → Östradiol im Fettgewebe) | KNOWN | Real, aber ausdrücklich **nur einer** von mehreren Pfaden. |
+| Insulinresistenz dämpft HPG/Hodenfunktion | LIKELY | Metabolische Störung wirkt zentral + peripher. |
+| Niedriggradige Entzündung (Adipokine/Zytokine) | LIKELY | Stört HPG-Achse und Leydig-Zellen. |
+| SHBG-Verschiebung (oft niedrig bei Adipositas/IR) | KNOWN | Drückt v. a. **Gesamt**-T → teils Messphänomen → freies T zählt. |
+| Obstruktive Schlafapnoe senkt T unabhängig | LIKELY/KNOWN | Fragmentierter Schlaf + Hypoxie; bei Bauchfett häufig. |
+| Zentrale HPG-Dämpfung (funktioneller Hypogonadismus) | LIKELY | Adipositas-assoziierter Hypogonadismus meist zentralen Ursprungs. |
+
+**Explizit als Irrtum markiert:** „Fett = hohes Östradiol" — zu einfach; erklärt
+u. a. warum manche adipösen Männer niedriges T UND normales Östradiol haben.
+**Kein Numerik-Grenzwert** für T/E2/SHBG behauptet; Messung + Interpretation an
+den Arzt delegiert (morgens, nüchtern, mehrfach, Gesamt + frei).
+
+**Reihenfolge** als `.p2chain` fixiert: 1 Körper · 2 Schlaf · 3 Training ·
+4 Labor · 5 Reassess · 6 Diagnose. TRT-Rahmung in `.box.clinical`:
+„weder Werbung für noch gegen TRT" — legitime ärztliche Therapie für einen
+echten, diagnostizierten Mangel, die am **Ende** der Reihenfolge steht, mit
+ehrlichem Hinweis auf Konsequenzen (u. a. Fruchtbarkeit). Kein Pro-/Anti-Stance.

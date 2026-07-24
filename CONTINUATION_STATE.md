@@ -1,7 +1,17 @@
 # CONTINUATION_STATE — Phase 16: DAS PROTOKOLL 2.0 (Flagship Rebuild)
 
-## PHASE 16 STAND (A-E erledigt, F-J offen)
+## PHASE 16 STAND (A-F erledigt, G-J offen)
 ERLEDIGT:
+- F BEFORE-TRT (ebooks/testosteron.html): neue Sektion #before-trt VOR s12
+  (TRT-Red-Zone) + TOC. Adipositas↔T MEHRPFADIG korrekt — Aromatase als EIN
+  Pfad neben Insulinresistenz/Entzündung/SHBG-Verschiebung/Schlafapnoe/
+  zentraler HPG-Dämpfung; „Fett = hohes Östradiol" explizit als IRRTUM.
+  Reihenfolge Körper→Schlaf→Training→Labor→Reassess→Diagnose (.p2chain).
+  Kein Pro-/Anti-TRT („weder Werbung für noch gegen"). Zwei Altstellen (s6/s8)
+  entschärft. PROTOCOL_MEDICAL_QA.md F-Abschnitt gefüllt. Tests P16/F (104/0).
+  BUGFIX aus E: doppelte .ev-Basisregel in blueprint.css entfernt (hätte
+  ev-a/ev-red-Chips in 10 Bestands-Ebooks grau gemacht) — Farben verifiziert
+  (grün/rot wieder korrekt). SW mm-v122.
 - E NEUE KAPITEL (bp-Design, FREE, foto-freies nofoto-Cover):
   ebooks/00-start-here.html (Reader-Journey + Rollen-Trennung + Ein-Engpass),
   ebooks/11-injektionen.html (Angstabbau, KEINE Universalnadel, KEINE Dosis,

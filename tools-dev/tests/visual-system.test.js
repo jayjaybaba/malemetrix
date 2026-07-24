@@ -137,6 +137,24 @@ ok(!/[0-9][.,]?[0-9]*\s*mg\s*\/\s*dl/i.test(c12), "12: KEINE erfundene Lipid-/Gl
 var ebd = read("js/ebooks-data.js");
 ok(/00-start-here\.html/.test(ebd) && /11-injektionen\.html/.test(ebd) && /12-longevity-risk\.html/.test(ebd), "E: neue Kapitel in der Library (ebooks-data.js) auffindbar");
 
+group("P16/F · BEFORE-TRT: Adipositas↔T mehrpfadig + Reihenfolge (testosteron.html)");
+var testo = read("ebooks/testosteron.html");
+ok(/id="before-trt"/.test(testo), "eigene Sektion #before-trt existiert");
+ok(testo.indexOf('id="before-trt"') < testo.indexOf('id="s12"'), "steht VOR der TRT-Red-Zone (s12)");
+ok(/#before-trt/.test(testo.split("bp-toc")[1] || testo), "TOC verlinkt die BEFORE-TRT-Sektion");
+["Aromatase", "Insulinresist", "Entzündung", "SHBG", "Schlafapnoe", "HPG"].forEach(function (p) {
+  ok(new RegExp(p).test(testo.split('id="before-trt"')[1].split('id="s12"')[0]), "Pfad '" + p + "' im BEFORE-TRT-Abschnitt genannt");
+});
+var seg = testo.split('id="before-trt"')[1].split('id="s12"')[0];
+ok(/Fett = hohes Östradiol/.test(seg) && /IRRTUM|zu einfach|Zu einfach/i.test(seg), "Fett=Östradiol-Verkürzung ausdrücklich als Irrtum markiert");
+ok(/Körper/.test(seg) && /Schlaf/.test(seg) && /Training/.test(seg) && /Labor/.test(seg) && /Reassess/.test(seg) && /Diagnose/.test(seg), "Reihenfolge Körper→Schlaf→Training→Labor→Reassess→Diagnose vorhanden");
+ok(/weder Werbung für noch gegen TRT/.test(seg), "kein Pro-/Anti-TRT (explizit neutral gerahmt)");
+ok(!/[0-9][.,]?[0-9]*\s*(ng\/dl|nmol\/l|pg\/ml)/i.test(seg), "keine erfundenen Hormon-Grenzwerte im BEFORE-TRT-Abschnitt");
+// CSS-Regressionsschutz: nur EINE .ev-Basisregel (sonst brechen ev-a/ev-red der Bestands-Ebooks)
+var bpcss2 = read("css/blueprint.css");
+ok((bpcss2.match(/^\.ev \{/gm) || []).length === 1, "genau EINE .ev-Basisregel in blueprint.css (kein Override der Pill-Basis)");
+ok(/\.ev\.known/.test(bpcss2) && /\.ev-a \{/.test(bpcss2) && /\.ev-red \{/.test(bpcss2), "Evidenz-Farbmodifier (.ev.known) + Bestands-Chips (.ev-a/.ev-red) koexistieren");
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 process.exit(failed ? 1 : 0);
