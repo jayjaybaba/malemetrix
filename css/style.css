@@ -637,6 +637,9 @@ h1, h2, h3, h4 {
 .proto-chap.is-hero .pc-n { color: var(--accent-2); }
 .proto-chap.is-hero .pc-b b { font-size: 1.12rem; }
 .proto-chap.is-hero > a { background: linear-gradient(100deg, rgba(0,194,255,.05), transparent 60%); }
+.proto-chap.proto-outro { border-top: 1px solid var(--line); }
+.proto-chap.proto-outro .pc-n { color: var(--accent-2); font-size: 1.1rem; }
+.proto-chap.proto-outro .pc-b b { color: var(--muted); font-size: 0.94rem; letter-spacing: 0.02em; }
 @media (max-width: 560px) {
   .proto-chap > a { grid-template-columns: 40px 1fr; gap: 12px; padding: 14px 4px; }
   .proto-chap .pc-tag { grid-column: 2; justify-self: start; margin-top: 6px; }

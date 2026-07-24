@@ -75,12 +75,14 @@ ok(/mm-access/.test(course) && /mm-metric/.test(course), "nutzt VS2-Systemklasse
 group("P16/D1 · Freie Ebooks als Protokoll-Kapitel gerahmt");
 var bpcss = read("css/blueprint.css");
 ok(/\.bp-protohead/.test(bpcss) && /\.bp-protocta/.test(bpcss), "Rahmungs-Styles (Kopf + Ende-CTA) existieren in blueprint.css");
+// P17: kanonische 10-Kapitel-Nummerierung (+ Companions als „· VERTIEFUNG", Abschluss)
 var CHAPTERS = {
-  "blueprint.html": "KAPITEL 01", "fettabbau.html": "KAPITEL 02", "protein-system.html": "KAPITEL 02",
-  "taeglich-trainieren.html": "KAPITEL 03", "training-system.html": "KAPITEL 03",
-  "schlaf-energie.html": "KAPITEL 04", "schlaf-stack.html": "KAPITEL 04", "blutwerte-guide.html": "KAPITEL 05",
-  "testosteron.html": "KAPITEL 06", "glp1-agonisten.html": "KAPITEL 07", "supplements.html": "KAPITEL 09",
-  "sexuelle-gesundheit.html": "KAPITEL 10", "gewohnheiten.html": "KAPITEL 13", "masterguide.html": "ÜBERBLICK"
+  "blueprint.html": "KAPITEL 01", "fettabbau.html": "KAPITEL 01 · VERTIEFUNG", "protein-system.html": "KAPITEL 01 · VERTIEFUNG",
+  "taeglich-trainieren.html": "KAPITEL 02", "training-system.html": "KAPITEL 02 · VERTIEFUNG",
+  "schlaf-energie.html": "KAPITEL 03", "schlaf-stack.html": "KAPITEL 03 · VERTIEFUNG", "blutwerte-guide.html": "KAPITEL 04",
+  "testosteron.html": "KAPITEL 05", "glp1-agonisten.html": "KAPITEL 06", "supplements.html": "KAPITEL 08",
+  "sexuelle-gesundheit.html": "KAPITEL 09", "11-injektionen.html": "KAPITEL 10",
+  "12-longevity-risk.html": "KAPITEL 04 · VERTIEFUNG", "gewohnheiten.html": "ABSCHLUSS", "masterguide.html": "KAPITEL 01 · VERTIEFUNG"
 };
 Object.keys(CHAPTERS).forEach(function (fn) {
   var h = read("ebooks/" + fn);
@@ -92,12 +94,14 @@ Object.keys(CHAPTERS).forEach(function (fn) {
 });
 ok(!/DAS 12-WOCHEN-PROGRAMM.{0,40}erklärt/i.test(read("ebooks/testosteron.html")), "Rollen bleiben getrennt (Programm 'erklärt' nicht) — Positionierung intakt");
 
-group("P16/CORR-B · EINE kanonische Kapitel-Architektur (14, kein 10-vs-14)");
+group("P17 · Kanonische 10-Kapitel-Architektur (+ Abschluss)");
 var proto = read("protokoll.html");
 ok(/id="kapitel"/.test(proto) && /class="proto-index"/.test(proto), "protokoll.html hat EINEN kanonischen Kapitel-Index (#kapitel)");
-ok(!/Die 10 Module/.test(proto) && !/pillar-tag">Modul /.test(proto), "kein konkurrierendes '10 Module'-Modell mehr");
-ok((proto.match(/class="proto-chap/g) || []).length === 14, "Index listet exakt 14 kanonische Kapitel (00–13)");
-ok(/ebooks\/00-start-here\.html/.test(proto) && /ebooks\/ultimate-stack\.html/.test(proto) && /ebooks\/12-longevity-risk\.html/.test(proto), "Index verlinkt echte Kapitel-URLs inkl. Ultimate Stack (08)");
+ok(!/Die 10 Module/.test(proto) && !/pillar-tag">Modul /.test(proto) && !/14 Kapitel/.test(proto), "kein '10 Module'- und kein '14 Kapitel'-Modell mehr");
+ok((proto.match(/class="proto-chap/g) || []).length === 11, "Index = exakt 10 nummerierte Kapitel + 1 Abschluss");
+ok((proto.match(/class="pc-n">\d\d</g) || []).length === 10, "genau 10 Kapitelnummern 01–10");
+ok(/proto-outro/.test(proto) && /ABSCHLUSS · DAS SYSTEM ZUSAMMENSETZEN/.test(proto), "unnummerierter Abschluss vorhanden (kein Kapitel 11)");
+ok(/ebooks\/blueprint\.html/.test(proto) && /ebooks\/ultimate-stack\.html/.test(proto) && /ebooks\/11-injektionen\.html/.test(proto), "Index verlinkt echte Kapitel-URLs inkl. Ultimate Stack (07) + Injektionen (10)");
 ok(/DAS PROTOKOLL erklärt/.test(proto) && /12-Wochen-Programm/.test(proto) && /führt/.test(proto), "Rollen getrennt (Protokoll erklärt · Programm führt)");
 ok(/pc-tag paid">IM PROTOKOLL/.test(proto) && /pc-tag free">FREI LESEN/.test(proto), "ehrliche Frei/Premium-Kennzeichnung je Kapitel");
 ok(/\.proto-index \{/.test(style) && /\.proto-chap/.test(style), "Index-Styles zentral in style.css");
