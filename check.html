@@ -31,7 +31,6 @@
   <div class="container header-inner">
     <a href="index.html" class="logo" aria-label="MaleMetrix Startseite"><span class="logo-word">MALEMETRI</span><svg class="logo-x" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path d="M22 22 42 42 M22 78 42 58" stroke="#eef2f7" stroke-width="12" stroke-linecap="round" fill="none"/><path d="M78 22 58 42 M78 78 58 58" stroke="#00c2ff" stroke-width="12" stroke-linecap="round" fill="none"/></svg></a>
     <nav class="main-nav" id="mainNav">
-      <a href="index.html#system" data-i18n="nav.system">System</a>
       <a href="check.html" data-i18n="nav.check">Score</a>
       <a href="protokoll.html" data-i18n="nav.protocol">Das Protokoll</a>
       <a href="coaching.html" data-i18n="nav.coaching">1:1 Coaching</a>
@@ -77,69 +76,12 @@
         </div>
       </div>
 
-      <span class="eyebrow">Kostenlos · ca. 7 Minuten · adaptiv · sofortiges Ergebnis</span>
-      <h1 class="h-display">Finde deinen <span class="text-grad">MaleMetrix Score</span>.</h1>
-      <p class="lead" style="margin-top:20px">Der Score fragt nicht jeden Mann dasselbe. Er passt sich deinem Kontext an — natural, nach früherer Anwendung, unter ärztlicher Hormontherapie oder enhanced — und zeigt dir, welches System dich gerade wirklich limitiert. Keine E-Mail nötig, dein Ergebnis erscheint sofort.</p>
+      <span class="eyebrow">Kostenlos · ca. 7 Minuten · sofortiges Ergebnis</span>
+      <h1 class="h-display">Finde deinen <span class="text-grad">größten Engpass</span>.</h1>
+      <p class="lead" style="margin:20px 0 34px">Der MaleMetrix Score analysiert Training, Körperkomposition, Schlaf, Stoffwechsel und deinen individuellen Kontext.</p>
 
-      <div class="grid-2" style="margin:36px 0">
-        <ul class="check-list">
-          <li>Dein Gesamt-Score (0–100) mit Einordnung</li>
-          <li>Deine Systeme einzeln: Körper, Training, Bewegung, Schlaf, Erholung, Ernährung, Stoffwechsel, Herz-Kreislauf, Hormone, Energie, Datenlage, Umsetzung</li>
-          <li>Dein primärer Engpass — oft nicht der, den du vermutest</li>
-          <li>Adaptive Fragen statt Einheitsformular: nur was für dich relevant ist</li>
-        </ul>
-        <ul class="check-list">
-          <li>Deine Aussagesicherheit — wie belastbar dein Ergebnis wirklich ist</li>
-          <li>Deine Datenlücken: was nicht gemessen ist, gilt hier nicht als „normal“</li>
-          <li>Deine Reihenfolge + persönlicher 7-Tage-Plan</li>
-          <li>Optional: vollständiger Report als PDF</li>
-        </ul>
-      </div>
-
-      <button class="btn btn-primary btn-lg btn-arrow" id="btnStartCheck" data-track="score_start_click">MaleMetrix Score starten</button>
-      <p class="small" style="color:var(--muted-2);margin-top:18px">Deine Antworten werden nur in deinem Browser gespeichert und nicht an uns übertragen. Eine anonyme Nutzungsstatistik ohne Antworten kannst du im nächsten Schritt optional erlauben.</p>
-    </div>
-  </section>
-
-  <!-- ============================ EINWILLIGUNG ============================ -->
-  <section class="page-head" id="checkConsent" style="display:none">
-    <div class="container-tight">
-      <span class="eyebrow">Bevor es losgeht</span>
-      <h2 class="h-section">Kurz & transparent: Was der Check ist — und was nicht.</h2>
-      <p class="lead" style="margin:16px 0 32px">Der Check fragt auch sensible Bereiche ab (Schlaf, Energie, Libido, Blutwerte) — und er fragt nach deinem Status: natural, früher enhanced, ärztliche Hormontherapie oder enhanced. Das ist ein <strong>Kontext, keine Bewertung</strong>: Er kostet dich keinen Punkt, er entscheidet nur, welche Fragen und welche Einordnung für dich überhaupt sinnvoll sind. Wo es sensibel wird, kannst du „möchte ich nicht angeben“ wählen — der Score funktioniert trotzdem.</p>
-
-      <div style="display:grid;gap:12px;margin-bottom:28px">
-        <label class="checkbox-row">
-          <input type="checkbox" required>
-          <span>Ich verstehe, dass der MaleMetrix Score <strong>keine medizinische Diagnose</strong> stellt.</span>
-        </label>
-        <label class="checkbox-row">
-          <input type="checkbox" required>
-          <span>Ich verstehe, dass der Check <strong>keine ärztliche Beratung ersetzt</strong>.</span>
-        </label>
-        <label class="checkbox-row">
-          <input type="checkbox" required>
-          <span>Ich bin damit einverstanden, dass meine Angaben <strong>lokal in meinem Browser</strong> zur Erstellung meines persönlichen Ergebnisses verarbeitet werden. Ich habe die <a href="datenschutz.html" target="_blank" style="text-decoration:underline">Datenschutzhinweise</a> gelesen.</span>
-        </label>
-        <label class="checkbox-row">
-          <input type="checkbox" required>
-          <span>Mir ist bewusst: Bei akuten Beschwerden, starken Symptomen oder auffälligen Laborwerten wende ich mich an einen <strong>Arzt</strong>.</span>
-        </label>
-      </div>
-
-      <div style="display:grid;gap:12px;margin-bottom:22px">
-        <label class="checkbox-row">
-          <input type="checkbox" id="consentTelemetry">
-          <span><strong>Optional:</strong> anonyme Nutzungsstatistik erlauben. Damit sehen wir, an welcher Stelle der Score zu lang wird — <strong>ohne deine Antworten</strong>. Übertragen werden nur Abschnittsnummer, Fortschritt, Dauer und Gerätetyp (Handy/Tablet/Desktop), verknüpft mit einer zufälligen Kennung. <strong>Keine Antworten, keine Blutwerte, keine Substanzen, kein Status, kein Name, keine E-Mail.</strong> Du kannst hier auch einfach weiterklicken — der Score funktioniert identisch.</span>
-        </label>
-      </div>
-
-      <div class="alert alert-info">
-        <span class="alert-icon">🔒</span>
-        <div>Deine Antworten bleiben auf deinem Gerät. Sie werden nicht an uns übertragen — nur wenn du am Ende aktiv „Ergebnis per E-Mail“ wählst. Die optionale Nutzungsstatistik oben enthält <strong>keine</strong> Antworten und ist jederzeit abwählbar.</div>
-      </div>
-
-      <button class="btn btn-primary btn-lg" id="btnConsentNext" disabled style="margin-top:20px">Verstanden — Score ermitteln →</button>
+      <button class="btn btn-primary btn-lg btn-arrow" id="btnStartCheck" data-track="score_start_click">SCORE STARTEN</button>
+      <p class="small" style="color:var(--muted-2);margin-top:16px">Der Score dient der Orientierung und ersetzt keine medizinische Diagnose oder ärztliche Beratung.</p>
     </div>
   </section>
 

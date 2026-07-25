@@ -805,6 +805,21 @@
       '<p class="small muted" id="fbThanks" style="display:none;margin:12px 0 0">Danke. Dein Feedback hilft, den Score präziser zu kalibrieren.</p>' +
       '</div>';
 
+    /* ---------- Optionale Nutzungsmessung — NACH dem Ergebnis, nie davor ----
+       Standardmäßig aus, jederzeit umschaltbar, ohne Einfluss auf den Score. */
+    html += '<div class="card dash-block mm-optin" id="scoreOptin" style="margin-top:16px">' +
+      '<span class="card-num">MALEMETRIX VERBESSERN</span>' +
+      '<div class="mm-optin-row">' +
+      '<div>' +
+      '<h3 style="font-size:1rem;margin:4px 0 4px">Anonyme Nutzungsmessung erlauben</h3>' +
+      '<p class="small muted" style="margin:0">Hilft uns zu erkennen, wo der Score zu lang ist. Es werden keine Antworten oder Gesundheitsdaten übertragen.</p>' +
+      '</div>' +
+      '<button type="button" class="mm-switch" id="optinSwitch" role="switch" aria-checked="false" aria-label="Anonyme Nutzungsmessung erlauben">' +
+      '<span class="mm-switch-track"><span class="mm-switch-knob"></span></span>' +
+      '<span class="mm-switch-label" id="optinState">AUS</span>' +
+      '</button>' +
+      '</div></div>';
+
     /* ---------- 7. TEILBARE SCORE-CARD ---------- */
     html += '<h3 class="h-card" style="margin:38px 0 14px">Deine Score-Card</h3>' +
       '<div class="mm-scorecard" id="scoreCard">' +
@@ -857,6 +872,27 @@
         if (!a) return;
         tel("score_cta_clicked", { cta_id: (a.getAttribute("data-track") || "").slice(0, 40) });
       });
+
+      /* Optionale Nutzungsmessung: Standard AUS, sofort umschaltbar.
+         Beim Einschalten wird nachgeholt, was auf DIESER Seite noch
+         messbar ist — rückwirkend wird nichts rekonstruiert. */
+      const sw = el.querySelector("#optinSwitch");
+      const swState = el.querySelector("#optinState");
+      if (sw) {
+        const paint = () => {
+          const on = !!(t && t.consent());
+          sw.setAttribute("aria-checked", on ? "true" : "false");
+          sw.classList.toggle("on", on);
+          if (swState) swState.textContent = on ? "AN" : "AUS";
+        };
+        paint();
+        sw.addEventListener("click", () => {
+          const cur = !!(t && t.consent());
+          if (t) t.setConsent(!cur);
+          paint();
+          if (!cur) { telOnce("result_viewed", "score_result_viewed", meta); if (t) t.flush(); }
+        });
+      }
 
       /* Feedback-Modul */
       const rateWrap = el.querySelector("#fbRating");
@@ -916,7 +952,10 @@
       if (confirm("Check wirklich neu starten? Dein aktuelles Ergebnis bleibt im Verlauf gespeichert.")) {
         state.idx = 0; state.answers = {};
         MM.store.remove("check_draft");
-        show("checkConsent");
+        const t = TEL(); if (t) t.startAttempt();
+        resyncSteps();
+        show("checkWizard");
+        renderStep();
       }
     });
 
@@ -964,8 +1003,28 @@
   function init() {
     if (!document.getElementById("checkWizard")) return;
 
-    /* Intro → Consent */
-    $("#btnStartCheck").addEventListener("click", () => show("checkConsent"));
+    /* Intro → direkt in die erste Frage. Kein Zwischenschritt, keine
+       Checkbox, keine Bestätigungswand: Wer den Score starten will,
+       startet ihn. Die lokale Verarbeitung (Zwischenspeichern, Fortsetzen,
+       Berechnen, Anzeigen) läuft ohne gesonderte Einwilligung — sie
+       verlässt das Gerät nicht. Die optionale Nutzungsmessung wird erst
+       NACH dem Ergebnis angeboten und ist standardmäßig aus. */
+    function startScore() {
+      if (MM.track) MM.track("check_started");
+      const t = TEL();
+      const hadDraft = Object.keys(state.answers || {}).length > 0;
+      if (t) {
+        /* Frischer Versuch bekommt eine neue Zufalls-ID; ein fortgesetzter
+           Entwurf behält seine, damit der Funnel nicht doppelt zählt. */
+        if (!hadDraft || !t.attemptId()) t.startAttempt();
+      }
+      resyncSteps();
+      telOnce("started", "score_started", telBase());
+      if (hadDraft) telOnce("resumed", "score_resumed", telBase());
+      show("checkWizard");
+      renderStep();
+    }
+    $("#btnStartCheck").addEventListener("click", startScore);
 
     /* Vorhandenes Ergebnis anzeigen */
     const existing = MM.store.get("check_result", null);
@@ -980,50 +1039,6 @@
         });
       }
     }
-
-    /* Consent-Logik */
-    const consentBoxes = document.querySelectorAll("#checkConsent input[type=checkbox][required]");
-    const btnConsent = $("#btnConsentNext");
-    const checkConsent = () => {
-      btnConsent.disabled = ![...consentBoxes].every(c => c.checked);
-    };
-    consentBoxes.forEach(c => c.addEventListener("change", () => {
-      c.closest(".checkbox-row").classList.toggle("checked", c.checked);
-      checkConsent();
-    }));
-    document.querySelectorAll("#checkConsent input[type=checkbox]:not([required])").forEach(c => {
-      c.addEventListener("change", () => c.closest(".checkbox-row").classList.toggle("checked", c.checked));
-    });
-    checkConsent();
-
-    /* Optionale Statistik-Einwilligung — bewusst NICHT required.
-       Ohne Häkchen wird nichts übertragen; der Score ist identisch. */
-    const telBox = document.getElementById("consentTelemetry");
-    if (telBox) {
-      const t0 = TEL();
-      telBox.checked = !!(t0 && t0.consent());
-      telBox.addEventListener("change", () => {
-        telBox.closest(".checkbox-row").classList.toggle("checked", telBox.checked);
-        const t = TEL();
-        if (t) t.setConsent(telBox.checked);
-      });
-    }
-
-    btnConsent.addEventListener("click", () => {
-      if (MM.track) MM.track("check_started");
-      const t = TEL();
-      const hadDraft = Object.keys(state.answers || {}).length > 0;
-      if (t) {
-        /* Frischer Versuch bekommt eine neue Zufalls-ID; ein fortgesetzter
-           Entwurf behält seine, damit der Funnel nicht doppelt zählt. */
-        if (!hadDraft || !t.attemptId()) t.startAttempt();
-      }
-      resyncSteps();
-      telOnce("started", "score_started", telBase());
-      if (hadDraft) telOnce("resumed", "score_resumed", telBase());
-      show("checkWizard");
-      renderStep();
-    });
 
     $("#wizNext").addEventListener("click", next);
     $("#wizBack").addEventListener("click", back);
