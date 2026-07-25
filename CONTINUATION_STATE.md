@@ -1,3 +1,75 @@
+# CONTINUATION_STATE — Phase 18: Der eine Auftrag + Telemetrie-Vorbereitung
+
+## PHASE 18 STAND (SW mm-v140)
+
+### Der eine Auftrag — Score → Tracker → zweiter Score
+Der Score diagnostizierte gut und endete im Nichts. Wer nach vier Wochen
+wiederkam, hatte nichts getan, was der zweite Durchlauf hätte zeigen können —
+der Vergleich maß Zufall gegen Zufall.
+
+Neu: aus dem Engpass entsteht **genau eine** Aufgabe, 28 Tage lang, täglich
+mit Ja/Nein abhakbar.
+
+- `js/check-data.js`: `C.FOCUS` (15 Domains, je Titel / Tagesfrage /
+  Begründung / Beleg / ggf. ärztlicher Vorbehalt) + `C.focusFor(result)`
+- `js/focus.js` (neu): `MM.focus` — Speicher, Fortschritt, Historie.
+  Rein lokal, sendet nichts, verlangt keine Adresse.
+- `js/check.js`: Auftrags-Block auf der Ergebnisseite (**vor** dem
+  Termin-Block — erst was tun, dann wann prüfen) + Bilanz beim zweiten Score
+- `js/tracker.js`: Auftrag steht **über** den Statistiken, mit Tagesfrage,
+  Fortschrittsbalken und Abschluss-Bilanz
+- `css/style.css`: `.trk-focus-*`
+
+Bewusste Entscheidungen:
+- **Ziel ist 20 von 28, nicht 28 von 28.** Perfektion ist die falsche
+  Messlatte und der schnellste Weg zum Abbruch nach dem ersten Fehltag.
+- **Eine Aufgabe, nicht drei.** Wer fünf Dinge anfängt, macht keins durch.
+- **Ein laufender Auftrag wird nie still überschrieben** — er wandert in die
+  Historie, sonst wäre der Vergleich beim nächsten Score gelogen.
+- **Der Block verkauft nichts.** Keine Produktlinks, kein Preis — das ist
+  der kostenlose Teil, und er bleibt es.
+- Bei `cardiovascular`, `hormonal`, `enhancedControl`, `therapyControl`,
+  `recoveryStatus` steht der ärztliche Vorbehalt im Auftrag selbst.
+  Keine Diagnose, keine Dosierung, kein Präparat.
+
+Prüfung: `tools-dev/tests/focus.test.js` (83 Assertions, u. a. Leitplanken
+gegen Dosierungs- und Diagnosesprache) + Browser-QA über die volle Kette
+(erster Score → starten → Tracker → abhaken → Reload → Ablauf → zweiter
+Score mit Bilanz), 0 px Überlauf auf 360 px, keine JS-Fehler.
+
+### Telemetrie — vorbereitet, aber NICHT ausgerollt
+Live geprüft: der Endpunkt antwortet **404**, die Edge Function ist nicht
+deployt. Der Client ist fertig, einwilligungsgebunden und scheitert sauber
+(Queue max. 40, max. 3 Fehlversuche pro Seitenaufruf — kein Netzwerksturm).
+Der Validator akzeptiert das Testevent aus `deploy-telemetry.sh` mit
+0 Ablehnungen; der Rollout wird also beim ersten Versuch durchlaufen.
+
+Neu: `MM.productionStatus()` meldet jetzt `score_telemetry` mit
+`client_ready`, `consent_granted` und `pending_events`. Vorher war der
+Zustand unsichtbar — die Seite verhielt sich still korrekt und sammelte
+trotzdem nichts.
+
+**Was nur der Inhaber tun kann** (ein Befehl, zwei Secrets):
+```
+export SUPABASE_ACCESS_TOKEN=sbp_...     # Account → Access Tokens
+export SUPABASE_DB_PASSWORD=...          # Projekt → Database → Password
+bash tools-dev/deploy-telemetry.sh
+```
+Solange das offen ist, wird jede weitere Optimierung ohne Rückkanal
+entschieden — also geraten.
+
+### Weiterhin offen beim Inhaber
+- Kapitel-Volltexte neu in die Vaults verschlüsseln (Zugangscode + `_src/`)
+- GitHub-Default-Branch auf `main` (Proxy verweigert Repo-Einstellungen;
+  bis dahin geht jeder Deploy auf `main` UND `master`)
+- Apple Health: HealthKit hat keine Web-API. Die native App liegt fertig in
+  `ios/` (981 Zeilen Swift), wurde aber nie kompiliert — dafür braucht es
+  einen Mac. Der Weg ohne Mac wäre ein Apple-Kurzbefehl mit lokalem Import;
+  noch nicht gebaut, wartet auf Entscheidung.
+- Coaching-Preis unverändert 149 €.
+
+---
+
 # CONTINUATION_STATE — Phase 17: Nutzer-Feedback + geschlossenes Produkt
 
 ## PHASE 17 STAND (SW mm-v139)

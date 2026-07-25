@@ -44,6 +44,24 @@
         local_funnel: true,   // MM.funnel() zählt immer lokal
         status: present((CFG.analytics || {}).plausibleDomain) ? "provider_set" : "local_only"
       },
+      /* Score-Telemetrie: der Client ist fertig und einwilligungsgebunden,
+         die Edge Function muss aber einmalig ausgerollt werden. Ohne diesen
+         Eintrag ist genau das unsichtbar — die Seite verhält sich still
+         korrekt und sammelt trotzdem nichts. */
+      score_telemetry: (function () {
+        var t = MM.telemetry;
+        var q = 0;
+        try { q = (JSON.parse(localStorage.getItem("mm_score_tel_q")) || []).length; } catch (e) {}
+        return {
+          client_ready: !!(t && t.track),
+          endpoint_configured: present(CFG.supabaseUrl),
+          consent_granted: !!(t && t.consent && t.consent()),
+          pending_events: q,
+          status: !(t && t.track) ? "client_missing"
+            : !present(CFG.supabaseUrl) ? "REQUIRES CONFIG (supabaseUrl)"
+            : "client_ready — Function-Deploy prüfen: bash tools-dev/deploy-telemetry.sh --verify-only"
+        };
+      })(),
       email: { provider_configured: present(CFG.brevoFormAction), fallback: "FormSubmit/mailto", status: present(CFG.brevoFormAction) ? "provider_set" : "relay_only" },
       calendar_oauth: { configured: false, status: "DEFERRED (ICS-Import ist live)" },
       account_state: (MM.account && MM.account.snapshot) ? MM.account.snapshot().state : "unknown"

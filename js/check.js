@@ -541,6 +541,38 @@
       '<div class="limiter"><span class="k">PRIMARY LIMITER</span><b>' + esc(V.primaryBottleneck.name).toUpperCase() + '</b><span class="v">' + (V.primaryBottleneck.value != null ? V.primaryBottleneck.value : "") + '</span></div>' +
       '</div>';
 
+    /* ---------- HAT DEIN AUFTRAG ETWAS GEBRACHT? --------------------------
+       Der eigentliche Grund, ein zweites Mal herzukommen. Nur sichtbar, wenn
+       es beim letzten Mal wirklich einen Auftrag gab — sonst wäre es eine
+       erfundene Erfolgsgeschichte. Bewertet wird die Umsetzung getrennt vom
+       Ergebnis: vier saubere Wochen ohne Punktgewinn sind kein Scheitern,
+       und ein Punktgewinn ohne Umsetzung ist kein Verdienst. */
+    (function () {
+      if (!(MM.focus && prev)) return;
+      const o = MM.focus.lastOutcome();
+      if (!o || o.laufend) return;                 // läuft noch → kein Fazit
+      if (o.erledigt === 0) return;                // nie begonnen → nichts zu sagen
+      const delta = prev ? r.total - prev.total : null;
+      const gehalten = o.geschafft;
+      let fazit;
+      if (gehalten && delta > 0) {
+        fazit = "Du hast durchgezogen, und der Score ist gestiegen. Das ist der Fall, in dem der Hebel gestimmt hat — mach mit demselben Prinzip weiter.";
+      } else if (gehalten && delta <= 0) {
+        fazit = "Du hast durchgezogen, der Score steht aber nicht besser. Das heißt nicht, dass es umsonst war: vier Wochen sind für manche Bereiche schlicht zu kurz. Es heißt, dass wir den nächsten Hebel woanders suchen.";
+      } else if (!gehalten && delta > 0) {
+        fazit = "Der Score ist gestiegen, obwohl die Aufgabe nur teilweise lief. Nimm das nicht als Beweis — wahrscheinlicher ist, dass etwas anderes gewirkt hat oder die Messung schwankt.";
+      } else {
+        fazit = "Die Aufgabe lief nur teilweise, und der Score steht nicht besser. Das ist kein Charakterproblem: die Aufgabe war vermutlich zu groß für deinen Alltag. Die nächste unten ist kleiner gedacht.";
+      }
+      html += '<div class="card dash-block" style="margin:0 0 22px;border-left:3px solid ' + (gehalten ? 'var(--accent)' : 'var(--muted-2)') + '">' +
+        '<span class="card-num">DEIN LETZTER AUFTRAG</span>' +
+        '<h3 style="font-size:1.1rem;margin:4px 0 6px">' + o.erledigt + ' von ' + o.ziel + ' Tagen' +
+        (gehalten ? ' — Ziel erreicht.' : ' — Ziel nicht erreicht.') + '</h3>' +
+        '<p class="small muted" style="margin:0 0 8px">„' + esc(o.title) + '"</p>' +
+        '<p class="small" style="margin:0">' + esc(fazit) + '</p>' +
+        '</div>';
+    })();
+
     /* ---------- V2-Kopfzeile: STATUS · ZIEL · CONFIDENCE ----------
        Drei Aussagen, die zusammen erst ein Ergebnis ergeben: In welchem
        Kontext lesen wir das, wohin geht die Richtung, und wie sicher
@@ -845,6 +877,48 @@
       '<p class="small muted" id="fbThanks" style="display:none;margin:12px 0 0">Danke. Dein Feedback hilft, den Score präziser zu kalibrieren.</p>' +
       '</div>';
 
+    /* ---------- DER EINE AUFTRAG ------------------------------------------
+       Bisher endete der Score mit einer Diagnose und einer Kaufempfehlung —
+       aber ohne etwas, das in den nächsten vier Wochen tatsächlich passiert.
+       Der zweite Score verglich dann Zufall mit Zufall. Hier steht deshalb
+       GENAU EINE Aufgabe, abgeleitet aus dem Engpass, täglich abhakbar im
+       Tracker. Kostet nichts, verlangt keine E-Mail, bleibt auf dem Gerät. */
+    (function () {
+      if (!C.focusFor) return;
+      const f = C.focusFor(r);
+      if (!f) return;
+      const laufend = MM.focus && MM.focus.current();
+      const p = laufend && MM.focus.progress(laufend);
+
+      html += '<div class="card dash-block" id="scoreFocus" style="margin-top:24px;border-left:3px solid var(--accent)">' +
+        '<span class="card-num" style="color:var(--accent)">DEINE EINE AUFGABE</span>';
+
+      /* Läuft schon einer? Dann zuerst der ehrliche Rückblick — sonst wäre
+         der neue Auftrag eine Ausrede für den alten. */
+      if (laufend && p && !p.abgelaufen) {
+        html += '<h3 style="font-size:1.15rem;margin:4px 0 6px">Du hast schon einen laufenden Auftrag.</h3>' +
+          '<p class="small muted" style="margin:0 0 10px">„' + esc(laufend.title) + '" — ' +
+          p.erledigt + ' von ' + laufend.target + ' Tagen erledigt, noch ' + p.offen + ' Tage. ' +
+          (p.aufKurs ? 'Du liegst auf Kurs. Zieh das zu Ende, bevor du etwas Neues anfängst.'
+                     : 'Du liegst zurück. Entweder du holst auf — oder die Aufgabe war zu groß und du tauschst sie.') + '</p>' +
+          '<div style="display:flex;gap:12px;flex-wrap:wrap">' +
+          '<a class="btn btn-primary" href="tracker.html#focus" data-track="focus_open">Im Tracker weiterführen</a>' +
+          '<button class="btn btn-ghost" id="btnFocusSwap" data-track="focus_swap">Gegen die neue Aufgabe tauschen</button>' +
+          '</div>';
+      } else {
+        html += '<h3 style="font-size:1.15rem;margin:4px 0 6px">' + esc(f.title) + '</h3>' +
+          '<p class="small muted" style="margin:0 0 10px">' + esc(f.why) + '</p>' +
+          '<p class="small" style="margin:0 0 14px"><strong>Ziel:</strong> ' + f.target + ' von 28 Tagen. ' +
+          'Nicht 28 von 28 — ein verpasster Tag darf kein Grund zum Abbrechen sein. ' + esc(f.proof) + '</p>' +
+          (f.arzt ? '<p class="small" style="color:var(--muted-2);margin:0 0 14px">' + esc(f.arzt) + '</p>' : '') +
+          '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">' +
+          '<button class="btn btn-primary" id="btnFocusStart" data-track="focus_start">Aufgabe starten</button>' +
+          '<span class="small muted">Landet im Tracker, bleibt auf deinem Gerät — kein Konto, keine E-Mail.</span>' +
+          '</div>';
+      }
+      html += '</div>';
+    })();
+
     /* ---------- DEIN NÄCHSTER SCORE — Rückkehr ohne E-Mail, ohne Konto ----
        Ein Score ist eine Momentaufnahme; sein Wert entsteht im Vergleich.
        Deshalb hier ein echter Termin statt eines Newsletters: die .ics-Datei
@@ -938,6 +1012,21 @@
       /* Re-Check-Termin als .ics — erzeugt erst beim Klick, damit kein
          unnötiges Blob im Speicher liegt. Ganztägiger Termin, damit er in
          jedem Kalender ohne Zeitzonen-Ärger landet. */
+      /* Auftrag starten bzw. tauschen. Beides schreibt nur lokal; der alte
+         Auftrag wandert in die Historie statt still verloren zu gehen. */
+      const focusGo = (btn) => {
+        if (!btn) return;
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          if (!(MM.focus && C.focusFor)) return;
+          MM.focus.start(C.focusFor(r));
+          MM.toast("Aufgabe übernommen — du findest sie oben im Tracker.");
+          setTimeout(() => { location.href = "tracker.html#focus"; }, 700);
+        });
+      };
+      focusGo(el.querySelector("#btnFocusStart"));
+      focusGo(el.querySelector("#btnFocusSwap"));
+
       const icsBtn = el.querySelector("#btnScoreIcs");
       if (icsBtn) {
         icsBtn.addEventListener("click", (e) => {

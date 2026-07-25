@@ -251,9 +251,61 @@
   let tab = "workout";
 
   function render() {
-    app.innerHTML = statsHTML() + tabsHTML() + '<div class="tracker-panel" id="trkPanel"></div>';
+    app.innerHTML = focusHTML() + statsHTML() + tabsHTML() + '<div class="tracker-panel" id="trkPanel"></div>';
     app.querySelectorAll(".tracker-tab").forEach(b => b.addEventListener("click", () => { tab = b.dataset.tab; render(); }));
+    bindFocus();
     renderPanel();
+  }
+
+  /* ---------- DER EINE AUFTRAG aus dem Score --------------------------------
+     Steht bewusst GANZ OBEN, über den Statistiken: Er ist die eine Sache, die
+     in diesen vier Wochen zählt. Alles andere im Tracker ist freiwillig. */
+  function focusHTML() {
+    if (!(window.MM && MM.focus)) return "";
+    const f = MM.focus.current();
+    if (!f) return "";
+    const p = MM.focus.progress(f);
+    const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+    /* Abgelaufen: Bilanz statt Checkbox — die Aufgabe ist vorbei. */
+    if (p.abgelaufen) {
+      return '<div class="card trk-focus" id="focus" style="margin-bottom:18px;border-left:3px solid ' +
+        (p.geschafft ? "var(--accent)" : "var(--muted-2)") + '">' +
+        '<span class="card-num">DEINE AUFGABE · ABGESCHLOSSEN</span>' +
+        '<h3 style="font-size:1.05rem;margin:6px 0 4px">' + p.erledigt + ' von ' + f.target + ' Tagen' +
+        (p.geschafft ? " — geschafft." : " — nicht ganz.") + '</h3>' +
+        '<p class="small muted" style="margin:0 0 12px">' + esc(f.title) + '</p>' +
+        '<a class="btn btn-primary btn-sm" href="check.html">' +
+        (p.geschafft ? "Jetzt den zweiten Score machen" : "Score wiederholen und neu ansetzen") + '</a>' +
+        '</div>';
+    }
+
+    const kurs = p.aufKurs
+      ? "Auf Kurs."
+      : "Du liegst zurück — hol auf oder setz das Ziel kleiner.";
+    return '<div class="card trk-focus" id="focus" style="margin-bottom:18px;border-left:3px solid var(--accent)">' +
+      '<span class="card-num" style="color:var(--accent)">DEINE EINE AUFGABE · NOCH ' + p.offen + ' TAGE</span>' +
+      '<h3 style="font-size:1.05rem;margin:6px 0 4px">' + esc(f.title) + '</h3>' +
+      '<div class="trk-focus-bar" aria-hidden="true"><span style="width:' + p.prozent + '%"></span></div>' +
+      '<p class="small muted" style="margin:8px 0 12px">' + p.erledigt + ' von ' + f.target + ' Tagen. ' + kurs + '</p>' +
+      '<label class="trk-focus-check">' +
+      '<input type="checkbox" id="focusToday"' + (p.heuteErledigt ? " checked" : "") + '>' +
+      '<span>' + esc(f.daily) + '</span></label>' +
+      (f.arzt ? '<p class="small" style="color:var(--muted-2);margin:10px 0 0">' + esc(f.arzt) + '</p>' : '') +
+      '<p class="small" style="margin:10px 0 0"><button type="button" class="trk-focus-drop" id="focusDrop">Aufgabe beenden</button></p>' +
+      '</div>';
+  }
+
+  function bindFocus() {
+    const box = document.getElementById("focusToday");
+    if (box) box.addEventListener("change", () => { MM.focus.toggleDay(); render(); });
+    const drop = document.getElementById("focusDrop");
+    if (drop) drop.addEventListener("click", () => {
+      if (confirm(T("Aufgabe beenden? Der Fortschritt bleibt in deiner Historie erhalten.",
+                    "End this task? Your progress stays in your history."))) {
+        MM.focus.clear(); render();
+      }
+    });
   }
 
   function tabsHTML() {

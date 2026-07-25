@@ -2691,3 +2691,30 @@ body > * { position: relative; z-index: 0; }
 .os14-prograil .rail span.done { color: var(--muted); }
 .os14-prograil .rail span.cur { color: var(--status-active); font-weight: 700; position: relative; }
 .os14-prograil .rail span.cur::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; background: var(--status-active); }
+
+/* ---------- DER EINE AUFTRAG (Score → Tracker → zweiter Score) ----------
+   Bewusst ruhig gestaltet: Der Block steht ganz oben und soll führen, nicht
+   schreien. Der Fortschrittsbalken ist rein dekorativ (aria-hidden) — die
+   Zahl daneben ist die zugängliche Fassung. */
+.trk-focus-bar {
+  height: 6px; border-radius: 4px; background: var(--card-2);
+  overflow: hidden; margin-top: 10px;
+}
+.trk-focus-bar > span {
+  display: block; height: 100%; border-radius: 4px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  transition: width .3s ease;
+}
+.trk-focus-check {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--card-2); cursor: pointer; font-size: .95rem;
+}
+.trk-focus-check:hover { border-color: var(--accent-line); }
+.trk-focus-check:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.trk-focus-check input { width: 20px; height: 20px; flex: 0 0 auto; accent-color: var(--accent); cursor: pointer; }
+.trk-focus-drop {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  color: var(--muted-2); text-decoration: underline; font: inherit; font-size: .85rem;
+}
+.trk-focus-drop:hover { color: var(--text); }

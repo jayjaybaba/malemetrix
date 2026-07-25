@@ -1570,6 +1570,164 @@ window.MM_CHECK = {
   },
 
   /* ==========================================================================
+     DER EINE AUFTRAG — die Brücke zwischen erstem und zweitem Score
+
+     Ein Score, der nur diagnostiziert, ist ein Flyer. Damit der zweite
+     Durchlauf etwas zu vergleichen hat, braucht der erste einen Auftrag:
+     GENAU EINEN, für vier Wochen, täglich mit Ja/Nein beantwortbar.
+
+     Regeln, die hier bewusst gelten:
+     - Eine Aufgabe pro Engpass. Nicht drei. Wer fünf Dinge anfängt, macht
+       keins vier Wochen lang durch.
+     - Das Ziel ist NICHT 28 von 28. Perfektion ist die falsche Messlatte und
+       der schnellste Weg zum Abbruch nach dem ersten verpassten Tag.
+     - Keine Diagnose, keine Dosierung, keine Präparate. Wo etwas ärztlich
+       gehört, steht das als `arzt` dabei und wird auch angezeigt.
+     ========================================================================== */
+  FOCUS: {
+    bodyComposition: {
+      title: "Vier Wochen lang deine Zahlen führen — Gewicht täglich, Taille wöchentlich.",
+      daily: "Gewicht heute notiert",
+      why: "Körperkomposition verschiebt sich zu langsam, um sie zu spüren. Ohne Messreihe hältst du normale Tagesschwankung für Fortschritt — oder übersiehst echten.",
+      proof: "Beim zweiten Score hast du eine Kurve statt eines Gefühls.",
+      target: 20
+    },
+    training: {
+      title: "Vier Wochen, drei feste Trainingstage — dieselben Tage, jede Woche.",
+      daily: "Heute Plan eingehalten (trainiert oder geplanter Ruhetag)",
+      why: "Dir fehlt keine Motivation, sondern Planbarkeit. Feste Tage schlagen gute Absichten, weil sie keine Entscheidung mehr verlangen.",
+      proof: "Zwölf Einheiten in vier Wochen — und ein Verlauf, der Progression zeigt.",
+      target: 24
+    },
+    movement: {
+      title: "Vier Wochen lang mindestens 7.000 Schritte am Tag.",
+      daily: "Heute 7.000 Schritte erreicht",
+      why: "Drei Einheiten pro Woche kompensieren keine dreizehn Stunden Sitzen. Alltagsbewegung ist der größere Teil deines Verbrauchs — und der, den du steuerst.",
+      proof: "20 von 28 Tagen über 7.000.",
+      target: 20
+    },
+    sleep: {
+      title: "Vier Wochen lang zur selben Zeit ins Bett — ±30 Minuten.",
+      daily: "Heute zur geplanten Zeit ins Bett",
+      why: "Der erste Hebel ist nicht die Dauer, sondern die Regelmäßigkeit. Ein fester Zeitpunkt bringt mehr als eine gute Nacht nach vier schlechten.",
+      proof: "20 von 28 Nächten zur selben Zeit — das sieht dein Recovery-Wert.",
+      target: 20
+    },
+    recovery: {
+      title: "Vier Wochen lang zehn Minuten am Tag ohne Bildschirm und ohne Aufgabe.",
+      daily: "Heute zehn Minuten wirklich nichts",
+      why: "Du bekommst genug Reize. Was fehlt, ist die Gegenbewegung — und die passiert nicht von selbst, sie braucht einen festen Platz im Tag.",
+      proof: "20 von 28 Tagen mit einer echten Pause.",
+      target: 20
+    },
+    nutrition: {
+      title: "Vier Wochen lang jeden Tag dein Proteinziel treffen.",
+      daily: "Proteinziel heute erreicht",
+      why: "Protein ist der Makronährstoff, bei dem die Menge im Alltag am häufigsten danebengeht — und der, der Muskel schützt, wenn du im Defizit bist.",
+      proof: "20 von 28 Tagen im Ziel, nachlesbar im Tracker.",
+      target: 20
+    },
+    metabolic: {
+      title: "Vier Wochen lang nach der größten Mahlzeit zehn Minuten gehen.",
+      daily: "Heute nach dem Essen gegangen",
+      why: "Die kleinste Gewohnheit mit dem besten Verhältnis von Aufwand zu Wirkung — sie braucht weder Ausrüstung noch Umziehen noch einen freien Termin.",
+      proof: "20 von 28 Tagen. Kostet dich insgesamt gut drei Stunden.",
+      target: 20
+    },
+    cardiovascular: {
+      title: "Vier Wochen lang 30 Minuten Bewegung am Tag — und einmal Blutdruck in Ruhe messen.",
+      daily: "Heute 30 Minuten in Bewegung",
+      why: "Herz-Kreislauf verläuft lange ohne Symptome. Bewegung ist der Hebel, den du selbst in der Hand hast.",
+      proof: "20 von 28 Tagen — plus ein gemessener Wert statt einer Vermutung.",
+      arzt: "Die Einordnung deines Blutdrucks gehört ärztlich abgeklärt, nicht in einen Selbsttest.",
+      target: 20
+    },
+    hormonal: {
+      title: "Vier Wochen lang höchstens ein Abend mit Alkohol pro Woche.",
+      daily: "Heute alkoholfrei",
+      why: "Libido und Erektion sind Signale des Gesamtsystems, kein isolierter Hormonwert. Alkohol und Schlaf sind die zwei Stellschrauben, die du sofort selbst hast.",
+      proof: "24 von 28 Abenden ohne — das ist die sauberste Ausgangslage für ein Arztgespräch.",
+      arzt: "Bestehen die Beschwerden nach vier sauberen Wochen weiter, gehört das ärztlich abgeklärt. MaleMetrix stellt keine Diagnose.",
+      target: 24
+    },
+    energy: {
+      title: "Vier Wochen lang kein Koffein mehr nach 14 Uhr.",
+      daily: "Heute nach 14 Uhr koffeinfrei",
+      why: "Koffein hat eine Halbwertszeit von rund fünf Stunden. Der Espresso um 16 Uhr wirkt um Mitternacht noch — und du merkst es nicht am Einschlafen, sondern am Tiefschlaf.",
+      proof: "20 von 28 Tagen — der Effekt zeigt sich meist in Woche zwei.",
+      target: 20
+    },
+    dataQuality: {
+      title: "Vier Wochen lang jeden Tag genau einen Wert eintragen.",
+      daily: "Heute einen Wert eingetragen",
+      why: "Du steuerst gerade ohne Instrumente. Welcher Wert es ist, ist zweitrangig — dass überhaupt einer da ist, entscheidet, ob dein nächster Score etwas zu vergleichen hat.",
+      proof: "20 Datenpunkte statt keinem.",
+      target: 20
+    },
+    execution: {
+      title: "Vier Wochen lang eine einzige Sache — jeden Tag dieselbe.",
+      daily: "Die eine Sache heute getan",
+      why: "Du weißt vermutlich genug. Was scheitert, ist die Menge auf einmal. Eine Sache vier Wochen ohne Ausnahme schlägt fünf Vorsätze für zehn Tage.",
+      proof: "20 von 28 Tagen — und der Beweis, dass du es kannst.",
+      target: 20
+    },
+    enhancedControl: {
+      title: "Vier Wochen lang täglich Blutdruck messen und notieren.",
+      daily: "Heute Blutdruck gemessen und notiert",
+      why: "Kontrolle heißt hier Messung, nicht Anpassung. Blutdruck verschiebt sich am schnellsten und ist am einfachsten selbst zu erfassen.",
+      proof: "Eine lückenlose Messreihe für das nächste ärztliche Gespräch.",
+      arzt: "MaleMetrix gibt keine Einnahme-, Dosierungs- oder Präparateempfehlung. Änderungen gehören ärztlich begleitet.",
+      target: 24
+    },
+    therapyControl: {
+      title: "Vier Wochen lang deine Kontrollwerte führen — und den nächsten Arzttermin fest eintragen.",
+      daily: "Heute Blutdruck gemessen und notiert",
+      why: "Eine laufende Therapie lebt von Kontrolle. Die Messreihe führst du selbst; sie macht das nächste Gespräch konkret.",
+      proof: "Vier Wochen Verlauf statt einer Momentaufnahme im Wartezimmer.",
+      arzt: "Einordnung und jede Änderung gehören zu der Ärztin oder dem Arzt, die die Therapie verordnet haben.",
+      target: 24
+    },
+    recoveryStatus: {
+      title: "Vier Wochen lang Schlaf und Blutdruck führen — und einen Termin zur Verlaufskontrolle machen.",
+      daily: "Heute Schlaf und Blutdruck notiert",
+      why: "Nach dem Absetzen zählt der Verlauf mehr als jeder Einzelwert. Was du beitragen kannst, ist eine saubere Messreihe.",
+      proof: "Vier Wochen Verlauf, die das ärztliche Gespräch tragen.",
+      arzt: "Der Verlauf gehört ärztlich begleitet. MaleMetrix stellt keine Diagnose und empfiehlt keine Präparate.",
+      target: 24
+    }
+  },
+
+  /* Aus einem Ergebnis den Auftrag ableiten. Fällt auf `execution` zurück —
+     das ist die Aufgabe, die für jeden gilt, dessen Engpass wir nicht
+     genauer benennen können. */
+  focusFor: function (result) {
+    var C = window.MM_CHECK;
+    var bn = (result && result.bottleneck) || {};
+    var f = C.FOCUS[bn.domain] || C.FOCUS.execution;
+    var start = new Date();
+    var end = new Date(start.getTime() + 28 * 86400000);
+    var ymd = function (d) {
+      return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+    };
+    return {
+      v: 1,
+      domain: C.FOCUS[bn.domain] ? bn.domain : "execution",
+      bottleneckName: bn.name || "Umsetzung",
+      title: f.title,
+      daily: f.daily,
+      why: f.why,
+      proof: f.proof,
+      arzt: f.arzt || "",
+      target: f.target,
+      days: 28,
+      started: ymd(start),
+      until: ymd(end),
+      scoreAtStart: (result && result.total) || null,
+      done: {}
+    };
+  },
+
+  /* ==========================================================================
      ARCHETYPEN
      ========================================================================== */
 
