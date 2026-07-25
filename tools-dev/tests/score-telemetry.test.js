@@ -492,6 +492,76 @@ group("13 · Score-Logik unverändert (Freeze-Nachweis)");
   ok(/CALIBRATION FREEZE/.test(freeze) && /Regressionstest/.test(freeze), "der Freeze ist dokumentiert und fordert Regressionstests");
 })();
 
+/* ==================================================================== 14 */
+group("14 · Rückkehr-Mechanik: Termin statt Newsletter");
+(function () {
+  var js = fs.readFileSync(path.join(ROOT, "js/check.js"), "utf8");
+  ok(/id="scoreAgain"/.test(js), "Ergebnisseite bietet den nächsten Score an");
+  ok(/DEIN NÄCHSTER SCORE/.test(js), "eigener, klar benannter Block");
+  ok(/28 \* 86400000/.test(js), "Vorschlag liegt bei 4 Wochen");
+  ok(/BEGIN:VCALENDAR/.test(js) && /DTSTART;VALUE=DATE:/.test(js), "echter Kalendereintrag (.ics), ganztägig");
+  ok(/BEGIN:VALARM/.test(js), "mit Erinnerung, damit der Termin nicht untergeht");
+  ok(!/newsletter|mailchimp|brevo\.com\/subscribe/i.test(js.split("scoreAgain")[1].slice(0, 2000)),
+    "keine E-Mail-Erfassung an dieser Stelle");
+  ok(/cta_id: "rescore_reminder"/.test(js), "der Klick ist messbar — über die bestehende CTA-Kategorie, ohne neues Event");
+  ok(/URL\.revokeObjectURL/.test(js), "die Blob-URL wird wieder freigegeben");
+
+  /* Passiver Teil: alter Score wird beim Wiederkommen als fällig erkannt. */
+  ok(/ageDays >= 28/.test(js), "ab 28 Tagen gilt ein gespeichertes Ergebnis als überholt");
+  ok(/vor \" \+ \(ageDays/.test(js) || /vor "/.test(js), "das Alter wird dem Nutzer genannt, nicht verschwiegen");
+  ok(/Zeit für den nächsten Score/.test(js), "ruhiger Hinweis statt Pop-up");
+  ok(!/localStorage\.setItem\("mm_next_score/.test(js), "kein zusätzlicher Speicherschlüssel nötig — das Datum steckt im Ergebnis");
+})();
+
+/* ==================================================================== 15 */
+group("15 · Positionierung: die vier Kontexte sind auch außerhalb des Scores sichtbar");
+(function () {
+  var idx = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  ok(/Natural, früher Enhanced, ärztliche TRT oder Enhanced/.test(idx),
+    "Startseite benennt die vier Kontexte");
+  ok(/kostet dich keinen einzigen Punkt/.test(idx), "… inklusive der entscheidenden Zusage");
+  ok(/keine Dosierungen, keine Empfehlungen zu Substanzen/.test(idx),
+    "… und der Grenze, die das Ganze seriös hält");
+  ok(!/misst sieben Bereiche/.test(idx), "die überholte Sieben-Bereiche-Aussage ist weg");
+  ok(/zwölf Systeme/.test(idx), "die Startseite beschreibt den tatsächlichen Score");
+  ["Alltagsbewegung", "Herz-Kreislauf", "Datenlage", "Stoffwechsel"].forEach(function (d) {
+    ok(new RegExp("<strong>" + d).test(idx), "System in der Übersicht: " + d);
+  });
+
+  var chk = fs.readFileSync(path.join(ROOT, "check.html"), "utf8");
+  ok(/Natural, TRT & Enhanced/.test(chk), "Seitentitel trägt die Positionierung");
+  ok(!/10-Minuten-Check/.test(chk), "die überholte 10-Minuten-Behauptung ist raus");
+  ok(/12 Systeme, dein primärer Engpass und deine Datenlücken/.test(chk), "Description beschreibt das echte Produkt");
+
+  var faq = fs.readFileSync(path.join(ROOT, "faq.html"), "utf8");
+  ok(/vier Kontexte/.test(faq), "FAQ erklärt die Kontexte");
+  ok(/Dosierungen oder Absetzprotokollen/.test(faq), "FAQ zieht die Grenze ausdrücklich");
+  ok(/Wie oft sollte ich den Score wiederholen/.test(faq), "FAQ erklärt den Wiederholungs-Rhythmus");
+  ok(/gilt nicht als „normal“/.test(faq), "FAQ erklärt den Datenlücken-Gedanken");
+})();
+
+/* ==================================================================== 16 */
+group("16 · Betriebs-Werkzeuge: Produktionsstand messen statt behaupten");
+(function () {
+  var chk = path.join(ROOT, "tools-dev/check-functions.sh");
+  var dep = path.join(ROOT, "tools-dev/deploy-telemetry.sh");
+  ok(fs.existsSync(chk), "check-functions.sh existiert");
+  ok(fs.existsSync(dep), "deploy-telemetry.sh existiert");
+  var c = fs.readFileSync(chk, "utf8"), d = fs.readFileSync(dep, "utf8");
+  ok(/x-client-info/.test(c), "erkennt den P10-Stand am CORS-Header");
+  ok(/send-brief/.test(c) && /bewusst nicht vorgesehen/.test(c),
+    "die Scheduler-Function wird nicht fälschlich als veraltet gemeldet");
+  ok(/SUPABASE_ACCESS_TOKEN/.test(d) && !/sbp_[A-Za-z0-9]{10}/.test(d),
+    "Deploy-Skript verlangt den Token aus der Umgebung und enthält keinen");
+  ok(/--verify-only/.test(d), "Nachprüfung ist auch einzeln aufrufbar");
+  ok(/score-telemetry\.test\.js/.test(d), "vor dem Deploy laufen die Tests");
+
+  var doc = fs.readFileSync(path.join(ROOT, "EDGE_FUNCTIONS.md"), "utf8");
+  ok(/live nachgemessen/.test(doc), "die Statusmatrix sagt, woher ihr Wissen stammt");
+  ok(!/NEIN — Live läuft noch der/.test(doc), "die überholte mm-commerce-Warnung ist korrigiert");
+  ok((doc.match(/⚠️ \*\*NEIN/g) || []).length === 1, "genau eine Function ist noch offen (score-telemetry)");
+})();
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 process.exit(failed ? 1 : 0);

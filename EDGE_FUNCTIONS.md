@@ -20,13 +20,21 @@ der POST nie gesendet. Seit P10: **Origin-Allowlist** (`https://www.malemetrix.c
 
 ## Statusmatrix
 
+> **Stand 25. Juli 2026, live nachgemessen** — nicht aus dem Gedächtnis dokumentiert.
+> Ein OPTIONS-Preflight zeigt, ob der P10-Stand ausgerollt ist: die P10-Allowlist
+> antwortet mit `access-control-allow-headers: authorization, apikey, x-client-info,
+> content-type`. Vier von fünf Functions liefern genau das. Frühere Fassungen dieser
+> Datei behaupteten „Deploy nötig" für alle vier — das war überholt und hätte zu
+> unnötigen Redeploys oder falscher Fehlersuche geführt.
+> Jederzeit nachprüfbar: `bash tools-dev/check-functions.sh`
+
 | Function | Aufrufer | Auth | CORS | verify_jwt | Code-Stand | Deployt? |
 |---|---|---|---|---|---|---|
-| `mm-commerce` | Browser (checkout) | ✅ Standard (Handler, getUser(jwt)) | ✅ Allowlist, OPTIONS→204 | `false` ✅ | P10 Order-first-Fulfillment (fulfillment.mjs, 43 Unit-Tests) | ⚠️ **NEIN — Live läuft noch der (funktionierende, aber event-first) Stand vor a8f6f56.** Deploy nötig: `supabase functions deploy mm-commerce` |
-| `resolve-product-access` | Browser (Premium-Unlock) | ✅ Standard | ✅ Allowlist (P10: apikey/x-client-info ergänzt, Apex ergänzt) | `false` ✅ | P10 | ⚠️ Redeploy nötig (alter Deploy hatte unvollständige CORS-Header) |
-| `mm-ai` | Browser (Intelligence) | ✅ Standard (P10-Fix — vorher ANON_KEY-Bug, hätte live 401 geworfen) | ✅ Allowlist (P10 — vorher GAR KEINE CORS-Header) | `false` ✅ (P10) | P10 | ⚠️ Deploy nötig, sonst bleibt der ES256-401-Bug live |
-| `delete-account` | Browser (Konto) | ✅ Standard (P10-Fix — vorher ANON_KEY-Bug) | ✅ Allowlist (P10 — vorher fehlten apikey/x-client-info/Apex) | `false` ✅ (P10) | P10 | ⚠️ Deploy nötig. **DESTRUKTIV** — siehe unten |
-| `score-telemetry` | Browser (Score, anonym) | bewusst KEINE User-Auth — der Score ist anonym nutzbar; Schutz über Allowlist-Validierung (validate.mjs), Origin-Allowlist, Idempotenz (event_id), RLS ohne Policy | ✅ Allowlist, OPTIONS→204, akzeptiert zusätzlich text/plain (sendBeacon) | `false` ✅ | P12 neu (127 Unit-Tests) | ⚠️ **NEIN — Deploy nötig:** `supabase db push` (Migration 20260725000010) + `supabase functions deploy score-telemetry`. Ohne Deploy sammelt der Client still und verwirft nach 3 Versuchen — der Score bleibt unbeeinträchtigt. |
+| `mm-commerce` | Browser (checkout) | ✅ Standard (Handler, getUser(jwt)) | ✅ Allowlist, OPTIONS→204 | `false` ✅ | P10 Order-first-Fulfillment (fulfillment.mjs, 43 Unit-Tests) | ✅ **JA** — live verifiziert 25.07.2026 (OPTIONS liefert die P10-Allowlist inkl. `apikey, x-client-info`) |
+| `resolve-product-access` | Browser (Premium-Unlock) | ✅ Standard | ✅ Allowlist (P10: apikey/x-client-info ergänzt, Apex ergänzt) | `false` ✅ | P10 | ✅ **JA** — live verifiziert 25.07.2026 (vollständige CORS-Header vorhanden) |
+| `mm-ai` | Browser (Intelligence) | ✅ Standard (P10-Fix — vorher ANON_KEY-Bug, hätte live 401 geworfen) | ✅ Allowlist (P10 — vorher GAR KEINE CORS-Header) | `false` ✅ (P10) | P10 | ✅ **JA** — live verifiziert 25.07.2026 (CORS-Header vorhanden ⇒ P10-Stand ist ausgerollt) |
+| `delete-account` | Browser (Konto) | ✅ Standard (P10-Fix — vorher ANON_KEY-Bug) | ✅ Allowlist (P10 — vorher fehlten apikey/x-client-info/Apex) | `false` ✅ (P10) | P10 | ✅ **JA** — live verifiziert 25.07.2026. **DESTRUKTIV** — siehe unten |
+| `score-telemetry` | Browser (Score, anonym) | bewusst KEINE User-Auth — der Score ist anonym nutzbar; Schutz über Allowlist-Validierung (validate.mjs), Origin-Allowlist, Idempotenz (event_id), RLS ohne Policy | ✅ Allowlist, OPTIONS→204, akzeptiert zusätzlich text/plain (sendBeacon) | `false` ✅ | P12 neu (127 Unit-Tests) | ⚠️ **NEIN — als einzige.** Live-Test: `POST /functions/v1/score-telemetry` → `404 NOT_FOUND`. Ein Befehl: `bash tools-dev/deploy-telemetry.sh`. Ohne Deploy sammelt der Client still und verwirft nach 3 Versuchen — der Score bleibt unbeeinträchtigt. |
 | `send-brief` | Scheduler (server→server) | ✅ `x-scheduler-secret` (kein User-JWT, bewusst) | n. a. (kein Browser-Aufruf) | `false` ✅ (P10 — nötig, damit der Scheduler ohne JWT durchkommt) | unverändert | Push-Stack insgesamt CONFIG REQUIRED (VAPID) |
 
 **Secrets-Konvention:** `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (Standard).

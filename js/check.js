@@ -805,6 +805,26 @@
       '<p class="small muted" id="fbThanks" style="display:none;margin:12px 0 0">Danke. Dein Feedback hilft, den Score präziser zu kalibrieren.</p>' +
       '</div>';
 
+    /* ---------- DEIN NÄCHSTER SCORE — Rückkehr ohne E-Mail, ohne Konto ----
+       Ein Score ist eine Momentaufnahme; sein Wert entsteht im Vergleich.
+       Deshalb hier ein echter Termin statt eines Newsletters: die .ics-Datei
+       landet im Kalender des Nutzers, wir speichern dafür nichts. */
+    (function () {
+      const days = 28;
+      const next = new Date(Date.now() + days * 86400000);
+      const nice = next.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
+      html += '<div class="card dash-block" id="scoreAgain" style="margin-top:24px;border-left:3px solid var(--accent-2)">' +
+        '<span class="card-num" style="color:var(--accent-2)">DEIN NÄCHSTER SCORE</span>' +
+        '<h3 style="font-size:1.15rem;margin:4px 0 6px">In 4 Wochen weißt du, ob es funktioniert hat.</h3>' +
+        '<p class="small muted" style="margin:0 0 14px">Ein einzelner Score sagt dir, wo du stehst. Erst der zweite sagt dir, ob dein Hebel der richtige war — dann siehst du hier den direkten Vergleich zu heute' +
+        (V.primaryBottleneck && V.primaryBottleneck.name ? ' und ob „' + esc(V.primaryBottleneck.name) + '" noch dein Engpass ist' : '') +
+        '. Kürzer misst meist Rauschen, länger verlierst du den Bezug.</p>' +
+        '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">' +
+        '<a class="btn btn-dark" id="btnScoreIcs" href="#" download="malemetrix-score-recheck.ics" data-track="rescore_reminder">Termin für den ' + nice + ' sichern</a>' +
+        '<span class="small muted">Kalenderdatei — es wird nichts gespeichert und nichts versendet.</span>' +
+        '</div></div>';
+    })();
+
     /* ---------- Optionale Nutzungsmessung — NACH dem Ergebnis, nie davor ----
        Standardmäßig aus, jederzeit umschaltbar, ohne Einfluss auf den Score. */
     html += '<div class="card dash-block mm-optin" id="scoreOptin" style="margin-top:16px">' +
@@ -872,6 +892,39 @@
         if (!a) return;
         tel("score_cta_clicked", { cta_id: (a.getAttribute("data-track") || "").slice(0, 40) });
       });
+
+      /* Re-Check-Termin als .ics — erzeugt erst beim Klick, damit kein
+         unnötiges Blob im Speicher liegt. Ganztägiger Termin, damit er in
+         jedem Kalender ohne Zeitzonen-Ärger landet. */
+      const icsBtn = el.querySelector("#btnScoreIcs");
+      if (icsBtn) {
+        icsBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          const d = new Date(Date.now() + 28 * 86400000);
+          const dd = new Date(d.getTime() + 86400000);
+          const ymd = (x) => x.getFullYear() + String(x.getMonth() + 1).padStart(2, "0") + String(x.getDate()).padStart(2, "0");
+          const ics = [
+            "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//MaleMetrix//Score//DE",
+            "BEGIN:VEVENT",
+            "UID:score-" + ymd(d) + "-" + Math.random().toString(16).slice(2, 10) + "@malemetrix",
+            "DTSTART;VALUE=DATE:" + ymd(d),
+            "DTEND;VALUE=DATE:" + ymd(dd),
+            "SUMMARY:MaleMetrix Score wiederholen",
+            "DESCRIPTION:Zweiter Score — zeigt dir\\, ob dein Hebel funktioniert hat. Dauert ca. 7 Minuten: https://www.malemetrix.com/check.html",
+            "URL:https://www.malemetrix.com/check.html",
+            "BEGIN:VALARM", "TRIGGER:-PT9H", "ACTION:DISPLAY",
+            "DESCRIPTION:MaleMetrix Score wiederholen", "END:VALARM",
+            "END:VEVENT", "END:VCALENDAR"
+          ].join("\r\n");
+          const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
+          const a = document.createElement("a");
+          a.href = url; a.download = "malemetrix-score-recheck.ics";
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 4000);
+          MM.toast("Termin heruntergeladen — jetzt im Kalender öffnen");
+          tel("score_cta_clicked", { cta_id: "rescore_reminder" });
+        });
+      }
 
       /* Optionale Nutzungsmessung: Standard AUS, sofort umschaltbar.
          Beim Einschalten wird nachgeholt, was auf DIESER Seite noch
@@ -1026,13 +1079,34 @@
     }
     $("#btnStartCheck").addEventListener("click", startScore);
 
-    /* Vorhandenes Ergebnis anzeigen */
+    /* Vorhandenes Ergebnis anzeigen — und, wenn es alt genug ist, den
+       Wiederholungs-Hinweis. Der Score lebt vom Vergleich; ein Ergebnis von
+       vor zwei Monaten beschreibt niemanden mehr. Rein lokal: kein Konto,
+       keine E-Mail, keine Übertragung. */
     const existing = MM.store.get("check_result", null);
     if (existing) {
       const banner = $("#existingResult");
       if (banner) {
+        const ageDays = existing.date
+          ? Math.floor((Date.now() - new Date(existing.date).getTime()) / 86400000) : null;
+        const due = ageDays !== null && ageDays >= 28;
         banner.style.display = "";
-        banner.querySelector("[data-score]").textContent = existing.total + "/100 · " + existing.level;
+        banner.querySelector("[data-score]").textContent =
+          existing.total + "/100 · " + existing.level +
+          (ageDays !== null && ageDays >= 1 ? " · vor " + (ageDays < 14 ? ageDays + " Tagen"
+            : ageDays < 60 ? Math.round(ageDays / 7) + " Wochen"
+            : Math.round(ageDays / 30) + " Monaten") : "");
+        if (due) {
+          banner.style.borderLeft = "3px solid var(--accent-2)";
+          banner.style.paddingLeft = "14px";
+          const hint = document.createElement("p");
+          hint.className = "small muted";
+          hint.style.cssText = "margin:10px 0 0";
+          hint.textContent = "Zeit für den nächsten Score: Erst der Vergleich zeigt, ob dein Hebel funktioniert hat. Dauert wieder ca. 7 Minuten.";
+          banner.appendChild(hint);
+          const btn = banner.querySelector("[data-show]");
+          if (btn) { btn.classList.remove("btn-dark"); btn.classList.add("btn-ghost"); }
+        }
         banner.querySelector("[data-show]").addEventListener("click", () => {
           renderResult(existing);
           show("checkResult");

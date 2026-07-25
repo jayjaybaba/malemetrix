@@ -95,7 +95,7 @@
                  en: "Build the body.<br><span class=\"text-grad\">Protect the system.</span>" },
     "home.lead": { de: "Training, Ernährung, Schlaf, Hormone und Gesundheit für Männer, die Job und Familie haben — datenbasiert statt nach Bauchgefühl. MaleMetrix findet zuerst deinen größten Engpass, bevor du Zeit, Geld oder Energie in die falschen Dinge steckst.",
                    en: "Training, nutrition, sleep, hormones and health for men with a job and a family — data-driven, not guesswork. MaleMetrix first finds your biggest bottleneck, before you pour time, money or energy into the wrong things." },
-    "home.trustline": { de: "~10 Minuten · kostenlos · sofortige Auswertung · kein E-Mail-Zwang", en: "~10 minutes · free · instant results · no email required" },
+    "home.trustline": { de: "~7 Minuten · kostenlos · sofortige Auswertung · kein E-Mail-Zwang", en: "~7 minutes · free · instant results · no email required" },
     "home.howLink": { de: "So funktioniert MaleMetrix ↓", en: "How MaleMetrix works ↓" },
 
     /* Sektions-Kicker + Überschriften */
@@ -122,7 +122,7 @@
     "home.s.know.h": { de: "Klartext statt Bro-Science.", en: "Straight talk, not bro-science." },
     "home.s.faq.k": { de: "Häufige Fragen", en: "Frequent questions" },
     "home.s.faq.h": { de: "Kurz beantwortet.", en: "Answered briefly." },
-    "home.s.final.k": { de: "Kostenlos · ~10 Minuten", en: "Free · ~10 minutes" },
+    "home.s.final.k": { de: "Kostenlos · ~7 Minuten", en: "Free · ~7 minutes" },
     "cta.findBottleneck": { de: "Meinen Engpass finden", en: "Find my bottleneck" },
     "cta.startFree": { de: "Kostenlos starten", en: "Start free" },
     "cta.calcScore": { de: "Score berechnen", en: "Calculate my Score" },
