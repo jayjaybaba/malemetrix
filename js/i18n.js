@@ -10,7 +10,6 @@
 
   const DICT = {
     /* ---------- Navigation (überall) ---------- */
-    "nav.system":  { de: "System", en: "System" },
     "nav.check":   { de: "Score", en: "Score" },
     "nav.coaching":{ de: "1:1 Coaching", en: "1:1 Coaching" },
     "nav.startScore": { de: "Score starten", en: "Start your score" },
