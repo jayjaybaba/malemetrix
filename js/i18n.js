@@ -21,7 +21,7 @@
     "nav.shop":    { de: "Shop", en: "Shop" },
     "nav.more":    { de: "Wissen", en: "Knowledge" },
     "nav.ebooks":  { de: "Library", en: "Library" },
-    "nav.library": { de: "Freie Kapitel", en: "Free Chapters" },
+    "nav.library": { de: "Kapitelübersicht", en: "Chapter index" },
     "nav.protocol": { de: "Das Protokoll", en: "The Protocol" },
     "nav.magazine":{ de: "Magazin", en: "Magazine" },
     "nav.blood":   { de: "Blutwerte", en: "Blood Values" },
@@ -44,7 +44,7 @@
     "foot.tools":   { de: "Kostenlose Rechner", en: "Free Calculators" },
     "foot.tracker": { de: "Training-Tracker", en: "Workout Tracker" },
     "foot.shop":    { de: "Shop", en: "Shop" },
-    "foot.ebooks":  { de: "Freie Kapitel", en: "Free Chapters" },
+    "foot.ebooks":  { de: "Kapitelübersicht", en: "Chapter index" },
     "foot.blood":   { de: "Blutwerte verstehen", en: "Understand Blood Values" },
     "foot.about":   { de: "Über MaleMetrix", en: "About MaleMetrix" },
     "foot.trust":   { de: "Vertrauen & Methodik", en: "Trust & Methodology" },
@@ -161,16 +161,19 @@
     "trk.import": { de: "Daten laden", en: "Import data" },
 
     /* ---------- Ebooks-Seite ---------- */
-    "eb.eyebrow": { de: "Kostenlose Ebooks · Lesen ohne Anmeldung", en: "Free ebooks · read without signup" },
-    "eb.h1a": { de: "MaleMetrix", en: "MaleMetrix" },
-    "eb.h1b": { de: "Library", en: "Library" },
-    "eb.lead": { de: "Deep Dives zu den Systemen hinter männlicher Gesundheit und Performance — Körper, Engine, Recovery, Hormone, Health. Direkt im Browser lesen. Wissen, das dein System vertieft.",
-                 en: "Deep dives into the systems that drive male health and performance — body, engine, recovery, hormones, health. Read instantly in your browser. Knowledge that deepens your system." },
-    "eb.box.title": { de: "Alle Ebooks als PDF — kostenlos freischalten", en: "All ebooks as PDF — unlock for free" },
-    "eb.box.text": { de: "Trag deine E-Mail ein, lade jedes Ebook als PDF und erhalte gelegentlich ehrliche Tipps für Männer. Jederzeit abbestellbar.", en: "Enter your email, download every ebook as PDF and get the occasional honest tip for men. Unsubscribe anytime." },
-    "eb.box.consent": { de: "Ich akzeptiere die Datenschutzerklärung und möchte die Ebooks & Tipps per E-Mail (Double-Opt-In).", en: "I accept the privacy policy and want the ebooks & tips by email (double opt-in)." },
-    "eb.box.btn": { de: "PDF-Downloads freischalten", en: "Unlock PDF downloads" },
+    "eb.eyebrow": { de: "MM / PROTOCOL · INHALTSVERZEICHNIS", en: "MM / PROTOCOL · TABLE OF CONTENTS" },
+    "eb.h1a": { de: "Was in", en: "Inside" },
+    "eb.h1b": { de: "DAS PROTOKOLL", en: "DAS PROTOKOLL" },
+    "eb.h1c": { de: "steht", en: "— chapter by chapter" },
+    "eb.lead": { de: "Alle Kapitel im Überblick — Körper, Training, Recovery, Hormone, Blutwerte, Longevity. Jedes Kapitel gehört zum Protokoll: <strong>49 €, einmalig, kein Abo.</strong> Hier siehst du vorab, was in jedem einzelnen drinsteht.",
+      en: "Every chapter at a glance — body, training, recovery, hormones, blood work, longevity. Every chapter belongs to the protocol: <strong>€49, one-off, no subscription.</strong> Here you see upfront what each one contains." },
+    "eb.box.num": { de: "WAS KOSTET WAS", en: "WHAT COSTS WHAT" },
+    "eb.box.title": { de: "Die Kapitel gehören zum Protokoll. Der Rest ist kostenlos.", en: "The chapters belong to the protocol. Everything else is free." },
+    "eb.box.text": { de: "Jedes Kapitel unten ist Teil von <strong>DAS PROTOKOLL</strong> — 49 € einmalig, kein Abo, inklusive 12-Wochen-Programm. Ohne Anmeldung und ohne Bezahlung nutzt du den Score, die Rechner, den Tracker und das Magazin.", en: "Every chapter below is part of <strong>DAS PROTOKOLL</strong> — €49 once, no subscription, including the 12-week program. The score, calculators, tracker and magazine stay free, no signup." },
     "eb.read": { de: "Jetzt lesen", en: "Read now" },
+    "eb.peek": { de: "Was im Kapitel steht", en: "What’s in this chapter" },
+    "eb.inProtocol": { de: "Im Protokoll · 49 €", en: "In the protocol · €49" },
+    "eb.inProtocolShort": { de: "Im Protokoll", en: "In the protocol" },
     "eb.minutes": { de: "Min. Lesezeit", en: "min read" },
     "eb.online": { de: "Online lesen", en: "Read online" },
     "eb.b1.title": { de: "Das 3-Tage-System", en: "The 3-Day System" },
@@ -182,8 +185,8 @@
     "eb.b0.title": { de: "Der MaleMetrix Masterguide", en: "The MaleMetrix Masterguide" },
     "eb.b0.desc": { de: "Das große Flaggschiff: Training, Ernährung, Regeneration, Tracking und Blutwerte-Verständnis als ein zusammenhängendes System — mit komplettem 12-Wochen-Fahrplan.", en: "The flagship guide: training, nutrition, recovery, tracking and understanding blood values as one connected system — with a full 12-week roadmap." },
     "eb.b0.badge": { de: "Komplettes System · 11 Kapitel", en: "Complete system · 11 chapters" },
-    "eb.ctaTitle": { de: "Wissen ist da. Jetzt fehlt das System.", en: "The knowledge is here. Now you need the system." },
-    "eb.ctaText": { de: "Die Ebooks zeigen dir das Was. Der kostenlose Score zeigt dir, wo bei dir zuerst angesetzt werden muss.", en: "The ebooks show you the what. The free score shows you where to start first." }
+    "eb.ctaTitle": { de: "Bevor du kaufst: finde heraus, wo du stehst.", en: "Before you buy: find out where you stand." },
+    "eb.ctaText": { de: "Der Score ist kostenlos, dauert rund sieben Minuten und sagt dir, welches dieser Kapitel bei dir zuerst zählt.", en: "The score is free, takes about seven minutes and tells you which of these chapters matters first for you." }
   };
 
   /* ---------- Locale-Auflösung: Normalisierung → gespeicherte Wahl → Browser → DE ---------- */

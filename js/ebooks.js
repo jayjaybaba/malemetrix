@@ -17,15 +17,12 @@
 
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
 
+  /* Jedes Kapitel gehört zum bezahlten Protokoll. Der Knopf führt deshalb auf
+     die Kapitelseite, die zeigt, was drinsteht — und sagt das auch. Kein
+     E-Mail-Gate mehr: es gibt nichts mehr, was dahinter frei wäre. */
   function readControl(b, cls, extraStyle) {
-    var label = T("eb.read", "Jetzt lesen");
-    if (b.gated) {
-      // PDF/gated: E-Mail-Abfrage vor dem Öffnen
-      return '<button class="btn btn-primary ' + cls + ' btn-arrow" data-read="' + esc(b.id) + '"' +
-        (extraStyle ? ' style="' + extraStyle + '"' : "") + '>' + label + '</button>';
-    }
-    // frei lesbar: echter Link (gut für SEO, rechtsklick-fähig)
-    return '<a href="' + esc(b.read) + '" class="btn btn-primary ' + cls + ' btn-arrow"' +
+    var label = b.gated ? T("eb.peek", "Was im Kapitel steht") : T("eb.read", "Jetzt lesen");
+    return '<a href="' + esc(b.read) + '" class="btn ' + (b.gated ? "btn-dark " : "btn-primary ") + cls + ' btn-arrow"' +
       (extraStyle ? ' style="' + extraStyle + '"' : "") + '>' + label + '</a>';
   }
 
@@ -36,12 +33,13 @@
   }
 
   function fileFormatLabel(b) {
+    if (b.gated) return "🔒 " + T("eb.inProtocolShort", "Im Protokoll");
     return /\.pdf($|\?)/i.test(b.read || "") ? "📄 PDF" : "📖 " + T("eb.online", "Online lesen");
   }
 
   // Cover-Kachel: echtes Titelbild (klickbar → öffnet Ebook), sonst Farbverlauf mit Text.
   function coverHTML(b, featured) {
-    if (b.img && !b.gated) {
+    if (b.img) {
       var floatBadge = b.badge ? '<span class="cov-badge-float">' + esc(tr(b.badge)) + '</span>' : '';
       return '<a class="ebook-cover ebook-cover-img' + (featured ? ' ebook-cover-feat' : '') + '" href="' + esc(b.read) + '" aria-label="' + esc(tr(b.title)) + '" data-track="ebook_cover_click">' +
         '<img src="' + esc(b.img) + '" alt="' + esc(tr(b.title)) + '" loading="lazy">' + floatBadge + '</a>';
@@ -68,7 +66,7 @@
         '<div class="masterguide-row" style="display:grid;grid-template-columns:0.9fr 1.1fr;gap:0">' +
         coverHTML(featured, true) +
         '<div class="ebook-body" style="justify-content:center">' +
-        '<span class="free-pill" style="margin-bottom:12px;align-self:flex-start">' + T("common.free", "Kostenlos") + '</span>' +
+        '<span class="product-badge" style="position:static;display:inline-block;margin-bottom:12px;align-self:flex-start">' + T("eb.inProtocol", "Im Protokoll · 49 €") + '</span>' +
         '<p style="font-size:0.95rem">' + esc(tr(featured.desc)) + '</p>' +
         '<div class="ebook-meta"><span>' + fileFormatLabel(featured) + '</span><span>' + featured.minutes + ' ' + T("eb.minutes", "Min. Lesezeit") + '</span></div>' +
         readControl(featured, "", "align-self:flex-start") +
@@ -87,18 +85,6 @@
           '</div></article>';
       }).join("");
     }
-
-    // Gated Ebooks: vor dem Öffnen E-Mail abfragen
-    document.querySelectorAll("[data-read]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var b = books.filter(function (x) { return x.id === btn.getAttribute("data-read"); })[0];
-        if (!b) return;
-        if (window.MM && MM.track) MM.track("ebook_open", { id: b.id });
-        var open = function () { window.open(b.read, "_blank", "noopener"); };
-        if (window.MM && MM.unlock) MM.unlock.gate(open, "ebook-" + b.id);
-        else open();
-      });
-    });
   }
 
   document.addEventListener("mm:langchange", render);

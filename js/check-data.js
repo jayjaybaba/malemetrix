@@ -1543,27 +1543,30 @@ window.MM_CHECK = {
 
   /* ---------- Passende Inhalte/Tools pro Bereich (beratend, vor dem Verkauf) ---------- */
   resource: {
-    body:      { read: { label: "Fettabbau ohne Hunger", href: "ebooks/fettabbau.html" },        track: { label: "Fortschritts-Tracker", href: "tracker.html" } },
-    strength:  { read: { label: "Das 3-Tage-System", href: "ebooks/training-system.html" }, track: { label: "Trainings-Tracker", href: "tracker.html" } },
-    fuel:      { read: { label: "Protein ohne Kochen", href: "ebooks/protein-system.html" },      track: { label: "Kalorien-Tracker", href: "dinner.html" } },
-    recovery:  { read: { label: "Der Schlaf-Stack", href: "ebooks/schlaf-stack.html" },            track: { label: "Fortschritts-Tracker", href: "tracker.html" } },
-    blood:     { read: { label: "Longevity & Risk", href: "ebooks/12-longevity-risk.html" },      track: { label: "Blood Dashboard", href: "blutwerte.html" } },
-    drive:     { read: { label: "Der Masterguide", href: "ebooks/masterguide.html" },        track: { label: "Rechner & Tools", href: "tools.html" } },
-    execution: { read: { label: "Start here — das System", href: "ebooks/00-start-here.html" },   track: { label: "Fortschritts-Tracker", href: "tracker.html" } }
+    body:      { read: { label: "Körperkomposition — im Protokoll", href: "protokoll.html" },        track: { label: "Fortschritts-Tracker", href: "tracker.html" } },
+    strength:  { read: { label: "Training — im Protokoll", href: "protokoll.html" }, track: { label: "Trainings-Tracker", href: "tracker.html" } },
+    fuel:      { read: { label: "Ernährung — im Protokoll", href: "protokoll.html" },      track: { label: "Kalorien-Tracker", href: "dinner.html" } },
+    recovery:  { read: { label: "Schlaf — im Protokoll", href: "protokoll.html" },            track: { label: "Fortschritts-Tracker", href: "tracker.html" } },
+    blood:     { read: { label: "Blutwerte — im Protokoll", href: "protokoll.html" },      track: { label: "Blood Dashboard", href: "blutwerte.html" } },
+    drive:     { read: { label: "Hormone — im Protokoll", href: "protokoll.html" },        track: { label: "Rechner & Tools", href: "tools.html" } },
+    execution: { read: { label: "Umsetzung — im Protokoll", href: "protokoll.html" },   track: { label: "Fortschritts-Tracker", href: "tracker.html" } }
   },
 
   /* Engpass → PASSENDES Protokoll-Kapitel (P16-G/H): der Erklär-Link im
      Diagnose-Block führt gezielt auf das Kapitel, das genau diesen Engpass
      erklärt — statt generisch auf die Produktseite. Die freien Kapitel tragen
      die Protokoll-Rahmung inkl. Kauf-CTA am Ende. */
+  /* Jedes Kapitel gehört zum bezahlten Produkt — die Engpass-Empfehlung führt
+     deshalb auf die Produktseite, benennt aber weiterhin das Kapitel, um das
+     es geht. Kein Link verspricht etwas frei Lesbares. */
   bottleneckChapter: {
-    body:      { href: "ebooks/fettabbau.html",       label: "Körperkomposition" },
-    strength:  { href: "ebooks/training-system.html", label: "Training" },
-    fuel:      { href: "ebooks/fettabbau.html",       label: "Körperkomposition" },
-    recovery:  { href: "ebooks/schlaf-stack.html",    label: "Schlaf" },
-    blood:     { href: "ebooks/12-longevity-risk.html", label: "Blutwerte & Risiko" },
-    drive:     { href: "ebooks/masterguide.html",     label: "Grundlagen" },
-    execution: { href: "ebooks/00-start-here.html",   label: "Umsetzung" }
+    body:      { href: "protokoll.html", label: "Körperkomposition" },
+    strength:  { href: "protokoll.html", label: "Training" },
+    fuel:      { href: "protokoll.html", label: "Ernährung" },
+    recovery:  { href: "protokoll.html", label: "Schlaf" },
+    blood:     { href: "protokoll.html", label: "Blutwerte & Risiko" },
+    drive:     { href: "protokoll.html", label: "Hormone & Libido" },
+    execution: { href: "protokoll.html", label: "Umsetzung" }
   },
 
   /* ==========================================================================
@@ -3028,18 +3031,18 @@ window.MM_CHECK = {
   /* Nicht jeder Link fuer jeden. Genau der naechste sinnvolle Weg. */
 
   C.CHAPTERS = {
-    training:   { label: "Training",           href: "ebooks/training-system.html" },
-    body:       { label: "Körperkomposition",  href: "ebooks/fettabbau.html" },
-    protein:    { label: "Protein & Ernährung", href: "ebooks/protein-system.html" },
-    sleep:      { label: "Schlaf",             href: "ebooks/schlaf-stack.html" },
-    sleepStack: { label: "Schlaf-Stack",       href: "ebooks/schlaf-stack.html" },
-    blood:      { label: "Blutwerte & Risiko", href: "ebooks/12-longevity-risk.html" },
+    training:   { label: "Training",           href: "protokoll.html" },
+    body:       { label: "Körperkomposition",  href: "protokoll.html" },
+    protein:    { label: "Protein & Ernährung", href: "protokoll.html" },
+    sleep:      { label: "Schlaf",             href: "protokoll.html" },
+    sleepStack: { label: "Schlaf-Stack",       href: "protokoll.html" },
+    blood:      { label: "Blutwerte & Risiko", href: "protokoll.html" },
     hormones:   { label: "Hormone",            href: "protokoll.html" },
     sexual:     { label: "Sexuelle Gesundheit", href: "protokoll.html" },
     glp1:       { label: "GLP-1",              href: "protokoll.html" },
-    stack:      { label: "Ultimate Stack",     href: "ebooks/ultimate-stack.html" },
-    habits:     { label: "Umsetzung",          href: "ebooks/00-start-here.html" },
-    daily:      { label: "Tägliche Bewegung",  href: "ebooks/training-system.html" }
+    stack:      { label: "Ultimate Stack",     href: "protokoll.html" },
+    habits:     { label: "Umsetzung",          href: "protokoll.html" },
+    daily:      { label: "Tägliche Bewegung",  href: "protokoll.html" }
   };
 
   C.DOMAIN_CHAPTER = {

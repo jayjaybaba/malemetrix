@@ -1,4 +1,55 @@
-# CONTINUATION_STATE — Phase 16: DAS PROTOKOLL 2.0 (Flagship Rebuild)
+# CONTINUATION_STATE — Phase 17: Nutzer-Feedback + geschlossenes Produkt
+
+## PHASE 17 STAND (SW mm-v139)
+
+### Kein Kapitel ist mehr frei (Inhaber-Entscheidung, zweimal bestätigt)
+Alle **17 Kapitelseiten** unter `ebooks/` sind Vorschauseiten (5–6 KB):
+Protokoll-Rahmung, Titel, Lead, „Was in diesem Kapitel steht"-Liste,
+49-€-CTA, Käufer-Hinweis auf `master-ebook.html`, `noindex, follow`.
+Der Volltext liegt ausschließlich in den verschlüsselten Vaults
+(`master-ebook.html`, `protokoll.html`, `ultimate-stack.html`).
+
+Der erste Durchgang griff zu kurz: er schloss nur die zehn nummerierten
+Kapitel und ließ die sieben „Vertiefungen" frei — die tragen aber selbst
+`MM / PROTOCOL · KAPITEL 0X · VERTIEFUNG` und sind damit ebenfalls
+Produktmaterial. Seit dem zweiten Durchgang ist **kein Ebook mehr frei**.
+
+Mitgezogen:
+- `js/ebooks-data.js`: alle Einträge `gated: true`
+- `js/check-data.js`: 22 Kapitel-Verlinkungen → `protokoll.html`;
+  `bottleneckChapter` benennt weiterhin die Domäne, verlinkt aber das Produkt
+- `ebooks.html`: aus der „kostenlosen Bibliothek" wurde das
+  **Inhaltsverzeichnis des Produkts** (Preis genannt, kein E-Mail-Gate,
+  Knopf „Was im Kapitel steht")
+- `js/ebooks.js`: kein `MM.unlock`-Gate mehr, bezahlte Kapitel gekennzeichnet
+- `lp/*.html` (13 Seiten): kein `data-ebook-read` mehr auf der ganzen Site
+- `js/landing.js`: gelöscht (verwaist)
+- `sitemap.xml`: kein Ebook mehr (27 Seiten)
+- `index.html`, `protokoll.html`, Footer aller 13 Seiten, `js/i18n.js`:
+  keine Gratis-Versprechen auf Produktinhalt mehr
+
+### Geschäftliche Folge — bitte bewusst zur Kenntnis nehmen
+Der **E-Mail-Lead-Magnet existiert nicht mehr**. Die Mechanik
+„Adresse gegen Ebook" hat keinen Inhalt mehr, den sie verschenken könnte.
+Kostenlose Einstiegspunkte sind jetzt ausschließlich: **Score, Rechner,
+Tracker, Magazin**. Wenn Adressen weiterhin eingesammelt werden sollen,
+braucht es dafür ein eigens dafür geschriebenes Gratis-Stück — kein
+Protokoll-Kapitel.
+
+### Offen, weil nur der Inhaber es kann
+- Kapitel-Volltexte neu in die Vaults verschlüsseln (braucht Zugangscode
+  und das gitignorierte `_src/`; der Volltext steht weiterhin in der
+  Git-Historie)
+- `bash tools-dev/deploy-telemetry.sh` (braucht `SUPABASE_ACCESS_TOKEN`
+  und `SUPABASE_DB_PASSWORD`)
+- GitHub-Default-Branch auf `main` stellen (der Proxy verweigert
+  Repository-Einstellungen; bis dahin geht jeder Deploy auf `main` UND `master`)
+- Coaching-Preis: steht unverändert bei **149 €**. Der Befund war nie „zu
+  teuer", sondern das Wort **„ab"** — „ab 149 €" stand an genau einer Stelle,
+  neun weitere nennen glatt 149 € ohne höhere Stufe. Eine Zahl ändere ich,
+  sobald sie genannt wird.
+
+---
 
 ## PHASE 16 STAND (A-J ERLEDIGT — Flaggschiff-Rebuild abgeschlossen)
 ERLEDIGT:

@@ -41,7 +41,7 @@ window.MM_EBOOKS = [
             en: "The operating system in five minutes: optimise the system before you replace a signal from outside. Measure, understand, prioritise, act, reassess — plus the one-bottleneck rule and how Score, Protocol, Program and Tracker fit together." },
     minutes: 5,
     read: "ebooks/00-start-here.html",
-    gated: false
+    gated: true
   },
   {
     id: "injektionen",
@@ -65,7 +65,7 @@ window.MM_EBOOKS = [
             en: "Longevity honestly: not NAD hype but spotting risk early. Blood pressure, ApoB & lipids, glucose, VO₂max and screening as a system — measure what changes decisions and go prepared to your doctor. No made-up cutoffs." },
     minutes: 11,
     read: "ebooks/12-longevity-risk.html",
-    gated: false
+    gated: true
   },
   {
     id: "glp1-agonisten",
@@ -119,7 +119,7 @@ window.MM_EBOOKS = [
             en: "The flagship guide: training, nutrition, recovery, tracking and understanding blood values as one connected system — with a full 12-week roadmap." },
     minutes: 18,
     read: "ebooks/masterguide.html",
-    gated: false
+    gated: true
   },
 
   {
@@ -132,7 +132,7 @@ window.MM_EBOOKS = [
             en: "The complete training guide for busy men: A/B/C plan, progression and the key form cues." },
     minutes: 12,
     read: "ebooks/training-system.html",
-    gated: false
+    gated: true
   },
 
   {
@@ -145,7 +145,7 @@ window.MM_EBOOKS = [
             en: "How to hit your protein target without becoming a chef: standard meals, shopping list, restaurant strategy." },
     minutes: 10,
     read: "ebooks/protein-system.html",
-    gated: false
+    gated: true
   },
 
   {
@@ -173,7 +173,7 @@ window.MM_EBOOKS = [
             en: "The evening routine for deeper sleep: the few sleep supplements with evidence (magnesium, L-theanine, glycine) plus the basics of light, timing and temperature — as its own page (PDF still included)." },
     minutes: 10,
     read: "ebooks/schlaf-stack.html",
-    gated: false
+    gated: true
   },
 
   {
@@ -186,7 +186,7 @@ window.MM_EBOOKS = [
             en: "How to lose belly fat without constant hunger: energy balance, protein, satiety, weekend strategy and beating plateaus." },
     minutes: 13,
     read: "ebooks/fettabbau.html",
-    gated: false
+    gated: true
   },
 
   {

@@ -346,12 +346,20 @@ group("11 · Kein Verweis führt in ein geschlossenes Kapitel");
     ziele.length + " Verlinkungsziele, alle vorhanden" + (fehlend.length ? " — fehlt: " + fehlend.join(", ") : ""));
 
   /* Bibliothek, Sitemap und Verkaufsseite dürfen sie ebenfalls nicht mehr
-     als frei führen. */
+     als frei führen. ebooks.html ist inzwischen das Inhaltsverzeichnis des
+     Produkts — es DARF die Kapitelseiten verlinken (die zeigen vorab, was
+     drinsteht), aber es darf sie nicht als kostenlos ausgeben und kein
+     E-Mail-Gate mehr davorsetzen. */
   var lib = read("ebooks.html"), sm = read("sitemap.xml");
   ZU.forEach(function (z) {
-    ok(lib.indexOf("ebooks/" + z + ".html") < 0, "ebooks.html verlinkt " + z + " nicht mehr");
     ok(sm.indexOf("ebooks/" + z + ".html") < 0, "sitemap.xml führt " + z + " nicht mehr");
   });
+  ok(!/data-ebook-read|unlockBoxForm|data-read=/.test(lib), "ebooks.html hat kein E-Mail-Gate mehr");
+  ok(/49 €/.test(lib) && /INHALTSVERZEICHNIS/.test(lib), "ebooks.html ist als Inhaltsverzeichnis mit Preis ausgewiesen");
+  ok(!/Kostenlose Ebooks|kostenlos freischalten|Lesen ohne Anmeldung/.test(lib), "ebooks.html verspricht keine kostenlosen Ebooks mehr");
+  var ebJs = read("js/ebooks.js");
+  ok(/b\.gated \?/.test(ebJs) && !/MM\.unlock/.test(ebJs), "die Bibliotheks-Kachel kennzeichnet bezahlte Kapitel und gated nichts per E-Mail");
+  ok(!fs.existsSync(path.join(ROOT, "js/landing.js")), "das Lead-Skript der Gratis-Landingpages ist entfernt");
   ok(read("protokoll.html").indexOf("FREI LESEN") < 0, "die Verkaufsseite bewirbt kein Kapitel mehr als frei");
   ok((read("protokoll.html").match(/IM PROTOKOLL/g) || []).length === 11, "alle elf Einträge sind als Produktbestandteil gekennzeichnet");
 })();

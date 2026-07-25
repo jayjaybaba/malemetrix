@@ -348,22 +348,18 @@ group("S23/S24/S29 · Strukturierte Daten, Index-Wahrheit");
   });
 
   var sm = read("sitemap.xml");
-  /* gewohnheiten war der Abschluss von DAS PROTOKOLL und ist inzwischen
-     geschlossen — es gehört nicht mehr zu den frei indexierbaren Ebooks. */
-  ["fettabbau", "protein-system"].forEach(function (e) {
-    var s = read("ebooks/" + e + ".html");
-    ok(!/name="robots"/.test(s), "S24: " + e + " trägt kein noindex mehr");
-    ok(sm.indexOf("ebooks/" + e + ".html") > 0, "S24: " + e + " steht in der Sitemap");
+  /* S24 hatte drei Ebooks für die Suche freigegeben. Inzwischen ist jedes
+     Ebook Teil des bezahlten Protokolls — die Freigabe ist damit
+     gegenstandslos geworden und ins Gegenteil verkehrt: kein Ebook gehört
+     mehr in den Index oder in die Sitemap. */
+  ["fettabbau", "protein-system", "gewohnheiten"].forEach(function (e) {
+    ok(/noindex/.test(read("ebooks/" + e + ".html")), e + " ist als Protokoll-Kapitel aus dem Index");
+    ok(sm.indexOf("ebooks/" + e + ".html") < 0, "… und aus der Sitemap");
   });
-  ok(/noindex/.test(read("ebooks/gewohnheiten.html")), "gewohnheiten ist als Protokoll-Kapitel wieder aus dem Index");
-  ok(sm.indexOf("ebooks/gewohnheiten.html") < 0, "… und aus der Sitemap");
-  /* 11-injektionen und schlaf-energie sind Protokoll-Kapitel und tragen
-     jetzt die Vorschau-Auszeichnung (noindex, follow) — die übrigen sind
-     unverändert. */
-  ["00-start-here", "12-longevity-risk", "masterguide", "training-system"].forEach(function (e) {
-    ok(/name="robots" content="noindex"/.test(read("ebooks/" + e + ".html")), "S24: " + e + " bleibt unangetastet");
-  });
-  ["11-injektionen", "schlaf-energie"].forEach(function (e) {
+  ok((sm.match(/ebooks\//g) || []).length === 0, "die Sitemap führt überhaupt kein Ebook mehr");
+  /* Alle siebzehn Kapitelseiten tragen dieselbe Auszeichnung. */
+  ["00-start-here", "12-longevity-risk", "masterguide", "training-system",
+   "11-injektionen", "schlaf-energie", "fettabbau", "protein-system"].forEach(function (e) {
     ok(/name="robots" content="noindex, follow"/.test(read("ebooks/" + e + ".html")), e + " ist als geschlossenes Kapitel ausgezeichnet");
   });
 
@@ -490,12 +486,16 @@ group("D9 · Ebooks haben genau eine h1");
     if (n !== 1) falsch.push(f + "=" + n);
   });
   ok(falsch.length === 0, "alle " + files.length + " Ebook-Seiten haben genau eine h1 (vorher bis zu 20)");
-  /* testosteron.html ist inzwischen eine Vorschauseite; die 17 Abschnitts-
-     überschriften stehen im bezahlten Volltext. Geprüft wird die Regel an
-     einem Ebook, das weiterhin frei ist. */
-  var t = read("ebooks/fettabbau.html");
-  ok((t.match(/<h2 class="bp-h1">/g) || []).length >= 10, "die Kapitelüberschriften sind h2 (" + (t.match(/<h2 class="bp-h1">/g) || []).length + ")");
-  ok((t.match(/<\/h1>/g) || []).length === 1, "keine verwaisten schließenden h1-Tags");
+  /* Es gibt kein frei lesbares Ebook mehr, an dem sich die Überschriften-
+     regel im Volltext zeigen ließe. Geprüft bleibt, dass der Selektor
+     tag-unabhängig ist — genau darum ging es bei D9 — und dass jede
+     Kapitelseite bei genau einer h1 bleibt. */
+  var bp = read("css/blueprint.css");
+  ok(/\.bp \.bp-h1 \{/.test(bp) && !/\.bp h1\.bp-h1/.test(bp), "der Selektor greift unabhängig vom Tag");
+  var mehr = ["testosteron", "fettabbau", "schlaf-stack"].filter(function (e) {
+    return (read("ebooks/" + e + ".html").match(/<h1[\s>]/g) || []).length !== 1;
+  });
+  ok(mehr.length === 0, "jede Kapitelseite hat genau eine h1");
   /* blueprint.html ist seit dem Schließen der Kapitel eine Vorschauseite;
      die Cover-h1 von damals ist der Kapitelüberschrift gewichen. Geprüft
      bleibt das Eigentliche: genau eine h1. */

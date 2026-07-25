@@ -90,6 +90,29 @@ Beispiel-Rechnung BASE (illustrativ, nicht Realität):
 - Intelligence-Abo (später, 10 % von Käuferbasis @ 9 €) baut die einzige echte
   MRR-Komponente auf.
 
+### Änderung Phase 17: der Ebook-Lead-Magnet ist weg
+
+Alle 17 Kapitel gehören inzwischen zum bezahlten Protokoll — keines ist mehr
+frei lesbar. Damit entfällt die Mechanik **„E-Mail-Adresse gegen Ebook"**
+ersatzlos: es gibt keinen Inhalt mehr, den sie verschenken könnte. Die
+Landingpages (`lp/*.html`) sammeln keine Adressen mehr, `js/landing.js` ist
+gelöscht.
+
+Was das für den Trichter heißt:
+- **Oberkante schrumpft.** Der Einstieg läuft jetzt allein über Score,
+  Rechner, Tracker und Magazin. Diese vier sind gut, aber der Score ist der
+  einzige mit echter Konversionsabsicht.
+- **Die Liste wächst langsamer.** Wer weiter Adressen aufbauen will, braucht
+  ein eigens geschriebenes Gratis-Stück — ausdrücklich **kein**
+  Protokoll-Kapitel, sonst ist das Produkt wieder teilweise umsonst.
+- **Der Gegenwert:** das 49-€-Produkt ist zum ersten Mal vollständig. Vorher
+  bekam ein Interessent einen erheblichen Teil des Materials, ohne zu zahlen —
+  das war der stärkste einzelne Kaufgrund-Killer.
+
+Die Zahlen oben sind auf diese Änderung **nicht** angepasst; sie stammen aus
+der Zeit mit Gratis-Kapiteln. Wer sie neu rechnet, sollte die
+Account→Paid-Rate eher hoch und die Reichweite oben eher niedrig ansetzen.
+
 **Ehrliche Schlussfolgerung:** Ohne wiederkehrende Komponente ist MaleMetrix ein
 Einmalumsatz-Produkt mit Coaching-Oberkante. Modell E ist der risikoärmste Weg
 zu MRR, ohne die Ehrlichkeit oder Alt-Kunden zu opfern — **aber die Aktivierung

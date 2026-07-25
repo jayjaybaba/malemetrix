@@ -133,11 +133,15 @@ group("P16/E · Frei gebliebene Zusatzkapitel 00/12 (bp-Design)");
    gebunden) stehen im bezahlten Volltext und sind öffentlich nicht mehr
    prüfbar — die Vorschauseite wird stattdessen im Block „Kapitel sind
    geschlossen" geprüft. */
+/* Auch 00-start-here und 12-longevity-risk tragen die Protokoll-Rahmung
+   (KAPITEL 01 bzw. 04 · VERTIEFUNG) und sind inzwischen geschlossen. Das
+   Foto-freie Cover war ein Merkmal des Volltexts; geprüft bleibt die
+   Rahmung, die auf der Vorschau weiterhin steht. */
 ["00-start-here", "12-longevity-risk"].forEach(function (fn) {
   var h = read("ebooks/" + fn + ".html");
   ok(/<body class="bp-wrap">/.test(h) && /blueprint\.css/.test(h), fn + ": bp-Design (blueprint.css)");
   ok(/<div class="bp-protohead">/.test(h) && /class="bp-protocta"/.test(h), fn + ": Protokoll-Rahmung (Kopf + Ende-CTA)");
-  ok(/bp-cover nofoto/.test(h) && /rel="canonical"/.test(h), fn + ": Foto-freies Cover + canonical gesetzt");
+  ok(/rel="canonical"/.test(h), fn + ": canonical gesetzt");
 });
 
 group("Kapitel sind geschlossen — Vorschau statt Volltext");
@@ -172,23 +176,34 @@ group("Lead-Seiten sammeln keine Adresse mehr für bezahlte Kapitel");
   ok(/protokoll.html/.test(lp), "lp/" + name + ": führt zum Produkt");
   ok(/check.html/.test(lp), "lp/" + name + ": nennt den kostenlosen Score als echte Alternative");
 });
+/* Es gibt kein Gratis-Ebook mehr — folglich auch kein E-Mail-Gate. */
 ["fettabbau", "protein-system", "schlaf-stack", "training-system", "masterguide"].forEach(function (name) {
   var lp = read("lp/" + name + ".html");
-  ok(/data-ebook-read/.test(lp), "lp/" + name + ": bleibt ein echtes Gratis-Angebot");
+  ok(!/data-ebook-read/.test(lp), "lp/" + name + ": kein E-Mail-Gate mehr");
+  ok(/protokoll\.html/.test(lp) && /check\.html/.test(lp), "lp/" + name + ": führt zum Produkt und zum Score");
 });
+var alleLp = fs.readdirSync(path.join(ROOT, "lp")).filter(function (f) { return /\.html$/.test(f); });
+var mitGate = alleLp.filter(function (f) { return /data-ebook-read/.test(read("lp/" + f)); });
+ok(mitGate.length === 0, "keine einzige Lead-Seite sammelt noch eine Adresse für ein Ebook" + (mitGate.length ? ": " + mitGate.join(", ") : ""));
 
 group("P16/G-H · Score-Ergebnis: Engpass → PASSENDES Kapitel statt generisch");
 var checkData = read("js/check-data.js");
 var checkJs = read("js/check.js");
 ok(/bottleneckChapter:\s*\{/.test(checkData), "check-data.js: bottleneckChapter-Map existiert");
-/* Seit dem Schließen der Kapitel zeigen die Engpass-Links auf Inhalte, die
-   der Nutzer auch wirklich lesen kann — sonst führt die Score-Empfehlung
-   auf eine Bezahlschranke. */
-[["body", "fettabbau"], ["strength", "training-system"], ["fuel", "fettabbau"], ["recovery", "schlaf-stack"], ["blood", "12-longevity-risk"], ["drive", "masterguide"], ["execution", "00-start-here"]].forEach(function (pair) {
-  var seg = checkData.split("bottleneckChapter:")[1].split("},")[0] + checkData.split("bottleneckChapter:")[1].split("}")[1];
-  var block = checkData.split("bottleneckChapter:")[1].slice(0, 700);
-  ok(new RegExp(pair[0] + ":\\s*\\{[^}]*ebooks/" + pair[1] + "\\.html").test(block), "Engpass '" + pair[0] + "' → ebooks/" + pair[1] + ".html");
+/* Kein Kapitel ist mehr frei lesbar. Der Vertrag hat sich damit gedreht: die
+   Engpass-Empfehlung darf kein Ebook mehr verlinken (das wäre ein Versprechen
+   auf frei Lesbares), muss aber weiterhin domänenspezifisch benennen, worum
+   es geht — sonst wäre sie wieder generisch. */
+var bnBlock = checkData.split("bottleneckChapter:")[1].split("\n  },")[0];
+[["body", "Körperkomposition"], ["strength", "Training"], ["fuel", "Ernährung"],
+ ["recovery", "Schlaf"], ["blood", "Blutwerte"], ["drive", "Hormone"],
+ ["execution", "Umsetzung"]].forEach(function (pair) {
+  ok(new RegExp(pair[0] + ":\\s*\\{[^}]*protokoll\\.html[^}]*" + pair[1]).test(bnBlock),
+    "Engpass '" + pair[0] + "' → protokoll.html, benannt als '" + pair[1] + "'");
 });
+ok(!/ebooks\//.test(bnBlock), "keine Engpass-Empfehlung verlinkt noch ein Kapitel direkt");
+var bnLabels = (bnBlock.match(/label:\s*"([^"]+)"/g) || []);
+ok(new Set(bnLabels).size >= 6, "die Empfehlungen sind domänenspezifisch benannt (" + new Set(bnLabels).size + " verschiedene Bezeichnungen)");
 /* Score V2: die Kapitel-Vertiefung läuft über die kontextuelle Deep-Link-Engine
    (Engpass-Domain × Status × Datenlücken) statt über eine feste 1:1-Map.
    Der Vertrag bleibt: passendes Kapitel statt generischer Produktseite. */
