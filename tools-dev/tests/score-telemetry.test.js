@@ -346,21 +346,118 @@ group("10 · Kalibrierungsbericht rechnet aus echten Events");
 })();
 
 /* ==================================================================== 11 */
-group("11 · Einwilligung im Score-UI: optional, nicht vorangehakt, ehrlich beschriftet");
+group("11 · Score-Einstieg ohne Wand — Nutzungsmessung erst NACH dem Ergebnis");
 (function () {
   var html = fs.readFileSync(path.join(ROOT, "check.html"), "utf8");
-  ok(/id="consentTelemetry"/.test(html), "die Statistik-Einwilligung existiert als eigene Checkbox");
-  var box = html.split('id="consentTelemetry"')[0].split("<label").pop() + html.split('id="consentTelemetry"')[1].split("</label>")[0];
-  ok(!/id="consentTelemetry"[^>]*checked/.test(html), "sie ist NICHT vorangehakt");
-  ok(!/id="consentTelemetry"[^>]*required/.test(html), "sie ist NICHT Pflicht — der Score läuft auch ohne");
-  ok(/Keine Antworten, keine Blutwerte, keine Substanzen, kein Status/.test(html),
-    "der Text sagt ausdrücklich, was NICHT übertragen wird");
-  ok(/nicht an uns übertragen/.test(html), "das Kernversprechen zu den Antworten steht weiterhin da");
-  ok(/score-telemetry\.js/.test(html), "das Telemetrie-Modul ist eingebunden");
   var js = fs.readFileSync(path.join(ROOT, "js/check.js"), "utf8");
-  ok(/setConsent\(telBox\.checked\)/.test(js), "die Checkbox steuert die Einwilligung wirklich");
+
+  /* Der Einstieg ist frei: keine Checkbox, keine Bestätigungswand. */
+  ok(!/type="checkbox"/.test(html), "check.html enthält KEINE einzige Checkbox mehr");
+  ok(!/id="checkConsent"/.test(html), "die Einwilligungs-Sektion ist entfernt");
+  ok(!/id="btnConsentNext"/.test(html), "der gesperrte „Verstanden“-Button ist weg");
+  ok(!/id="consentTelemetry"/.test(html), "die Statistik-Abfrage steht nicht mehr vor dem Score");
+  ok(!/\bdisabled\b/.test(html.split('id="btnStartCheck"')[1].split(">")[0] || ""),
+    "der Start-Button ist nicht deaktiviert");
+  ok(/id="btnStartCheck"/.test(html) && /SCORE STARTEN/.test(html), "es gibt genau einen klaren Start-Button");
+  ok(/ersetzt keine medizinische Diagnose oder ärztliche Beratung/.test(html),
+    "genau ein untergeordneter Hinweissatz bleibt stehen");
+  ok((html.match(/ersetzt keine medizinische Diagnose/g) || []).length === 1,
+    "… und zwar nur einmal, nicht als Warnblock");
+  ok(/score-telemetry\.js/.test(html), "das Telemetrie-Modul ist weiterhin eingebunden");
+  ok(/addEventListener\("click", startScore\)/.test(js), "der Start-Button startet den Score direkt");
+  ok(!/show\("checkConsent"\)/.test(js), "kein Code führt mehr auf eine Einwilligungs-Sektion");
+
+  /* Die Messung wird erst im Ergebnis angeboten — standardmäßig AUS. */
+  ok(/id="scoreOptin"/.test(js), "die Nutzungsmessung erscheint als Modul auf der Ergebnisseite");
+  ok(/MALEMETRIX VERBESSERN/.test(js), "kompaktes Modul mit klarer Überschrift");
+  ok(/Es werden keine Antworten oder Gesundheitsdaten übertragen/.test(js),
+    "der kurze Text sagt, was NICHT übertragen wird");
+  ok(/aria-checked="false"/.test(js), "der Schalter startet sichtbar auf AUS");
+  ok(/role="switch"/.test(js), "korrekte Semantik für den Schalter");
+  ok(/t\.setConsent\(!cur\)/.test(js), "der Schalter kippt die Einwilligung in beide Richtungen (an UND aus)");
+  ok(js.indexOf('id="scoreOptin"') > js.indexOf('id="scoreFeedback"'),
+    "das Modul steht nach dem Ergebnisinhalt, nicht davor");
+
   ok(/telOnce\("completed", "score_completed"/.test(js), "Abschluss läuft über die Einmal-Variante");
   ok(!/tel\((?:'|")score_(started|completed)/.test(js), "Start und Abschluss nutzen nie die Mehrfach-Variante");
+})();
+
+/* ==================================================================== 11b */
+group("11b · Navigation: kein toter „System“-Eintrag mehr");
+(function () {
+  var htmlFiles = [];
+  (function walk(dir) {
+    fs.readdirSync(dir).forEach(function (f) {
+      if (f === "node_modules" || f === ".git" || f === "tools-dev") return;
+      var p = path.join(dir, f);
+      if (fs.statSync(p).isDirectory()) walk(p);
+      else if (f.endsWith(".html")) htmlFiles.push(p);
+    });
+  })(ROOT);
+  ok(htmlFiles.length > 20, htmlFiles.length + " HTML-Seiten geprüft");
+
+  var offenders = htmlFiles.filter(function (f) {
+    return /<a href="(?:\.\.\/)*index\.html#system"/.test(fs.readFileSync(f, "utf8"));
+  });
+  ok(offenders.length === 0, "kein einziger „System“-Navigationslink mehr (Desktop, Mobil, Footer): " +
+    (offenders.length ? offenders.join(", ") : "0 Treffer"));
+
+  var i18n = fs.readFileSync(path.join(ROOT, "js/i18n.js"), "utf8");
+  ok(!/"nav\.system"/.test(i18n), "die verwaiste Übersetzung nav.system ist entfernt");
+
+  /* Die verbleibenden Hauptnavigationspunkte müssen echte Ziele haben. */
+  var nav = fs.readFileSync(path.join(ROOT, "check.html"), "utf8").split('class="main-nav"')[1].split("</nav>")[0];
+  var hrefs = (nav.match(/href="([^"]+)"/g) || []).map(function (h) { return h.slice(6, -1); });
+  ok(hrefs.length >= 5, hrefs.length + " Navigationsziele vorhanden");
+  hrefs.forEach(function (h) {
+    if (/^https?:/.test(h)) return;
+    var file = h.split("#")[0];
+    ok(!file || fs.existsSync(path.join(ROOT, file)), "Navigationsziel existiert: " + h);
+  });
+  ok(hrefs.every(function (h) { return h !== "#" && h !== ""; }), "kein leerer oder toter href in der Hauptnavigation");
+})();
+
+/* ==================================================================== 11c */
+group("11c · My-Protokoll-Bottom-Navigation: sichtbar, bedienbar, korrekt aktiv");
+(function () {
+  var app = fs.readFileSync(path.join(ROOT, "js/os/app.js"), "utf8");
+  var css = fs.readFileSync(path.join(ROOT, "css/os.css"), "utf8");
+  var navFn = app.split("function navBar(")[1].split("\n  }")[0];
+
+  ["today", "plan", "track", "progress", "learn"].forEach(function (v) {
+    ok(new RegExp('\\["' + v + '"').test(navFn), "Navigationspunkt vorhanden: " + v);
+    ok(new RegExp('VIEWS = \\[[^\\]]*"' + v + '"').test(app), "… und " + v + " ist eine gültige Route");
+  });
+  ok(/NAV_ICON/.test(app) && Object.keys({}).length === 0, "Icons sind Teil der Navigation");
+  ok(/aria-current="page"/.test(navFn), "der aktive Punkt ist auch für Screenreader markiert");
+  ok(/aria-label="Hauptnavigation"/.test(navFn), "die Navigation hat einen beschreibenden Namen");
+  ok(/on = active === it\[0\]/.test(navFn), "aktiv ist genau das aktuelle Ziel — keine Heuristik, keine Fehltreffer");
+
+  /* Sichtbarkeit statt Fußnotentext */
+  var bar = css.split(".os-nav {")[1].split("}")[0];
+  ok(/rgba\(10, 13, 19, 0\.92\)/.test(bar), "deckender Untergrund statt durchscheinender Fläche");
+  ok(/min-height: 44px/.test(css.split(".os-nav a {")[1].split("}")[0]), "Touch-Ziel mindestens 44 px");
+
+  var navMobile = css.split(".os-nav {").slice(1).join(".os-nav {").split("Typo-Drama")[0];
+  ok(/background: #05070b/.test(navMobile), "mobil: deckend schwarze Bar");
+  ok(/border-top: 1px solid rgba\(255, 255, 255, 0\.10\)/.test(navMobile), "mobil: sichtbare Trennkante nach oben");
+  ok(/box-shadow: 0 -10px 30px/.test(navMobile), "mobil: zurückhaltender Schatten zur Abgrenzung");
+  ok(/min-height: 50px/.test(navMobile), "mobil: Touch-Ziele über dem Minimum");
+  ok(/z-index: 110/.test(navMobile), "z-index über dem Inhalt, aber unter Sheets (120) und Modals (200)");
+  ok((css.match(/env\(safe-area-inset-bottom/g) || []).length >= 2, "Safe Area sowohl für die Bar als auch für den Inhaltsabstand");
+
+  /* Aktiv-Zustand hängt nicht nur an der Farbe */
+  ok(/\.os-nav a\.on::before/.test(css), "aktiver Punkt hat zusätzlich einen Linien-Indikator");
+  ok(/\.os-nav a\.on \{[^}]*font-weight: 700/.test(css), "… und einen kräftigeren Schriftschnitt");
+  ok(/\.os-nav a\.on \{[^}]*var\(--accent-2\)/.test(css), "… in Electric Cyan");
+  ok(/color: #aeb8c7/.test(css), "inaktive Punkte bleiben klar lesbar (kein Fast-Unsichtbar)");
+  ok(/\.os-nav a:focus-visible/.test(css), "sichtbarer Tastaturfokus");
+
+  /* Inhalt wird nicht verdeckt — und der Abstand existiert genau einmal */
+  ok(/\.os-shell \{[^}]*padding-bottom: 48px/.test(css), "Desktop: normaler Abstand ohne feste Bar");
+  ok(/\.os-shell \{ padding-bottom: calc\(78px \+ env\(safe-area-inset-bottom/.test(css),
+    "Mobil: genau ein Abstand für Barhöhe + Safe Area");
+  ok((css.match(/padding-bottom: calc\(78px/g) || []).length === 1, "kein doppelter Bottom-Abstand");
 })();
 
 /* ==================================================================== 12 */
