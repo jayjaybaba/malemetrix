@@ -6,8 +6,15 @@
    Negativraum, Messgeometrie.
    ========================================================================== */
 
-/* ---------- App-Shell ---------- */
-.os-shell { max-width: 760px; margin: 0 auto; padding-bottom: 96px; }
+/* ---------- App-Shell ----------
+   Desktop: die Navigation steht oben im Fluss, es genügt normaler Abstand.
+   Mobile: die feste Bottom-Bar deckt den unteren Rand ab — der Inhalt
+   bekommt dort GENAU EINMAL Luft (Barhöhe + Safe Area), damit die letzte
+   Karte oder der letzte Button nicht darunter verschwindet. */
+.os-shell { max-width: 760px; margin: 0 auto; padding-bottom: 48px; }
+@media (max-width: 720px) {
+  .os-shell { padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
+}
 .os-body { position: relative; }
 .os-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 18px 0 10px; }
 
@@ -24,15 +31,43 @@
           mask-image: linear-gradient(180deg, rgba(0,0,0,.7), rgba(0,0,0,.15) 30%, rgba(0,0,0,.05));
 }
 
-/* ---------- App-Navigation (Desktop: oben · Mobile: Bottom-Bar) ---------- */
-.os-nav { display: flex; gap: 4px; margin: 8px 0 22px; border: 1px solid var(--line); border-radius: 14px; padding: 4px; background: rgba(10, 13, 19, 0.72); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-.os-nav a { flex: 1; text-align: center; padding: 10px 6px; border-radius: 10px; color: var(--muted); text-decoration: none; font-size: 0.82rem; font-weight: 600; letter-spacing: 0.04em; display: flex; flex-direction: column; align-items: center; gap: 3px; }
-.os-nav a.on { color: #fff; background: rgba(46, 124, 246, 0.16); }
-.os-nav-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.5; }
-.os-nav a.on .os-nav-dot { background: var(--accent-2); opacity: 1; box-shadow: 0 0 8px var(--accent-2); }
+/* ---------- App-Navigation (Desktop: oben · Mobile: Bottom-Bar) ----------
+   Das ist die Hauptnavigation der App, kein Fußnotentext. Deshalb:
+   deckender Untergrund, klare Trennkante, lesbare Labels auch im
+   inaktiven Zustand, und ein Aktiv-Zustand, der NICHT allein an der
+   Farbe hängt (Linie + Schriftschnitt + Icon-Kontrast). */
+.os-nav { display: flex; gap: 4px; margin: 8px 0 22px; border: 1px solid var(--line); border-radius: 14px; padding: 4px; background: rgba(10, 13, 19, 0.92); }
+.os-nav a {
+  flex: 1; position: relative; text-align: center; padding: 9px 6px; border-radius: 10px;
+  color: #aeb8c7; text-decoration: none; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.03em;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+  min-height: 44px; transition: color 0.15s, background 0.15s;
+}
+.os-nav a:hover { color: #eef2f7; }
+.os-nav a.on { color: var(--accent-2); font-weight: 700; background: rgba(0, 194, 255, 0.10); }
+.os-nav a:focus-visible { outline: 2px solid var(--accent-2); outline-offset: -2px; }
+.os-nav-ico { width: 21px; height: 21px; flex-shrink: 0; }
+.os-nav a.on .os-nav-ico { stroke-width: 2.2; }
+/* Zweiter Aktiv-Hinweis neben der Farbe: kurze Linie über dem Icon. */
+.os-nav a.on::before {
+  content: ""; position: absolute; top: 3px; left: 50%; transform: translateX(-50%);
+  width: 22px; height: 2px; border-radius: 2px; background: var(--accent-2);
+}
+
 @media (max-width: 720px) {
-  .os-nav { position: fixed; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 90; margin: 0; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5); }
-  .os-nav a { font-size: 0.68rem; padding: 9px 2px; }
+  .os-nav {
+    /* z-index bewusst 110: über allen Seiteninhalten, aber UNTER den
+       Overlays der App (.os-sheet 120, .modal-overlay 200, Toast 900) —
+       die Bar darf ein geöffnetes Sheet niemals überdecken. */
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 110; margin: 0;
+    border-radius: 0; border: 0; border-top: 1px solid rgba(255, 255, 255, 0.10);
+    background: #05070b;
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.55);
+  }
+  .os-nav a { font-size: 0.7rem; padding: 7px 2px; gap: 4px; min-height: 50px; border-radius: 8px; }
+  .os-nav-ico { width: 20px; height: 20px; }
+  .os-nav a.on::before { top: 0; }
 }
 
 /* ---------- Typo-Drama ---------- */

@@ -32,10 +32,25 @@
   function hashParam(name) { var q = (location.hash || "").split("?")[1] || ""; var m = q.split("&").filter(function (kv) { return kv.split("=")[0] === name; })[0]; return m ? decodeURIComponent(m.split("=")[1] || "") : ""; }
   window.addEventListener("hashchange", function () { render(); window.scrollTo(0, 0); });
 
+  /* Bottom-Navigation: die Hauptnavigation der App. Icons + Label + eigener
+     Aktiv-Indikator (Linie oben), damit der aktive Punkt nicht nur an der
+     Farbe hängt. aria-current markiert das aktuelle Ziel auch für
+     Screenreader; die Elemente sind echte Links (Hash-Routing). */
+  var NAV_ICON = {
+    today: '<path d="M3 9h18M7 3v3m10-3v3"/><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M9 14l2 2 4-4"/>',
+    plan: '<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/>',
+    track: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+    progress: '<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>',
+    learn: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>'
+  };
   function navBar(active) {
     var items = [["today", "Today"], ["plan", "Plan"], ["track", "Track"], ["progress", "Progress"], ["learn", "Learn"]];
-    return '<nav class="os-nav" aria-label="App">' + items.map(function (it) {
-      return '<a href="#' + it[0] + '" class="' + (active === it[0] ? "on" : "") + '"><span class="os-nav-dot"></span>' + it[1] + '</a>';
+    return '<nav class="os-nav" aria-label="Hauptnavigation">' + items.map(function (it) {
+      var on = active === it[0];
+      return '<a href="#' + it[0] + '" class="' + (on ? "on" : "") + '"' + (on ? ' aria-current="page"' : '') + '>' +
+        '<svg class="os-nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" ' +
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + NAV_ICON[it[0]] + '</svg>' +
+        '<span class="os-nav-txt">' + it[1] + '</span></a>';
     }).join("") + '</nav>';
   }
 
