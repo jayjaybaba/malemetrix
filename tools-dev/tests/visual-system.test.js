@@ -92,7 +92,10 @@ Object.keys(CHAPTERS).forEach(function (fn) {
   var oneEach = (h.match(/class="bp-protohead"/g) || []).length === 1 && (h.match(/class="bp-protocta"/g) || []).length === 1;
   ok(head && label && cta && oneEach, fn + ": Systemkopf (" + CHAPTERS[fn] + ") + Ende-CTA genau einmal, Link auf protokoll.html");
 });
-ok(!/DAS 12-WOCHEN-PROGRAMM.{0,40}erklärt/i.test(read("ebooks/testosteron.html")), "Rollen bleiben getrennt (Programm 'erklärt' nicht) — Positionierung intakt");
+/* Früher an ebooks/testosteron.html geprüft; die Seite ist seit dem
+   Schließen der Kapitel eine Vorschau. Die Rollentrennung gehört ohnehin
+   auf die Produktseite. */
+ok(!/DAS 12-WOCHEN-PROGRAMM.{0,40}erklärt/i.test(read("protokoll.html")), "Rollen bleiben getrennt (Programm 'erklärt' nicht) — Positionierung intakt");
 
 group("P17 · Kanonische 10-Kapitel-Architektur (+ Abschluss)");
 var proto = read("protokoll.html");
@@ -107,7 +110,11 @@ ok((proto.match(/class="pc-n" aria-hidden="true"/g) || []).length === 11, "die G
 ok(/proto-outro/.test(proto) && /ABSCHLUSS · DAS SYSTEM ZUSAMMENSETZEN/.test(proto), "unnummerierter Abschluss vorhanden (kein Kapitel 11)");
 ok(/ebooks\/blueprint\.html/.test(proto) && /ebooks\/ultimate-stack\.html/.test(proto) && /ebooks\/11-injektionen\.html/.test(proto), "Index verlinkt echte Kapitel-URLs inkl. Ultimate Stack (07) + Injektionen (10)");
 ok(/DAS PROTOKOLL erklärt/.test(proto) && /12-Wochen-Programm/.test(proto) && /führt/.test(proto), "Rollen getrennt (Protokoll erklärt · Programm führt)");
-ok(/pc-tag paid">IM PROTOKOLL/.test(proto) && /pc-tag free">FREI LESEN/.test(proto), "ehrliche Frei/Premium-Kennzeichnung je Kapitel");
+/* Seit dem Schließen der Kapitel ist KEINES mehr frei — die frühere
+   Prüfung verlangte ausdrücklich beide Kennzeichnungen. */
+ok(/pc-tag paid">IM PROTOKOLL/.test(proto), "jedes Kapitel ist als Teil des Produkts gekennzeichnet");
+ok(!/FREI LESEN/.test(proto), "kein Kapitel wird mehr als frei lesbar beworben");
+ok((proto.match(/pc-tag paid">IM PROTOKOLL/g) || []).length === 11, "alle 11 Einträge tragen die Kennzeichnung");
 ok(/\.proto-index \{/.test(style) && /\.proto-chap/.test(style), "Index-Styles zentral in style.css");
 ok(!/id="frei-lesen"/.test(proto), "redundantes D2-Preview-Grid entfernt (dedupliziert in den Index)");
 var eb = read("ebooks.html");
@@ -119,57 +126,65 @@ ok(/MM\.store\.get\("check_result"/.test(eb), "Empfehlung liest den echten lokal
 });
 ok(!/mm-ai|fetch\(|XMLHttpRequest/.test(eb.split("EMPFOHLEN FÜR DICH")[1] || ""), "Empfehlung sendet nichts nach außen (nur lokal)");
 
-group("P16/E · Neue Kapitel 00/11/12 (bp-Design, FREE) + medizinische Leitplanken");
-["00-start-here", "11-injektionen", "12-longevity-risk"].forEach(function (fn) {
+group("P16/E · Frei gebliebene Zusatzkapitel 00/12 (bp-Design)");
+/* 11-injektionen war hier mit dabei, ist aber Kapitel 10 von DAS PROTOKOLL
+   und inzwischen geschlossen. Seine inhaltlichen Leitplanken (keine
+   Universalnadel, keine Dosierungen, Nadelwahl an Präparat und Anatomie
+   gebunden) stehen im bezahlten Volltext und sind öffentlich nicht mehr
+   prüfbar — die Vorschauseite wird stattdessen im Block „Kapitel sind
+   geschlossen" geprüft. */
+["00-start-here", "12-longevity-risk"].forEach(function (fn) {
   var h = read("ebooks/" + fn + ".html");
   ok(/<body class="bp-wrap">/.test(h) && /blueprint\.css/.test(h), fn + ": bp-Design (blueprint.css)");
   ok(/<div class="bp-protohead">/.test(h) && /class="bp-protocta"/.test(h), fn + ": Protokoll-Rahmung (Kopf + Ende-CTA)");
   ok(/bp-cover nofoto/.test(h) && /rel="canonical"/.test(h), fn + ": Foto-freies Cover + canonical gesetzt");
 });
-// Kapitel 00 — Produkt-Rollen getrennt
-var c00 = read("ebooks/00-start-here.html");
-ok(/SCORE findet/.test(c00) && /PROTOKOLL erklärt/.test(c00) && /PROGRAMM führt/.test(c00) && /TRACKER misst/.test(c00), "00: Produkt-Rollen sauber getrennt (findet/erklärt/führt/misst)");
-ok(/Optimiere zuerst das System/.test(c00), "00: Leitmotiv 'erst System, dann Signal'");
-// Kapitel 11 — medizinische Leitplanken (Injektionen)
-var c11 = read("ebooks/11-injektionen.html");
-ok(/Universalnadel/.test(c11) && /MM \/ SAFETY/.test(c11), "11: 'keine Universalnadel' + MM/SAFETY-Note");
-ok(/keine\s+<strong>Dosierungen<\/strong>|keine Dosierungen/i.test(c11), "11: explizit keine Dosierungen");
-ok(!/[0-9][.,]?[0-9]*\s*mg\b/.test(c11), "11: KEINE Dosierangabe (kein 'x mg')");
-ok(!/[0-9]+\s*(mm|G)\b/.test(c11), "11: KEINE konkrete Nadelgröße (kein 'x mm' / 'x G')");
-ok(/Präparat/.test(c11) && /Route/.test(c11) && /Anatomie/.test(c11), "11: Nadelwahl an Präparat/Route/Stelle/Anatomie gebunden");
-// Kapitel 12 — Longevity ohne erfundene Ranges
-var c12 = read("ebooks/12-longevity-risk.html");
-ok(/ApoB/.test(c12) && /(VO₂max|VO2max)/.test(c12), "12: ApoB + VO₂max behandelt");
-ok(/keine[^.]{0,30}(Zielwert|Grenzwert|Zielwerte|Pauschal-Zielwerte)/i.test(c12), "12: explizit keine Pauschal-Zielwerte");
-ok(!/[0-9]{2,3}\s*\/\s*[0-9]{2,3}\s*mmhg/i.test(c12) && !/[0-9]+\s*mmhg/i.test(c12), "12: KEINE erfundene Blutdruck-Range (mmHg)");
-ok(!/[0-9][.,]?[0-9]*\s*mg\s*\/\s*dl/i.test(c12), "12: KEINE erfundene Lipid-/Glukose-Range (mg/dl)");
-// Katalog-Discovery
-var ebd = read("js/ebooks-data.js");
-ok(/00-start-here\.html/.test(ebd) && /11-injektionen\.html/.test(ebd) && /12-longevity-risk\.html/.test(ebd), "E: neue Kapitel in der Library (ebooks-data.js) auffindbar");
 
-group("P16/F · BEFORE-TRT: Adipositas↔T mehrpfadig + Reihenfolge (testosteron.html)");
-var testo = read("ebooks/testosteron.html");
-ok(/id="before-trt"/.test(testo), "eigene Sektion #before-trt existiert");
-ok(testo.indexOf('id="before-trt"') < testo.indexOf('id="s12"'), "steht VOR der TRT-Red-Zone (s12)");
-ok(/#before-trt/.test(testo.split("bp-toc")[1] || testo), "TOC verlinkt die BEFORE-TRT-Sektion");
-["Aromatase", "Insulinresist", "Entzündung", "SHBG", "Schlafapnoe", "HPG"].forEach(function (p) {
-  ok(new RegExp(p).test(testo.split('id="before-trt"')[1].split('id="s12"')[0]), "Pfad '" + p + "' im BEFORE-TRT-Abschnitt genannt");
+group("Kapitel sind geschlossen — Vorschau statt Volltext");
+/* Die früheren Prüfungen an dieser Stelle gingen durch den Volltext von
+   ebooks/testosteron.html (BEFORE-TRT-Sektion, Reihenfolge, TOC). Dieser
+   Text ist jetzt Teil des bezahlten Produkts und liegt nicht mehr
+   öffentlich; inhaltlich prüfbar bleibt er nur im Vault. Geprüft wird
+   deshalb, dass die öffentliche Seite genau das ist, was sie sein soll:
+   eine Vorschau mit Kaufweg — und eben KEIN Volltext. */
+var GESCHLOSSEN = ["blueprint", "taeglich-trainieren", "schlaf-energie", "blutwerte-guide",
+  "testosteron", "glp1-agonisten", "supplements", "sexuelle-gesundheit",
+  "11-injektionen", "gewohnheiten"];
+GESCHLOSSEN.forEach(function (name) {
+  var src = read("ebooks/" + name + ".html");
+  ok(src.length < 9000, name + ": Vorschau statt Volltext (" + src.length + " Zeichen)");
+  ok(/Teil von DAS PROTOKOLL/.test(src), name + ": nennt die Zugehörigkeit zum Produkt");
+  ok(/protokoll.html/.test(src), name + ": führt zum Kaufweg");
+  ok(/noindex/.test(src), name + ": nicht indexierbar");
+  ok(/Was in diesem Kapitel steht/.test(src), name + ": sagt, was drinsteht");
+  ok(/master-ebook.html/.test(src), name + ": Käufer finden den Weg zum Volltext");
+  ok(!/kostenloses Ebook|Gratis herunterladen/.test(src), name + ": kein Gratis-Versprechen mehr");
 });
-var seg = testo.split('id="before-trt"')[1].split('id="s12"')[0];
-ok(/Fett = hohes Östradiol/.test(seg) && /IRRTUM|zu einfach|Zu einfach/i.test(seg), "Fett=Östradiol-Verkürzung ausdrücklich als Irrtum markiert");
-ok(/Körper/.test(seg) && /Schlaf/.test(seg) && /Training/.test(seg) && /Labor/.test(seg) && /Reassess/.test(seg) && /Diagnose/.test(seg), "Reihenfolge Körper→Schlaf→Training→Labor→Reassess→Diagnose vorhanden");
-ok(/weder Werbung für noch gegen TRT/.test(seg), "kein Pro-/Anti-TRT (explizit neutral gerahmt)");
-ok(!/[0-9][.,]?[0-9]*\s*(ng\/dl|nmol\/l|pg\/ml)/i.test(seg), "keine erfundenen Hormon-Grenzwerte im BEFORE-TRT-Abschnitt");
-// CSS-Regressionsschutz: nur EINE .ev-Basisregel (sonst brechen ev-a/ev-red der Bestands-Ebooks)
-var bpcss2 = read("css/blueprint.css");
-ok((bpcss2.match(/^\.ev \{/gm) || []).length === 1, "genau EINE .ev-Basisregel in blueprint.css (kein Override der Pill-Basis)");
-ok(/\.ev\.known/.test(bpcss2) && /\.ev-a \{/.test(bpcss2) && /\.ev-red \{/.test(bpcss2), "Evidenz-Farbmodifier (.ev.known) + Bestands-Chips (.ev-a/.ev-red) koexistieren");
+var stack = read("ebooks/ultimate-stack.html");
+ok(/MM.vault.open/.test(stack), "der Ultimate Stack bleibt verschlüsselt wie bisher");
+
+group("Lead-Seiten sammeln keine Adresse mehr für bezahlte Kapitel");
+["blutwerte-guide", "gewohnheiten", "glp1-agonisten", "schlaf-energie",
+ "sexuelle-gesundheit", "supplements", "taeglich-trainieren", "testosteron"].forEach(function (name) {
+  var lp = read("lp/" + name + ".html");
+  ok(!/data-ebook-read/.test(lp), "lp/" + name + ": kein E-Mail-Gate mehr");
+  ok(!/Gratis herunterladen/.test(lp), "lp/" + name + ": kein Gratis-Versprechen");
+  ok(/protokoll.html/.test(lp), "lp/" + name + ": führt zum Produkt");
+  ok(/check.html/.test(lp), "lp/" + name + ": nennt den kostenlosen Score als echte Alternative");
+});
+["fettabbau", "protein-system", "schlaf-stack", "training-system", "masterguide"].forEach(function (name) {
+  var lp = read("lp/" + name + ".html");
+  ok(/data-ebook-read/.test(lp), "lp/" + name + ": bleibt ein echtes Gratis-Angebot");
+});
 
 group("P16/G-H · Score-Ergebnis: Engpass → PASSENDES Kapitel statt generisch");
 var checkData = read("js/check-data.js");
 var checkJs = read("js/check.js");
 ok(/bottleneckChapter:\s*\{/.test(checkData), "check-data.js: bottleneckChapter-Map existiert");
-[["body", "fettabbau"], ["strength", "training-system"], ["fuel", "fettabbau"], ["recovery", "schlaf-energie"], ["blood", "blutwerte-guide"], ["drive", "testosteron"], ["execution", "gewohnheiten"]].forEach(function (pair) {
+/* Seit dem Schließen der Kapitel zeigen die Engpass-Links auf Inhalte, die
+   der Nutzer auch wirklich lesen kann — sonst führt die Score-Empfehlung
+   auf eine Bezahlschranke. */
+[["body", "fettabbau"], ["strength", "training-system"], ["fuel", "fettabbau"], ["recovery", "schlaf-stack"], ["blood", "12-longevity-risk"], ["drive", "masterguide"], ["execution", "00-start-here"]].forEach(function (pair) {
   var seg = checkData.split("bottleneckChapter:")[1].split("},")[0] + checkData.split("bottleneckChapter:")[1].split("}")[1];
   var block = checkData.split("bottleneckChapter:")[1].slice(0, 700);
   ok(new RegExp(pair[0] + ":\\s*\\{[^}]*ebooks/" + pair[1] + "\\.html").test(block), "Engpass '" + pair[0] + "' → ebooks/" + pair[1] + ".html");
@@ -183,25 +198,18 @@ ok(/data-track="protokoll_chapter_/.test(checkJs), "Diagnose-Link trackt kapitel
 ok(!/href="protokoll\.html" data-track="protokoll_from_result"/.test(checkJs), "generischer protokoll.html-Link im Diagnose-Block ersetzt");
 ok(/data-track="cta_protokoll"/.test(checkJs), "Produkt-CTA (49 €) auf der Ergebnisseite bleibt erhalten");
 
-group("Flagship Motion #01 · MM/MECHANISM ApoB-Clip in Kapitel 04 (Blutwerte)");
-var motion = read("ebooks/blutwerte-guide.html");
-var mSeg = motion.split('id="s3"')[1].split('id="s4"')[0];
-ok(/<figure class="bp-mech">/.test(mSeg) && /MM \/ MECHANISM/.test(mSeg), "MM/MECHANISM-Instrument sitzt im ApoB-/Herz-Kreislauf-Abschnitt (Kapitel 04)");
-ok(/<video[^>]*class="bp-mech-video"/.test(mSeg), "Video-Element vorhanden");
-ok(/preload="none"/.test(mSeg), "Performance: preload=none (Videodaten erst beim Abspielen)");
-ok(/\bmuted\b/.test(mSeg) && /\bloop\b/.test(mSeg) && /\bplaysinline\b/.test(mSeg), "muted + loop + playsinline (stiller, ruhiger Loop)");
-ok(!/\bautoplay\b/.test(mSeg), "kein hartes autoplay-Attribut (Auto-Play nur per JS im Viewport)");
-ok(/poster="\.\.\/assets\/protocol\/motion\/apob-arterial-retention\.jpg"/.test(mSeg), "Posterframe gesetzt (funktioniert ohne Playback)");
-ok(/assets\/protocol\/motion\/apob-arterial-retention\.mp4/.test(mSeg), "MP4-Quelle korrekt verlinkt");
-ok(/aria-label=/.test(mSeg), "Video hat aria-label (Accessibility)");
-ok(/prefers-reduced-motion/.test(motion) && /IntersectionObserver/.test(motion), "JS respektiert reduced-motion + lädt/spielt nur im Viewport");
-ok(/Visualisierung/.test(mSeg), "Caption kennzeichnet den Clip ehrlich als Visualisierung");
-ok(/\bAnzahl\b/.test(mSeg), "Kernaussage bleibt korrekt: es zählt die ANZAHL der ApoB-Partikel");
-ok(!/bohr|Löcher|löchert|durchbohr/i.test(mSeg), "keine unwissenschaftliche 'Partikel bohren Löcher'-Darstellung");
-ok(!/[0-9]+\s*(mg\/dl|nmol\/l)/i.test(mSeg), "kein erfundener Lipid-Grenzwert im Motion-Abschnitt");
-ok(/\.bp-mech \{/.test(bpcss2) && /\.bp-mech-stage video/.test(bpcss2), "MM/MECHANISM-Styles in blueprint.css");
-ok(fs.existsSync(path.join(ROOT, "assets/protocol/motion/apob-arterial-retention.mp4")), "Video-Asset existiert im Repo");
-ok(fs.existsSync(path.join(ROOT, "assets/protocol/motion/apob-arterial-retention.jpg")), "Poster-Asset existiert im Repo");
+group("Flagship Motion #01 · MM/MECHANISM-Clip (Assets)");
+/* Der Clip sitzt im Volltext von Kapitel 04 (Blutwerte), das inzwischen zum
+   bezahlten Produkt gehört. Die Einbettung selbst ist damit öffentlich nicht
+   mehr prüfbar; was geprüft bleibt, ist der Bestand der Assets — sie werden
+   weiterhin ausgeliefert und vom bezahlten Inhalt referenziert. */
+["assets/protocol/motion/apob-arterial-retention.mp4",
+ "assets/protocol/motion/apob-arterial-retention.jpg"].forEach(function (f) {
+  ok(fs.existsSync(path.join(ROOT, f)), "Motion-Asset vorhanden: " + f);
+});
+var bpcss2 = read("css/blueprint.css");
+ok(/\.bp-mech/.test(bpcss2), "die Styles für das MM/MECHANISM-Instrument bleiben erhalten");
+
 
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);

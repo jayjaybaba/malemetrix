@@ -53,7 +53,7 @@ window.MM_EBOOKS = [
             en: "What subcutaneous and intramuscular mean, why there is no universal needle and how route, gauge and length are chosen medically. Factual education so you can talk to your doctor on eye level — no doses, no self-administration guide." },
     minutes: 9,
     read: "ebooks/11-injektionen.html",
-    gated: false
+    gated: true
   },
   {
     id: "longevity-risk",
@@ -78,7 +78,7 @@ window.MM_EBOOKS = [
             en: "Ozempic, tirzepatide & retatrutide explained factually: how they work, what the studies show, the risks (muscle loss) and why they don't replace training, nutrition and sleep — no hype, no recommendation." },
     minutes: 15,
     read: "ebooks/glp1-agonisten.html",
-    gated: false
+    gated: true
   },
   {
     id: "ultimate-stack",
@@ -91,7 +91,7 @@ window.MM_EBOOKS = [
             en: "The evidence-based high-end framework for body composition, hormones, metabolic control and performance — physician-led and honestly framed. Every substance discussed is prescription-only and belongs in a doctor's hands. Private guide, access code required." },
     minutes: 19,
     read: "ebooks/ultimate-stack.html",
-    gated: false
+    gated: true
   },
 
   {
@@ -105,7 +105,7 @@ window.MM_EBOOKS = [
             en: "The big master ebook: all MaleMetrix knowledge in one book (21 chapters). Training, nutrition, sleep, supplements, blood values, testosterone and sexual health — plus the honest Red Zone: GLP-1, PDE-5, TRT, peptides and the doctor-led Ultimate Stack. Open with your premium access code (Master, Protokoll or Stack)." },
     minutes: 60,
     read: "ebooks/master-ebook.html",
-    gated: false
+    gated: true
   },
 
   {
@@ -159,7 +159,7 @@ window.MM_EBOOKS = [
             en: "The 14-day plan for more energy: evening routine, caffeine timing and the most common sleep killers for men." },
     minutes: 11,
     read: "ebooks/schlaf-energie.html",
-    gated: false
+    gated: true
   },
 
   {
@@ -200,7 +200,7 @@ window.MM_EBOOKS = [
             en: "Why \"3× a week\" keeps getting postponed — and how daily 25–30 minutes plus three hard gym days as Push/Pull/Legs kill procrastination and keep you consistent. The anti-procrastination system, combined with the 3-day system." },
     minutes: 13,
     read: "ebooks/taeglich-trainieren.html",
-    gated: false
+    gated: true
   },
 
   {
@@ -214,7 +214,7 @@ window.MM_EBOOKS = [
             en: "The real value: knowledge about the medications — Viagra (sildenafil), Cialis (tadalafil), dapoxetine, PT-141, testosterone and the thyroid's role, each with mechanism and risks. Plus pelvic floor & Kegel exercises, lifestyle levers and the path to the right doctor — factual, no taboo." },
     minutes: 19,
     read: "ebooks/sexuelle-gesundheit.html",
-    gated: false
+    gated: true
   },
 
   {
@@ -228,7 +228,7 @@ window.MM_EBOOKS = [
             en: "The honest guide: what testosterone really does, which blood values matter, the natural levers that work (sleep, training, body fat), what's a waste of money and when to see a doctor — no hype, no booster sales." },
     minutes: 14,
     read: "ebooks/testosteron.html",
-    gated: false
+    gated: true
   },
 
 
@@ -243,7 +243,7 @@ window.MM_EBOOKS = [
             en: "Which markers really matter for men, how to prepare your doctor visit and the natural levers for your hormones — factual, no hype." },
     minutes: 14,
     read: "ebooks/blutwerte-guide.html",
-    gated: false
+    gated: true
   },
 
   {
@@ -256,7 +256,7 @@ window.MM_EBOOKS = [
             en: "The short, honest list: what actually works (creatine, vitamin D, protein, caffeine), what wastes money and the order to even consider it." },
     minutes: 10,
     read: "ebooks/supplements.html",
-    gated: false
+    gated: true
   },
 
 
@@ -270,7 +270,7 @@ window.MM_EBOOKS = [
             en: "Why motivation is overrated: triggers, mini-habits, environment design and identity — the system that keeps your results past week 12." },
     minutes: 11,
     read: "ebooks/gewohnheiten.html",
-    gated: false
+    gated: true
   }
 
   /* ----------------------------------------------------------------------
