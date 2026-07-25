@@ -482,11 +482,11 @@ group("13 · Score-Logik unverändert (Freeze-Nachweis)");
   var C = global.window.MM_CHECK;
   /* Der Fragenbestand war auf 87 eingefroren. Nach dem ersten Testlauf mit
      einem echten Anwender hat der Betreiber acht Fragen ausdrücklich
-     beauftragt (Vertiefung beim Ziel „gesünder werden") und eine gestrichen
-     („Blut im Urin oder Stuhl"). Der Freeze schützt vor unbemerktem
+     beauftragt (Vertiefung beim Ziel „gesünder werden") und den gesamten
+     Sicherheits-Check gestrichen (87 + 8 − 1 = 94). Der Freeze schützt vor unbemerktem
      Wildwuchs, nicht vor beauftragten Änderungen — die Zahl wandert also
      mit, die Prüfung bleibt scharf. */
-  ok(C.allSteps.length === 95, "Fragenbestand wie beauftragt: 95 (" + C.allSteps.length + ")");
+  ok(C.allSteps.length === 94, "Fragenbestand wie beauftragt: 94 (" + C.allSteps.length + ")");
   var healthdeep = C.modules.filter(function (m) { return m.id === "healthdeep"; })[0];
   ok(healthdeep && healthdeep.questions.length === 8, "die acht Vertiefungsfragen hängen an einem eigenen, bedingten Modul");
   ok(typeof healthdeep.when === "function" && !healthdeep.when({}) && healthdeep.when({ goal_main: ["gesundheit"] }),

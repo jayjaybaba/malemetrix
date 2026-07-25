@@ -1091,7 +1091,7 @@ window.MM_CHECK = {
           when: function (a) {
             return a.blood_bp === "kontrolliert" || a.enh_bp_routine === "diagnostiziert"
               || (a.enh_signals || []).indexOf("bp") >= 0
-              || (a.redflags || []).indexOf("blutdruck") >= 0;
+              || (a.redflags || []).indexOf("blutdruck") >= 0;   // nur Altbestand
           },
           title: "Wie ist dein Blutdruck aktuell einzuordnen?",
           sub: "Grobe Einordnung genügt — eine Diagnose stellen wir nicht.",
@@ -1376,29 +1376,13 @@ window.MM_CHECK = {
       ]
     },
 
-    /* ---------- 10. Sicherheits-Check (Red Flags) ---------- */
-    {
-      id: "safety", label: "Sicherheits-Check",
-      questions: [
-        {
-          id: "redflags", type: "multi", module: null, cap: 0,
-          title: "Trifft aktuell einer dieser Punkte auf dich zu?",
-          sub: "Ehrliche Antworten helfen uns, dich richtig einzuordnen. Diese Angaben fließen nicht in den Score ein.",
-          options: [
-            { v: "brust", label: "Brustschmerzen / Engegefühl", flag: "Brustschmerzen gehören immer in ärztliche Abklärung — bitte zeitnah." },
-            { v: "ohnmacht", label: "Ohnmacht / Schwindelanfälle", flag: "Ohnmachtsanfälle sollten ärztlich abgeklärt werden, bevor du intensiv trainierst." },
-            { v: "atemnot", label: "Starke Atemnot bei leichter Belastung", flag: "Starke Atemnot bei leichter Belastung bitte ärztlich abklären lassen." },
-            { v: "apnoe", label: "Beobachtete Atemaussetzer im Schlaf", flag: "Atemaussetzer im Schlaf (Verdacht Schlafapnoe) bitte ärztlich abklären — das beeinflusst Energie und Gesundheit erheblich." },
-            { v: "gewichtsverlust", label: "Ungewollter starker Gewichtsverlust", flag: "Ungewollter starker Gewichtsverlust sollte ärztlich abgeklärt werden." },
-            { v: "blutdruck", label: "Bekannter, sehr hoher Blutdruck", flag: "Bei sehr hohem Blutdruck bitte vor Trainingsstart Rücksprache mit deinem Arzt halten." },
-            { v: "depression", label: "Starke depressive Gedanken", flag: "Bei starken depressiven Gedanken hol dir bitte professionelle Hilfe — z. B. über deinen Hausarzt oder die Telefonseelsorge (0800 111 0 111, kostenlos & anonym)." },
-            { v: "labor", label: "Stark auffällige Laborwerte ohne ärztliche Begleitung", flag: "Auffällige Laborwerte sollten immer ärztlich eingeordnet werden — Coaching ersetzt das nicht." },
-            { v: "hormone", label: "Einnahme von Hormonen ohne ärztliche Betreuung", flag: "Hormonpräparate gehören ausschließlich in ärztliche Begleitung. Bitte sprich mit einem Arzt — wir unterstützen nur bei Lifestyle-Struktur." },
-            { v: "keine", label: "Nichts davon trifft zu", exclusive: true }
-          ]
-        }
-      ]
-    },
+    /* ---------- 10. (ehemals Sicherheits-Check — entfernt) -------------
+       Die Symptomabfrage ist auf Wunsch des Betreibers ersatzlos gestrichen.
+       Wer Brustschmerzen oder Ohnmachtsanfälle hat, braucht einen Arzt und
+       kein Coaching-Werkzeug; die Frage in einem Performance-Fragebogen zu
+       stellen suggeriert eine medizinische Bewertung, die hier nicht
+       stattfindet. Die aus dem Alltag ABGELEITETEN Hinweise bleiben —
+       siehe C.redFlags weiter unten. */
 
     /* ---------- 11. Qualifizierung ---------- */
     {
@@ -2329,7 +2313,8 @@ window.MM_CHECK = {
 
        blood_doctor  (Fr. 60) liest lab_recency, gestellt erst Fr. 67
        blood_overtest(Fr. 61) liest lab_known,   gestellt erst Fr. 68
-       cv_bp_control (Fr. 64) liest redflags,    gestellt erst Fr. 84
+       cv_bp_control (Fr. 64) las redflags,      gestellt erst Fr. 84
+                                                (Frage inzwischen entfernt)
 
      Beide Probleme haben dieselbe Ursache und dieselbe Lösung: die
      Gesundheits-Kapitel standen in der falschen Reihenfolge. Erst die
@@ -2350,7 +2335,6 @@ window.MM_CHECK = {
     "fuel",
     "recovery",
     "healthdeep",   // nur bei Gesundheitsziel
-    "safety",          // Bevor es um Werte geht: gibt es Warnzeichen?
     "labs",            // Welche Daten hast du überhaupt?
     "blood",           // Was weißt du und was tust du damit?
     "cardiometabolic",
@@ -2392,7 +2376,6 @@ window.MM_CHECK = {
     fuel:      "Ernährung: was regelmäßig passiert, nicht was am guten Tag passiert.",
     recovery:  "Schlaf und Erholung — der Multiplikator für alles davor.",
     healthdeep:"Weil Gesundheit dein Ziel ist, gehen wir hier tiefer: Faktoren, die über Jahre wirken und in keinem Fitnessplan stehen.",
-    safety:    "Ein kurzer Sicherheits-Check, bevor es um Gesundheitsdaten geht. Fließt nicht in den Score ein.",
     labs:      "Welche Messwerte hast du überhaupt? Erst danach fragen wir, was du damit machst.",
     blood:     "Deine Gesundheitsdaten: Blutdruck, Vorsorge, Familiengeschichte.",
     cardiometabolic: "Herz-Kreislauf und Stoffwechsel — die Faktoren mit der längsten Wirkung.",
@@ -2701,13 +2684,27 @@ window.MM_CHECK = {
 
   /* ------------------------------------------------------- RED-FLAG-LOGIK */
 
+  /* Nur noch für ALTBESTÄNDE: Ergebnisse, die vor dem Entfernen der
+     Sicherheits-Frage gespeichert wurden, tragen answers.redflags. */
+  C.LEGACY_FLAG_TEXT = {
+    brust: "Brustschmerzen gehören immer in ärztliche Abklärung — bitte zeitnah.",
+    ohnmacht: "Ohnmachtsanfälle sollten ärztlich abgeklärt werden, bevor du intensiv trainierst.",
+    atemnot: "Starke Atemnot bei leichter Belastung bitte ärztlich abklären lassen.",
+    apnoe: "Atemaussetzer im Schlaf (Verdacht Schlafapnoe) bitte ärztlich abklären — das beeinflusst Energie und Gesundheit erheblich.",
+    gewichtsverlust: "Ungewollter starker Gewichtsverlust sollte ärztlich abgeklärt werden.",
+    blutdruck: "Bei sehr hohem Blutdruck bitte vor Trainingsstart Rücksprache mit deinem Arzt halten.",
+    depression: "Bei starken depressiven Gedanken hol dir bitte professionelle Hilfe — z. B. über deinen Hausarzt oder die Telefonseelsorge (0800 111 0 111, kostenlos & anonym).",
+    labor: "Auffällige Laborwerte sollten immer ärztlich eingeordnet werden — Coaching ersetzt das nicht.",
+    hormone: "Hormonpräparate gehören ausschließlich in ärztliche Begleitung. Bitte sprich mit einem Arzt — wir unterstützen nur bei Lifestyle-Struktur."
+  };
+
   C.redFlags = function (a) {
     a = a || {};
     var flags = [];
-    var q = C.questionById("redflags");
+    /* Altbestand: neue Durchläufe liefern hier nie etwas, weil die Frage
+       nicht mehr gestellt wird. */
     arr(a.redflags).forEach(function (v) {
-      var o = q && (q.options || []).find(function (x) { return x.v === v; });
-      if (o && o.flag) flags.push(o.flag);
+      if (C.LEGACY_FLAG_TEXT[v]) flags.push(C.LEGACY_FLAG_TEXT[v]);
     });
     if (a.rec_snore === "aussetzer" && arr(a.redflags).indexOf("apnoe") < 0) {
       flags.push("Beobachtete Atemaussetzer im Schlaf sollten ärztlich abgeklärt werden (Stichwort Schlafapnoe).");

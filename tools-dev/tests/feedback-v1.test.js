@@ -131,15 +131,35 @@ group("5 · Die Verlaufsfrage nennt ihren Bezug");
 })();
 
 /* ===================================================================== 6 */
-group("6 · Blut im Urin/Stuhl ist raus");
+group("6 · Der Sicherheits-Check ist vollständig entfernt");
 (function () {
-  var werte = C.questionById("redflags").options.map(function (o) { return o.v; });
-  ok(werte.indexOf("blut") < 0, "die Option ist entfernt");
-  ok(C.SEVERE_FLAGS.indexOf("blut") < 0, "und aus der Liste der schweren Warnzeichen ausgetragen");
-  ["brust", "ohnmacht", "atemnot", "depression"].forEach(function (v) {
-    ok(werte.indexOf(v) >= 0, "„" + v + "“ bleibt — es geht dort um die Frage, ob jemand so trainieren sollte");
-  });
-  ok(!/Blut im Urin/.test(read("js/check-data.js")), "kein Rest im Quelltext");
+  ok(C.questionById("redflags") === null, "die Symptomabfrage existiert nicht mehr");
+  ok(C.modules.filter(function (m) { return m.id === "safety"; }).length === 0, "auch das Kapitel ist weg");
+  ok(C.moduleOrder.indexOf("safety") < 0, "und aus der Kapitelreihenfolge ausgetragen");
+  ok(!C.moduleIntro.safety, "keine verwaiste Kapitel-Einleitung");
+  ok(!/Trifft aktuell einer dieser Punkte/.test(read("js/check-data.js")), "kein Rest im Quelltext");
+  ok(!/Blut im Urin/.test(read("js/check-data.js")), "auch die zuvor gestrichene Option ist verschwunden");
+  var alle = C.allSteps.map(function (s) { return (s.q.title || ""); }).join(" ");
+  ok(!/Brustschmerzen|Ohnmacht/.test(alle), "keine Frage fragt mehr nach Symptomen");
+
+  /* Was NICHT verschwinden durfte: die Hinweise, die sich aus Antworten
+     ergeben, die ohnehin gestellt werden. */
+  var b = { age: "42", height: "180", weight: "88", waist: "96" };
+  ok(C.redFlags(b).length === 0, "ohne Auffälligkeiten gibt es keinen Hinweis");
+  ok(C.redFlags(Object.assign({}, b, { rec_snore: "aussetzer", slp_daysleep: "taeglich" })).length >= 1,
+    "Atemaussetzer plus Tagesmüdigkeit erzeugen weiterhin einen Hinweis");
+  ok(C.redFlags(Object.assign({}, b, { cv_bp_control: "unbehandelt" })).length >= 1,
+    "ein unbehandelter Blutdruck ebenso");
+  ok(C.redFlags(Object.assign({}, b, { enh_signals: ["atemnot"] })).length >= 1,
+    "und ungewohnte Luftnot im Enhanced-Kontext");
+
+  /* Rückwärtskompatibilität: wer vor der Änderung geantwortet hat, verliert
+     seine Hinweise nicht. */
+  var legacy = C.redFlags(Object.assign({}, b, { redflags: ["brust", "depression"] }));
+  ok(legacy.length === 2, "gespeicherte Altantworten werden weiterhin ausgewertet");
+  ok(/ärztliche Abklärung/.test(legacy.join(" ")), "mit dem ursprünglichen Wortlaut");
+  ok(typeof C.LEGACY_FLAG_TEXT === "object", "die Texte dafür stehen in einer eigenen Tabelle");
+  ok(C.redFlags(Object.assign({}, b, { redflags: ["gibtesnicht"] })).length === 0, "unbekannte Altwerte erzeugen nichts");
 })();
 
 /* ===================================================================== 7 */
@@ -170,6 +190,9 @@ group("7 · Roter Faden: Reihenfolge und Kapitel");
       while ((mm = re.exec(src))) ids[mm[1]] = true;
       if (/statusOf\(/.test(src)) ids.perf_status = true;
       Object.keys(ids).forEach(function (id) {
+        /* pos[id] === undefined heißt: die Antwort stammt aus keiner
+           aktuellen Frage (z. B. redflags aus Altbeständen) — das ist kein
+           Vorwärtsverweis. */
         if (pos[id] !== undefined && pos[id] > i) vorwaerts.push(q.id + " (Fr. " + i + ") liest " + id + " (Fr. " + pos[id] + ")");
       });
     });
@@ -179,7 +202,7 @@ group("7 · Roter Faden: Reihenfolge und Kapitel");
   /* Die drei Stellen, um die es konkret ging. */
   ok(pos.lab_recency < pos.blood_doctor, "„Wann zuletzt Blut abgenommen?“ kommt vor „Werden Auffälligkeiten eingeordnet?“");
   ok(pos.lab_known < pos.blood_overtest, "die bekannten Werte werden vor der Testfrage erhoben");
-  ok(pos.redflags < pos.cv_bp_control, "die Warnzeichen stehen vor der Blutdruck-Folgefrage");
+  ok(pos.redflags === undefined, "die Warnzeichen-Frage gibt es nicht mehr (ihre Position ist damit gegenstandslos)");
 
   /* Kapitel-Einleitungen */
   ok(C.moduleIntro && Object.keys(C.moduleIntro).length >= C.modules.length,
