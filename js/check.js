@@ -106,6 +106,10 @@
      ====================================================================== */
 
   function show(sectionId) {
+    /* Im Fragebogen stoert weiches Scrollen: der Browser animiert beim
+       Fokuswechsel mit, und jede Korrektur nach dem Neurendern kaempft
+       gegen eine laufende Animation. Ausserhalb bleibt es wie es war. */
+    document.documentElement.toggleAttribute("data-wizard", sectionId === "checkWizard");
     ["checkIntro", "checkConsent", "checkWizard", "checkResult"].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = (id === sectionId) ? "" : "none";
@@ -137,8 +141,15 @@
     renderProgress();
     telSection();
 
+    /* Erster Schritt dieses Kapitels? Dann kurz einordnen, wo wir sind. */
+    const modJetzt = steps[state.idx].mod;
+    const modVorher = state.idx > 0 ? steps[state.idx - 1].mod : null;
+    const kapitelStart = !modVorher || modVorher.id !== modJetzt.id;
+    const intro = kapitelStart && C.moduleIntro ? C.moduleIntro[modJetzt.id] : "";
+
     let html = '<div class="q-block">';
-    html += '<span class="q-module-tag">' + steps[state.idx].mod.label + '</span>';
+    html += '<span class="q-module-tag">' + modJetzt.label + '</span>';
+    if (intro) html += '<p class="q-chapter-intro">' + intro + '</p>';
     html += '<h2 class="q-title">' + q.title + '</h2>';
     if (q.sub) html += '<p class="q-sub">' + q.sub + '</p>';
 
@@ -190,6 +201,28 @@
 
     html += '</div>';
     wrap.innerHTML = html;
+
+    /* Fragen sind unterschiedlich hoch (12 Optionen ≈ 1300 px, 5 Optionen
+       ≈ 700 px). Ohne diese Korrektur bleibt die Scrollposition stehen,
+       die Karte schrumpft darunter weg und der Lead-Block rutscht in den
+       sichtbaren Bereich — was sich anfühlt, als springe die Seite nach
+       unten. Nur nach oben korrigieren und nur, wenn nötig; "auto" statt
+       "smooth", weil html{scroll-behavior:smooth} sonst bei jeder Frage
+       eine sichtbare Fahrt erzeugt. */
+    const korrigiereScroll = () => {
+      const wizSec = document.getElementById("checkWizard");
+      if (!wizSec) return;
+      const hdr = document.getElementById("siteHeader");
+      const off = (hdr ? hdr.getBoundingClientRect().height : 0) + 12;
+      const top = Math.max(0, wizSec.getBoundingClientRect().top + window.scrollY - off);
+      if (window.scrollY > top + 1) window.scrollTo({ top: top, behavior: "auto" });
+    };
+    korrigiereScroll();
+    /* Der Klick auf eine Antwortkarte loest zusaetzlich ein browsereigenes
+       Scrollen zum fokussierten Element aus. Wegen html{scroll-behavior:
+       smooth} laeuft das als Animation weiter und ueberholt die Korrektur.
+       Deshalb im naechsten Frame noch einmal nachfassen. */
+    requestAnimationFrame(korrigiereScroll);
 
     /* Events */
     if (q.type === "single") {
@@ -777,10 +810,10 @@
       '&body=' + encodeURIComponent('Mein MaleMetrix Score: ' + r.total + '/100 (' + r.level + ')\nEngpass: ' + r.bottleneck.name + '\n\n(Screenshot vom Ergebnis anhängen)');
     html += '<div class="card dash-block" style="margin-top:16px;border-left:3px solid var(--accent-2)">' +
       '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:20px;justify-content:space-between">' +
-      '<div style="flex:1;min-width:260px">' +
+      '<div style="flex:1 1 220px;min-width:0">' +
       '<h2 class="h-card" style="margin-bottom:6px">Unsicher, wo du anfangen sollst?</h2>' +
       '<p class="muted" style="font-size:0.93rem;margin:0">Schick mir deinen Score-Screenshot mit dem Wort SCORE — ich sage dir kurz und ehrlich, welcher Hebel für dich zuerst kommt. Kostenlos, direkt mit mir.</p></div>' +
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;flex-shrink:0">' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;min-width:0">' +
       (ig ? '<a class="btn btn-dark btn-sm" href="' + ig + '" target="_blank" rel="noopener" data-track="score_dm_click">📸 Per Instagram-DM</a>' : '') +
       '<a class="btn btn-dark btn-sm" href="' + scoreMailto + '" data-track="score_mail_click">✉️ Per E-Mail</a>' +
       '</div></div></div>';
@@ -791,7 +824,7 @@
     html += '<div class="card dash-block" id="scoreFeedback" style="margin-top:24px">' +
       '<span class="card-num">TRIFFT DIESES ERGEBNIS AUF DICH ZU?</span>' +
       '<p class="small muted" style="margin:4px 0 14px">Eine Antwort genügt. Sie hilft uns, den Score präziser zu machen — und wird ohne deine Antworten gespeichert.</p>' +
-      '<div class="option-grid" id="fbRating" style="grid-template-columns:repeat(3,1fr)">' +
+      '<div class="option-grid fb-rating" id="fbRating">' +
       [["yes", "JA"], ["partial", "TEILWEISE"], ["no", "NEIN"]].map(([v, l]) =>
         '<button type="button" class="option-card" data-fb="' + v + '"><span>' + l + '</span></button>').join('') +
       '</div>' +
@@ -879,7 +912,9 @@
     html += '<div data-mm-trust style="margin-top:28px"></div>';
     html += '<p class="small" style="color:var(--muted-2);margin-top:24px">Der MaleMetrix Score ist eine Lifestyle-Analyse — keine medizinische Diagnose und kein Ersatz für ärztliche Beratung. Bei Beschwerden oder auffälligen Werten wende dich bitte an einen Arzt.</p>';
 
-    el.innerHTML = html;
+    /* Wrapper, damit das Ergebnis denselben Seitenrand hat wie jede andere
+       Seite — vorher wurde es randlos in die <section> geschrieben. */
+    el.innerHTML = '<div class="result-wrap">' + html + '</div>';
     if (MM.renderTrust) MM.renderTrust();
 
     /* ---------- Telemetrie der Ergebnisseite (opt-in, kategorial) ---------- */

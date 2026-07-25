@@ -510,27 +510,47 @@
   }
 
   /* ---------- "Was geht heute Abend noch" ---------- */
+  /* c = Aufwandsstufe: "schnell" (ohne Kochen, ≤ 5 min), "kochen" (Pfanne,
+     Topf, 15–25 min), "ofen" (Blech/Auflauf, planbar, 25–40 min).
+     Liefern/Auswärts sind bewusst nicht mehr dabei. */
   var DINNERS = [
-    { c: "kochen", name: "Magerquark-Bowl mit Beeren", kcal: 350, p: 45 },
+    // ---- ohne Kochen, in Minuten fertig ----
+    { c: "schnell", name: "Magerquark-Bowl mit Beeren & Leinöl", kcal: 350, p: 45 },
+    { c: "schnell", name: "Skyr mit Nüssen & Zimt", kcal: 320, p: 38 },
+    { c: "schnell", name: "Hüttenkäse-Teller mit Gurke & Vollkornbrot", kcal: 380, p: 36 },
+    { c: "schnell", name: "Thunfisch-Salat mit Mais & Joghurtdressing", kcal: 380, p: 40 },
+    { c: "schnell", name: "Harzer Käse auf Vollkornbrot mit Zwiebel", kcal: 300, p: 34 },
+    { c: "schnell", name: "Wrap mit Putenbrust & Hummus", kcal: 450, p: 38 },
+    { c: "schnell", name: "Expressreis-Bowl mit Thunfisch", kcal: 520, p: 44 },
+    { c: "schnell", name: "Eiweißbrot mit Frischkäse, Ei & Tomate", kcal: 420, p: 34 },
+
+    // ---- Pfanne / Topf ----
     { c: "kochen", name: "Putenpfanne mit Gemüse", kcal: 480, p: 48 },
     { c: "kochen", name: "Hähnchen, Reis & Brokkoli", kcal: 550, p: 50 },
-    { c: "kochen", name: "Omelette mit Käse & Salat", kcal: 450, p: 35 },
-    { c: "kochen", name: "Lachs mit Ofenkartoffeln", kcal: 600, p: 42 },
-    { c: "kochen", name: "Thunfisch-Salat", kcal: 380, p: 40 },
-    { c: "liefern", name: "Poke Bowl (Lachs)", kcal: 520, p: 38 },
-    { c: "liefern", name: "Sushi (10 Stück)", kcal: 480, p: 28 },
-    { c: "liefern", name: "Burrito Bowl", kcal: 600, p: 40 },
-    { c: "liefern", name: "Chicken Tikka + Reis", kcal: 650, p: 45 },
-    { c: "auswaerts", name: "Steak mit Salat", kcal: 550, p: 55 },
-    { c: "auswaerts", name: "Caesar Salad mit Hähnchen", kcal: 480, p: 40 },
-    { c: "auswaerts", name: "Gyros-Teller", kcal: 680, p: 50 }
+    { c: "kochen", name: "Omelett mit Käse & Salat", kcal: 450, p: 35 },
+    { c: "kochen", name: "Rührei mit Räucherlachs & Brot", kcal: 480, p: 42 },
+    { c: "kochen", name: "Reispfanne mit Ei & Erbsen", kcal: 520, p: 32 },
+    { c: "kochen", name: "Garnelen-Knoblauch-Pfanne mit Ciabatta", kcal: 520, p: 42 },
+    { c: "kochen", name: "Nudeln mit Thunfisch & Tomate", kcal: 600, p: 46 },
+    { c: "kochen", name: "Rind-Gemüse-Pfanne mit Nudeln", kcal: 640, p: 50 },
+    { c: "kochen", name: "Linsen-Bowl mit Feta", kcal: 560, p: 32 },
+    { c: "kochen", name: "Knusper-Tofu mit Edamame & Reis", kcal: 560, p: 38 },
+    { c: "kochen", name: "Steak mit Ofenkartoffeln & Rucola", kcal: 620, p: 52 },
+    { c: "kochen", name: "Hähnchen-Gyros mit Tzatziki & Reis", kcal: 640, p: 54 },
+
+    // ---- Ofen / Auflauf, planbar ----
+    { c: "ofen", name: "Lachs mit Ofenkartoffeln & Bohnen", kcal: 600, p: 42 },
+    { c: "ofen", name: "Ofenblech: Hähnchen, Süßkartoffel & Paprika", kcal: 620, p: 50 },
+    { c: "ofen", name: "Ofen-Kabeljau mit Kartoffeln & Zitrone", kcal: 560, p: 48 },
+    { c: "ofen", name: "Hack-Gemüse-Auflauf mit Feta", kcal: 670, p: 52 },
+    { c: "ofen", name: "Ofen-Feta mit Kirschtomaten & Nudeln", kcal: 610, p: 30 }
   ];
   var CATS = [
-    { id: "kochen", icon: "🍳", label: "Kochen" },
-    { id: "liefern", icon: "🛵", label: "Liefern" },
-    { id: "auswaerts", icon: "📍", label: "Auswärts" }
+    { id: "schnell", icon: "⚡", label: "Ohne Kochen" },
+    { id: "kochen", icon: "🍳", label: "Pfanne" },
+    { id: "ofen", icon: "🔥", label: "Ofen" }
   ];
-  var activeCat = "kochen";
+  var activeCat = "schnell";
 
   function renderSuggest() {
     if (!el.suggest) return;
@@ -547,9 +567,17 @@
       body = '<div class="mm-empty" style="padding:12px">Dein Budget ist für heute voll. Wenn noch Hunger da ist: etwas Leichtes, Proteinreiches (Magerquark, Skyr). Morgen steigt dein Budget wieder.</div>';
     } else {
       var tol = Math.round(rem * 0.05) + 30;
-      var list = DINNERS.filter(function (d) { return d.c === activeCat && d.kcal <= rem + tol; }).sort(function (a, b) { return b.p - a.p; });
+      var passend = DINNERS.filter(function (d) { return d.c === activeCat && d.kcal <= rem + tol; })
+        .sort(function (a, b) { return b.p - a.p; });
+      /* Tages-Seed: innerhalb eines Abends stabil, am nächsten Tag andere
+         Reihenfolge. Kein Zufall — eine Liste, die sich beim Scrollen
+         umsortiert, wäre unbrauchbar. */
+      var d0 = new Date();
+      var seed = d0.getFullYear() * 10000 + (d0.getMonth() + 1) * 100 + d0.getDate();
+      var start = passend.length ? seed % passend.length : 0;
+      var list = passend.slice(start).concat(passend.slice(0, start)).slice(0, 6);
       if (!list.length) {
-        body = '<div class="mm-empty" style="padding:12px">Bei ' + rem + ' kcal passt hier gerade nichts Größeres — schau in eine andere Kategorie.</div>';
+        body = '<div class="mm-empty" style="padding:12px">Bei ' + rem + ' kcal passt hier gerade nichts Größeres — probier „Ohne Kochen“, da sind die leichteren Sachen.</div>';
       } else {
         body = list.map(function (d) {
           var puffer = rem - d.kcal;

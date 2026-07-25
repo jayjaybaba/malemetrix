@@ -64,6 +64,29 @@
     setTimeout(function () { el.textContent = msg; }, 30);   // identische Meldung stumm.
   }
 
+  /* Sechs Vorschläge für die Schnellerfassung — passend zur Tageszeit und
+     über die Tage rotierend. Vorher: die ersten sechs Einträge des
+     Rohdaten-Arrays, also für jeden Nutzer zu jeder Uhrzeit dieselben
+     Frühstücksgerichte. */
+  function quickLogMeals() {
+    var h = new Date().getHours();
+    var slot = h < 10 ? "breakfast" : (h < 15 ? "main" : (h < 20 ? "main" : "snack"));
+    var seed = E.daySeed ? E.daySeed() : 0;
+    var passend = E.rotate ? E.rotate(E.MEALS.filter(function (m) { return m.slot === slot; }), seed, "ql" + slot) : E.MEALS.filter(function (m) { return m.slot === slot; });
+    var rest = E.rotate ? E.rotate(E.MEALS.filter(function (m) { return m.slot !== slot; }), seed, "qlrest") : E.MEALS.filter(function (m) { return m.slot !== slot; });
+    return passend.concat(rest).slice(0, 6);
+  }
+  /* Namen für den Chip kürzen, ohne ihn unkenntlich zu machen: am
+     Trennzeichen schneiden, sonst nach Wortgrenze. "Körniger Frischkäse auf
+     Brot mit Schnittlauch" wurde vorher zu "Körniger". */
+  function kurzName(name) {
+    var s = String(name).split(" · ")[0].split(" mit ")[0].split(" (")[0].trim();
+    if (s.length <= 22) return s;
+    var cut = s.slice(0, 22);
+    var sp = cut.lastIndexOf(" ");
+    return (sp > 10 ? cut.slice(0, sp) : cut) + "…";
+  }
+
   /* ---------- Bausteine ---------- */
   function tile(label, val, sub) { return '<div class="os-tile"><div class="k">' + esc(label) + '</div><div class="v">' + esc(val) + '</div>' + (sub ? '<div class="s">' + esc(sub) + '</div>' : '') + '</div>'; }
   function sec(title, inner, cls) { return '<section class="os-sec ' + (cls || "") + '"><h2 class="os-h2">' + esc(title) + '</h2>' + inner + '</section>'; }
@@ -831,7 +854,7 @@
     // §30 — Quick-Log Ernährung
     if (np) {
       html += sec("Food-Log heute" + (ft ? " · " + ft.p + " / " + np.protein + " g P · " + ft.kcal + " / " + np.kcal + " kcal" : ""),
-        '<div class="os-quicklog">' + E.MEALS.filter(function (m) { return m.tags.indexOf("restaurant") < 0; }).slice(0, 6).map(function (m) { return '<button class="os-chip" data-eat="' + m.id + '">' + esc(m.name.split(" ")[0]) + ' (' + m.p + 'P)</button>'; }).join("") + '</div>' +
+        '<div class="os-quicklog">' + quickLogMeals().map(function (m) { return '<button class="os-chip" data-eat="' + m.id + '">' + esc(kurzName(m.name)) + ' (' + m.p + 'P)</button>'; }).join("") + '</div>' +
         '<div class="os-grid2" style="margin-top:10px"><label class="os-field"><span>Eigener Eintrag: kcal</span><input id="qlK" type="number" inputmode="numeric"></label><label class="os-field"><span>Protein (g)</span><input id="qlP" type="number" inputmode="numeric"></label></div>' +
         '<button id="qlSave" class="os-ghost">Eintrag loggen</button>' +
         '<div class="os-loglist">' + (OS.nutritionLog()[todayYmd()] || []).map(function (e) { return '<div><span>' + esc(e.name) + '</span><b>' + e.kcal + ' kcal · ' + e.p + ' g P</b><i>' + esc(e.source) + '</i></div>'; }).join("") + '</div>');

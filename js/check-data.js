@@ -83,6 +83,7 @@ window.MM_CHECK = {
           title: "Was ist dein Hauptziel für die nächsten 12 Wochen?",
           sub: "Wähle maximal 2 aus.",
           options: [
+            { v: "gesundheit", label: "Einfach gesünder werden" },
             { v: "bauchfett", label: "Bauchfett verlieren" },
             { v: "muskeln", label: "Muskeln aufbauen" },
             { v: "kraft", label: "Kraft steigern" },
@@ -100,6 +101,7 @@ window.MM_CHECK = {
           title: "Was stört dich aktuell am meisten?",
           sub: "Genau ein Punkt — der, den du am liebsten sofort loswerden würdest.",
           options: [
+            { v: "gesundheit", label: "Nichts Bestimmtes — ich will einfach gesünder werden" },
             { v: "bauch", label: "Bauch / Taille" },
             { v: "muskelmasse", label: "Zu wenig Muskelmasse" },
             { v: "kraft", label: "Geringe Kraft / Performance" },
@@ -134,13 +136,13 @@ window.MM_CHECK = {
         {
           id: "basics_form", type: "fields",
           title: "Deine Ausgangslage",
-          sub: "Bauchumfang: Miss auf Höhe des Bauchnabels, entspannt ausgeatmet, ohne den Bauch einzuziehen.",
+          sub: "Taillenumfang richtig messen: auf halber Höhe zwischen unterster Rippe und Beckenkamm — bei den meisten Männern etwa auf Nabelhöhe. NICHT an der dicksten Stelle. Bandmaß waagerecht, entspannt ausgeatmet, Bauch nicht einziehen. Am besten morgens vor dem Essen.",
           fields: [
             { id: "name", label: "Vorname (optional)", type: "text", placeholder: "z. B. Max", required: false },
             { id: "age", label: "Alter", type: "number", min: 18, max: 90, placeholder: "z. B. 38", required: true },
             { id: "height", label: "Größe (cm)", type: "number", min: 140, max: 220, placeholder: "z. B. 180", required: true },
             { id: "weight", label: "Gewicht (kg)", type: "number", min: 45, max: 250, placeholder: "z. B. 92", required: true },
-            { id: "waist", label: "Bauchumfang (cm) — optional", type: "number", min: 50, max: 200, placeholder: "z. B. 98" },
+            { id: "waist", label: "Taillenumfang (cm) — optional, aber der wertvollste Wert hier", type: "number", min: 50, max: 200, placeholder: "z. B. 98" },
             { id: "job", label: "Alltag", type: "select", required: true, options: [
               ["sitzend", "Überwiegend sitzend (Büro, Homeoffice)"],
               ["gemischt", "Gemischt (sitzend + Bewegung)"],
@@ -181,7 +183,7 @@ window.MM_CHECK = {
         },
         {
           id: "body_waisttrend", type: "single", module: "body",
-          title: "Wie hat sich dein Bauchumfang entwickelt?",
+          title: "Wie hat sich dein Taillenumfang entwickelt?",
           options: [
             { v: "viel_mehr", label: "Deutlich mehr geworden", p: 3 },
             { v: "mehr", label: "Etwas mehr geworden", p: 6 },
@@ -212,6 +214,7 @@ window.MM_CHECK = {
             { v: "fotos", label: "Fotos", p: 2 },
             { v: "kraft", label: "Kraftwerte", p: 2 },
             { v: "schritte", label: "Schritte", p: 2 },
+            { v: "protein", label: "Nur Protein / meinen Proteinbedarf", p: 3 },
             { v: "kalorien", label: "Kalorien / Makros", p: 2 },
             { v: "nichts", label: "Nichts davon", p: 0, exclusive: true }
           ]
@@ -965,7 +968,110 @@ window.MM_CHECK = {
       ]
     },
 
-    /* ---------- 7b. CARDIOVASKULÄR & METABOLISCH (V2) ---------- */
+    /* ---------- 7a-2. GESUNDHEITS-VERTIEFUNG (nur bei Gesundheitsziel) ----
+     Erscheint ausschließlich, wenn "einfach gesünder werden" das Ziel ist.
+     Die Fragen zahlen auf bestehende Domains ein — es entsteht keine neue
+     Gewichtung und keine dreizehnte Domain. */
+  {
+    id: "healthdeep", label: "Gesundheit im Alltag",
+    when: function (a) { return window.MM_CHECK.healthFocus(a); },
+    questions: [
+      {
+        id: "hd_vegetables", type: "single", module: "fuel", dom: "nutrition",
+        title: "Wie viel Gemüse und Obst isst du an einem normalen Tag?",
+        sub: "Eine Portion ≈ eine Handvoll. Der am besten belegte Ernährungsfaktor überhaupt — und der am seltensten gemessene.",
+        options: [
+          { v: "5plus", label: "5 Portionen oder mehr", p: 16 },
+          { v: "3_4", label: "3–4 Portionen", p: 12 },
+          { v: "1_2", label: "1–2 Portionen", p: 6 },
+          { v: "kaum", label: "Kaum bis gar keine", p: 2, sig: "low_produce" },
+          { v: "unsure", label: "Weiß ich nicht", p: 5, gap: "produce" }
+        ]
+      },
+      {
+        id: "hd_wholefood", type: "single", module: "fuel", dom: "nutrition",
+        title: "Wie viel von dem, was du isst, kochst du selbst?",
+        sub: "Nicht als Moralfrage — selbst zubereitet heißt vor allem: du weißt, was drin ist.",
+        options: [
+          { v: "meist", label: "Das meiste koche ich selbst", p: 15 },
+          { v: "haelfte", label: "Etwa die Hälfte", p: 10 },
+          { v: "selten", label: "Selten — meist fertig oder unterwegs", p: 4 },
+          { v: "nie", label: "So gut wie nie", p: 2, sig: "low_homecook" }
+        ]
+      },
+      {
+        id: "hd_daylight", type: "single", module: "recovery", dom: "recovery",
+        title: "Wie viel Zeit verbringst du werktags draußen bei Tageslicht?",
+        sub: "Wirkt auf Schlafrhythmus, Stimmung und Vitamin-D-Status — und kostet nichts.",
+        options: [
+          { v: "60plus", label: "Eine Stunde oder mehr", p: 14 },
+          { v: "30_60", label: "30–60 Minuten", p: 11 },
+          { v: "unter30", label: "Weniger als 30 Minuten", p: 6 },
+          { v: "kaum", label: "Praktisch gar nicht", p: 2, sig: "no_daylight" }
+        ]
+      },
+      {
+        id: "hd_social", type: "single", module: "recovery", dom: "recovery",
+        title: "Hast du Menschen, mit denen du regelmäßig etwas unternimmst?",
+        sub: "Soziale Bindung gehört zu den am besten belegten Faktoren für Lebenserwartung — sie steht nur selten in einem Fitness-Fragebogen.",
+        options: [
+          { v: "ja_regelmaessig", label: "Ja, regelmäßig", p: 14 },
+          { v: "gelegentlich", label: "Gelegentlich", p: 10 },
+          { v: "selten", label: "Selten", p: 5 },
+          { v: "kaum", label: "Kaum bis gar nicht", p: 2, sig: "isolation" },
+          { v: "no_answer", label: "Möchte ich nicht angeben", p: 8 }
+        ]
+      },
+      {
+        id: "hd_medication", type: "single", module: "blood", dom: "metabolic",
+        title: "Nimmst du dauerhaft Medikamente ein?",
+        sub: "Nur die Tatsache, nicht welche. Wir bewerten das nicht und geben dazu keine Empfehlung — es ändert nur, wie vorsichtig wir formulieren.",
+        options: [
+          { v: "nein", label: "Nein", p: 12 },
+          { v: "ja_begleitet", label: "Ja — ärztlich begleitet und regelmäßig kontrolliert", p: 12 },
+          { v: "ja_unbegleitet", label: "Ja — aber ohne regelmäßige Kontrolle", p: 5, sig: "med_unmonitored" },
+          { v: "no_answer", label: "Möchte ich nicht angeben", p: 9, gap: "medication" }
+        ]
+      },
+      {
+        id: "hd_dental", type: "single", module: "blood", dom: "cardiovascular",
+        title: "Wann warst du zuletzt bei der Zahnkontrolle?",
+        sub: "Zahnfleischentzündungen hängen messbar mit Herz-Kreislauf-Risiko zusammen — der am häufigsten übersehene Gesundheitsposten.",
+        options: [
+          { v: "unter12", label: "Innerhalb der letzten 12 Monate", p: 12 },
+          { v: "1_3jahre", label: "Vor 1–3 Jahren", p: 7 },
+          { v: "laenger", label: "Länger her", p: 3 },
+          { v: "nie", label: "Weiß ich nicht mehr", p: 2 }
+        ]
+      },
+      {
+        id: "hd_capacity", type: "single", module: "strength", dom: "cardiovascular",
+        title: "Was traust du dir körperlich im Alltag zu?",
+        sub: "Belastbarkeit sagt über Gesundheit mehr aus als jede einzelne Zahl.",
+        options: [
+          { v: "voll", label: "Alles — Treppen, Tragen, spontane Aktivität ohne Nachdenken", p: 16 },
+          { v: "meist", label: "Das meiste, manches strengt an", p: 12 },
+          { v: "vermeide", label: "Ich vermeide bewusst Anstrengendes", p: 5, sig: "low_capacity" },
+          { v: "eingeschraenkt", label: "Ich bin spürbar eingeschränkt", p: 2, sig: "low_capacity" }
+        ]
+      },
+      {
+        id: "hd_why", type: "single", module: null,
+        title: "Was hat den Ausschlag gegeben, dass du es jetzt angehst?",
+        sub: "Zählt nicht in den Score — hilft uns, den Ton zu treffen.",
+        options: [
+          { v: "arzt", label: "Ein Arztbesuch oder ein Befund" },
+          { v: "alter", label: "Ein Geburtstag / das Alter" },
+          { v: "familie", label: "Familie — ich will länger fit dabei sein" },
+          { v: "umfeld", label: "Jemand im Umfeld ist ernsthaft krank geworden" },
+          { v: "gefuehl", label: "Ich fühle mich einfach nicht mehr gut" },
+          { v: "nichts", label: "Nichts Bestimmtes — ist einfach dran" }
+        ]
+      }
+    ]
+  },
+
+  /* ---------- 7b. CARDIOVASKULÄR & METABOLISCH (V2) ---------- */
     {
       id: "cardiometabolic", label: "Herz-Kreislauf & Stoffwechsel",
       questions: [
@@ -1135,8 +1241,8 @@ window.MM_CHECK = {
         {
           id: "drv_change", type: "single", module: null, dom: null,
           when: function (a) { return window.MM_CHECK.sexualConcern(a); },
-          title: "Wie hat sich das entwickelt?",
-          sub: "Wird gefragt, weil der Verlauf für die ärztliche Einordnung wichtiger ist als der Momentzustand. Wir stellen keine Diagnose.",
+          title: "Und wie hat sich das bei Libido und Erektion über die Zeit entwickelt?",
+          sub: "Bezieht sich auf deine Angaben aus den letzten Fragen. Der Verlauf ist für die ärztliche Einordnung wichtiger als der Momentzustand — wir stellen keine Diagnose.",
           options: [
             { v: "schleichend", label: "Schleichend über Monate/Jahre" },
             { v: "ploetzlich", label: "Relativ plötzlich", sig: "sexual_acute" },
@@ -1211,6 +1317,7 @@ window.MM_CHECK = {
           sub: "Bewiesene Konstanz zählt mehr als guter Vorsatz.",
           options: [
             { v: "konstant", label: "Gar nicht — ich bin konstant", p: 14 },
+            { v: "nie_aufgehoert", label: "Nie ganz aufgehört — aber durchgehend eher lasch dabei", p: 8 },
             { v: "1to2", label: "1–2×", p: 10 },
             { v: "3to5", label: "3–5×", p: 5 },
             { v: "staendig", label: "Ständig", p: 2 },
@@ -1282,7 +1389,6 @@ window.MM_CHECK = {
             { v: "ohnmacht", label: "Ohnmacht / Schwindelanfälle", flag: "Ohnmachtsanfälle sollten ärztlich abgeklärt werden, bevor du intensiv trainierst." },
             { v: "atemnot", label: "Starke Atemnot bei leichter Belastung", flag: "Starke Atemnot bei leichter Belastung bitte ärztlich abklären lassen." },
             { v: "apnoe", label: "Beobachtete Atemaussetzer im Schlaf", flag: "Atemaussetzer im Schlaf (Verdacht Schlafapnoe) bitte ärztlich abklären — das beeinflusst Energie und Gesundheit erheblich." },
-            { v: "blut", label: "Blut im Urin oder Stuhl", flag: "Blut im Urin oder Stuhl gehört umgehend in ärztliche Abklärung." },
             { v: "gewichtsverlust", label: "Ungewollter starker Gewichtsverlust", flag: "Ungewollter starker Gewichtsverlust sollte ärztlich abgeklärt werden." },
             { v: "blutdruck", label: "Bekannter, sehr hoher Blutdruck", flag: "Bei sehr hohem Blutdruck bitte vor Trainingsstart Rücksprache mit deinem Arzt halten." },
             { v: "depression", label: "Starke depressive Gedanken", flag: "Bei starken depressiven Gedanken hol dir bitte professionelle Hilfe — z. B. über deinen Hausarzt oder die Telefonseelsorge (0800 111 0 111, kostenlos & anonym)." },
@@ -1660,6 +1766,15 @@ window.MM_CHECK = {
      Körperfett-Level (body_type + WHtR/BMI), Bauchfett-Fokus (Ziel + goal_pain),
      Muskelziel und Trainingsstatus. Gibt Modus UND eine transparente Begründung.
      Grundsatz: Wer klar Bauchfett/Körperfett stört, bekommt nicht leichtfertig BUILD. */
+  /* Ein Nutzer mit Gesundheitsziel bekommt zusätzliche Fragen (Modul
+     "healthdeep"). Die Bedingung steht hier zentral, damit Fragenbank,
+     Auswertung und Tests dieselbe Definition benutzen. */
+  C.healthFocus = function (a) {
+    a = a || {};
+    var g = a.goal_main || [];
+    return g.indexOf("gesundheit") >= 0 || a.goal_pain === "gesundheit";
+  };
+
   C.goalDecision = function (a) {
     var g = a.goal_main || [];
     var has = function (x) { return g.indexOf(x) >= 0; };
@@ -1696,8 +1811,25 @@ window.MM_CHECK = {
     var beginner = a.str_freq === "0" || a.str_freq === "unregelmaessig"
       || a.str_plan === "nein" || a.str_plan === "selten";
 
+    /* Ausdrücklich genanntes Ziel „gesünder werden" — ohne Muskel- und
+       ohne Fettwunsch. fatConcern zieht auch Körperdaten heran; für die
+       BEGRÜNDUNG darf das nicht als geäußerter Wunsch ausgegeben werden. */
+    var fatGoalExplicit = has("bauchfett") || a.goal_pain === "bauch" || a.goal_pain === "gewicht";
+    var healthOnly = (has("gesundheit") || a.goal_pain === "gesundheit") && !wantsMuscle && !fatGoalExplicit;
+
     var mode, reason;
-    if (fat >= 2) {
+    if (healthOnly) {
+      if (fat >= 2) {
+        mode = "cut";
+        reason = "Du willst vor allem gesünder werden — und dein größter gesundheitlicher Hebel ist gerade der hohe Körperfettanteil. Deshalb CUT: nicht wegen der Optik, sondern weil viel Bauchfett direkt auf Blutdruck, Blutzucker und Blutfette schlägt.";
+      } else if (fat >= 1) {
+        mode = "recomp";
+        reason = "Du willst gesünder werden, ohne dich auf eine Diät festzulegen — und deine Taille liegt im Bereich, in dem sich das lohnt. RECOMP passt: Taille langsam runter, Kraft und Muskeln hoch, ohne Verzichtsprogramm.";
+      } else {
+        mode = "perform";
+        reason = "Deine Körperdaten geben aktuell keinen Anlass, zu diäten oder aufzubauen. Für „gesünder werden“ liegen deine Hebel woanders: Blutdruck und Werte kennen, Ausdauer und Kraft aufbauen, Schlaf und Alltagsbewegung stabilisieren — PERFORM.";
+      }
+    } else if (fat >= 2) {
       mode = "cut";
       reason = wantsMuscle
         ? "Dein Körperfettanteil ist aktuell hoch. Ein klassischer Aufbau würde vor allem Fett dazupacken — deshalb zuerst CUT: Fett runter, Kraft und Muskeln mit viel Protein und hartem Training schützen. Der Aufbau kommt danach auf einer besseren Basis."
@@ -1731,7 +1863,13 @@ window.MM_CHECK = {
       reason = fat >= 1
         ? "Du willst Muskeln aufbauen und trägst moderat Fett — RECOMP baut Muskeln auf, während die Taille eher runter geht, statt Fett mitaufzubauen."
         : "Du bist relativ schlank und willst Muskeln und Kraft aufbauen — BUILD: ein kleiner, kontrollierter Überschuss für sauberen Aufbau.";
-    } else if (has("energie") || has("schlaf") || has("blutwerte") || has("hormone") || has("disziplin")) {
+    } else if (has("gesundheit") || a.goal_pain === "gesundheit"
+               || has("energie") || has("schlaf") || has("blutwerte") || has("hormone") || has("disziplin")) {
+      /* „Einfach gesünder werden" ist ein eigenständiges Ziel, kein
+         verkleidetes Abnehm- oder Aufbauziel. Deshalb wird hier NUR dann
+         eine Körper-Richtung empfohlen, wenn die Körperdaten sie von sich
+         aus nahelegen — und dann mit gesundheitlicher, nicht optischer
+         Begründung. */
       if (fat >= 2) { mode = "cut"; reason = "Für deine Gesundheits- und Energieziele ist der größte Hebel, den hohen Körperfettanteil zu senken (CUT)."; }
       else if (fat >= 1) { mode = "recomp"; reason = "Für deine Gesundheits- und Energieziele passt RECOMP: Körperkomposition verbessern, ohne aggressive Diät."; }
       else { mode = "perform"; reason = "Deine Ziele sind Energie, Schlaf und Gesundheit — PERFORM: Gewicht halten, Training und Recovery gezielt fuelen, statt zu diäten oder aufzubauen."; }
@@ -2181,6 +2319,88 @@ window.MM_CHECK = {
     return true;
   };
 
+  /* ==========================================================================
+     KAPITELREIHENFOLGE UND ROTER FADEN
+
+     Ein echter Nutzer meldete: "Kein roter Faden bei den Fragen." Die
+     Auswertung des Fragenflusses hat ihm recht gegeben — und dabei drei
+     Bedingungen gefunden, die deshalb NIE greifen konnten, weil sie eine
+     Antwort lesen, die erst später abgefragt wird:
+
+       blood_doctor  (Fr. 60) liest lab_recency, gestellt erst Fr. 67
+       blood_overtest(Fr. 61) liest lab_known,   gestellt erst Fr. 68
+       cv_bp_control (Fr. 64) liest redflags,    gestellt erst Fr. 84
+
+     Beide Probleme haben dieselbe Ursache und dieselbe Lösung: die
+     Gesundheits-Kapitel standen in der falschen Reihenfolge. Erst die
+     Warnzeichen, dann die vorhandenen Daten, dann deren Einordnung.
+
+     Die Reihenfolge steht deshalb hier als ausdrückliche Liste statt
+     implizit in der Reihenfolge eines 1.300-Zeilen-Literals. Wer ein Kapitel
+     verschiebt, sieht hier, was er tut. tools-dev/tests prüfen, dass keine
+     Bedingung mehr nach vorne greift. */
+  C.moduleOrder = [
+    "goal",            // Warum bist du hier?
+    "basics",          // Wer bist du?
+    "body",            // Wo stehst du körperlich?
+    "status",          // In welchem Kontext lesen wir das?
+    "ctx_natural", "ctx_former", "ctx_trt", "ctx_enhanced", "ctx_glp1",
+    "strength",        // Was tust du?
+    "movement",
+    "fuel",
+    "recovery",
+    "healthdeep",   // nur bei Gesundheitsziel
+    "safety",          // Bevor es um Werte geht: gibt es Warnzeichen?
+    "labs",            // Welche Daten hast du überhaupt?
+    "blood",           // Was weißt du und was tust du damit?
+    "cardiometabolic",
+    "drive",           // Wie wirkt sich das aus?
+    "execution",       // Bekommst du es umgesetzt?
+    "qualify"          // Abschluss
+  ];
+  (function () {
+    var bekannt = {};
+    C.modules.forEach(function (m) { bekannt[m.id] = true; });
+    C.moduleOrder.forEach(function (id) {
+      if (!bekannt[id]) throw new Error("moduleOrder nennt unbekanntes Modul: " + id);
+    });
+    C.modules.forEach(function (m) {
+      if (C.moduleOrder.indexOf(m.id) < 0) throw new Error("Modul ohne Platz in moduleOrder: " + m.id);
+    });
+    C.modules.sort(function (x, y) {
+      return C.moduleOrder.indexOf(x.id) - C.moduleOrder.indexOf(y.id);
+    });
+  })();
+
+  /* Ein Satz je Kapitel, der dem Nutzer sagt, wo er ist und warum jetzt
+     genau das kommt. Wird beim ERSTEN Schritt eines Kapitels eingeblendet
+     (js/check.js) — nicht bei jeder Frage, sonst wird es zur Tapete.
+     Das ist der eigentliche rote Faden: nicht die Reihenfolge allein,
+     sondern dass sie begründet ist. */
+  C.moduleIntro = {
+    goal:      "Zuerst dein Ziel — es entscheidet, welche Fragen du überhaupt bekommst.",
+    basics:    "Ein paar Eckdaten. Daraus errechnen wir Bezugsgrößen wie Taille zu Körpergröße.",
+    body:      "Jetzt dein Ausgangspunkt: Körperbild, Verlauf und was du bereits misst.",
+    status:    "Eine Einordnungsfrage, bevor es um Training und Werte geht: dein Kontext entscheidet, welche Fragen sinnvoll sind — und er kostet dich keinen einzigen Punkt.",
+    ctx_natural: "Kurz zum natürlichen Kontext — zwei Fragen, dann weiter.",
+    ctx_former:  "Kurz zur Rückkehrphase — sie verändert, wie deine Werte zu lesen sind.",
+    ctx_trt:     "Kurz zur ärztlichen Therapie. Wir bewerten die Begleitung, nicht die Therapie selbst.",
+    ctx_enhanced:"Kurz zum Kontext. Es geht um Kontrolle und Monitoring — nicht um Substanzen, Dosierungen oder Bewertung.",
+    ctx_glp1:    "Eine Frage zur Begleitmedikation.",
+    strength:  "Jetzt dein Training: Häufigkeit, Progression und Belastbarkeit.",
+    movement:  "Bewegung außerhalb des Trainings — der am meisten unterschätzte Hebel.",
+    fuel:      "Ernährung: was regelmäßig passiert, nicht was am guten Tag passiert.",
+    recovery:  "Schlaf und Erholung — der Multiplikator für alles davor.",
+    healthdeep:"Weil Gesundheit dein Ziel ist, gehen wir hier tiefer: Faktoren, die über Jahre wirken und in keinem Fitnessplan stehen.",
+    safety:    "Ein kurzer Sicherheits-Check, bevor es um Gesundheitsdaten geht. Fließt nicht in den Score ein.",
+    labs:      "Welche Messwerte hast du überhaupt? Erst danach fragen wir, was du damit machst.",
+    blood:     "Deine Gesundheitsdaten: Blutdruck, Vorsorge, Familiengeschichte.",
+    cardiometabolic: "Herz-Kreislauf und Stoffwechsel — die Faktoren mit der längsten Wirkung.",
+    drive:     "Energie, Antrieb und Alltagsmarker. Optionale Fragen kannst du überspringen.",
+    execution: "Fast geschafft: Umsetzung. Hier entscheidet sich, ob aus einem Plan etwas wird.",
+    qualify:   "Die letzten Fragen — sie bestimmen, welcher Weg dir vorgeschlagen wird."
+  };
+
   /* Flache, adaptive Schrittliste in Reihenfolge der Module. */
   C.visibleSteps = function (a) {
     a = a || {};
@@ -2424,6 +2644,8 @@ window.MM_CHECK = {
     glucose:          { label: "Blutzucker / HbA1c unbekannt", why: "Metabolische Verschiebungen laufen lange ohne Symptome.", dom: "metabolic", sev: 2 },
     hematocrit:       { label: "Hämatokrit / Hämoglobin unbekannt", why: "Androgen wirksame Substanzen können das Blut verdicken — ein klassisch überwachter Wert.", dom: "enhancedControl", sev: 3 },
     liver:            { label: "Leberwerte unbekannt", why: "Bei oralen Substanzen ist der Leber-Kontext besonders relevant.", dom: "enhancedControl", sev: 3 },
+    produce:          { label: "Gemüse-/Obstmenge unbekannt", why: "Der am besten belegte Ernährungsfaktor — ohne Angabe bleibt der Ernährungsteil eine Schätzung.", dom: "nutrition", sev: 1 },
+    medication:       { label: "Dauermedikation offen", why: "Ändert, wie vorsichtig Empfehlungen formuliert werden müssen.", dom: "metabolic", sev: 1 },
     nicotine:         { label: "Nikotinstatus offen", why: "Nikotin ist einer der stärksten einzelnen kardiovaskulären Faktoren.", dom: "cardiovascular", sev: 1 },
     snoring:          { label: "Schlafatmung unklar", why: "Schnarchen und Atemaussetzer beeinflussen Energie, Blutdruck und Erholung.", dom: "sleep", sev: 2 },
     training_response:{ label: "Trainingsantwort nicht einschätzbar", why: "Die Reaktion auf Training ist ein ehrlicher Alltagsmarker.", dom: "training", sev: 1 },
@@ -2763,7 +2985,7 @@ window.MM_CHECK = {
      sondern eine Reihenfolge-Aussage: erst klaeren/kontrollieren, dann
      Physique optimieren. Keine Diagnose, keine Therapieempfehlung. */
 
-  C.SEVERE_FLAGS = ["brust", "ohnmacht", "atemnot", "blut", "gewichtsverlust", "blutdruck", "labor", "hormone"];
+  C.SEVERE_FLAGS = ["brust", "ohnmacht", "atemnot", "gewichtsverlust", "blutdruck", "labor", "hormone"];
 
   C.healthFirstReason = function (a) {
     a = a || {};

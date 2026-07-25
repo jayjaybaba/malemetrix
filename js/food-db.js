@@ -139,23 +139,30 @@
     ["Proteinshake (Wasser)", "Getränke", "stk", 1, "Portion", 120, 25, 3, 1.5],
     ["Whey-Protein (Pulver)", "Getränke", "g", 30, "", 380, 78, 8, 6],
 
-    // --- Fertig- & Restaurantgerichte (pro Portion) ---
-    ["Pizza Margherita (ganz)", "Restaurant", "stk", 0.5, "halbe", 850, 34, 100, 30],
-    ["Pizza Salami (ganz)", "Restaurant", "stk", 0.5, "halbe", 980, 40, 100, 44],
-    ["Döner", "Restaurant", "stk", 1, "Stück", 700, 40, 60, 33],
-    ["Dürüm", "Restaurant", "stk", 1, "Stück", 780, 42, 70, 35],
-    ["Burger (Cheeseburger)", "Restaurant", "stk", 1, "Stück", 500, 25, 40, 26],
-    ["Big-Menü mit Pommes", "Restaurant", "stk", 1, "Menü", 1100, 40, 110, 50],
-    ["Sushi (8 Stück)", "Restaurant", "stk", 1, "Portion", 350, 14, 60, 5],
-    ["Poke Bowl (Lachs)", "Restaurant", "stk", 1, "Bowl", 550, 34, 60, 18],
-    ["Pad Thai (Hähnchen)", "Restaurant", "stk", 1, "Portion", 600, 30, 70, 20],
-    ["Chicken Tikka Masala + Reis", "Restaurant", "stk", 1, "Portion", 720, 40, 65, 30],
-    ["Caesar Salad mit Hähnchen", "Restaurant", "stk", 1, "Portion", 480, 40, 15, 28],
-    ["Gyros-Teller mit Tzatziki", "Restaurant", "stk", 1, "Portion", 680, 50, 20, 45],
-    ["Currywurst mit Pommes", "Restaurant", "stk", 1, "Portion", 850, 25, 70, 52],
-    ["Schnitzel mit Pommes", "Restaurant", "stk", 1, "Portion", 900, 45, 75, 45],
-    ["Burrito Bowl", "Restaurant", "stk", 1, "Bowl", 600, 35, 65, 22],
-    ["Salatbowl mit Feta", "Restaurant", "stk", 1, "Bowl", 380, 15, 25, 24]
+    /* --- Auswärts & Fertiggerichte (pro Portion) ---
+       Diese Einträge sind bewusst geblieben, obwohl Restaurant-VORSCHLÄGE
+       überall entfernt wurden: das hier ist keine Empfehlungsliste, sondern
+       das Nachschlagewerk zum Protokollieren. Wer auswärts gegessen hat,
+       muss das ehrlich eintragen können — sonst schätzt er daneben oder
+       trägt gar nichts ein, und die Tagesbilanz wird wertlos. Angezeigt
+       werden sie nur, wenn danach gesucht wird; in keiner Vorschlagsliste,
+       auf keinem Chip, in keiner Kategorieauswahl. */
+    ["Pizza Margherita (ganz)", "Auswärts", "stk", 0.5, "halbe", 850, 34, 100, 30],
+    ["Pizza Salami (ganz)", "Auswärts", "stk", 0.5, "halbe", 980, 40, 100, 44],
+    ["Döner", "Auswärts", "stk", 1, "Stück", 700, 40, 60, 33],
+    ["Dürüm", "Auswärts", "stk", 1, "Stück", 780, 42, 70, 35],
+    ["Burger (Cheeseburger)", "Auswärts", "stk", 1, "Stück", 500, 25, 40, 26],
+    ["Big-Menü mit Pommes", "Auswärts", "stk", 1, "Menü", 1100, 40, 110, 50],
+    ["Sushi (8 Stück)", "Auswärts", "stk", 1, "Portion", 350, 14, 60, 5],
+    ["Poke Bowl (Lachs)", "Auswärts", "stk", 1, "Bowl", 550, 34, 60, 18],
+    ["Pad Thai (Hähnchen)", "Auswärts", "stk", 1, "Portion", 600, 30, 70, 20],
+    ["Chicken Tikka Masala + Reis", "Auswärts", "stk", 1, "Portion", 720, 40, 65, 30],
+    ["Caesar Salad mit Hähnchen", "Auswärts", "stk", 1, "Portion", 480, 40, 15, 28],
+    ["Gyros-Teller mit Tzatziki", "Auswärts", "stk", 1, "Portion", 680, 50, 20, 45],
+    ["Currywurst mit Pommes", "Auswärts", "stk", 1, "Portion", 850, 25, 70, 52],
+    ["Schnitzel mit Pommes", "Auswärts", "stk", 1, "Portion", 900, 45, 75, 45],
+    ["Burrito Bowl", "Auswärts", "stk", 1, "Bowl", 600, 35, 65, 22],
+    ["Salatbowl mit Feta", "Auswärts", "stk", 1, "Bowl", 380, 15, 25, 24]
   ];
 
   window.MM_FOODDB = rows.map(function (r) {

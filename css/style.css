@@ -45,6 +45,9 @@
    aufbläht -> schwarzer Streifen rechts). clip statt hidden, damit html KEIN
    Scroll-Container wird und position:sticky weiter funktioniert. */
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflow-x: clip; width: 100%; }
+/* Im Score-Fragebogen ohne weiches Scrollen: sonst animiert der Browser den
+   Fokuswechsel und ueberholt die Positionskorrektur nach jeder Frage. */
+html[data-wizard] { scroll-behavior: auto; }
 
 body {
   font-family: var(--font-body);
@@ -867,7 +870,13 @@ textarea { resize: vertical; min-height: 110px; }
    Check-Wizard
    -------------------------------------------------------------------------- */
 
-.wizard-wrap { max-width: 760px; margin: 0 auto; }
+/* width statt max-width: so greift auf schmalen Geräten dieselbe
+   Randlogik wie bei .container* — vorher lag der Fragetext bei 0 px. */
+.wizard-wrap { width: min(760px, calc(100% - 48px)); margin: 0 auto; }
+
+/* Die Ergebnisseite injiziert ihr HTML direkt in die <section>; ohne
+   diesen Wrapper stand der Text auf jedem Gerät bei exakt 0 px. */
+.result-wrap { width: min(860px, calc(100% - 48px)); margin: 0 auto; }
 
 .wizard-progress { margin-bottom: 36px; }
 
@@ -883,6 +892,21 @@ textarea { resize: vertical; min-height: 110px; }
 }
 
 .wizard-progress .bar-track { height: 5px; }
+
+/* Ohne Höhen-Untergrenze fällt die Karte je nach Optionsanzahl um mehrere
+   hundert Pixel zusammen; der darunter liegende Inhalt rutscht dann in den
+   Blick. Siehe die Scroll-Korrektur in js/check.js/renderStep. */
+#wizBody { min-height: 58vh; }
+
+/* Kapitel-Einleitung: erscheint einmal je Kapitel über der Frage und sagt,
+   warum jetzt dieses Thema kommt. */
+.q-chapter-intro {
+  margin: 2px 0 14px; padding: 10px 14px;
+  border-left: 2px solid var(--accent-line, rgba(46,124,246,.35));
+  background: var(--accent-soft, rgba(46,124,246,.08));
+  border-radius: 0 8px 8px 0;
+  color: var(--muted); font-size: 0.92rem; line-height: 1.55;
+}
 
 .q-block { animation: qIn 0.35s cubic-bezier(0.22, 1, 0.36, 1); }
 
@@ -906,6 +930,16 @@ textarea { resize: vertical; min-height: 110px; }
 
 .option-grid { display: grid; gap: 11px; margin-bottom: 30px; }
 .option-grid.two-col { grid-template-columns: 1fr 1fr; }
+/* Raster-Kinder haben standardmäßig min-width:auto und können damit über
+   ihre Spalte hinauswachsen — bei 320 px ragte die dritte Antwortkarte
+   7 px über den Seitenrand. */
+.option-grid > .option-card { min-width: 0; }
+/* Die dreiteilige Bewertungszeile (JA / TEILWEISE / NEIN) stand als
+   Inline-Stil im JavaScript und war auf schmalen Geräten zu eng. */
+.fb-rating { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.fb-rating .option-card { padding-left: 10px; padding-right: 10px; text-align: center; justify-content: center; }
+.fb-rating .option-card span { overflow-wrap: anywhere; }
+@media (max-width: 360px) { .fb-rating { grid-template-columns: 1fr; } }
 @media (max-width: 600px) { .option-grid.two-col { grid-template-columns: 1fr; } }
 
 .option-card {
@@ -2178,8 +2212,11 @@ input[type="range"]::-moz-range-thumb {
    die Seite wird also nicht zoomend wie eine Desktop-Seite dargestellt.
    ========================================================================== */
 @media (max-width: 600px) {
-  /* Mehr nutzbare Breite: schmalere Seitenränder (16px statt 24px) */
-  .container, .container-narrow, .container-tight { width: calc(100% - 32px); }
+  /* Seitenrand mobil: 16 px je Seite (~2,6 mm). Weniger fühlt sich an,
+     als wäre die Seite abgeschnitten — genau die Rückmeldung, die dazu
+     geführt hat. */
+  .container, .container-narrow, .container-tight,
+  .wizard-wrap, .result-wrap { width: calc(100% - 32px); }
 
   /* Header kompakt halten, damit der Menü-Button (☰) immer sichtbar bleibt */
   .header-inner { gap: 12px; }
@@ -2221,7 +2258,11 @@ input[type="range"]::-moz-range-thumb {
   .lang-btn .lang-code { display: none; }
   .logo { font-size: 1.05rem; }
   .icon-btn { padding: 0 8px; }
-  .container, .container-narrow, .container-tight { width: calc(100% - 24px); }
+  /* Auch auf dem schmalsten Gerät bleibt der Rand erhalten. Vorher wurde
+     er hier auf 12 px verkleinert — ausgerechnet dort, wo der Bildschirm
+     ohnehin am dichtesten am Gehäuserand endet. */
+  .container, .container-narrow, .container-tight,
+  .wizard-wrap, .result-wrap { width: calc(100% - 28px); }
 }
 
 /* ==========================================================================

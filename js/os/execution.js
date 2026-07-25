@@ -556,20 +556,15 @@
     var eaten = foodLog(ymd).reduce(function (a, x) { return { p: a.p + x.p, kcal: a.kcal + x.kcal }; }, { p: 0, kcal: 0 });
     return { protein: Math.max(0, np.protein - eaten.p), kcal: Math.max(0, np.kcal - eaten.kcal), eaten: eaten, target: { protein: np.protein, kcal: np.kcal }, logged: foodLog(ymd).length > 0 };
   }
-  var FOOD_CONTEXT = { home: "ZUHAUSE", restaurant: "RESTAURANT", supermarket: "SUPERMARKT", fast: "SCHNELL", family: "FAMILIE", travel: "UNTERWEGS" };
+  var FOOD_CONTEXT = { home: "ZUHAUSE", supermarket: "SUPERMARKT", fast: "SCHNELL", family: "FAMILIE", travel: "UNTERWEGS" };
   function eatNow(ctx) {
     ctx = ctx || {};
     var rem = remaining() || { protein: 50, kcal: 700 };
     var where = FOOD_CONTEXT[ctx.where] ? ctx.where : "home";
     track("eat_now_open", { where: where });
-    if (where === "restaurant" || where === "travel") {
-      return { where: where, remaining: rem, strategy: true, options: [
-        { name: "Protein zuerst bestellen", detail: "Fleisch/Fisch-Hauptgericht (~40–60 g Protein). Beilage nach Hunger — nicht nach Pflichtgefühl." },
-        { name: "Ein Extra, nicht drei", detail: "Vorspeise ODER Dessert ODER Alkohol — eins davon passt fast immer in " + rem.kcal + " kcal." },
-        { name: "Kein Makro-Mikromanagement", detail: "Grobe Schätzung reicht. Ein Restaurantabend entscheidet keine Woche." }
-      ] };
-    }
     var meals = E().MEALS.slice();
+    /* Unterwegs: was sich vorbereiten und mitnehmen lässt. */
+    if (where === "travel") meals = meals.filter(function (m) { return m.tags.indexOf("unterwegs") >= 0 || m.tags.indexOf("nocook") >= 0 || m.tags.indexOf("mealprep") >= 0; });
     if (where === "fast") meals = meals.filter(function (m) { return m.min <= 10; });
     if (where === "family") meals = meals.filter(function (m) { return m.tags.indexOf("familie") >= 0; }).concat(meals);
     if (where === "supermarket") meals = meals.filter(function (m) { return m.min <= 12; });
@@ -579,8 +574,13 @@
       var kOver = Math.max(0, m.kcal - rem.kcal) / 300;                        // Kalorien-Überschuss bestraft
       return { m: m, s: pFit * 2 - kOver + (m.p / m.kcal) };                   // Proteindichte als Tiebreaker
     }).sort(function (a, b) { return b.s - a.s; });
-    var seen = {}; var out = [];
-    scored.forEach(function (x) { if (out.length < 3 && !seen[x.m.id]) { seen[x.m.id] = 1; out.push(x.m); } });
+    /* Aus den besten sechs drei zeigen und den Einstieg über den Tag
+       rotieren — sonst stehen bei unverändertem Restbudget dauerhaft
+       dieselben drei Vorschläge da. Die Bedarfslogik bleibt bestimmend. */
+    var eng = E();
+    var beste = [], seen = {};
+    scored.forEach(function (x) { if (beste.length < 6 && !seen[x.m.id]) { seen[x.m.id] = 1; beste.push(x.m); } });
+    var out = (eng.rotate ? eng.rotate(beste, eng.daySeed(), "eatnow" + where) : beste).slice(0, 3);
     return { where: where, remaining: rem, strategy: false, options: out };
   }
 

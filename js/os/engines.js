@@ -167,25 +167,96 @@
     M("beef_jerky", "Beef Jerky + Studentenfutter (unterwegs)", "snack", 320, 28, 24, 12, 0, 3, ["nocook", "unterwegs"], [["Beef Jerky", 50, "g"], ["Studentenfutter", 30, "g"]]),
     M("protein_pudding", "Proteinpudding mit Beeren", "snack", 260, 24, 26, 6, 2, 2, ["schnell", "nocook"], [["Proteinpudding", 200, "g"], ["Beeren (TK)", 100, "g"]]),
     M("banane_pb", "Banane mit Erdnussmus", "snack", 280, 8, 34, 13, 2, 1, ["schnell", "nocook", "unterwegs"], [["Banane", 1, "Stk"], ["Erdnussmus", 20, "g"]]),
-    // ---------- RESTAURANT-GUIDE (kein Rezept — Bestell-Strategie) ----------
-    M("rest_grill", "Restaurant: Grillteller (Fleisch + Gemüse + Kartoffeln)", "main", 700, 50, 45, 30, 0, 3, ["restaurant"], [["Bestell-Strategie: Protein zuerst, Beilage Kartoffeln/Reis statt Pommes, Sauce separat", 1, "×"]]),
-    M("rest_bowl", "Restaurant/Imbiss: Bowl mit Doppel-Protein", "main", 650, 48, 60, 20, 0, 3, ["restaurant"], [["Bestell-Strategie: Doppelte Proteinportion, Dressing separat, kein Extra-Topping", 1, "×"]]),
-    M("rest_doener", "Imbiss: Dönerteller mit Salat statt Brot", "main", 680, 45, 40, 35, 0, 2, ["restaurant"], [["Bestell-Strategie: Teller statt Brot, viel Salat, Knoblauchsauce light", 1, "×"]])
+    // ---------- FRÜHSTÜCK (Erweiterung) ----------
+    M("overnight_oats", "Overnight Oats mit Skyr & Beeren", "breakfast", 470, 40, 58, 8, 5, 1, ["billig", "nocook", "mealprep"], [["Haferflocken", 60, "g"], ["Skyr", 250, "g"], ["Beeren (TK)", 120, "g"], ["Leinsamen", 10, "g"]]),
+    M("ruehrei_lachs", "Rührei mit Räucherlachs & Schnittlauch", "breakfast", 480, 42, 24, 26, 10, 3, ["lowcarb", "schnell"], [["Eier", 3, "Stk"], ["Räucherlachs", 80, "g"], ["Vollkornbrot", 1, "Scheiben"], ["Schnittlauch", 5, "g"]]),
+    M("huettenkaese_ei", "Hüttenkäse mit gekochten Eiern & Vollkornbrot", "breakfast", 440, 38, 34, 16, 8, 1, ["billig", "füllend"], [["Körniger Frischkäse", 200, "g"], ["Eier", 2, "Stk"], ["Vollkornbrot", 2, "Scheiben"]]),
+    M("bircher", "Bircher-Müsli mit Apfel & Nüssen", "breakfast", 500, 30, 62, 14, 6, 1, ["nocook", "mealprep"], [["Haferflocken", 60, "g"], ["Magerquark", 200, "g"], ["Apfel", 1, "Stk"], ["Mandeln", 15, "g"], ["Milch 1,5%", 100, "ml"]]),
+    M("shakshuka", "Shakshuka mit Ei & Fladenbrot", "breakfast", 520, 30, 46, 24, 20, 1, ["familie", "füllend"], [["Eier", 3, "Stk"], ["Passierte Tomaten", 250, "g"], ["Paprika", 1, "Stk"], ["Zwiebel", 1, "Stk"], ["Vollkornfladenbrot", 1, "Stk"]]),
+    M("protein_pfannkuchen", "Protein-Pfannkuchen mit Quark & Beeren", "breakfast", 490, 45, 46, 13, 12, 2, ["füllend"], [["Haferflocken", 50, "g"], ["Eier", 2, "Stk"], ["Magerquark", 150, "g"], ["Whey", 20, "g"], ["Beeren (TK)", 100, "g"]]),
+    M("avocado_ei_brot", "Avocado-Brot mit pochiertem Ei", "breakfast", 460, 24, 38, 24, 12, 2, ["schnell"], [["Vollkornbrot", 2, "Scheiben"], ["Avocado", 1, "Stk"], ["Eier", 2, "Stk"], ["Zitrone", 1, "Stk"]]),
+    M("griesbrei_protein", "Protein-Grießbrei mit Zimt & Apfel", "breakfast", 450, 34, 60, 8, 10, 1, ["billig", "füllend"], [["Hartweizengrieß", 60, "g"], ["Milch 1,5%", 350, "ml"], ["Whey", 20, "g"], ["Apfel", 1, "Stk"], ["Zimt", 2, "g"]]),
+    M("smoothie_gruen", "Grüner Protein-Smoothie mit Hafer", "breakfast", 430, 38, 48, 8, 4, 2, ["schnell", "nocook", "unterwegs"], [["Whey", 30, "g"], ["Spinat (TK)", 100, "g"], ["Banane", 1, "Stk"], ["Haferflocken", 40, "g"], ["Milch 1,5%", 300, "ml"]]),
+    M("kaese_omelett_kartoffel", "Bauern-Omelett mit Kartoffeln & Speck", "breakfast", 560, 36, 40, 28, 15, 2, ["füllend", "familie"], [["Eier", 4, "Stk"], ["Kartoffeln", 200, "g"], ["Kochschinken", 60, "g"], ["Gouda", 30, "g"], ["Zwiebel", 1, "Stk"]]),
+
+    // ---------- HAUPTMAHLZEITEN (Erweiterung) ----------
+    M("puten_geschnetzeltes", "Putengeschnetzeltes mit Reis & Paprika", "main", 640, 56, 66, 12, 20, 2, ["familie", "füllend"], [["Putenbrust", 250, "g"], ["Reis (roh)", 75, "g"], ["Paprika", 2, "Stk"], ["Joghurt 1,5%", 80, "g"], ["Olivenöl", 8, "g"]]),
+    M("kabeljau_ofen", "Ofen-Kabeljau mit Kartoffeln & Zitrone", "main", 560, 48, 52, 16, 25, 3, ["familie"], [["Kabeljaufilet", 250, "g"], ["Kartoffeln", 300, "g"], ["Zitrone", 1, "Stk"], ["Olivenöl", 12, "g"], ["Brokkoli", 200, "g"]]),
+    M("hack_auflauf", "Hack-Gemüse-Auflauf mit Feta", "main", 690, 52, 48, 32, 35, 2, ["familie", "füllend", "mealprep"], [["Rinderhack (5%)", 200, "g"], ["Zucchini", 2, "Stk"], ["Passierte Tomaten", 200, "g"], ["Feta", 60, "g"], ["Kartoffeln", 200, "g"]], { servings: 4, note: "Eine Form für alle — deine Portion wird abgewogen." }),
+    M("linsen_bolognese", "Linsen-Bolognese mit Vollkornnudeln (vegan)", "main", 620, 34, 88, 12, 25, 1, ["veg", "billig", "familie"], [["Rote Linsen (roh)", 90, "g"], ["Passierte Tomaten", 250, "g"], ["Vollkornnudeln (roh)", 80, "g"], ["Karotte", 1, "Stk"], ["Zwiebel", 1, "Stk"]]),
+    M("haehnchen_kichererbsen_salat", "Hähnchen-Kichererbsen-Salat", "main", 580, 52, 46, 20, 15, 2, ["schnell", "mealprep"], [["Hähnchenbrust", 220, "g"], ["Kichererbsen (Dose)", 240, "g"], ["Gurke", 100, "g"], ["Tomate", 2, "Stk"], ["Olivenöl", 12, "g"]]),
+    M("nudeln_thunfisch", "Thunfisch-Nudeln mit Tomate & Kapern", "main", 600, 46, 74, 12, 18, 1, ["billig", "schnell"], [["Thunfisch (Dose, Wasser)", 2, "Dosen"], ["Vollkornnudeln (roh)", 90, "g"], ["Passierte Tomaten", 200, "g"], ["Kapern", 15, "g"], ["Olivenöl", 8, "g"]]),
+    M("reispfanne_ei", "Reispfanne mit Ei & buntem Gemüse", "main", 590, 34, 72, 18, 15, 1, ["billig", "schnell", "veg"], [["Expressreis", 250, "g"], ["Eier", 3, "Stk"], ["Erbsen (TK)", 120, "g"], ["Karotte", 1, "Stk"], ["Sojasauce", 20, "ml"]]),
+    M("schweinefilet_kraut", "Schweinefilet mit Ofenkartoffeln & Rotkohl", "main", 650, 55, 56, 20, 30, 2, ["familie", "füllend"], [["Schweinefilet", 240, "g"], ["Kartoffeln", 300, "g"], ["Rotkohl", 200, "g"], ["Olivenöl", 10, "g"]]),
+    M("wok_haehnchen_nudeln", "Wok-Hähnchen mit Mie-Nudeln", "main", 670, 52, 74, 16, 20, 2, ["schnell", "familie"], [["Hähnchenbrust", 230, "g"], ["Mie-Nudeln (roh)", 90, "g"], ["Paprika", 1, "Stk"], ["Zuckerschoten", 120, "g"], ["Sojasauce", 25, "ml"], ["Sesamöl", 8, "g"]]),
+    M("frikadellen_pueree", "Frikadellen mit Kartoffelpüree & Erbsen", "main", 700, 50, 58, 28, 30, 2, ["familie", "füllend"], [["Rinderhack (5%)", 220, "g"], ["Kartoffeln", 300, "g"], ["Erbsen (TK)", 150, "g"], ["Eier", 1, "Stk"], ["Milch 1,5%", 80, "ml"]], { servings: 4, note: "Klassiker, der bei Kindern durchgeht — deine Portion abgewogen." }),
+    M("lachs_avocado_bowl", "Lachs-Reis-Bowl mit Avocado", "main", 690, 44, 60, 30, 18, 3, ["schnell"], [["Lachsfilet", 200, "g"], ["Expressreis", 250, "g"], ["Avocado", 1, "Stk"], ["Gurke", 100, "g"], ["Sojasauce", 15, "ml"]]),
+    M("haehnchen_auflauf_wrap", "Überbackene Hähnchen-Wraps", "main", 660, 50, 62, 22, 25, 2, ["familie", "füllend"], [["Hähnchenbrust", 220, "g"], ["Vollkorn-Wraps", 2, "Stk"], ["Passierte Tomaten", 150, "g"], ["Gouda", 40, "g"], ["Mais", 80, "g"]]),
+    M("quinoa_ofengemuese", "Quinoa-Bowl mit Hähnchen & Ofengemüse", "main", 620, 48, 62, 18, 30, 3, ["mealprep"], [["Hähnchenbrust", 200, "g"], ["Quinoa (roh)", 70, "g"], ["Süßkartoffel", 200, "g"], ["Paprika", 1, "Stk"], ["Olivenöl", 12, "g"]]),
+    M("rindergulasch", "Rindergulasch mit Kartoffeln", "main", 710, 54, 52, 32, 40, 3, ["familie", "füllend", "mealprep"], [["Rindergulasch", 220, "g"], ["Kartoffeln", 300, "g"], ["Zwiebel", 2, "Stk"], ["Paprika", 1, "Stk"], ["Tomatenmark", 30, "g"]], { servings: 4, note: "Schmeckt aufgewärmt besser — ideal zum Vorkochen." }),
+    M("lachs_spinat_nudeln", "Lachs-Spinat-Nudeln", "main", 680, 46, 68, 24, 20, 3, ["schnell"], [["Lachsfilet", 180, "g"], ["Vollkornnudeln (roh)", 85, "g"], ["Spinat (TK)", 200, "g"], ["Frischkäse light", 60, "g"], ["Knoblauch", 2, "Zehen"]]),
+    M("pute_suesskartoffel", "Pute mit Süßkartoffelstampf & Bohnen", "main", 630, 55, 58, 16, 25, 2, ["familie"], [["Putenbrust", 240, "g"], ["Süßkartoffel", 300, "g"], ["Grüne Bohnen", 200, "g"], ["Olivenöl", 10, "g"]]),
+    M("bohnen_eintopf", "Weiße-Bohnen-Eintopf mit Hähnchen", "main", 600, 50, 62, 16, 30, 1, ["billig", "familie", "füllend", "mealprep"], [["Hähnchenbrust", 200, "g"], ["Weiße Bohnen (Dose)", 240, "g"], ["Karotte", 2, "Stk"], ["Passierte Tomaten", 200, "g"], ["Olivenöl", 10, "g"]]),
+    M("tofu_erdnuss_curry", "Tofu-Erdnuss-Curry mit Reis (vegan)", "main", 640, 34, 62, 28, 22, 2, ["veg"], [["Tofu (fest)", 250, "g"], ["Erdnussmus", 25, "g"], ["Kokosmilch light", 150, "ml"], ["Reis (roh)", 70, "g"], ["Brokkoli", 200, "g"]]),
+    M("kaesespaetzle_protein", "Käsespätzle mit Hähnchen & Salat", "main", 720, 52, 68, 26, 20, 2, ["familie", "füllend"], [["Spätzle (roh)", 100, "g"], ["Hähnchenbrust", 180, "g"], ["Bergkäse", 50, "g"], ["Zwiebel", 1, "Stk"], ["Salat", 100, "g"]]),
+    M("ofen_feta_gemuese", "Ofen-Feta mit Gemüse & Vollkornnudeln", "main", 610, 30, 72, 22, 30, 1, ["veg", "familie", "billig"], [["Feta", 100, "g"], ["Kirschtomaten", 300, "g"], ["Zucchini", 1, "Stk"], ["Vollkornnudeln (roh)", 85, "g"], ["Olivenöl", 12, "g"]]),
+
+    // ---------- SNACKS (Erweiterung) ----------
+    M("huettenkaese_gurke", "Hüttenkäse mit Gurke & Pfeffer", "snack", 200, 25, 10, 6, 2, 1, ["schnell", "billig", "nocook", "lowcarb"], [["Körniger Frischkäse", 200, "g"], ["Gurke", 150, "g"]]),
+    M("harzer_brot", "Harzer Käse auf Vollkornbrot", "snack", 250, 30, 28, 3, 3, 1, ["billig", "nocook", "schnell"], [["Harzer Käse", 125, "g"], ["Vollkornbrot", 2, "Scheiben"], ["Zwiebel", 1, "Stk"]]),
+    M("joghurt_nuss_beeren", "Naturjoghurt mit Nüssen & Beeren", "snack", 300, 20, 26, 13, 3, 2, ["schnell", "nocook"], [["Joghurt 1,5%", 300, "g"], ["Beeren (TK)", 100, "g"], ["Walnüsse", 15, "g"]]),
+    M("eier_snack", "Zwei gekochte Eier mit Salz", "snack", 160, 13, 1, 11, 10, 1, ["billig", "mealprep", "unterwegs"], [["Eier", 2, "Stk"]]),
+    M("edamame_snack", "Edamame mit Meersalz", "snack", 210, 18, 14, 9, 6, 2, ["veg", "füllend"], [["Edamame (TK)", 200, "g"], ["Meersalz", 2, "g"]]),
+    M("haferriegel", "Selbstgemachter Hafer-Protein-Riegel", "snack", 290, 20, 34, 9, 15, 1, ["mealprep", "unterwegs"], [["Haferflocken", 40, "g"], ["Whey", 20, "g"], ["Erdnussmus", 15, "g"], ["Banane", 1, "Stk"]]),
+    M("skyr_kakao", "Skyr mit Kakao & Nussmus", "snack", 300, 32, 22, 11, 2, 2, ["schnell", "nocook"], [["Skyr", 300, "g"], ["Backkakao", 10, "g"], ["Erdnussmus", 12, "g"], ["Honig", 8, "g"]]),
+    M("thunfischcreme_cracker", "Thunfischcreme auf Vollkorncracker", "snack", 270, 28, 22, 8, 5, 2, ["schnell", "nocook"], [["Thunfisch (Dose, Wasser)", 1, "Dosen"], ["Joghurt 1,5%", 80, "g"], ["Vollkorncracker", 40, "g"]]),
+    M("milchreis_protein", "Protein-Milchreis mit Zimt", "snack", 330, 24, 50, 5, 20, 1, ["billig", "füllend"], [["Milchreis (roh)", 50, "g"], ["Milch 1,5%", 350, "ml"], ["Whey", 15, "g"], ["Zimt", 2, "g"]])
   ];
   function ingText(ing) { return ing.map(function (i) { return i[1] > 1 || i[2] !== "×" ? (i[1] + " " + i[2] + " " + i[0]) : i[0]; }); }
+
+  /* Tages-Seed: identisch für denselben Kalendertag, unterschiedlich am
+     nächsten. Lokale Zeit, damit die Rotation um Mitternacht wechselt und
+     nicht um 01:00 oder 02:00 (UTC-Versatz). */
+  function daySeed(d) {
+    var t = d || new Date();
+    return t.getFullYear() * 10000 + (t.getMonth() + 1) * 100 + t.getDate();
+  }
+  /* Startindex in einer Liste, abgeleitet aus Seed und einem Namensraum,
+     damit Frühstück, Hauptmahlzeit und Snack nicht im Gleichschritt
+     rotieren. */
+  function rotate(list, seed, ns) {
+    if (!list.length) return list;
+    var h = seed;
+    for (var i = 0; i < String(ns || "").length; i++) h = (h * 31 + String(ns).charCodeAt(i)) % 100003;
+    var start = ((h % list.length) + list.length) % list.length;
+    return list.slice(start).concat(list.slice(0, start));
+  }
   function exampleDay(targets, prefs) {
     prefs = prefs || {};
-    var pool = MEALS.filter(function (m) { return m.tags.indexOf("restaurant") < 0; });
+    var pool = MEALS.slice();
     if (prefs.maxCookMin) pool = pool.filter(function (m) { return m.min <= prefs.maxCookMin || m.slot === "snack"; });
     if (prefs.veg) pool = pool.filter(function (m) { return m.tags.indexOf("veg") >= 0 || m.slot !== "main"; });
+    /* Seed ist überschreibbar (prefs.seed) — die Tests fahren damit feste
+       Tage durch, ohne die Systemzeit zu manipulieren. */
+    var seed = prefs.seed != null ? prefs.seed : daySeed();
     var picks = [];
-    function pick(slot) { var c = pool.filter(function (m) { return m.slot === slot && picks.indexOf(m) < 0; }); return c.length ? c[0] : null; }
-    var b = pick("breakfast"); if (b) picks.push(b);
-    var m1 = pick("main"); if (m1) picks.push(m1);
-    var m2 = pool.filter(function (m) { return m.slot === "main" && picks.indexOf(m) < 0; })[0]; if (m2) picks.push(m2);
-    var s = pick("snack"); if (s) picks.push(s);
+    function pick(slot, ns) {
+      var c = rotate(pool.filter(function (m) { return m.slot === slot && picks.indexOf(m) < 0; }), seed, ns);
+      return c.length ? c[0] : null;
+    }
+    var b = pick("breakfast", "b"); if (b) picks.push(b);
+    var m1 = pick("main", "m1"); if (m1) picks.push(m1);
+    var m2 = pick("main", "m2"); if (m2) picks.push(m2);
+    var s = pick("snack", "s"); if (s) picks.push(s);
     var sum = picks.reduce(function (a, m) { return { kcal: a.kcal + m.kcal, p: a.p + m.p, c: a.c + m.c, f: a.f + m.f }; }, { kcal: 0, p: 0, c: 0, f: 0 });
-    if (targets && sum.p < targets.protein - 25) { var s2 = pool.filter(function (m) { return m.slot === "snack" && picks.indexOf(m) < 0; })[0]; if (s2) { picks.push(s2); sum.kcal += s2.kcal; sum.p += s2.p; sum.c += s2.c; sum.f += s2.f; } }
+    if (targets && sum.p < targets.protein - 25) {
+      /* Proteinlücke: der zusätzliche Snack wird nach Proteindichte gewählt,
+         nicht nach Listenposition — sonst hängt die Ergänzung vom Zufall der
+         Sortierung ab statt vom Bedarf. */
+      var s2 = pool.filter(function (m) { return m.slot === "snack" && picks.indexOf(m) < 0; })
+        .sort(function (x, y) { return (y.p / y.kcal) - (x.p / x.kcal); })[0];
+      if (s2) { picks.push(s2); sum.kcal += s2.kcal; sum.p += s2.p; sum.c += s2.c; sum.f += s2.f; }
+    }
     return { meals: picks, totals: sum };
   }
   function mealById(id) { return MEALS.find(function (m) { return m.id === id; }) || null; }
@@ -196,13 +267,30 @@
   function swapMeal(mealId, want, excludeIds) {
     var cur = mealById(mealId); if (!cur) return null;
     var ex = excludeIds || [];
-    var cands = MEALS.filter(function (m) { return m.slot === cur.slot && m.id !== mealId && ex.indexOf(m.id) < 0 && m.tags.indexOf("restaurant") < 0; });
+    var cands = MEALS.filter(function (m) { return m.slot === cur.slot && m.id !== mealId && ex.indexOf(m.id) < 0; });
     if (want === "cheaper") cands.sort(function (a, b) { return a.cost - b.cost; });
     else if (want === "faster") cands.sort(function (a, b) { return a.min - b.min; });
     else if (want === "filling") cands = cands.filter(function (m) { return m.tags.indexOf("füllend") >= 0; }).concat(cands);
     else if (want === "protein") cands.sort(function (a, b) { return (b.p / b.kcal) - (a.p / a.kcal); });
     else if (want === "family") cands = cands.filter(function (m) { return m.tags.indexOf("familie") >= 0; }).concat(cands);
-    var alt = cands[0] || null; if (!alt) return null;
+    /* Der Wunsch muss WIRKLICH erfüllt sein: rotiert wird nur unter den
+       Kandidaten, die gegenüber der aktuellen Mahlzeit tatsächlich billiger,
+       schneller bzw. proteinreicher sind. Sonst könnte die Rotation etwas
+       Langsameres unter dem Knopf "schneller" ausspielen. */
+    var erfuellt = cands.filter(function (m) {
+      if (want === "cheaper") return m.cost <= cur.cost;
+      if (want === "faster") return m.min < cur.min;
+      if (want === "protein") return (m.p / m.kcal) > (cur.p / cur.kcal);
+      if (want === "filling") return m.tags.indexOf("füllend") >= 0;
+      if (want === "family") return m.tags.indexOf("familie") >= 0;
+      return true;
+    });
+    if (erfuellt.length) cands = erfuellt;
+    /* Aus dem besten Drittel rotieren statt immer denselben Sieger zu
+       liefern: zweimal Tippen bringt zweimal etwas Neues. */
+    var top = cands.slice(0, Math.max(1, Math.ceil(cands.length / 3)));
+    var alt = rotate(top, daySeed() + (ex.length * 7), cur.id + want)[0] || null;
+    if (!alt) return null;
     return Object.assign({}, alt, { delta: { kcal: alt.kcal - cur.kcal, p: alt.p - cur.p }, replaced: cur.id });
   }
   function familyPortion(mealId) {
@@ -210,7 +298,7 @@
     return { name: m.name, servings: m.family.servings, note: m.family.note, yourServing: { kcal: m.kcal, protein: m.p } };
   }
   // §44 — Einkaufsliste mit AGGREGIERTEN Mengen (Wiederholungen addieren sich).
-  var ING_CAT = { protein: ["Skyr", "Eier", "Hähnchen", "Hack", "Lachs", "Quark", "Pute", "Whey", "Feta", "Rind", "Milch", "Thunfisch", "Garnelen", "Tofu", "Frischkäse", "Jerky", "Proteinpudding", "Steak"], carbs: ["Brot", "Reis", "Kartoffel", "Haferflocken", "Wrap", "Nudeln", "Linsen", "Fladenbrot", "Banane", "Honig", "Ciabatta", "Apfel", "Eiweißbrot", "Süßkartoffel"], produce: ["Beeren", "Tomate", "Brokkoli", "Bohnen", "Salat", "Gurke", "Paprika", "Zucchini", "Mais", "Champignons", "Spinat", "Erbsen", "Rucola", "Zwiebel", "Karotte", "Edamame", "Knoblauch", "Gewürzgurken"], fats: ["Nüsse", "Butter", "Olivenöl", "Leinöl", "Hummus", "Mandeln", "Erdnussmus", "Sesamöl", "Studentenfutter"], convenience: ["Passierte", "Sojasauce", "Kidneybohnen", "Kokosmilch", "Currypaste", "Kichererbsen", "Expressreis", "Gyros", "Joghurt", "Sauce", "Vinaigrette", "Zimt", "Schnittlauch", "Gouda"] };
+  var ING_CAT = { protein: ["Skyr", "Eier", "Hähnchen", "Hack", "Lachs", "Quark", "Pute", "Whey", "Feta", "Rind", "Milch", "Thunfisch", "Garnelen", "Tofu", "Frischkäse", "Jerky", "Proteinpudding", "Steak", "Kabeljau", "Schweinefilet", "Harzer", "Kochschinken", "Bergkäse", "Räucherlachs"], carbs: ["Brot", "Reis", "Kartoffel", "Haferflocken", "Wrap", "Nudeln", "Linsen", "Fladenbrot", "Banane", "Honig", "Ciabatta", "Apfel", "Eiweißbrot", "Süßkartoffel", "Quinoa", "Grieß", "Spätzle", "Cracker", "Milchreis"], produce: ["Beeren", "Tomate", "Brokkoli", "Bohnen", "Salat", "Gurke", "Paprika", "Zucchini", "Mais", "Champignons", "Spinat", "Erbsen", "Rucola", "Zwiebel", "Karotte", "Edamame", "Knoblauch", "Gewürzgurken", "Rotkohl", "Zuckerschoten", "Zitrone", "Avocado"], fats: ["Nüsse", "Butter", "Olivenöl", "Leinöl", "Hummus", "Mandeln", "Erdnussmus", "Sesamöl", "Studentenfutter", "Leinsamen"], convenience: ["Passierte", "Sojasauce", "Kidneybohnen", "Kokosmilch", "Currypaste", "Kichererbsen", "Expressreis", "Gyros", "Joghurt", "Sauce", "Vinaigrette", "Zimt", "Schnittlauch", "Gouda", "Kapern", "Tomatenmark", "Backkakao", "Meersalz"] };
   function shoppingList(mealIds) {
     var agg = {}; // name -> {q, u, cat}
     mealIds.forEach(function (id) {
@@ -732,7 +820,7 @@
     nutritionTargets: nutritionTargets, activityEstimate: activityEstimate, adaptiveTdee: adaptiveTdee,
     exampleDay: exampleDay, mealById: mealById, dayTotals: dayTotals, ingText: ingText,
     swapMeal: swapMeal, familyPortion: familyPortion, shoppingList: shoppingList,
-    dayLogTotals: dayLogTotals, weeklyAdherence: weeklyAdherence, nutritionAdjust: nutritionAdjust, MEALS: MEALS,
+    dayLogTotals: dayLogTotals, weeklyAdherence: weeklyAdherence, nutritionAdjust: nutritionAdjust, MEALS: MEALS, daySeed: daySeed, rotate: rotate,
     buildTrainingPlan: buildTrainingPlan, weeklyVolume: weeklyVolume, EXPERIENCE: EXPERIENCE, limitationSwap: limitationSwap,
     progressionTarget: progressionTarget, progressionPlan: progressionPlan, plateauCheck: plateauCheck, EXDB: EXDB,
     e1rm: e1rm, bestE1rm: bestE1rm, strengthTrend: strengthTrend, detectPRs: detectPRs, BENCHMARKS: BENCHMARKS,

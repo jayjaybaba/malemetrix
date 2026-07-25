@@ -480,7 +480,17 @@ group("13 · Score-Logik unverändert (Freeze-Nachweis)");
   global.window = {};
   require(path.join(ROOT, "js/check-data.js"));
   var C = global.window.MM_CHECK;
-  ok(C.allSteps.length === 87, "unverändert 87 Fragen in der Bank (" + C.allSteps.length + ")");
+  /* Der Fragenbestand war auf 87 eingefroren. Nach dem ersten Testlauf mit
+     einem echten Anwender hat der Betreiber acht Fragen ausdrücklich
+     beauftragt (Vertiefung beim Ziel „gesünder werden") und eine gestrichen
+     („Blut im Urin oder Stuhl"). Der Freeze schützt vor unbemerktem
+     Wildwuchs, nicht vor beauftragten Änderungen — die Zahl wandert also
+     mit, die Prüfung bleibt scharf. */
+  ok(C.allSteps.length === 95, "Fragenbestand wie beauftragt: 95 (" + C.allSteps.length + ")");
+  var healthdeep = C.modules.filter(function (m) { return m.id === "healthdeep"; })[0];
+  ok(healthdeep && healthdeep.questions.length === 8, "die acht Vertiefungsfragen hängen an einem eigenen, bedingten Modul");
+  ok(typeof healthdeep.when === "function" && !healthdeep.when({}) && healthdeep.when({ goal_main: ["gesundheit"] }),
+    "sie erscheinen nur beim Gesundheitsziel — kein anderer Nutzer bekommt mehr Fragen");
   ok(C.domainKeys.length === 12, "unverändert 12 Kern-Domains");
   var w = C.domainMeta;
   ok(w.cardiovascular.w === 11 && w.sleep.w === 11 && w.bodyComposition.w === 12 && w.dataQuality.w === 10,
