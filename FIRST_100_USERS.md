@@ -42,7 +42,7 @@ Gesundheitswerte (Repo-Lint erzwingt es).
 
 ## Beta-Betrieb
 
-- Kohorten-Flag + Version-Identifier: über SW-Version (`mm-v137`) + `MM.productionStatus()`.
+- Kohorten-Flag + Version-Identifier: über SW-Version (`mm-v138`) + `MM.productionStatus()`.
 - Feedback: In-Produkt „Was war heute nicht hilfreich?" (strukturiert, ohne sensiblen Kontext).
 - Diagnose-ID: nicht-sensible Session-ID im Bug-Report (keine Gesundheitsdaten).
 - Rollback: SW-Version + Git-Revert; Cloud-Features per Config-Flag abschaltbar.

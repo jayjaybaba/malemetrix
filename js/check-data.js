@@ -3034,7 +3034,7 @@ window.MM_CHECK = {
     sleep:      { label: "Schlaf",             href: "ebooks/schlaf-stack.html" },
     sleepStack: { label: "Schlaf-Stack",       href: "ebooks/schlaf-stack.html" },
     blood:      { label: "Blutwerte & Risiko", href: "ebooks/12-longevity-risk.html" },
-    hormones:   { label: "Hormone",            href: "ebooks/testosteron.html" },
+    hormones:   { label: "Hormone",            href: "protokoll.html" },
     sexual:     { label: "Sexuelle Gesundheit", href: "protokoll.html" },
     glp1:       { label: "GLP-1",              href: "protokoll.html" },
     stack:      { label: "Ultimate Stack",     href: "ebooks/ultimate-stack.html" },

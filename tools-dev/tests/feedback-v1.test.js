@@ -317,6 +317,45 @@ group("10 · Mahlzeiten: kein Restaurant, echte Varianz");
   ok(/nicht als Vorschlag|keine Empfehlungsliste/.test(fdb), "mit Begründung im Quelltext, warum sie bleiben");
 })();
 
+/* ==================================================================== 11 */
+group("11 · Kein Verweis führt in ein geschlossenes Kapitel");
+(function () {
+  var ZU = ["blueprint", "taeglich-trainieren", "schlaf-energie", "blutwerte-guide",
+    "testosteron", "glp1-agonisten", "supplements", "sexuelle-gesundheit",
+    "11-injektionen", "gewohnheiten"];
+
+  /* Die erste Fassung dieser Prüfung sah nur in drei bekannte Tabellen und
+     übersah deshalb C.CHAPTERS.hormones — der Link ging live und wurde erst
+     beim Abgleich mit der ausgelieferten Datei auffällig. Jetzt wird der
+     gesamte Quelltext nach href-Zielen durchsucht; eine neue Tabelle kann
+     sich nicht mehr daran vorbeischmuggeln. */
+  var src = read("js/check-data.js");
+  var offen = [];
+  ZU.forEach(function (z) {
+    var re = new RegExp('href: "ebooks/' + z + '\\.html"', "g");
+    var m = src.match(re);
+    if (m) offen.push(z + " (" + m.length + "x)");
+  });
+  ok(offen.length === 0, "keine Score-Verlinkung zeigt auf ein geschlossenes Kapitel" + (offen.length ? ": " + offen.join(", ") : ""));
+
+  /* Und jedes tatsächlich verlinkte Ziel muss existieren. */
+  var ziele = (src.match(/href: "(?:ebooks\/)?[a-z0-9-]+\.html"/g) || [])
+    .map(function (x) { return x.slice(7, -1); });
+  var fehlend = ziele.filter(function (h) { return !fs.existsSync(path.join(ROOT, h)); });
+  ok(ziele.length > 0 && fehlend.length === 0,
+    ziele.length + " Verlinkungsziele, alle vorhanden" + (fehlend.length ? " — fehlt: " + fehlend.join(", ") : ""));
+
+  /* Bibliothek, Sitemap und Verkaufsseite dürfen sie ebenfalls nicht mehr
+     als frei führen. */
+  var lib = read("ebooks.html"), sm = read("sitemap.xml");
+  ZU.forEach(function (z) {
+    ok(lib.indexOf("ebooks/" + z + ".html") < 0, "ebooks.html verlinkt " + z + " nicht mehr");
+    ok(sm.indexOf("ebooks/" + z + ".html") < 0, "sitemap.xml führt " + z + " nicht mehr");
+  });
+  ok(read("protokoll.html").indexOf("FREI LESEN") < 0, "die Verkaufsseite bewirbt kein Kapitel mehr als frei");
+  ok((read("protokoll.html").match(/IM PROTOKOLL/g) || []).length === 11, "alle elf Einträge sind als Produktbestandteil gekennzeichnet");
+})();
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 process.exit(failed ? 1 : 0);
