@@ -56,6 +56,18 @@ window.MM_EBOOKS = [
     gated: true
   },
   {
+    id: "selank",
+    kicker: { de: "MaleMetrix · Peptide & Neurochemie", en: "MaleMetrix · Peptides & Neurochemistry" },
+    cover: "linear-gradient(150deg,#0b2a3f,#05070b)",
+    badge: { de: "Neu · Peptide", en: "New · Peptides" },
+    title: { de: "Selank — Ruhe ohne Bremse", en: "Selank — calm without the brake" },
+    desc: { de: "Das komplette Ebook zum russischen Heptapeptid: Herkunft aus Tuftsin, die vier Wirkwege im Gehirn (GABA-Genexpression, Monoamine, Enkephalinase-Hemmung, BDNF) und was daraus an Nutzen entsteht — Stressresistenz, Fokus, Schlafanbahnung und Immunbalance. Plus: woran du Wirkung tatsächlich misst.",
+            en: "The complete ebook on the Russian heptapeptide: its tuftsin origin, the four pathways in the brain (GABA gene expression, monoamines, enkephalinase inhibition, BDNF) and the benefits that follow — stress resilience, focus, easier sleep onset and immune balance. Plus: how to actually measure the effect." },
+    minutes: 45,
+    read: "ebooks/selank.html",
+    gated: true
+  },
+  {
     id: "longevity-risk",
     kicker: { de: "MaleMetrix · Longevity", en: "MaleMetrix · Longevity" },
     cover: "linear-gradient(150deg,#08283a,#05070b)",
