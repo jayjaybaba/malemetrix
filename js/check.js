@@ -20,6 +20,51 @@
 
   function currentId() { return steps[state.idx] ? steps[state.idx].q.id : null; }
 
+  /* ======================================================================
+     TELEMETRIE-BRÜCKE (opt-in, datenminimierend)
+     Der Score kennt die Telemetrie nur über diese eine Funktion. Fällt das
+     Modul aus, ist es nicht geladen oder fehlt die Einwilligung, passiert
+     schlicht nichts — der Score läuft unverändert weiter.
+     Es werden AUSSCHLIESSLICH Abschnitts-/Fortschrittsdaten übergeben,
+     niemals Antworten, Statuswerte, Laborwerte oder Symptome.
+     ====================================================================== */
+  const TEL = () => (window.MM && MM.telemetry) ? MM.telemetry : null;
+  function tel(name, fields) { try { const t = TEL(); if (t) t.track(name, fields); } catch (e) {} }
+  function telOnce(key, name, fields) { try { const t = TEL(); if (t) t.trackOnce(key, name, fields); } catch (e) {} }
+  function telBase() {
+    const n = steps.length;
+    const t = TEL();
+    return {
+      question_index: state.idx + 1,
+      visible_question_count: n,
+      completion_percentage: n ? Math.round((state.idx / n) * 100) : 0,
+      route_length_bucket: t ? t.routeBucket(n) : undefined
+    };
+  }
+
+  /* Abschnittswechsel + Fortschritts-Checkpoints: bewusst NICHT pro Antwort.
+     Alle Marken laufen über trackOnce → Zurück-Navigation, Reload und
+     Rerender erzeugen keine Doppel-Events. */
+  let lastSectionId = null;
+  function telSection() {
+    const st = steps[state.idx];
+    if (!st) return;
+    const id = st.mod.id;
+    if (id === lastSectionId) return;
+    if (lastSectionId) {
+      telOnce("sec_done_" + lastSectionId, "score_section_completed",
+        Object.assign(telBase(), { section_id: lastSectionId }));
+    }
+    lastSectionId = id;
+    telOnce("sec_in_" + id, "score_section_entered",
+      Object.assign(telBase(), { section_id: id }));
+    const pct = telBase().completion_percentage;
+    [25, 50, 75].forEach(mark => {
+      if (pct >= mark) telOnce("cp_" + mark, "score_progress_checkpoint",
+        Object.assign(telBase(), { completion_percentage: mark }));
+    });
+  }
+
   /* Schrittliste neu bauen und dabei die aktuelle Frage nicht verlieren. */
   function resyncSteps(keepId) {
     const id = keepId || currentId();
@@ -83,6 +128,7 @@
     const { q } = steps[state.idx];
     const wrap = $("#wizBody");
     renderProgress();
+    telSection();
 
     let html = '<div class="q-block">';
     html += '<span class="q-module-tag">' + steps[state.idx].mod.label + '</span>';
@@ -296,6 +342,23 @@
     // Analytics-Invariante (§91.23): keine Gesundheits-/Score-WERTE an Analytics —
     // nur grobe Kategorien (Engpass-Domäne, Archetyp) für den Funnel.
     if (MM.track) MM.track("check_completed", { bottleneck: bottleneck.key, archetype: arch.id });
+    /* Kalibrierungs-Telemetrie: genau EIN Abschluss-Event pro Versuch.
+       Übertragen werden nur Ergebnis-Kategorien der Engine (Modus, Engpass,
+       Sicherheit, Anzahl Datenlücken) — keine einzige Antwort, kein Status. */
+    (function () {
+      const t = TEL();
+      const secs = t ? t.elapsedSeconds() : null;
+      telOnce("completed", "score_completed", {
+        visible_question_count: steps.length,
+        completion_percentage: 100,
+        route_length_bucket: t ? t.routeBucket(steps.length) : undefined,
+        result_mode: ev.goalRecommendation.mode,
+        primary_bottleneck_id: bn.domain,
+        assessment_confidence: String(ev.confidence.level || "").toLowerCase(),
+        completion_duration_bucket: t ? t.durationBucket(secs) : undefined,
+        data_gap_count: (ev.dataGaps || []).length
+      });
+    })();
     // OS-Event (§61): Graph/Dashboards aktualisieren sich live, ohne Reload.
     if (MM.os && MM.os.emit) MM.os.emit("SCORE_COMPLETED", { score: total, bottleneck: bottleneck.key });
     else { try { document.dispatchEvent(new CustomEvent("mm:os", { detail: { name: "SCORE_COMPLETED", payload: { score: total } } })); } catch (e) {} }
@@ -715,6 +778,33 @@
       '<a class="btn btn-dark btn-sm" href="' + scoreMailto + '" data-track="score_mail_click">✉️ Per E-Mail</a>' +
       '</div></div></div>';
 
+    /* ---------- V2-KALIBRIERUNG: TRIFFT DAS ERGEBNIS ZU? ----------
+       Kompakt, ohne Pflicht-Freitext. Zweck ist Kalibrierung der Engine,
+       nicht das Sammeln von Krankengeschichten. */
+    html += '<div class="card dash-block" id="scoreFeedback" style="margin-top:24px">' +
+      '<span class="card-num">TRIFFT DIESES ERGEBNIS AUF DICH ZU?</span>' +
+      '<p class="small muted" style="margin:4px 0 14px">Eine Antwort genügt. Sie hilft uns, den Score präziser zu machen — und wird ohne deine Antworten gespeichert.</p>' +
+      '<div class="option-grid" id="fbRating" style="grid-template-columns:repeat(3,1fr)">' +
+      [["yes", "JA"], ["partial", "TEILWEISE"], ["no", "NEIN"]].map(([v, l]) =>
+        '<button type="button" class="option-card" data-fb="' + v + '"><span>' + l + '</span></button>').join('') +
+      '</div>' +
+      '<div id="fbReasons" style="display:none;margin-top:16px">' +
+      '<p class="small muted" style="margin:0 0 10px">Was genau passt nicht? Mehrfachauswahl, alles optional.</p>' +
+      '<div class="option-grid two-col">' +
+      [["bottleneck_wrong", "Der primäre Engpass passt nicht"],
+       ["mode_wrong", "CUT / RECOMP / BUILD / HEALTH FIRST passt nicht"],
+       ["too_generic", "Das Ergebnis ist zu allgemein"],
+       ["context_missing", "Wichtiger Kontext fehlt"],
+       ["reasoning_unclear", "Die Begründung ist unklar"],
+       ["too_long", "Der Score war zu lang"],
+       ["other", "Andere Ursache"]].map(([v, l]) =>
+        '<button type="button" class="option-card" data-fbreason="' + v + '"><span>' + l + '</span></button>').join('') +
+      '</div>' +
+      '<button class="btn btn-primary btn-sm" id="fbSubmit" style="margin-top:14px;min-height:44px">Feedback senden</button>' +
+      '</div>' +
+      '<p class="small muted" id="fbThanks" style="display:none;margin:12px 0 0">Danke. Dein Feedback hilft, den Score präziser zu kalibrieren.</p>' +
+      '</div>';
+
     /* ---------- 7. TEILBARE SCORE-CARD ---------- */
     html += '<h3 class="h-card" style="margin:38px 0 14px">Deine Score-Card</h3>' +
       '<div class="mm-scorecard" id="scoreCard">' +
@@ -750,6 +840,68 @@
     el.innerHTML = html;
     if (MM.renderTrust) MM.renderTrust();
 
+    /* ---------- Telemetrie der Ergebnisseite (opt-in, kategorial) ---------- */
+    (function () {
+      const t = TEL();
+      const meta = {
+        result_mode: V.goalRecommendation && V.goalRecommendation.mode,
+        primary_bottleneck_id: V.primaryBottleneck && V.primaryBottleneck.domain,
+        assessment_confidence: String((V.confidence && V.confidence.level) || "").toLowerCase(),
+        data_gap_count: (V.dataGaps || []).length
+      };
+      telOnce("result_viewed", "score_result_viewed", meta);
+
+      /* CTA-Klicks: nur die stabile ID aus data-track, nie Linktext oder Ziel. */
+      el.addEventListener("click", (e) => {
+        const a = e.target.closest("[data-track]");
+        if (!a) return;
+        tel("score_cta_clicked", { cta_id: (a.getAttribute("data-track") || "").slice(0, 40) });
+      });
+
+      /* Feedback-Modul */
+      const rateWrap = el.querySelector("#fbRating");
+      const reasons = el.querySelector("#fbReasons");
+      const thanks = el.querySelector("#fbThanks");
+      let rating = null;
+      const picked = new Set();
+
+      function submitFeedback() {
+        if (!rating) return;
+        tel("score_result_feedback_submitted", Object.assign({}, meta, {
+          feedback_rating: rating,
+          feedback_reason_codes: Array.from(picked),
+          completion_duration_bucket: t ? t.durationBucket(t.elapsedSeconds()) : undefined
+        }));
+        if (MM.track) MM.track("score_feedback_" + rating);
+        if (rateWrap) rateWrap.style.pointerEvents = "none";
+        if (reasons) reasons.style.display = "none";
+        if (thanks) thanks.style.display = "";
+        if (t) t.flush();
+      }
+
+      if (rateWrap) {
+        rateWrap.querySelectorAll("[data-fb]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            rating = btn.dataset.fb;
+            rateWrap.querySelectorAll("[data-fb]").forEach(b => b.classList.toggle("selected", b === btn));
+            if (rating === "yes") submitFeedback();
+            else if (reasons) reasons.style.display = "";
+          });
+        });
+      }
+      if (reasons) {
+        reasons.querySelectorAll("[data-fbreason]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const v = btn.dataset.fbreason;
+            if (picked.has(v)) picked.delete(v); else picked.add(v);
+            btn.classList.toggle("selected", picked.has(v));
+          });
+        });
+        const sub = el.querySelector("#fbSubmit");
+        if (sub) sub.addEventListener("click", submitFeedback);
+      }
+    })();
+
     /* Ring animieren */
     requestAnimationFrame(() => {
       setTimeout(() => {
@@ -770,7 +922,9 @@
 
     $("#btnEmailResult").addEventListener("click", () => {
       const f = $("#emailForm");
-      f.style.display = f.style.display === "none" ? "" : "none";
+      const opening = f.style.display === "none";
+      f.style.display = opening ? "" : "none";
+      if (opening) telOnce("email_opened", "score_email_result_opened", {});
     });
 
     $("#btnSendResult").addEventListener("click", async () => {
@@ -788,6 +942,8 @@
       };
       keysAll.forEach(k => payload[C.moduleNames[k]] = r.scores[k] + "/100");
       const res = await MM.sendForm("MaleMetrix Score: " + r.total + "/100 — " + (name || email), payload);
+      /* Nur die Tatsache des Absendens — niemals Name oder E-Mail. */
+      tel("score_email_result_submitted", {});
       MM.toast(res.viaMailto ? "E-Mail-Programm geöffnet" : "Ergebnis gesendet — check dein Postfach");
     });
 
@@ -840,8 +996,31 @@
     });
     checkConsent();
 
+    /* Optionale Statistik-Einwilligung — bewusst NICHT required.
+       Ohne Häkchen wird nichts übertragen; der Score ist identisch. */
+    const telBox = document.getElementById("consentTelemetry");
+    if (telBox) {
+      const t0 = TEL();
+      telBox.checked = !!(t0 && t0.consent());
+      telBox.addEventListener("change", () => {
+        telBox.closest(".checkbox-row").classList.toggle("checked", telBox.checked);
+        const t = TEL();
+        if (t) t.setConsent(telBox.checked);
+      });
+    }
+
     btnConsent.addEventListener("click", () => {
       if (MM.track) MM.track("check_started");
+      const t = TEL();
+      const hadDraft = Object.keys(state.answers || {}).length > 0;
+      if (t) {
+        /* Frischer Versuch bekommt eine neue Zufalls-ID; ein fortgesetzter
+           Entwurf behält seine, damit der Funnel nicht doppelt zählt. */
+        if (!hadDraft || !t.attemptId()) t.startAttempt();
+      }
+      resyncSteps();
+      telOnce("started", "score_started", telBase());
+      if (hadDraft) telOnce("resumed", "score_resumed", telBase());
       show("checkWizard");
       renderStep();
     });

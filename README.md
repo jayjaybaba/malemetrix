@@ -33,6 +33,10 @@
 3. **Rechtliches ausfüllen:** In [impressum.html](impressum.html), [datenschutz.html](datenschutz.html), [agb.html](agb.html) alle `[PLATZHALTER]` ersetzen. ⚠️ Impressum ist Pflicht nach § 5 DDG. AGB/Datenschutz idealerweise anwaltlich prüfen lassen.
 4. **Hochladen:** Kompletten Ordner zu Netlify (Drag & Drop), Vercel, GitHub Pages oder Webspace. Domain verbinden — fertig.
 
+> **Produktion (dieses Repository):** GitHub Pages baut aus **`main` / root**.
+> Deploy = Push auf `main`. `master` ist nur ein Spiegel und deployt nichts.
+> Verbindliche Regeln und Verifikation: [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## Neues Ebook hinzufügen (ohne Code zu schreiben)
 
 Die Ebook-Bibliothek ist **datengetrieben** — du pflegst nur eine Liste, der Rest baut sich von selbst.

@@ -97,7 +97,7 @@
       </div>
 
       <button class="btn btn-primary btn-lg btn-arrow" id="btnStartCheck" data-track="score_start_click">MaleMetrix Score starten</button>
-      <p class="small" style="color:var(--muted-2);margin-top:18px">Deine Antworten werden nur in deinem Browser gespeichert und nicht automatisch übertragen.</p>
+      <p class="small" style="color:var(--muted-2);margin-top:18px">Deine Antworten werden nur in deinem Browser gespeichert und nicht an uns übertragen. Eine anonyme Nutzungsstatistik ohne Antworten kannst du im nächsten Schritt optional erlauben.</p>
     </div>
   </section>
 
@@ -127,9 +127,16 @@
         </label>
       </div>
 
+      <div style="display:grid;gap:12px;margin-bottom:22px">
+        <label class="checkbox-row">
+          <input type="checkbox" id="consentTelemetry">
+          <span><strong>Optional:</strong> anonyme Nutzungsstatistik erlauben. Damit sehen wir, an welcher Stelle der Score zu lang wird — <strong>ohne deine Antworten</strong>. Übertragen werden nur Abschnittsnummer, Fortschritt, Dauer und Gerätetyp (Handy/Tablet/Desktop), verknüpft mit einer zufälligen Kennung. <strong>Keine Antworten, keine Blutwerte, keine Substanzen, kein Status, kein Name, keine E-Mail.</strong> Du kannst hier auch einfach weiterklicken — der Score funktioniert identisch.</span>
+        </label>
+      </div>
+
       <div class="alert alert-info">
         <span class="alert-icon">🔒</span>
-        <div>Deine Antworten bleiben auf deinem Gerät. Nichts wird automatisch an uns übertragen — nur wenn du am Ende aktiv „Ergebnis per E-Mail“ wählst.</div>
+        <div>Deine Antworten bleiben auf deinem Gerät. Sie werden nicht an uns übertragen — nur wenn du am Ende aktiv „Ergebnis per E-Mail“ wählst. Die optionale Nutzungsstatistik oben enthält <strong>keine</strong> Antworten und ist jederzeit abwählbar.</div>
       </div>
 
       <button class="btn btn-primary btn-lg" id="btnConsentNext" disabled style="margin-top:20px">Verstanden — Score ermitteln →</button>
@@ -221,6 +228,7 @@
 <script src="js/main.js"></script>
 <script src="js/account.js"></script>
 <script>try{window.MM&&MM.account&&MM.account.init();}catch(e){}</script>
+<script src="js/score-telemetry.js"></script>
 <script src="js/check-data.js"></script>
 <script src="js/check.js"></script>
 </body>

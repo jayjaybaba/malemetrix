@@ -1,5 +1,10 @@
 # SCORE V2 — Logik, Gewichte, Verzweigung
 
+> **KALIBRIERUNGS-FREEZE AKTIV.** Fragen, Gewichte, Schwellen und die
+> CUT/RECOMP/BUILD/HEALTH-FIRST-Logik sind eingefroren. Änderungen nur bei
+> reproduzierbarem Fehler oder belegtem Nutzungsproblem — Pflichtformular und
+> Begründung siehe **[SCORE_V2_CALIBRATION.md](SCORE_V2_CALIBRATION.md)**.
+
 Entwicklerdokumentation der adaptiven Score-Engine.
 Quellcode: `js/check-data.js` (Fragen + Engine), `js/check.js` (Wizard + Ergebnis),
 `js/report.js` (Report), Tests: `tools-dev/tests/score-v2.test.js`.

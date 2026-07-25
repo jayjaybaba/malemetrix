@@ -162,8 +162,12 @@ Zweck: Opus 4.8 (oder jede neue Session) arbeitet NUR mit dieser Datei sofort we
 # CURRENT HEAD
 
 Nach Commit "P13-A1" (siehe git log --oneline -5). Branch:
-`claude/malemetrix-phase-6-execution-przdvm` — master/main werden immer per
-`git push origin HEAD:master HEAD:main` synchron gehalten (FF-only, nie force).
+`claude/malemetrix-phase-6-execution-przdvm`.
+
+PRODUKTIONSBRANCH IST `main` (GitHub Pages: main / root) — siehe DEPLOYMENT.md.
+Deploy = `git push origin HEAD:main` (FF-only, nie force). `master` ist nur noch
+ein Kompatibilitäts-Spiegel und deployt NICHTS; er wird mitgezogen, aber nicht
+mehr als Deploy-Weg behandelt.
 
 # COMPLETED (Phase 13)
 
@@ -292,7 +296,9 @@ Nach Commit "P13-A1" (siehe git log --oneline -5). Branch:
 4. Nach jedem Paket: Suiten laufen lassen, sw.js bump, Commit im Stil der
    letzten Commits (deutsch, Co-Authored-By Claude Opus 4.8 + Session-Link),
    `git push -u origin claude/malemetrix-phase-6-execution-przdvm &&
-   git push origin HEAD:master HEAD:main`, diese Datei aktualisieren.
+   git push origin HEAD:main` (DAS ist der Deploy; `HEAD:master` optional als
+   Spiegel, deployt nicht), Deploy per last-modified verifizieren, diese Datei
+   aktualisieren.
 
 # DO NOT REGRESS
 
