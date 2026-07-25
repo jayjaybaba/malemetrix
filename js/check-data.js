@@ -5,7 +5,12 @@
 
 window.MM_CHECK = {
 
-  /* ---------- Gewichtung der 7 Bereiche (Summe = 100) ---------- */
+  /* ---------- LEGACY: Gewichtung der ursprünglichen 7 Bereiche ----------
+     ACHTUNG: Dieses Objekt steuert NICHTS mehr. Der Score rechnet seit V2
+     über C.domainMeta[d].w (zwölf Domains, Summe 114) in C.totalFrom().
+     Es bleibt nur erhalten, weil tools-dev/tests/score-engine.test.js die
+     historischen Schlüssel prüft. Wer die Gewichtung ändern will, ändert
+     domainMeta — hier zu editieren hat keine Wirkung. */
   weights: { body: 18, fuel: 18, strength: 15, recovery: 16, blood: 10, drive: 11, execution: 12 },
 
   moduleNames: {

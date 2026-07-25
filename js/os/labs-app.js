@@ -144,7 +144,7 @@
       '<label class="lab-chk"><input type="checkbox" id="laFast"> nüchtern gemessen</label>' +
       '<button id="laSave" class="btn btn-primary" style="margin-top:12px">Wert speichern</button><p id="laMsg" class="small" style="display:none;margin-top:8px"></p></div>' +
       // §7/§63 Import-Scaffold (kein Fake-OCR)
-      '<div class="lab-import"><span class="tag">PDF / FOTO IMPORT</span><p class="small muted">Upload → Werte prüfen → bestätigen. Automatische Extraktion wird ehrlich erst aktiv, wenn ein echter Parser angebunden ist — nichts wird ungeprüft gespeichert.</p><label class="lab-upload"><input type="file" id="laFile" accept="application/pdf,image/*" hidden><span>Datei wählen</span></label><div id="laReview"></div></div>' +
+      '<div class="lab-import"><span class="tag">PDF / FOTO IMPORT</span><p class="small muted">Upload → Werte prüfen → bestätigen. Automatische Extraktion wird ehrlich erst aktiv, wenn ein echter Parser angebunden ist — nichts wird ungeprüft gespeichert.</p><label class="lab-upload has-file"><input type="file" id="laFile" accept="application/pdf,image/*" class="file-hidden"><span>Datei wählen</span></label><div id="laReview"></div></div>' +
       '</section>';
   }
 

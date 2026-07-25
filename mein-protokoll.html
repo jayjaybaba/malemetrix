@@ -51,7 +51,11 @@
 
 <main class="page-head" id="myTop" style="min-height:70vh">
   <div class="container container-narrow">
-    <div id="mmDash" aria-live="polite"></div>
+    <!-- Kurze Statusmeldungen der App. Die Ansicht selbst ist bewusst KEINE
+         Live-Region: sie wird bei jedem Navigationsklick vollständig ersetzt,
+         was den Screenreader die komplette Seite vorlesen ließe. -->
+    <div id="mmStatus" role="status" aria-live="polite" class="sr-only"></div>
+    <div id="mmDash"></div>
   </div>
 </main>
 
@@ -72,7 +76,6 @@
 <script src="js/shop-data.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/main.js"></script>
-<script src="js/check-data.js"></script>
 <script src="js/account.js"></script>
 <script src="js/os/program-view.js"></script>
 <script src="js/os/os-core.js"></script>

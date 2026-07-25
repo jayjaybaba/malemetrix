@@ -79,7 +79,11 @@
           <button data-u="imperial">lb</button>
         </div>
         <button class="btn btn-dark btn-sm" id="trkExport" data-i18n="trk.export">Daten sichern</button>
-        <label class="btn btn-dark btn-sm" style="cursor:pointer" data-i18n="trk.import">Daten laden<input type="file" id="trkImport" accept="application/json" style="display:none"></label>
+        <!-- data-i18n gehört auf das <span>, NICHT auf das <label>: js/i18n.js
+             übersetzt per textContent, was jedes Kindelement entfernt. Mit
+             data-i18n am Label löschte der Sprachlauf das Datei-Feld — der
+             Import war damit vollständig tot, unabhängig vom Klick. -->
+        <label class="btn btn-dark btn-sm has-file" style="cursor:pointer"><span data-i18n="trk.import">Daten laden</span><input type="file" id="trkImport" accept="application/json" class="file-hidden"></label>
       </div>
       <div id="trkApp"></div>
     </div>

@@ -47,6 +47,11 @@
     if (!t) {
       t = document.createElement("div");
       t.className = "toast";
+      /* Ohne diese drei Attribute ist jede Bestätigung ("Gespeichert",
+         "In Zwischenablage kopiert") für Screenreader nicht existent. */
+      t.setAttribute("role", "status");
+      t.setAttribute("aria-live", "polite");
+      t.setAttribute("aria-atomic", "true");
       t.innerHTML = '<span class="toast-icon">✓</span><span class="toast-msg"></span>';
       document.body.appendChild(t);
     }
@@ -434,8 +439,27 @@
     // PWA: Service Worker registrieren (nur über http/https)
     try {
       if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
-        var swPath = location.pathname.indexOf("/ebooks/") !== -1 || location.pathname.indexOf("/blog/") !== -1 ? "../sw.js" : "sw.js";
-        navigator.serviceWorker.register(swPath).catch(function () {});
+        var sub = location.pathname.indexOf("/ebooks/") !== -1 || location.pathname.indexOf("/blog/") !== -1;
+        var swPath = sub ? "../sw.js" : "sw.js";
+        /* App-Seiten: hier zahlt sich der Cache aus. Marketing-Seiten nicht —
+           dort kostet die Registrierung ~475 KB Vorab-Transfer für Dateien,
+           die der Besucher womöglich nie braucht. */
+        var APP_PAGES = ["mein-protokoll.html", "tracker.html", "labor.html", "dinner.html",
+          "kurs-programm.html", "check.html", "report.html", "tools.html", "ebooks.html"];
+        var file = location.pathname.split("/").pop() || "index.html";
+        var installed = false;
+        try { installed = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true; } catch (e) {}
+        var isApp = APP_PAGES.indexOf(file) !== -1 || sub || installed;
+        if (isApp) {
+          navigator.serviceWorker.register(swPath).catch(function () {});
+        } else {
+          /* Wer den SW schon hat, soll ihn trotzdem aktualisiert bekommen —
+             sonst bliebe ein Besucher, der nur noch die Startseite öffnet,
+             dauerhaft auf einer alten Version hängen. */
+          navigator.serviceWorker.getRegistration().then(function (reg) {
+            if (reg) reg.update();
+          }).catch(function () {});
+        }
       }
     } catch (e) {}
   }

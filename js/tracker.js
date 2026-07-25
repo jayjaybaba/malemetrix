@@ -58,8 +58,6 @@
   function exById(id) { return allExercises().find(e => e.id === id) || { id, muscle: "other", equip: "other", name: { de: id, en: id } }; }
   function muscleLabel(m) { return tr(MM_TRK_MUSCLES[m] || { de: m, en: m }); }
   const e1RM = (w, r) => r <= 0 ? 0 : w * (1 + r / 30);
-  function exType(id) { return exById(id).type || "weight_reps"; }
-
   function fmtDate(iso) {
     const d = new Date(iso);
     return d.toLocaleDateString(LANG() === "de" ? "de-DE" : "en-US", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
@@ -222,10 +220,10 @@
         tpls.map(t => '<option value="' + t.id + '"' + (gymDays[String(wd)] === t.id ? " selected" : "") + '>' + tr(t.name) + '</option>').join("") + '</select>';
       return '<div class="plan-row"><label class="plan-day"><input type="checkbox" data-plday="' + wd + '"' + (active ? " checked" : "") + '> ' + names[i] + '</label>' + sel + '</div>';
     }).join("");
-    modal.innerHTML = '<div class="modal-box"><div class="modal-head"><h3 class="h-card">📅 ' + T("Dein Wochenplan", "Your weekly plan") + '</h3><button class="cart-close" id="plnClose">✕</button></div>' +
+    modal.innerHTML = '<div class="modal-box"><div class="modal-head"><h3 class="h-card">📅 ' + T("Dein Wochenplan", "Your weekly plan") + '</h3><button class="cart-close" id="plnClose" aria-label="' + T("Wochenplan schließen", "Close weekly plan") + '">✕</button></div>' +
       '<p class="muted" style="font-size:0.88rem;margin-bottom:14px">' + T("Das MaleMetrix-Prinzip: jeden Tag 20–30 min Bewegung, an 2–3 Tagen Gym. Wähle deine Gym-Tage — an allen anderen zählt die tägliche Bewegung.", "The MaleMetrix principle: 20–30 min movement every day, gym on 2–3 days. Pick your gym days — every other day counts daily movement.") + '</p>' +
       rows +
-      '<div class="field" style="margin-top:14px"><label>' + T("Tägliches Bewegungsziel (Minuten)", "Daily movement goal (minutes)") + '</label>' +
+      '<div class="field" style="margin-top:14px"><label for="plnMin">' + T("Tägliches Bewegungsziel (Minuten)", "Daily movement goal (minutes)") + '</label>' +
       '<input type="number" id="plnMin" inputmode="numeric" value="' + (plan.dailyMin || 25) + '" min="10" max="90"></div>' +
       '<button class="btn btn-primary btn-block" id="plnSave" style="margin-top:10px">' + T("Plan speichern", "Save plan") + '</button></div>';
     modal.classList.add("open");
@@ -373,7 +371,8 @@
           ? (isTime ? (prev[si].reps + "s") : (isBW ? (prev[si].reps + "×") : (dispW(prev[si].weight) + "×" + prev[si].reps)))
           : "—";
         const setE1 = (!set.warmup && set.done && set.weight > 0) ? e1RM(set.weight, set.reps) : 0;
-        const isPR = setE1 > 0 && pr > 0 && Math.abs(setE1 - pr) < 0.01;
+        // Rekord heißt ÜBER dem bisherigen Bestwert — nicht exakt gleichauf.
+        const isPR = setE1 > 0 && pr > 0 && setE1 > pr + 0.01;
         // Overload-Hinweis vs. letztes Mal (gleicher Satz-Index)
         let cue = "";
         if (!set.warmup && prev && prev[si] && !isTime) {
@@ -404,7 +403,7 @@
     });
 
     html += '<button class="btn btn-ghost btn-block" id="addExercise" style="margin-top:8px">+ ' + T("Übung hinzufügen", "Add exercise") + '</button>' +
-      '<div class="field" style="margin-top:16px"><label>' + T("Notiz zur Einheit", "Session note") + '</label>' +
+      '<div class="field" style="margin-top:16px"><label for="sessNote">' + T("Notiz zur Einheit", "Session note") + '</label>' +
       '<textarea id="sessNote" rows="2" placeholder="' + T("z. B. gutes Gefühl, linkes Knie beobachten…", "e.g. felt strong, watch left knee…") + '" style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card-2);color:var(--text);font-family:inherit;resize:vertical">' + (active.note ? String(active.note).replace(/</g, "&lt;") : "") + '</textarea></div>';
     p.innerHTML = html;
 
@@ -460,7 +459,17 @@
     }));
   }
 
+  /* Eine laufende Einheit wird NICHT stillschweigend überschrieben.
+     Der Verwerfen-Knopf fragt nach — das Starten einer neuen Einheit tat es
+     nicht und hat das Log kommentarlos gelöscht. */
+  function mayReplaceActive() {
+    if (!S.active()) return true;
+    return confirm(T("Es läuft noch eine Einheit. Sie geht dabei verloren. Trotzdem neu starten?",
+      "A workout is still running. It will be lost. Start a new one anyway?"));
+  }
+
   function startSession(tplId) {
+    if (!mayReplaceActive()) return;
     const tpl = tplId ? MM_TRK_TEMPLATES.concat(S.templates()).find(t => t.id === tplId) : null;
     const active = {
       id: "s" + Date.now(),
@@ -475,6 +484,7 @@
 
   function repeatSession(sess) {
     if (!sess) return;
+    if (!mayReplaceActive()) return;
     const active = {
       id: "s" + Date.now(), startedAt: Date.now(), date: new Date().toISOString(),
       name: sess.name || (T("Training", "Workout") + " " + fmtShort(new Date().toISOString())),
@@ -528,7 +538,7 @@
     const chips = Object.keys(MM_TRK_MUSCLES).map(m =>
       '<button class="mfilter" data-mf="' + m + '">' + muscleLabel(m) + '</button>').join("");
     modal.innerHTML = '<div class="modal-box"><div class="modal-head"><h3 class="h-card">' + T("Übung wählen", "Choose exercise") + '</h3>' +
-      '<button class="cart-close" id="exClose">✕</button></div>' +
+      '<button class="cart-close" id="exClose" aria-label="' + T("Übungsauswahl schließen", "Close exercise picker") + '">✕</button></div>' +
       '<input type="text" class="ex-picker-search" id="exSearch" placeholder="' + T("Suchen oder eigene anlegen…", "Search or create your own…") + '">' +
       '<div class="mfilter-row"><button class="mfilter active" data-mf="">' + T("Alle", "All") + '</button>' + chips + '</div>' +
       '<div class="ex-picker-list"></div>' +
@@ -588,9 +598,9 @@
       }
       modal.querySelector("#plateOut").innerHTML = out;
     }
-    modal.innerHTML = '<div class="modal-box"><div class="modal-head"><h3 class="h-card">🏋️ ' + T("Scheiben-Rechner", "Plate calculator") + '</h3><button class="cart-close" id="plClose">✕</button></div>' +
-      '<div class="form-row"><div class="field"><label>' + T("Zielgewicht", "Target weight") + ' (' + massU() + ')</label><input type="number" inputmode="decimal" id="plTotal" value="' + (prefillKg ? dispW(prefillKg) : "") + '" placeholder="' + (units() === "imperial" ? "225" : "100") + '"></div>' +
-      '<div class="field"><label>' + T("Stange", "Bar") + ' (' + massU() + ')</label><input type="number" inputmode="decimal" id="plBar" value="' + dispW(barKg) + '"></div></div>' +
+    modal.innerHTML = '<div class="modal-box"><div class="modal-head"><h3 class="h-card">🏋️ ' + T("Scheiben-Rechner", "Plate calculator") + '</h3><button class="cart-close" id="plClose" aria-label="' + T("Scheiben-Rechner schließen", "Close plate calculator") + '">✕</button></div>' +
+      '<div class="form-row"><div class="field"><label for="plTotal">' + T("Zielgewicht", "Target weight") + ' (' + massU() + ')</label><input type="number" inputmode="decimal" id="plTotal" value="' + (prefillKg ? dispW(prefillKg) : "") + '" placeholder="' + (units() === "imperial" ? "225" : "100") + '"></div>' +
+      '<div class="field"><label for="plBar">' + T("Stange", "Bar") + ' (' + massU() + ')</label><input type="number" inputmode="decimal" id="plBar" value="' + dispW(barKg) + '"></div></div>' +
       '<div id="plateOut" style="margin-top:8px"></div></div>';
     modal.classList.add("open");
     modal.querySelector("#plClose").addEventListener("click", () => closeModal("plateModal"));
@@ -647,7 +657,7 @@
         (metric.length >= 2 ? '<div style="margin:16px 0"><div class="muted small" style="margin-bottom:6px">' + (type === "weight_reps" ? T("Geschätztes 1RM über Zeit", "Estimated 1RM over time") : T("Beste Wiederholungen über Zeit", "Best reps over time")) + '</div>' + chart + '</div>' : '') +
         '<div style="margin-top:8px">' + rows + '</div>';
     }
-    modal.innerHTML = '<div class="modal-box"><div class="modal-head"><h3 class="h-card">' + tr(meta.name) + '</h3><button class="cart-close" id="exdClose">✕</button></div>' +
+    modal.innerHTML = '<div class="modal-box"><div class="modal-head"><h3 class="h-card">' + tr(meta.name) + '</h3><button class="cart-close" id="exdClose" aria-label="' + T("Übungsdetails schließen", "Close exercise details") + '">✕</button></div>' +
       '<span class="ex-muscle-tag" style="margin-bottom:14px;display:inline-block">' + muscleLabel(meta.muscle) + '</span>' + body + '</div>';
     modal.classList.add("open");
     modal.querySelector("#exdClose").addEventListener("click", () => closeModal("exDetailModal"));
@@ -859,19 +869,23 @@
     }).join("");
   }
   function renderSleep(p) {
-    var today = new Date().toISOString().slice(0, 10);
+    /* Lokales Datum, nicht UTC: zwischen 00:00 und 02:00 Ortszeit landete
+       der Eintrag sonst auf dem Vortag — Streak, Wochenkalender und die
+       Heute-Karte blieben auf "nichts getan", und die Schlaf-Dedup
+       überschrieb den echten Vortagseintrag. */
+    var today = localYmd(new Date());
     p.innerHTML =
       '<div class="card" style="margin-bottom:20px"><h3 class="h-card" style="margin-bottom:6px">' + T("Schlaf erfassen", "Log sleep") + '</h3>' +
       '<p class="muted small" style="margin:0 0 16px">' + T("Schlaf ist dein größter Hormon- und Erholungs-Hebel. Trag ihn morgens in 20 Sekunden ein — der Verlauf zeigt dir dein echtes Muster.", "Sleep is your biggest hormone and recovery lever. Log it in 20 seconds each morning — the history shows your real pattern.") + '</p>' +
-      '<div class="form-row"><div class="field"><label>' + T("Nacht auf", "Night of") + '</label><input type="date" id="slDate" value="' + today + '"></div>' +
-      '<div class="field"><label>' + T("Schlafdauer", "Sleep duration") + ' (h)</label><input type="number" inputmode="decimal" step="0.25" id="slDur" placeholder="7.5"></div></div>' +
-      '<div class="form-row"><div class="field"><label>' + T("Subjektive Qualität", "Subjective quality") + '</label><select id="slQual">' + optList(SLEEP_QUALITY, 3) + '</select></div>' +
-      '<div class="field"><label>' + T("Morgendliche Erholung", "Morning recovery") + '</label><select id="slMorning">' + optList(SLEEP_QUALITY, 3) + '</select></div></div>' +
-      '<div class="form-row"><div class="field"><label>' + T("Einschlafen", "Falling asleep") + '</label><select id="slLat">' + optList(SLEEP_LATENCY, "normal") + '</select></div>' +
-      '<div class="field"><label>' + T("Nächtliches Erwachen", "Night waking") + '</label><select id="slWake">' + optList(SLEEP_WAKING, "none") + '</select></div></div>' +
-      '<div class="form-row"><div class="field"><label>' + T("Ruhepuls", "Resting HR") + ' (bpm) · <span class="muted">' + T("optional", "optional") + '</span></label><input type="number" inputmode="numeric" id="slRhr" placeholder="—"></div>' +
-      '<div class="field"><label>HRV (ms) · <span class="muted">' + T("optional", "optional") + '</span></label><input type="number" inputmode="numeric" id="slHrv" placeholder="—"></div></div>' +
-      '<div class="field" style="margin-bottom:14px"><label>' + T("Notiz", "Note") + ' · <span class="muted">' + T("optional", "optional") + '</span></label><input type="text" id="slNote" placeholder="' + T("z. B. spät gegessen, Alkohol, Stress …", "e.g. late meal, alcohol, stress …") + '"></div>' +
+      '<div class="form-row"><div class="field"><label for="slDate">' + T("Nacht auf", "Night of") + '</label><input type="date" id="slDate" value="' + today + '"></div>' +
+      '<div class="field"><label for="slDur">' + T("Schlafdauer", "Sleep duration") + ' (h)</label><input type="number" inputmode="decimal" step="0.25" id="slDur" placeholder="7.5"></div></div>' +
+      '<div class="form-row"><div class="field"><label for="slQual">' + T("Subjektive Qualität", "Subjective quality") + '</label><select id="slQual">' + optList(SLEEP_QUALITY, 3) + '</select></div>' +
+      '<div class="field"><label for="slMorning">' + T("Morgendliche Erholung", "Morning recovery") + '</label><select id="slMorning">' + optList(SLEEP_QUALITY, 3) + '</select></div></div>' +
+      '<div class="form-row"><div class="field"><label for="slLat">' + T("Einschlafen", "Falling asleep") + '</label><select id="slLat">' + optList(SLEEP_LATENCY, "normal") + '</select></div>' +
+      '<div class="field"><label for="slWake">' + T("Nächtliches Erwachen", "Night waking") + '</label><select id="slWake">' + optList(SLEEP_WAKING, "none") + '</select></div></div>' +
+      '<div class="form-row"><div class="field"><label for="slRhr">' + T("Ruhepuls", "Resting HR") + ' (bpm) · <span class="muted">' + T("optional", "optional") + '</span></label><input type="number" inputmode="numeric" id="slRhr" placeholder="—"></div>' +
+      '<div class="field"><label for="slHrv">HRV (ms) · <span class="muted">' + T("optional", "optional") + '</span></label><input type="number" inputmode="numeric" id="slHrv" placeholder="—"></div></div>' +
+      '<div class="field" style="margin-bottom:14px"><label for="slNote">' + T("Notiz", "Note") + ' · <span class="muted">' + T("optional", "optional") + '</span></label><input type="text" id="slNote" placeholder="' + T("z. B. spät gegessen, Alkohol, Stress …", "e.g. late meal, alcohol, stress …") + '"></div>' +
       '<button class="btn btn-primary" id="slSave">' + T("Schlaf speichern", "Save sleep") + '</button></div>' +
       '<div id="sleepInsight"></div>' +
       '<div id="sleepList"></div>';
@@ -969,12 +983,12 @@
     const distLabel = units() === "imperial" ? "mi" : "km";
     p.innerHTML =
       '<div class="card" style="margin-bottom:20px"><h3 class="h-card" style="margin-bottom:16px">' + T("Cardio-Einheit erfassen", "Log a cardio session") + '</h3>' +
-      '<div class="form-row"><div class="field"><label>' + T("Art", "Type") + '</label><select id="cdType">' +
+      '<div class="form-row"><div class="field"><label for="cdType">' + T("Art", "Type") + '</label><select id="cdType">' +
       ['run|🏃 ' + T("Laufen", "Run"), 'bike|🚴 ' + T("Radfahren", "Cycling"), 'row|🚣 ' + T("Rudern", "Rowing"), 'walk|🚶 ' + T("Gehen", "Walking"), 'swim|🏊 ' + T("Schwimmen", "Swimming")]
         .map(o => { const [v, l] = o.split("|"); return '<option value="' + v + '">' + l + '</option>'; }).join("") + '</select></div>' +
-      '<div class="field"><label>' + T("Datum", "Date") + '</label><input type="date" id="cdDate" value="' + new Date().toISOString().slice(0, 10) + '"></div></div>' +
-      '<div class="form-row"><div class="field"><label>' + T("Distanz", "Distance") + ' (' + distLabel + ')</label><input type="number" inputmode="decimal" id="cdDist" placeholder="' + (units() === "imperial" ? "3.1" : "5.0") + '"></div>' +
-      '<div class="field"><label>' + T("Dauer", "Duration") + ' (min)</label><input type="number" inputmode="decimal" id="cdDur" placeholder="28"></div></div>' +
+      '<div class="field"><label for="cdDate">' + T("Datum", "Date") + '</label><input type="date" id="cdDate" value="' + localYmd(new Date()) + '"></div></div>' +
+      '<div class="form-row"><div class="field"><label for="cdDist">' + T("Distanz", "Distance") + ' (' + distLabel + ')</label><input type="number" inputmode="decimal" id="cdDist" placeholder="' + (units() === "imperial" ? "3.1" : "5.0") + '"></div>' +
+      '<div class="field"><label for="cdDur">' + T("Dauer", "Duration") + ' (min)</label><input type="number" inputmode="decimal" id="cdDur" placeholder="28"></div></div>' +
       '<button class="btn btn-primary" id="cdSave">' + T("Speichern", "Save") + '</button>' +
       '<div id="cdPreview" class="muted small" style="margin-top:12px"></div></div>' +
       '<div id="cardioList"></div>';
@@ -1028,10 +1042,10 @@
   function renderBody(p) {
     p.innerHTML =
       '<div class="card" style="margin-bottom:20px"><h3 class="h-card" style="margin-bottom:16px">' + T("Körpermaße erfassen", "Log body metrics") + '</h3>' +
-      '<div class="form-row"><div class="field"><label>' + T("Gewicht", "Weight") + ' (' + massU() + ')</label><input type="number" inputmode="decimal" id="bdW" placeholder="' + (units() === "imperial" ? "180" : "82") + '"></div>' +
-      '<div class="field"><label>' + T("Bauchumfang", "Waist") + ' (' + (units() === "imperial" ? "in" : "cm") + ')</label><input type="number" inputmode="decimal" id="bdWaist" placeholder="' + (units() === "imperial" ? "35" : "90") + '"></div></div>' +
-      '<div class="form-row"><div class="field"><label>' + T("Körperfett", "Body fat") + ' (%)</label><input type="number" inputmode="decimal" id="bdBf" placeholder="18"></div>' +
-      '<div class="field"><label>' + T("Datum", "Date") + '</label><input type="date" id="bdDate" value="' + new Date().toISOString().slice(0, 10) + '"></div></div>' +
+      '<div class="form-row"><div class="field"><label for="bdW">' + T("Gewicht", "Weight") + ' (' + massU() + ')</label><input type="number" inputmode="decimal" id="bdW" placeholder="' + (units() === "imperial" ? "180" : "82") + '"></div>' +
+      '<div class="field"><label for="bdWaist">' + T("Bauchumfang", "Waist") + ' (' + (units() === "imperial" ? "in" : "cm") + ')</label><input type="number" inputmode="decimal" id="bdWaist" placeholder="' + (units() === "imperial" ? "35" : "90") + '"></div></div>' +
+      '<div class="form-row"><div class="field"><label for="bdBf">' + T("Körperfett", "Body fat") + ' (%)</label><input type="number" inputmode="decimal" id="bdBf" placeholder="18"></div>' +
+      '<div class="field"><label for="bdDate">' + T("Datum", "Date") + '</label><input type="date" id="bdDate" value="' + localYmd(new Date()) + '"></div></div>' +
       '<button class="btn btn-primary" id="bdSave">' + T("Speichern", "Save") + '</button></div>' +
       '<div id="bodyChart"></div><div id="bodyList"></div>';
 
@@ -1061,7 +1075,7 @@
     box.innerHTML = list.map(b => '<div class="history-ex-line" style="padding:14px 18px;background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:8px">' +
       '<span class="mono" style="font-size:0.8rem;color:var(--accent-2)">' + fmtShort(b.date) + '</span>' +
       '<span class="sets">' + [b.weightKg ? fmtW(b.weightKg) : null, b.waistCm ? (units() === "imperial" ? (b.waistCm * 0.3937).toFixed(1) + " in" : b.waistCm.toFixed(0) + " cm") : null, b.bodyfat ? b.bodyfat + " %" : null].filter(Boolean).join(" · ") +
-      ' <button class="btn-link-del" data-delbd="' + b.id + '" style="background:none;border:none;color:var(--muted-2);font-size:0.75rem;text-decoration:underline;cursor:pointer;margin-left:10px">✕</button></span></div>').join("");
+      ' <button class="btn-link-del" data-delbd="' + b.id + '" aria-label="' + T("Eintrag löschen", "Delete entry") + '" style="background:none;border:none;color:var(--muted-2);font-size:0.75rem;text-decoration:underline;cursor:pointer;margin-left:10px">✕</button></span></div>').join("");
     box.querySelectorAll("[data-delbd]").forEach(btn => btn.addEventListener("click", () => {
       S.saveBody(S.body().filter(b => b.id !== btn.dataset.delbd)); renderPanel();
     }));
@@ -1089,7 +1103,7 @@
   }
   function tplCard(t, isCustom) {
     return '<div class="template-card"><div style="display:flex;justify-content:space-between;align-items:start"><h4>' + tr(t.name) + '</h4>' +
-      (isCustom ? '<button class="btn-link-del" data-deltpl="' + t.id + '" style="background:none;border:none;color:var(--muted-2);font-size:0.75rem;text-decoration:underline;cursor:pointer">✕</button>' : '') + '</div>' +
+      (isCustom ? '<button class="btn-link-del" data-deltpl="' + t.id + '" aria-label="' + T("Plan löschen", "Delete routine") + '" style="background:none;border:none;color:var(--muted-2);font-size:0.75rem;text-decoration:underline;cursor:pointer">✕</button>' : '') + '</div>' +
       '<div style="margin:8px 0 14px">' + t.exIds.map(id => '<div class="template-ex">· ' + tr(exById(id).name) + '</div>').join("") + '</div>' +
       '<button class="btn btn-dark btn-sm btn-block" data-starttpl="' + t.id + '">' + T("Starten", "Start") + '</button></div>';
   }
@@ -1098,12 +1112,12 @@
     if (!modal) { modal = document.createElement("div"); modal.id = "tplModal"; modal.className = "modal-overlay"; document.body.appendChild(modal); }
     const chosen = [];
     const redraw = () => {
-      modal.querySelector("#tplChosen").innerHTML = chosen.length ? chosen.map((id, i) => '<span class="chip" style="margin:3px">' + tr(exById(id).name) + ' <button data-rm="' + i + '" style="background:none;border:none;color:var(--muted);cursor:pointer">✕</button></span>').join("") : '<span class="muted small">' + T("Noch keine Übung gewählt", "No exercise chosen yet") + '</span>';
+      modal.querySelector("#tplChosen").innerHTML = chosen.length ? chosen.map((id, i) => '<span class="chip" style="margin:3px">' + tr(exById(id).name) + ' <button data-rm="' + i + '" aria-label="' + T("Übung entfernen", "Remove exercise") + '" style="background:none;border:none;color:var(--muted);cursor:pointer">✕</button></span>').join("") : '<span class="muted small">' + T("Noch keine Übung gewählt", "No exercise chosen yet") + '</span>';
       modal.querySelectorAll("[data-rm]").forEach(b => b.addEventListener("click", () => { chosen.splice(+b.dataset.rm, 1); redraw(); }));
     };
-    modal.innerHTML = '<div class="modal-box"><div class="modal-head"><h3 class="h-card">' + T("Eigenen Plan erstellen", "Create routine") + '</h3><button class="cart-close" id="tplClose">✕</button></div>' +
-      '<div class="field"><label>' + T("Name des Plans", "Routine name") + '</label><input type="text" id="tplName" placeholder="' + T("z. B. Oberkörper Dienstag", "e.g. Upper Body Tuesday") + '"></div>' +
-      '<div class="field"><label>' + T("Übungen", "Exercises") + '</label><div id="tplChosen" style="margin-bottom:10px"></div>' +
+    modal.innerHTML = '<div class="modal-box"><div class="modal-head"><h3 class="h-card">' + T("Eigenen Plan erstellen", "Create routine") + '</h3><button class="cart-close" id="tplClose" aria-label="' + T("Plan-Editor schließen", "Close routine editor") + '">✕</button></div>' +
+      '<div class="field"><label for="tplName">' + T("Name des Plans", "Routine name") + '</label><input type="text" id="tplName" placeholder="' + T("z. B. Oberkörper Dienstag", "e.g. Upper Body Tuesday") + '"></div>' +
+      '<div class="field"><label for="tplAdd">' + T("Übungen", "Exercises") + '</label><div id="tplChosen" style="margin-bottom:10px"></div>' +
       '<select id="tplAdd"><option value="">' + T("Übung hinzufügen…", "Add exercise…") + '</option>' +
       allExercises().map(e => '<option value="' + e.id + '">' + tr(e.name) + ' (' + muscleLabel(e.muscle) + ')</option>').join("") + '</select></div>' +
       '<button class="btn btn-primary btn-block" id="tplSave" style="margin-top:8px">' + T("Plan speichern", "Save routine") + '</button></div>';

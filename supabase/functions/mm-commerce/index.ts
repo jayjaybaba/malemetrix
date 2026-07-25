@@ -225,6 +225,8 @@ Deno.serve(async (req) => {
     }, db, PRODUCTS);
     return json(result.body, result.status);
   } catch (e) {
-    return json({ error: "internal", detail: String(e?.message || e) }, 500);
+    // Ursache bleibt im Funktions-Log; der Client bekommt nur den Code.
+    console.error("[mm-commerce] unhandled", e);
+    return json({ error: "internal" }, 500);
   }
 });

@@ -99,7 +99,11 @@ var proto = read("protokoll.html");
 ok(/id="kapitel"/.test(proto) && /class="proto-index"/.test(proto), "protokoll.html hat EINEN kanonischen Kapitel-Index (#kapitel)");
 ok(!/Die 10 Module/.test(proto) && !/pillar-tag">Modul /.test(proto) && !/14 Kapitel/.test(proto), "kein '10 Module'- und kein '14 Kapitel'-Modell mehr");
 ok((proto.match(/class="proto-chap/g) || []).length === 11, "Index = exakt 10 nummerierte Kapitel + 1 Abschluss");
-ok((proto.match(/class="pc-n">\d\d</g) || []).length === 10, "genau 10 Kapitelnummern 01–10");
+/* Das Muster lässt Attribute zwischen Klasse und Ziffer zu (die Ziffern
+   sind seit der Kontrastprüfung als aria-hidden ausgezeichnet). Geprüft
+   wird weiterhin dasselbe: zehn nummerierte Kapitel. */
+ok((proto.match(/class="pc-n"[^>]*>\d\d</g) || []).length === 10, "genau 10 Kapitelnummern 01–10");
+ok((proto.match(/class="pc-n" aria-hidden="true"/g) || []).length === 11, "die Geisterziffern sind als Ornament ausgezeichnet (Kontrast-Ausnahme)");
 ok(/proto-outro/.test(proto) && /ABSCHLUSS · DAS SYSTEM ZUSAMMENSETZEN/.test(proto), "unnummerierter Abschluss vorhanden (kein Kapitel 11)");
 ok(/ebooks\/blueprint\.html/.test(proto) && /ebooks\/ultimate-stack\.html/.test(proto) && /ebooks\/11-injektionen\.html/.test(proto), "Index verlinkt echte Kapitel-URLs inkl. Ultimate Stack (07) + Injektionen (10)");
 ok(/DAS PROTOKOLL erklärt/.test(proto) && /12-Wochen-Programm/.test(proto) && /führt/.test(proto), "Rollen getrennt (Protokoll erklärt · Programm führt)");

@@ -30,7 +30,7 @@
   var VIEWS = ["today", "plan", "track", "progress", "learn", "baseline", "pathway", "transform", "workout", "week", "settings", "coach", "advisor", "review", "twin", "simulator", "experiments", "protocol", "timeline", "memory", "map", "learned"];
   function view() { var h = (location.hash || "#today").slice(1).split("?")[0]; return VIEWS.indexOf(h) >= 0 ? h : "today"; }
   function hashParam(name) { var q = (location.hash || "").split("?")[1] || ""; var m = q.split("&").filter(function (kv) { return kv.split("=")[0] === name; })[0]; return m ? decodeURIComponent(m.split("=")[1] || "") : ""; }
-  window.addEventListener("hashchange", function () { render(); window.scrollTo(0, 0); });
+  window.addEventListener("hashchange", function () { render(true); window.scrollTo(0, 0); });
 
   /* Bottom-Navigation: die Hauptnavigation der App. Icons + Label + eigener
      Aktiv-Indikator (Linie oben), damit der aktive Punkt nicht nur an der
@@ -52,6 +52,16 @@
         'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + NAV_ICON[it[0]] + '</svg>' +
         '<span class="os-nav-txt">' + it[1] + '</span></a>';
     }).join("") + '</nav>';
+  }
+
+  /* Kurzmeldung an die Live-Region in mein-protokoll.html. Absichtlich
+     knapp: hier gehört der Ansichtsname hin, nicht die Ansicht. */
+  var VIEW_LABEL = { today: "Today", plan: "Plan", track: "Track", progress: "Progress", learn: "Learn", baseline: "Baseline", pathway: "Pathway", transform: "Transform", workout: "Workout", week: "Wochenreview", settings: "Einstellungen", coach: "Coach", advisor: "Advisor", review: "Review", twin: "Twin", simulator: "Simulator", experiments: "Experimente", protocol: "Protokoll", timeline: "Timeline", memory: "Memory", map: "Performance Map", learned: "Gelernt" };
+  function announce(msg) {
+    var el = document.getElementById("mmStatus");
+    if (!el) return;
+    el.textContent = "";                       // Neuzuweisung erzwingen, sonst bleibt eine
+    setTimeout(function () { el.textContent = msg; }, 30);   // identische Meldung stumm.
   }
 
   /* ---------- Bausteine ---------- */
@@ -348,7 +358,7 @@
         '<a href="protokoll.html" class="btn btn-primary btn-sm" data-track="upgrade_view">Dein System aufbauen →</a></div>';
     } else {
       html += '<div class="card os-accent os-start"><h1 class="os-big" style="font-size:1.5rem">Dein System startet hier</h1><ol class="os-steps">' +
-        '<li><b>Score machen</b><span>Baseline deiner 7 Systeme — findet deinen Engpass.</span></li>' +
+        '<li><b>Score machen</b><span>Baseline deiner 12 Systeme — findet deinen Engpass.</span></li>' +
         '<li><b>Pathway wählen</b><span>Health · Performance · Enhanced.</span></li>' +
         '<li><b>Baseline anlegen</b><span>Gewicht, Taille, Fotos, Kraftwerte.</span></li>' +
         '<li><b>Plan bauen</b><span>Programm, Nutrition, Training, Stack.</span></li></ol>' +
@@ -383,8 +393,9 @@
     html += '<div class="card os-account"><span class="os-k">Konto &amp; Daten</span>' +
       '<p class="small muted" style="margin:8px 0 10px">Status: ' + esc(SYNC_TXT[snap.state === "signed_in" ? MM.account.getSyncStatus() : "local"] || "") + '</p>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap"><button id="mmExport" class="os-ghost">Meine Daten exportieren (JSON)</button>' +
+      '<button id="mmWipe" class="os-ghost">Lokale Daten auf diesem Gerät löschen</button>' +
       (snap.state === "signed_in" ? '<button id="mmDelete" class="os-ghost">Konto löschen</button>' : '') +
-      '</div><p id="mmAcctMsg" class="small muted" style="display:none;margin-top:8px"></p></div>';
+      '</div><p class="small muted" style="margin-top:10px">Der Export enthält alles, was auf diesem Gerät liegt. Das Löschen entfernt alle MaleMetrix-Daten aus dem Browser dieses Geräts — Score, Trainingslog, Programm, Werte. Ein bestehendes Cloud-Konto bleibt davon unberührt.</p><p id="mmAcctMsg" class="small muted" style="display:none;margin-top:8px"></p></div>';
 
     if (snap.state === "local") html += '<p class="small muted" style="text-align:center;margin-top:18px">Dieses Gerät nutzt My MaleMetrix lokal. Das geräteübergreifende Konto wird demnächst aktiviert — deine Daten bleiben erhalten.</p>';
     return html;
@@ -398,7 +409,7 @@
     if (!md) {
       return '<div class="os-head"><span class="eyebrow" style="margin:0">Performance Map</span></div>' +
         '<div class="card os-accent"><h1 class="os-big" style="font-size:1.4rem">Deine Map entsteht aus deinem Score.</h1>' +
-        '<p class="muted" style="margin:0 0 14px">10 Minuten, 7 Systeme, sofortige Auswertung — daraus baut MaleMetrix deine persönliche Karte: Engpass, Richtung, erster Schritt.</p>' +
+        '<p class="muted" style="margin:0 0 14px">Rund 7 Minuten, 12 Systeme, sofortige Auswertung — daraus baut MaleMetrix deine persönliche Karte: Engpass, Richtung, erster Schritt.</p>' +
         '<a href="check.html" class="btn btn-primary">MaleMetrix Score starten →</a></div>';
     }
     var d = MM.account.getDashboardState();
@@ -558,7 +569,7 @@
       '</div>' +
       '<label class="os-field"><span>Aktuelle Supplements (frei)</span><input id="blStack" type="text" value="' + esc(b.stackText || "") + '" placeholder="z. B. Kreatin, Whey, Multivitamin"></label>' +
       '<div class="os-photos"><span class="os-k">Fotos (optional · bleiben NUR auf diesem Gerät)</span><p class="small muted" style="margin:4px 0 10px">Gleiches Licht, gleicher Abstand, gleiche Pose. Kein Upload, keine Fake-KI-Analyse.</p>' +
-      ["front", "side", "back"].map(function (a) { return '<label class="os-photo" data-angle="' + a + '"><input type="file" accept="image/*" capture="environment" data-photoin="' + a + '" hidden><span class="ang">' + a.toUpperCase() + '</span><span class="st" id="ph_' + a + '">+ Foto</span></label>'; }).join("") + '</div>' +
+      ["front", "side", "back"].map(function (a) { return '<label class="os-photo has-file" data-angle="' + a + '"><input type="file" accept="image/*" capture="environment" data-photoin="' + a + '" class="file-hidden" aria-label="Foto ' + a.toUpperCase() + ' auswählen"><span class="ang">' + a.toUpperCase() + '</span><span class="st" id="ph_' + a + '">+ Foto</span></label>'; }).join("") + '</div>' +
       '<button id="blSave" class="btn btn-primary" style="margin-top:14px">Baseline speichern →</button>' +
       '<p class="small muted" style="margin-top:8px">Fotos sind optional — das Programm startet auch ohne. Ohne Fotos gibt es in Woche 12 nur keinen visuellen Vergleich.</p>');
   }
@@ -1079,11 +1090,6 @@
     return html;
   }
   // INSIGHT CARD (§86)
-  function insightCard(tag, headline, rows) {
-    return '<div class="intel-insight"><span class="tag">' + esc(tag) + '</span><b class="hl">' + esc(headline) + '</b>' +
-      '<div class="rows">' + rows.map(function (r) { return '<div class="r"><span>' + esc(r.k) + '</span><b class="' + toneClass(r.tone) + '">' + esc(r.v) + '</b></div>'; }).join("") + '</div></div>';
-  }
-
   /* ============ PHASE 7 — VISUAL INTELLIGENCE (ein Chart-System, §110) ============ */
   // Trajektorie: Erwartungsband (Modus) als Korridor + tatsächliche Gewichtsserie.
   // Ehrliche Achsen, keine Punkt-Prognose — Band statt Linie (§53/§94/§111).
@@ -1553,14 +1559,14 @@
   function skeleton() { host.innerHTML = '<div class="card" style="max-width:640px;margin:40px auto;text-align:center;color:var(--muted)">My MaleMetrix wird geladen…</div>'; }
   function signInScreen() {
     host.innerHTML = '<div class="section-head center" style="margin-top:24px"><span class="eyebrow">My MaleMetrix</span><h1 class="h-display" style="font-size:2rem">Willkommen zurück</h1><p class="lead">Melde dich mit deiner E-Mail an — wir schicken dir einen Magic Link, kein Passwort nötig.</p></div>' +
-      '<div class="card" style="max-width:420px;margin:0 auto"><label class="small" style="display:block;margin-bottom:6px;color:var(--muted)">E-Mail</label><input id="mmEmail" type="email" inputmode="email" autocomplete="email" placeholder="du@beispiel.de" style="width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;font-size:1rem;background:rgba(127,127,127,0.06);color:var(--text);margin-bottom:12px"><button id="mmGo" class="btn btn-primary btn-block">Weiter →</button><p id="mmAuthMsg" class="small" style="margin-top:12px;display:none"></p></div>';
+      '<div class="card" style="max-width:420px;margin:0 auto"><label class="small" for="mmEmail" style="display:block;margin-bottom:6px;color:var(--muted)">E-Mail</label><input id="mmEmail" type="email" inputmode="email" autocomplete="email" placeholder="du@beispiel.de" style="width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;font-size:1rem;background:rgba(127,127,127,0.06);color:var(--text);margin-bottom:12px"><button id="mmGo" class="btn btn-primary btn-block">Weiter →</button><p id="mmAuthMsg" class="small" style="margin-top:12px;display:none"></p></div>';
     var em = document.getElementById("mmEmail"), go = document.getElementById("mmGo"), m = document.getElementById("mmAuthMsg");
     function submit() { var v = (em.value || "").trim(); if (!/.+@.+\..+/.test(v)) { em.focus(); return; } go.disabled = true; go.textContent = "Sende…"; MM.account.signIn(v).then(function (res) { m.style.display = "block"; m.style.color = res.ok ? "var(--green,#3ddc84)" : "var(--amber,#f5a623)"; m.textContent = res.message || (res.ok ? "Magic Link gesendet." : "Fehler."); go.disabled = false; go.textContent = "Weiter →"; if (res.ok && MM.track) MM.track("login_started", {}); }); }
     go.addEventListener("click", submit); em.addEventListener("keydown", function (e) { if (e.key === "Enter") submit(); });
   }
 
   /* =========================== RENDER + EVENTS =========================== */
-  function render() {
+  function render(navigated) {
     var snap = MM.account.snapshot();
     if (snap.state === "loading") { skeleton(); return; }
     if (snap.configured && snap.state === "signed_out") { signInScreen(); return; }
@@ -1570,8 +1576,16 @@
     var body = v === "plan" ? vPlan() : v === "track" ? vTrack() : v === "progress" ? vProgress() : v === "learn" ? vLearn() : v === "baseline" ? vBaseline() : v === "pathway" ? vPathway() : v === "transform" ? vTransform() : v === "workout" ? vWorkout() : v === "week" ? vWeek() : v === "settings" ? vSettings() :
       v === "coach" ? vCoach() : v === "advisor" ? vAdvisor() : v === "review" ? vReview() : v === "twin" ? vTwin() : v === "simulator" ? vSimulator() : v === "experiments" ? vExperiments() : v === "protocol" ? vProtocol() : v === "timeline" ? vTimeline() : v === "memory" ? vMemory() : v === "map" ? vMap() : v === "learned" ? vLearned() : vToday(snap);
     var fab = (v !== "workout" && v !== "settings" && snap.state !== "signed_out") ? '<button class="os-fab" data-fab aria-label="Schnell erfassen">+</button>' : "";
-    host.innerHTML = '<div class="os-shell os-env-' + (v === "progress" || v === "workout" ? "performance" : v === "plan" ? "metabolic" : v === "learn" && OS.pathway() === "enhanced" ? "clinical" : "instrument") + '">' + navBar(v) + '<div class="os-body">' + body + '</div>' + fab + '</div>';
+    host.innerHTML = '<div class="os-shell os-env-' + (v === "progress" || v === "workout" ? "performance" : v === "plan" ? "metabolic" : v === "learn" && OS.pathway() === "enhanced" ? "clinical" : "instrument") + '">' + navBar(v) + '<div class="os-body" tabindex="-1">' + body + '</div>' + fab + '</div>';
     if (v === "progress") loadPhotoCompare();
+    /* Nach einem Navigationsklick den Fokus in den neuen Inhalt setzen.
+       Ohne das bleibt der Fokus auf dem entfernten Link und fällt auf
+       <body> zurück — der Screenreader steht wieder am Seitenanfang. */
+    if (navigated) {
+      var b = host.querySelector(".os-body");
+      if (b) { try { b.focus({ preventScroll: true }); } catch (e) { b.focus(); } }
+      announce(VIEW_LABEL[v] || v);
+    }
     bindOnce();
   }
 
@@ -1620,6 +1634,15 @@
         return;
       }
       var ex = t.closest("#mmExport"); if (ex) { MM.account.exportMyData().then(function (data) { var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }); var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "my-malemetrix-export.json"; a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000); }); return; }
+      /* S18 — eigenständige lokale Löschung. Bewusst zweistufig und ohne
+         Kontobezug: sie räumt NUR diesen Browser. */
+      var wipe = t.closest("#mmWipe"); if (wipe) {
+        if (!confirm("Alle MaleMetrix-Daten aus dem Browser dieses Geräts löschen?\n\nBetroffen: Score, Trainingslog, Programm, erfasste Werte und Einstellungen. Das lässt sich nicht rückgängig machen.")) return;
+        if (!confirm("Sicher? Ohne vorherigen Export sind die Daten dieses Geräts danach weg.")) return;
+        MM.account.clearLocalData();
+        location.reload();
+        return;
+      }
       var del = t.closest("#mmDelete"); if (del) {
         if (!confirm("Konto endgültig löschen? Alle Cloud-Daten werden entfernt. Das kann nicht rückgängig gemacht werden.")) return;
         if (!confirm("Wirklich sicher? Letzte Bestätigung.")) return;

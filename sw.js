@@ -10,7 +10,7 @@
    · push: echter Handler — wird nur aktiv, wenn Server-Push konfiguriert ist
      (VAPID + Backend). Ohne Config passiert hier ehrlich: nichts.
    ========================================================================== */
-const VERSION = "mm-v132";
+const VERSION = "mm-v134";
 const CORE = [
   "tracker.html", "dinner.html", "index.html", "mein-protokoll.html", "labor.html",
   "ebooks/blueprint.html",
@@ -35,7 +35,13 @@ const CORE = [
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
-    caches.open(VERSION).then((c) => c.addAll(CORE)).then(() => self.skipWaiting())
+    /* addAll ist alles-oder-nichts: EINE 404 ließ die ganze Installation
+       scheitern und der Nutzer blieb ohne Offline-Fähigkeit — unbemerkt,
+       weil die Rejection niemand behandelt hat. Jetzt einzeln und tolerant. */
+    caches.open(VERSION)
+      .then((c) => Promise.all(CORE.map((u) => c.add(u).catch(() => null))))
+      .catch(() => null)
+      .then(() => self.skipWaiting())
   );
 });
 

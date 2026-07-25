@@ -14,7 +14,10 @@
   --line-strong: rgba(255, 255, 255, 0.14);
   --text: #eef2f7;
   --muted: #9aa4b5;
-  --muted-2: #687184;
+  /* Kontrast: #687184 erreichte auf keinem Seitenhintergrund 4.5:1 und
+     wird über 150-mal für normalen Text verwendet. #8b95a8 liegt auf
+     --bg-0 bei ~5.1:1 und bleibt optisch die stille Stufe unter --muted. */
+  --muted-2: #8b95a8;
   --accent: #2e7cf6;
   --accent-2: #00c2ff;
   --accent-soft: rgba(46, 124, 246, 0.12);
@@ -202,7 +205,23 @@ h1, h2, h3, h4 {
   background: var(--grad);
 }
 
+/* Nur für Screenreader: im Layout unsichtbar, im Zugänglichkeitsbaum da. */
+h1[tabindex="-1"]:focus, section[tabindex="-1"]:focus, .os-body[tabindex="-1"]:focus { outline: none; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+/* Datei-Inputs: optisch verschwunden, aber fokussierbar (WCAG 2.1.1).
+   display:none / [hidden] nähmen sie aus der Tab-Reihenfolge. */
+.file-hidden { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.has-file { position: relative; }
+.has-file:focus-within { outline: 2px solid var(--accent-2, #00c2ff); outline-offset: 3px; }
+
 .header-actions { display: flex; align-items: center; gap: 14px; }
+/* Magazin-Artikel führen drei Ziele im Header (Magazin · Score · Protokoll);
+   auf schmalen Geräten umbrechen statt überlaufen. */
+.blog-actions { flex-wrap: wrap; justify-content: flex-end; row-gap: 8px; }
 
 .cart-btn {
   position: relative;
@@ -1807,7 +1826,10 @@ input[type="range"]::-moz-range-thumb {
   background: none; border: none; color: var(--muted); padding: 7px 16px; border-radius: 7px;
   font-size: 0.82rem; font-weight: 600; font-family: var(--font-mono); transition: all 0.15s;
 }
-.unit-toggle button.active { background: var(--accent); color: #fff; }
+/* Weiß auf var(--accent) erreicht nur 3,94:1. Der Akzent bleibt, wie er
+   ist — nur die Flächen mit weißem Text darauf gehen eine Stufe tiefer
+   (#215fc9 = 5,92:1). */
+.unit-toggle button.active { background: #215fc9; color: #fff; }
 
 .seg-toggle { display: flex; gap: 8px; flex-wrap: wrap; }
 .seg-toggle button {
@@ -1845,7 +1867,7 @@ input[type="range"]::-moz-range-thumb {
   border-radius: 10px; font-size: 0.88rem; font-weight: 600; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 7px;
 }
 .tracker-tab:hover { color: var(--text); }
-.tracker-tab.active { background: var(--accent); color: #fff; box-shadow: 0 6px 18px rgba(46,124,246,0.32); }
+.tracker-tab.active { background: #215fc9; color: #fff; box-shadow: 0 6px 18px rgba(46,124,246,0.32); }
 
 .tracker-panel { animation: qIn 0.3s ease; }
 
@@ -1926,9 +1948,13 @@ input[type="range"]::-moz-range-thumb {
 
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(4,6,10,0.7); backdrop-filter: blur(4px); z-index: 200;
-  display: grid; place-items: center; padding: 24px; opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  display: grid; place-items: center; padding: 24px; opacity: 0; pointer-events: none;
+  /* visibility statt nur opacity: sonst bleiben die Bedienelemente des
+     geschlossenen Dialogs fokussierbar. Mitanimiert, damit die Blende
+     weiterhin sanft ausläuft statt hart zu verschwinden. */
+  visibility: hidden; transition: opacity 0.25s, visibility 0s linear 0.25s;
 }
-.modal-overlay.open { opacity: 1; pointer-events: auto; }
+.modal-overlay.open { opacity: 1; pointer-events: auto; visibility: visible; transition: opacity 0.25s, visibility 0s; }
 .modal-box {
   background: var(--bg-1); border: 1px solid var(--line-strong); border-radius: 18px; padding: 28px;
   max-width: 540px; width: 100%; max-height: 88vh; overflow-y: auto;
@@ -1982,7 +2008,9 @@ input[type="range"]::-moz-range-thumb {
 }
 .doc-paper h1, .doc-paper h2, .doc-paper h3, .doc-paper h4 { color: #0d0f13; }
 .doc-cover { border-bottom: 3px solid #16181d; padding-bottom: 26px; margin-bottom: 32px; }
-.doc-cover .kick { font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.16em; text-transform: uppercase; color: #2e7cf6; }
+/* Auf weissem Papier erreicht #2e7cf6 nur 3,94:1 — dieselbe Blaufamilie
+   eine Stufe tiefer besteht AA. Auf dunklem Grund bleibt der Akzent. */
+.doc-cover .kick { font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.16em; text-transform: uppercase; color: #1a56c4; }
 .doc-cover h1 { font-size: clamp(1.9rem, 5vw, 2.8rem); margin: 12px 0 10px; letter-spacing: -0.02em; }
 .doc-cover .sub { color: #5b6472; font-size: 1.05rem; }
 .doc-cover .brand { font-family: var(--font-mono); font-size: 0.72rem; color: #9aa3b2; margin-top: 16px; }
@@ -2012,7 +2040,7 @@ input[type="range"]::-moz-range-thumb {
 .doc-table th, .doc-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #e9edf2; color: #3a4150; }
 .doc-table th { font-family: var(--font-mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: #9aa3b2; }
 .doc-table td:first-child { font-weight: 600; color: #16181d; }
-.doc-footer { margin-top: 44px; padding-top: 20px; border-top: 1.5px solid #e3e6eb; font-family: var(--font-mono); font-size: 0.72rem; color: #9aa3b2; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.doc-footer { margin-top: 44px; padding-top: 20px; border-top: 1.5px solid #e3e6eb; font-family: var(--font-mono); font-size: 0.72rem; color: #646c7c;   /* #9aa3b2 erreichte auf weiss nur 2,54:1 */ display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 .doc-disclaimer { font-size: 0.78rem; color: #8893a7; margin-top: 14px; line-height: 1.6; }
 
 /* Action-Box am Modulende — macht aus jedem Modul eine Entscheidung */
@@ -2122,148 +2150,21 @@ input[type="range"]::-moz-range-thumb {
 
 /* ==========================================================================
    12-Wochen-Programm (kurs-programm.html)
+   Der Rest dieses Blocks (rund 12 KB: .course-week*, .course-mode*,
+   .course-module*, .course-recheck*, .course-res*, .module-callout*,
+   .coaching-tease*) wurde entfernt — er stammt aus einer früheren Fassung
+   der Programmseite. Gerendert wird heute über c2-* aus css/course2.css.
+   Erhalten bleibt nur, was kurs-programm.html im Markup wirklich führt.
    ========================================================================== */
 .course-hero { margin-bottom: 32px; }
 .course-progress { margin: 24px 0 18px; }
-.course-progress-top { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 0.9rem; color: var(--muted); margin-bottom: 10px; }
-.course-progress-top strong { color: var(--text); }
-.course-bar { height: 10px; border-radius: 999px; background: var(--card-2); border: 1px solid var(--line); overflow: hidden; }
-.course-bar-fill { height: 100%; border-radius: 999px; background: var(--grad); transition: width 0.4s ease; }
 .course-toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
 
-.course-week { margin-bottom: 22px; scroll-margin-top: 90px; }
-.course-week.is-done { border-color: var(--accent-line); }
-.course-week-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
-.course-week-no { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; color: #fff; background: var(--grad); padding: 5px 12px; border-radius: 999px; }
-.course-phase-chip { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--phase, var(--accent)); background: color-mix(in srgb, var(--phase, #2e7cf6) 14%, transparent); border: 1px solid color-mix(in srgb, var(--phase, #2e7cf6) 35%, transparent); padding: 4px 11px; border-radius: 999px; }
-.course-week-check { margin-left: auto; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; color: var(--green); opacity: 0; transition: opacity 0.2s; }
-.course-week.is-done .course-week-check { opacity: 1; }
-.course-week-title { margin-bottom: 8px; }
-.course-focus { font-size: 1rem; margin-bottom: 20px; }
-
-.course-todos { margin-bottom: 20px; display: grid; gap: 10px; }
-.course-block-label { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 2px; }
-
-.course-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.course-meta { background: var(--card-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px 18px; }
-.course-meta-label { display: block; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; }
-.course-meta p { font-size: 0.92rem; line-height: 1.6; color: var(--text); }
-@media (max-width: 640px) { .course-meta-grid { grid-template-columns: 1fr; } }
-
 @media print {
+  /* #courseGate ist live (kurs-programm.html, js/course.js): im Ausdruck
+     hat die Code-Abfrage nichts zu suchen. */
   .course-toolbar, #courseGate { display: none !important; }
-  .course-week { break-inside: avoid; page-break-inside: avoid; box-shadow: none; }
 }
-
-/* ---- Programm: Intro / Onboarding ---- */
-.course-intro { margin-bottom: 30px; padding: 32px; }
-.course-intro .lead { margin-bottom: 22px; }
-.course-pillars { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 22px; }
-.course-pillar { background: var(--card-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 18px; }
-.course-pillar-icon { font-size: 1.5rem; display: block; margin-bottom: 8px; }
-.course-pillar h4 { font-size: 0.98rem; margin-bottom: 6px; color: var(--text); }
-.course-pillar p { font-size: 0.88rem; color: var(--muted); line-height: 1.55; }
-.course-how { margin: 20px 0; }
-.course-how ol { padding-left: 20px; margin-top: 8px; display: grid; gap: 6px; }
-.course-how li { color: var(--muted); font-size: 0.94rem; line-height: 1.5; }
-.course-promise { font-size: 0.92rem; line-height: 1.65; border-top: 1px solid var(--line); padding-top: 18px; margin-top: 4px; }
-
-/* ---- Programm: Wissenschafts-Callout ---- */
-.course-science { background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: var(--radius-sm); padding: 14px 18px; margin-bottom: 18px; }
-.course-science-label { display: block; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; font-weight: 700; }
-.course-science p { font-size: 0.92rem; line-height: 1.6; color: var(--text); }
-
-/* ---- Programm: Moduswahl (CUT/RECOMP/BUILD/PERFORM) ---- */
-.course-mode { margin-bottom: 26px; }
-.course-mode-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 18px 0; }
-.course-mode-btn { display: flex; flex-direction: column; gap: 4px; text-align: left; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2, rgba(127,127,127,0.05)); cursor: pointer; transition: border-color 0.15s, background 0.15s, transform 0.1s; }
-.course-mode-btn:hover { border-color: var(--accent-line); transform: translateY(-1px); }
-.course-mode-btn.is-active { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent) inset; }
-.course-mode-label { font-family: var(--font-mono); font-weight: 700; letter-spacing: 0.06em; font-size: 0.9rem; color: var(--text); }
-.course-mode-tag { font-size: 0.78rem; color: var(--muted); line-height: 1.3; }
-.course-mode-active { background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: var(--radius-sm); padding: 12px 16px; }
-.course-mode-active-label { display: block; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-bottom: 4px; }
-.course-mode-active p { font-size: 0.92rem; line-height: 1.6; color: var(--text); margin: 0; }
-@media (max-width: 640px) { .course-mode-grid { grid-template-columns: repeat(2, 1fr); } }
-
-/* ---- Programm: Recheck-Dashboard ---- */
-.course-recheck { margin-bottom: 26px; }
-.course-recheck-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 14px; }
-.course-recheck-table { width: 100%; border-collapse: collapse; min-width: 520px; }
-.course-recheck-table th, .course-recheck-table td { padding: 7px 8px; border-bottom: 1px solid var(--line); text-align: left; }
-.course-recheck-table th { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
-.course-recheck-table td:first-child { font-weight: 600; font-size: 0.86rem; white-space: nowrap; }
-.course-recheck-table input.rc-in { width: 100%; min-width: 76px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2, rgba(127,127,127,0.05)); color: var(--text); font-size: 0.86rem; }
-.course-recheck-table input.rc-in:focus { outline: none; border-color: var(--accent); }
-
-/* ---- Programm: Modus-Hinweis pro Woche ---- */
-.course-modenote { background: rgba(75,142,248,0.08); border-left: 3px solid var(--accent-2, var(--accent)); border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 18px; }
-.course-modenote-label { display: block; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-2, var(--accent)); font-weight: 700; margin-bottom: 5px; }
-.course-modenote p { font-size: 0.92rem; line-height: 1.6; color: var(--text); margin: 0; }
-
-/* ---- Programm: Lerninhalt ---- */
-.course-lesson { margin-bottom: 20px; }
-.course-lesson p { font-size: 0.97rem; line-height: 1.72; color: var(--muted); margin-bottom: 12px; }
-.course-lesson p:last-child { margin-bottom: 0; }
-
-/* ---- Programm: Phasen-Trenner ---- */
-.course-phase-divider { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin: 38px 0 20px; padding: 14px 20px; border-radius: var(--radius-sm); background: linear-gradient(90deg, color-mix(in srgb, var(--phase, #2e7cf6) 16%, transparent), transparent); border-left: 4px solid var(--phase, #2e7cf6); }
-.course-phase-divider:first-child { margin-top: 8px; }
-.course-phase-name { font-family: var(--font-display); font-weight: 700; font-size: 1.12rem; color: var(--text); }
-.course-phase-weeks { font-family: var(--font-mono); font-size: 0.76rem; color: var(--muted); }
-
-/* ---- Programm: Wochen-Check-in Strip ---- */
-.course-checkin { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; background: var(--card-2); border: 1px dashed var(--line-strong); border-radius: var(--radius-sm); padding: 13px 16px; margin-top: 4px; }
-.course-checkin-label { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent-2); font-weight: 700; white-space: nowrap; }
-.course-checkin span:last-child { font-size: 0.9rem; color: var(--muted); }
-.course-note { margin-top: 14px; }
-
-/* ---- Programm: Wissens-Bibliothek (Module) ---- */
-.course-library { margin-top: 10px; }
-.course-module { margin-bottom: 20px; padding: 28px; }
-.course-module-head { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 16px; }
-.course-module-icon { font-size: 1.9rem; line-height: 1; flex-shrink: 0; }
-.course-module-kicker { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 3px; }
-.course-module-body p { font-size: 0.96rem; line-height: 1.72; color: var(--muted); margin-bottom: 12px; }
-.course-module-body p:last-child { margin-bottom: 0; }
-.module-callout { display: flex; gap: 12px; align-items: flex-start; border-radius: var(--radius-sm); padding: 14px 18px; margin-top: 16px; font-size: 0.9rem; line-height: 1.6; }
-.module-callout span { flex-shrink: 0; }
-.module-callout-info { background: var(--accent-soft); border: 1px solid var(--accent-line); color: var(--text); }
-.module-callout-warn { background: var(--amber-soft); border: 1px solid color-mix(in srgb, var(--amber) 40%, transparent); color: var(--text); }
-
-/* ---- Programm: Coaching-Teaser (Upsell-Box) ---- */
-.coaching-tease { margin-top: 18px; padding: 20px 22px; border-radius: var(--radius-sm); background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, transparent), color-mix(in srgb, var(--accent-2) 10%, transparent)); border: 1px solid var(--accent-line); }
-.coaching-tease-label { display: block; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-2); font-weight: 700; margin-bottom: 8px; }
-.coaching-tease p { font-size: 0.93rem; line-height: 1.65; color: var(--text); margin-bottom: 14px; }
-
-/* ---- Programm: Coaching-CTA am Ende ---- */
-.course-coaching-cta { margin-top: 40px; padding: 40px 32px; border-radius: var(--radius); text-align: center; background: radial-gradient(120% 140% at 50% 0%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 70%), var(--card); border: 1px solid var(--accent-line); }
-.course-coaching-cta .lead { max-width: 640px; margin: 12px auto 22px; }
-.course-cta-list { max-width: 560px; margin: 0 auto 20px; text-align: left; }
-.course-cta-note { font-size: 0.88rem; max-width: 560px; margin: 0 auto 22px; }
-
-@media (max-width: 640px) {
-  .course-intro, .course-module, .course-coaching-cta { padding: 22px; }
-  .course-checkin { flex-direction: column; gap: 4px; }
-}
-
-/* ---- Programm: Zugangs-Banner auf der Verkaufsseite (für Käufer) ---- */
-.course-access-banner { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; text-decoration:none; margin-bottom:22px; padding:14px 20px; border-radius:var(--radius-sm); background:linear-gradient(135deg, color-mix(in srgb, var(--green) 22%, transparent), color-mix(in srgb, var(--accent) 14%, transparent)); border:1px solid color-mix(in srgb, var(--green) 45%, transparent); }
-.course-access-banner span { color:var(--text); font-weight:600; font-size:0.95rem; }
-.course-access-banner strong { color:var(--accent-2); font-family:var(--font-mono); font-size:0.9rem; white-space:nowrap; }
-.course-access-banner:hover { border-color:var(--accent-2); }
-
-/* ---- Programm: Vertiefen & Tools (Ebook/Rechner/Tracker pro Kapitel) ---- */
-.course-resources { margin-top: 4px; padding-top: 16px; border-top: 1px dashed var(--line); }
-.course-res-list { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 10px; }
-.course-res { display: inline-flex; align-items: center; gap: 7px; padding: 8px 13px; border-radius: 999px; font-size: 0.85rem; font-weight: 500; text-decoration: none; color: var(--text); background: var(--card-2); border: 1px solid var(--line); transition: border-color .15s, transform .15s, background .15s; }
-.course-res span { font-size: 0.95rem; line-height: 1; }
-.course-res:hover { transform: translateY(-1px); border-color: var(--accent); }
-.course-res-ebook  { border-color: color-mix(in srgb, var(--accent) 40%, transparent); background: var(--accent-soft); }
-.course-res-check  { border-color: color-mix(in srgb, var(--accent-2) 40%, transparent); }
-.course-res-tracker{ border-color: color-mix(in srgb, var(--green) 40%, transparent); }
-.course-res-tool   { border-color: color-mix(in srgb, var(--accent) 32%, transparent); }
-.course-res-page   { border-color: color-mix(in srgb, var(--amber) 40%, transparent); }
 
 .course-module-ebook { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600; letter-spacing: 0.02em; color: var(--accent-2); text-decoration: none; padding: 9px 15px; border-radius: 999px; border: 1px solid var(--accent-line); background: var(--accent-soft); transition: border-color .15s, transform .15s; }
 .course-module-ebook:hover { transform: translateY(-1px); border-color: var(--accent-2); }
@@ -2544,7 +2445,7 @@ body > * { position: relative; z-index: 0; }
 /* ---- SECTION HEADER — editoriale Mono-Mikrotypografie (MM / SCORE) ---- */
 .mm-secthead { display: flex; align-items: baseline; gap: 10px; margin: var(--space-5) 0 var(--space-3); }
 .mm-secthead .sys { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.18em; color: var(--status-active); }
-.mm-secthead h2, .mm-secthead .t { font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; letter-spacing: 0.02em; color: var(--text); }
+.mm-secthead h2, .mm-secthead .t { font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; letter-spacing: 0.02em; color: var(--text); margin: 0; }
 .mm-secthead::after { content: ""; flex: 1; height: 1px; background: var(--hairline); align-self: center; }
 
 /* ---- STRUKTUR STATT KARTEN ---- */
@@ -2732,7 +2633,7 @@ body > * { position: relative; z-index: 0; }
 .os14-score-hero .num { font-family: var(--font-display); font-weight: 700; font-size: clamp(4.4rem, 16vw, 8rem); line-height: 0.9; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; }
 .os14-score-hero .num small { font-size: 0.22em; font-weight: 600; color: var(--muted-2); letter-spacing: 0.06em; }
 .os14-score-hero .lvl { max-width: 42ch; padding-bottom: 8px; }
-.os14-score-hero .lvl b { display: block; font-family: var(--font-display); font-size: clamp(1.15rem, 3vw, 1.5rem); letter-spacing: 0.08em; text-transform: uppercase; }
+.os14-score-hero .lvl b, .os14-score-hero .lvl .lvl-h { display: block; margin: 0; font-family: var(--font-display); font-size: clamp(1.15rem, 3vw, 1.5rem); letter-spacing: 0.08em; text-transform: uppercase; }
 .os14-score-hero .lvl > span { display: block; color: var(--muted); font-size: 0.92rem; margin-top: 6px; }
 .os14-score-hero .lvl .delta { display: inline-block; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.14em; margin-top: 10px; }
 .os14-score-hero .lvl .delta.up { color: var(--status-improving); }

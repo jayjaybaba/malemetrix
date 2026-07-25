@@ -26,7 +26,10 @@
 .bp-part { padding: 64px 0 8px; }
 .bp-part-head { border-top: 1px solid rgba(255,255,255,.08); padding-top: 30px; margin-bottom: 8px; }
 .bp-part-no { font-family: var(--font-mono, monospace); font-size: .68rem; letter-spacing: .28em; color: var(--bp-cyan); }
-.bp h1.bp-h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); line-height: 1.04; margin: 8px 0 6px; letter-spacing: -.01em; }
+/* Kapitelüberschriften sind h2 (eine h1 je Dokument, auf dem Cover).
+   Der Selektor greift bewusst ohne Tag, damit Größe und Abstand identisch
+   bleiben. */
+.bp .bp-h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); line-height: 1.04; margin: 8px 0 6px; letter-spacing: -.01em; }
 .bp h2.bp-h2 { font-size: 1.35rem; margin: 40px 0 10px; letter-spacing: -.01em; }
 .bp h3.bp-h3 { font-size: 1.05rem; margin: 26px 0 8px; color: #eaf3fb; }
 .bp p { color: #b9c4cf; line-height: 1.72; margin: 0 0 16px; font-size: 1.02rem; }
@@ -203,7 +206,7 @@
 .bp-gate .gate-btn:active { transform: translateY(1px); }
 
 @media (max-width: 560px) {
-  .bp h1.bp-h1 { font-size: 1.7rem; }
+  .bp .bp-h1 { font-size: 1.7rem; }
   .stack .lvl { grid-template-columns: 44px 1fr; }
   .bp-cover { min-height: 84vh; }
   .bp-cover .bp-cover-title { font-size: 3rem; }

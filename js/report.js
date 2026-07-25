@@ -15,6 +15,9 @@
   const date = new Date(r.date);
   const dateStr = date.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
 
+  /* Der Vorname kommt aus dem Fragebogen und wird in innerHTML gesetzt. */
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]; }); }
+
   function barColor(v) { return v < 40 ? "#e0654f" : v < 70 ? "#e8a33d" : "#2e7cf6"; }
 
   const moduleText = C.moduleText;
@@ -116,7 +119,7 @@
 
   /* ---------- Executive Summary ---------- */
   html += '<div class="r-section"><h2>01 — Executive Summary</h2>' +
-    '<p>' + (firstName ? firstName + ", du" : "Du") + ' bist nicht undiszipliniert. Deine Antworten zeigen, wo dein System aktuell trägt und wo es bricht. ' +
+    '<p>' + (firstName ? esc(firstName) + ", du" : "Du") + ' bist nicht undiszipliniert. Deine Antworten zeigen, wo dein System aktuell trägt und wo es bricht. ' +
     'Dein stärkster Bereich ist <strong>' + C.nm(r.strongest) + '</strong> (' + r.scores[r.strongest] + '/100), ' +
     'dein größter Engpass liegt bei <strong>' + r.bottleneck.name + '</strong>. ' + r.bottleneck.text + '</p>' +
     (r.whtr && r.whtr >= 0.5 ? '<p style="margin-top:10px">Dein Bauchumfang ist aktuell ein wichtiger Marker (Waist-to-Height: ' + whtrStr + '). Nicht wegen Optik allein — der Bauchumfang sagt oft mehr über zentrale Körperfettverteilung aus als das Gewicht allein. Orientierung: Taille möglichst unter der Hälfte der Körpergröße halten.</p>' : '') +
@@ -166,7 +169,7 @@
   html += '</div></div></div>';
 
   /* ---------- Einzel-Auswertung ---------- */
-  html += '<div class="r-section"><h2>Einzel-Auswertung der 7 Bereiche</h2><div class="r-grid-2">';
+  html += '<div class="r-section"><h2>Einzel-Auswertung im Überblick</h2><div class="r-grid-2">';
   keys.forEach(k => {
     html += '<div class="r-box"><span class="r-tag">' + C.nm(k) + ' · ' + r.scores[k] + '/100</span>' +
       '<p style="font-size:0.86rem">' + moduleText(k, r.scores[k]) + '</p></div>';
@@ -271,7 +274,7 @@
       '<p style="margin-top:6px">' + rec.why + '</p>' +
       (rec.kind === 'medical'
         ? '<p style="margin-top:8px;font-size:0.85rem">Kläre die oben markierten Punkte zuerst ärztlich. Danach unterstützt dich MaleMetrix bei Struktur und Umsetzung.</p>'
-        : '<p style="margin-top:8px;font-size:0.9rem"><strong>' + rec.primary.label + '</strong>' + (rec.kind === 'coaching' ? ' — kostenloses Analysegespräch: <strong>malemetrix.com/termin</strong>' : ' — <strong>malemetrix.com/protokoll</strong>') + '</p>') +
+        : '<p style="margin-top:8px;font-size:0.9rem"><strong>' + rec.primary.label + '</strong>' + (rec.kind === 'coaching' ? ' — kostenloses Analysegespräch: <a class="r-cta-link" href="termin.html"><strong>malemetrix.com/termin</strong></a>' : ' — <a class="r-cta-link" href="protokoll.html"><strong>malemetrix.com/protokoll</strong></a>') + '</p>') +
       '</div></div>';
   })();
 

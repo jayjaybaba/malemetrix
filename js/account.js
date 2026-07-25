@@ -302,11 +302,29 @@
   function saveScoreResult(result) {
     if (!backend || !_user) return Promise.resolve({ ok: false, code: "no_cloud" });
     var r = result || localScore(); if (!r) return Promise.resolve({ ok: true, code: "no_score" });
+    /* DATENSCHUTZ-INVARIANTE: Die ANTWORTEN verlassen das Gerät nicht.
+       datenschutz.html sagt zu, dass der Score lokal ausgewertet wird und
+       eine Übertragung nur auf ausdrückliche Anforderung stattfindet. Der
+       Konto-Sync lief dieser Zusage zuwider: er lud `result: r` samt
+       r.answers hoch — inklusive Status, Libido/Erektion, Substanz-
+       kategorien und Symptomen, also besonderer Kategorien nach Art. 9
+       DSGVO. Synchronisiert wird deshalb nur noch das ERGEBNIS (Score,
+       Modus, Engpass, Domains, Datenlücken) — genug, um das Konto- und
+       Verlaufs-Dashboard zu speisen, ohne den Fragebogen zu übertragen.
+       Wer die Antworten geräteübergreifend braucht, müsste dafür zuerst
+       den Rechtstext ergänzen und eine ausdrückliche Einwilligung einholen. */
+    var pub = {};
+    ["date", "total", "scores", "whtr", "level", "levelText", "plan", "archetype",
+     "bottleneck", "weakest", "strongest", "flags", "v", "status", "domains",
+     "dataGaps", "confidence", "contextPanel", "primaryBottleneck",
+     "secondaryPriorities", "goalRecommendation"].forEach(function (k) {
+      if (r[k] !== undefined) pub[k] = r[k];
+    });
     // History bleibt erhalten: pro Datum eine eigene Zeile (source_id).
     return backend.upsert("score_results", {
       user_id: _user.id, source_id: "score:" + (scoreDate(r) || "latest"),
       score_total: (r.total != null ? r.total : null), mode: (r.plan || null),
-      bottleneck: (r.bottleneck && r.bottleneck.key) || null, result: r, scored_at: scoreDate(r) || null
+      bottleneck: (r.bottleneck && r.bottleneck.key) || null, result: pub, scored_at: scoreDate(r) || null
     }, "user_id,source_id").then(function (x) { return x.error ? { ok: false, message: x.error.message } : { ok: true }; });
   }
 

@@ -315,7 +315,17 @@
   }
   function recoveryLow() {
     var lp = lastPulse();
-    if (lp && lp.inp && ((lp.inp.energy != null && lp.inp.energy <= 2) || lp.inp.sleep === "bad")) return true;
+    /* Zwei Fehler, die sich gegenseitig verdeckt haben:
+       1. Ein leeres Energiefeld bleibt der String "" (js/course.js), und
+          "" <= 2 ist in JS true — jeder Nutzer ohne Eingabe galt als
+          erholungsschwach (kostete −4 Punkte am Krafttag, −10 % Last).
+       2. Das Schlaf-Select schreibt "gut"|"ok"|"schlecht", niemals "bad" —
+          der Schlafteil hat nie ausgelöst. */
+    if (lp && lp.inp) {
+      var _e = parseInt(lp.inp.energy, 10);
+      if (isFinite(_e) && _e <= 2) return true;
+      if (lp.inp.sleep === "schlecht") return true;
+    }
     var m = contextMode();
     return m === "recovery_sick";
   }
@@ -485,7 +495,8 @@
     if (recLow && primary.type === "program_strength") advisory = "Recovery ist unten — heute zählt die Minimalversion oder ein bewusster Recovery-Tag mehr als eine erzwungene Vollsession.";
     // §59 — NOT-NOW aus echtem Zustand: Verdict + Adhärenz + Engpass.
     var vcode = lp && lp.verdict && lp.verdict.code;
-    if (vcode === "execution" || vcode === "off_track") notNow.push("Programm wechseln", "Kalorien weiter senken", "Neue Supplements");
+    /* adjudicate() liefert code:"exec" — "execution" traf nie zu. */
+    if (vcode === "exec" || vcode === "execution" || vcode === "off_track") notNow.push("Programm wechseln", "Kalorien weiter senken", "Neue Supplements");
     else if (lp && lp.stagnant) notNow.push("Einfach 'mehr Disziplin' versuchen — justiere stattdessen EINE Stellschraube (Review unten)");
     else if (bn === "recovery" || recLow) notNow.push("Mehr Supplements", "Mehr Cardio-Volumen", "Programm wechseln");
     else if (bn === "body" || bn === "metabolic") notNow.push("Supplement Nr. 12", "Noch ein neuer Trainingsplan");

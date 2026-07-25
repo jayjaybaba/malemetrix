@@ -83,7 +83,10 @@
       max-width: 860px; margin: 0 auto 22px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: space-between; align-items: center;
     }
 
+    .paper .r-cta-link { color: #2e7cf6; text-decoration: underline; text-underline-offset: 2px; }
     @media print {
+      /* Im Druck ist der Link nur Text — der Linktext IST die URL. */
+      .paper .r-cta-link { color: inherit; text-decoration: none; }
       @page { margin: 14mm; }
       body { background: #fff !important; }
       .paper-wrap { padding: 0; }

@@ -9,6 +9,9 @@
 
   const CFG = window.MM_CONFIG || {};
   const $ = (s) => document.querySelector(s);
+  /* Name und E-Mail stammen aus dem Bestellformular und werden in
+     innerHTML gesetzt — vor der Ausgabe maskieren. */
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   const wrap = document.getElementById("checkoutWrap");
   if (!wrap) return;
 
@@ -93,18 +96,22 @@
 
     if (MM.track) MM.track("checkout_started", { value: t.total });
     const needsAddress = t.hasPhysical;
+    /* Reihenfolge ist Vorauswahl: die Ansicht unten markiert den ERSTEN
+       Eintrag als checked. Deshalb steht PayPal vorn — es ist der einzige
+       Weg, der den versprochenen sofortigen Zugang auch einlöst. Vorkasse
+       bleibt verfügbar, aber als bewusste Entscheidung des Käufers. */
     const payOptions = [];
+    if (CFG.paypalClientId) {
+      payOptions.push({ id: "paypal_smart", name: "PayPal / Kreditkarte", desc: "Sicher mit PayPal, Kredit- oder Debitkarte zahlen — ohne die Seite zu verlassen. Zugang sofort nach der Zahlung." });
+    } else if (CFG.paypalMe) {
+      payOptions.push({ id: "paypal", name: "PayPal", desc: "Bezahle direkt nach der Bestellung per PayPal-Link." });
+    }
     payOptions.push({
       id: "vorkasse", name: "Vorkasse / Überweisung",
       desc: bankConfigured()
         ? "Du erhältst die Bankverbindung direkt nach der Bestellung. Versand bzw. Lieferung nach Zahlungseingang."
         : "Du erhältst die Bankverbindung per E-Mail an deine angegebene Adresse. Lieferung nach Zahlungseingang."
     });
-    if (CFG.paypalClientId) {
-      payOptions.push({ id: "paypal_smart", name: "PayPal / Kreditkarte", desc: "Sicher mit PayPal, Kredit- oder Debitkarte zahlen — ohne die Seite zu verlassen." });
-    } else if (CFG.paypalMe) {
-      payOptions.push({ id: "paypal", name: "PayPal", desc: "Bezahle direkt nach der Bestellung per PayPal-Link." });
-    }
 
     document.getElementById("checkoutForm").innerHTML =
       '<h2 class="h-card" style="margin-bottom:20px">Kontakt</h2>' +
@@ -398,7 +405,7 @@
         '<p class="muted" style="margin-top:6px">Deine Zahlung über <strong style="color:var(--text)">' + order.total + '</strong> ist per PayPal eingegangen. Wir kümmern uns sofort um deine Bestellung — du musst nichts weiter tun.</p></div>';
     } else if (isPaypalMe) {
       payBlock = '<div class="card" style="text-align:left;margin-bottom:24px"><span class="card-num">SO ZAHLST DU PER PAYPAL</span>' +
-        '<p class="muted" style="margin-bottom:18px">Klicke auf den Button und zahle <strong style="color:var(--text)">' + order.total + '</strong>. Gib als Verwendungszweck deine Bestellnummer an: <strong style="color:var(--text)">' + order.no + '</strong></p>' +
+        '<p class="muted" style="margin-bottom:18px">Klicke auf den Button und zahle <strong style="color:var(--text)">' + order.total + '</strong>. Gib als Verwendungszweck deine Bestellnummer an: <strong style="color:var(--text)">' + esc(order.no) + '</strong></p>' +
         '<a class="btn btn-primary" href="' + CFG.paypalMe + "/" + amountRaw + '" target="_blank" rel="noopener">Mit PayPal zahlen — ' + order.total + '</a></div>';
     } else if (bankConfigured()) {
       payBlock = '<div class="card" style="text-align:left;margin-bottom:24px"><span class="card-num">SO ZAHLST DU PER ÜBERWEISUNG</span>' +
@@ -407,20 +414,20 @@
         '<div class="summary-line"><span>IBAN</span><span class="mono">' + (bank.iban || "—") + '</span></div>' +
         '<div class="summary-line"><span>Bank</span><span class="mono">' + (bank.bank || "—") + '</span></div>' +
         '<div class="summary-line"><span>Betrag</span><span class="mono">' + order.total + '</span></div>' +
-        '<div class="summary-line"><span>Verwendungszweck</span><span class="mono">' + order.no + '</span></div>' +
+        '<div class="summary-line"><span>Verwendungszweck</span><span class="mono">' + esc(order.no) + '</span></div>' +
         '</div></div>';
     } else {
       payBlock = '<div class="card" style="text-align:left;margin-bottom:24px"><span class="card-num">SO GEHT ES WEITER</span>' +
-        '<p class="muted" style="margin-top:6px">Du erhältst die Bankverbindung für deine Überweisung über <strong style="color:var(--text)">' + order.total + '</strong> per E-Mail an <strong style="color:var(--text)">' + order.email + '</strong>. Verwendungszweck: <strong style="color:var(--text)">' + order.no + '</strong>.</p></div>';
+        '<p class="muted" style="margin-top:6px">Du erhältst die Bankverbindung für deine Überweisung über <strong style="color:var(--text)">' + order.total + '</strong> per E-Mail an <strong style="color:var(--text)">' + esc(order.email) + '</strong>. Verwendungszweck: <strong style="color:var(--text)">' + esc(order.no) + '</strong>.</p></div>';
     }
 
     wrap.innerHTML =
       '<div class="order-success">' +
       '<div class="success-icon">✓</div>' +
-      '<span class="eyebrow" style="justify-content:center">Bestellung ' + order.no + '</span>' +
-      '<h1 class="h-section" style="margin-bottom:14px">Danke, ' + order.name.split(" ")[0] + '!</h1>' +
+      '<span class="eyebrow" style="justify-content:center">Bestellung ' + esc(order.no) + '</span>' +
+      '<h1 class="h-section" style="margin-bottom:14px">Danke, ' + esc(order.name.split(" ")[0]) + '!</h1>' +
       '<p class="muted" style="margin-bottom:8px">Deine Bestellung ist eingegangen' + (viaMailto ? " — bitte sende die geöffnete E-Mail noch ab, damit sie uns erreicht" : "") + '.</p>' +
-      '<p class="muted" style="margin-bottom:28px">Bestellbestätigung &amp; Details gehen an <strong style="color:var(--text)">' + order.email + '</strong>.</p>' +
+      '<p class="muted" style="margin-bottom:28px">Bestellbestätigung &amp; Details gehen an <strong style="color:var(--text)">' + esc(order.email) + '</strong>.</p>' +
       courseBlock +
       payBlock +
 

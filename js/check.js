@@ -101,7 +101,6 @@
 
   /* ---------- Red Flags (eine Quelle: C.redFlags) ---------- */
 
-  function collectRedFlags(a) { return C.redFlags(a); }
   /* ======================================================================
      WIZARD-RENDERING
      ====================================================================== */
@@ -112,6 +111,14 @@
       if (el) el.style.display = (id === sectionId) ? "" : "none";
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
+    /* Der sichtbare Abschnitt hat gewechselt — der Fokus muss mit,
+       sonst steht der Nutzer nach dem letzten Klick wieder ganz oben
+       im Seitenkopf statt bei seinem Ergebnis. */
+    const sec = document.getElementById(sectionId);
+    if (!sec) return;
+    const target = sec.querySelector("h1") || sec;
+    if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
+    try { target.focus({ preventScroll: true }); } catch (e) { target.focus(); }
   }
 
   function renderProgress() {
@@ -494,9 +501,9 @@
        Massives Score-Readout + Mono-Systemzeile statt Ring-in-Karte.
        Darunter EIN Limiter-Band: der Engpass dominiert, nicht 4 Chips. */
     html += '<div class="os14-score-hero">' +
-      '<div class="sys">MM / SCORE' + (firstName ? '<span class="who">' + firstName.toUpperCase() + '</span>' : '') + '</div>' +
+      '<div class="sys">MM / SCORE' + (firstName ? '<span class="who">' + esc(firstName.toUpperCase()) + '</span>' : '') + '</div>' +
       '<div class="read"><span class="num">' + r.total + '<small>/100</small></span>' +
-      '<div class="lvl"><b>' + r.level + '</b><span>' + r.levelText + '</span>' +
+      '<div class="lvl"><h1 class="lvl-h">' + esc(r.level) + '<span class="sr-only"> — MaleMetrix Score ' + r.total + ' von 100</span></h1><span>' + r.levelText + '</span>' +
       (prev ? '<span class="delta ' + (r.total >= prev.total ? 'up' : 'down') + '">LETZTER CHECK ' + prev.total + ' → ' + r.total + '</span>' : '') + '</div></div>' +
       '<div class="limiter"><span class="k">PRIMARY LIMITER</span><b>' + esc(V.primaryBottleneck.name).toUpperCase() + '</b><span class="v">' + (V.primaryBottleneck.value != null ? V.primaryBottleneck.value : "") + '</span></div>' +
       '</div>';
@@ -531,7 +538,7 @@
     html += '<div class="card dash-block bottleneck-card" style="margin-bottom:22px">' +
       '<span class="card-num" style="color:var(--red)">DEIN PRIMÄRER ENGPASS' +
       (V.primaryBottleneck.value != null ? ' · ' + V.primaryBottleneck.value + '/100' : '') + '</span>' +
-      '<h3 style="font-size:1.4rem;margin:2px 0 8px">' + esc(V.primaryBottleneck.name) + '</h3>' +
+      '<h2 style="font-size:1.4rem;margin:2px 0 8px">' + esc(V.primaryBottleneck.name) + '</h2>' +
       '<p>' + esc(V.primaryBottleneck.text) + '</p>' +
       (V.primaryBottleneck.forced
         ? '<p class="small" style="margin-top:10px;color:var(--muted)"><strong style="color:var(--text)">Warum das vorgeht:</strong> Deine Angaben enthalten einen Kontrollpunkt, der Vorrang vor der reinen Punktzahl hat.</p>'
@@ -548,7 +555,7 @@
       const rows = order.filter(d => V.domains[d] !== undefined && V.domains[d] !== null);
       if (!rows.length) return;
       html += '<div class="card dash-block" style="margin-bottom:22px">' +
-        '<div class="mm-secthead" style="margin-top:0"><span class="sys">MM / SYSTEMS</span><span class="t">Deine Systeme im Einzelnen</span></div>' +
+        '<div class="mm-secthead" style="margin-top:0"><span class="sys">MM / SYSTEMS</span><h2 class="t">Deine Systeme im Einzelnen</h2></div>' +
         '<p class="small muted" style="margin:0 0 12px">Nur die Bereiche, die für deinen Kontext tatsächlich erhoben wurden. Was nicht erfasst wurde, wird hier auch nicht behauptet.</p>' +
         '<div class="mm-sys wide">';
       rows.forEach(d => {
@@ -627,13 +634,13 @@
       '</div>';
 
     /* ---------- 2. PROFIL: Radar + diagnostische Systemliste (VS2) ----------
-       Die 7 Bereiche sprechen die MaleMetrix-Systemsprache (.mm-sys):
+       Die Übersicht spricht die MaleMetrix-Systemsprache (.mm-sys):
        Mono-IDs, Hairlines, genau EIN Primary-Bottleneck-Highlight —
        Diagnose-Instrument statt Karten-Balken-Stapel. */
     html += '<div class="result-grid">' +
-      '<div class="card"><h3 style="margin-bottom:6px">Dein Performance-Profil</h3><p class="small muted" style="margin-bottom:10px">7 Bereiche, ein Bild: je weiter außen, desto stärker.</p>' +
+      '<div class="card"><h2 style="margin-bottom:6px;font-size:1.05rem">Dein Performance-Profil</h2><p class="small muted" style="margin-bottom:10px">Die grobe Übersicht in einem Bild: je weiter außen, desto stärker.</p>' +
       '<div class="radar-wrap">' + radarSVG(r.scores) + '</div></div>' +
-      '<div class="card"><div class="mm-secthead" style="margin-top:0"><span class="sys">MM / SYSTEMS</span><span class="t">Deine 7 Bereiche</span></div><div class="mm-sys">';
+      '<div class="card"><div class="mm-secthead" style="margin-top:0"><span class="sys">MM / SYSTEMS</span><h2 class="t">Dein Profil im Überblick</h2></div><div class="mm-sys">';
     keys.forEach(k => {
       const v = r.scores[k];
       const flag = v < 40 && k !== bKey;
@@ -717,7 +724,7 @@
 
     /* ---------- 6. PERSONALISIERTE WEGE: erst Inhalte, dann Angebote ---------- */
     const res = C.resource[bKey] || C.resource.execution;
-    html += '<h3 class="h-card" style="margin:38px 0 6px">Deine nächsten Schritte' + (firstName ? ', ' + firstName : '') + '</h3>' +
+    html += '<h2 class="h-card" style="margin:38px 0 6px">Deine nächsten Schritte' + (firstName ? ', ' + esc(firstName) : '') + '</h2>' +
       '<p class="small muted" style="margin-bottom:18px">Passend zu deinem Engpass „' + r.bottleneck.name + '" — zuerst verstehen und umsetzen, ohne einen Cent:</p>' +
       '<div class="grid-2 next-content">' +
       '<a class="card path-card" href="' + res.read.href + '" data-track="score_path_read"><span class="path-tag">LESEN</span>' +
@@ -743,7 +750,7 @@
     /* ---------- 6b. Personalisierte Empfehlung + 2 Wege ---------- */
     const rec = C.productRecommendation(r);
     const recColor = rec.kind === 'medical' ? 'var(--red)' : (rec.kind === 'coaching' ? 'var(--accent-2)' : 'var(--accent)');
-    html += '<h3 class="h-card" style="margin:38px 0 6px">Wenn du es strukturiert angehen willst</h3>' +
+    html += '<h2 class="h-card" style="margin:38px 0 6px">Wenn du es strukturiert angehen willst</h2>' +
       '<div class="card dash-block" style="border-left:3px solid ' + recColor + ';margin-bottom:14px">' +
       '<span class="card-num" style="color:' + recColor + '">' + (rec.kind === 'medical' ? 'ZUERST: SICHERHEIT' : 'PASST ZU DEINEM PROFIL') + '</span>' +
       '<h3 style="margin:2px 0 6px">' + rec.title + '</h3>' +
@@ -757,7 +764,7 @@
       '<p class="small muted" style="margin:0 0 14px">Das komplette MaleMetrix-System inkl. interaktivem 12-Wochen-Programm — für die selbstständige Umsetzung.</p>' +
       '<span class="btn btn-primary btn-sm btn-block">Protokoll ansehen</span></a>' +
       '<a class="card offer-card" href="coaching.html" data-track="cta_coaching"><span class="card-num">INDIVIDUELL</span>' +
-      '<h3 style="font-size:1.05rem;margin:6px 0 2px">1:1 Coaching</h3><p class="offer-price">ab 149 €<small> / Monat</small></p>' +
+      '<h3 style="font-size:1.05rem;margin:6px 0 2px">1:1 Coaching</h3><p class="offer-price">149 €<small> / Monat · monatlich kündbar</small></p>' +
       '<p class="small muted" style="margin:0 0 14px">Individuelle Analyse und laufende Optimierung deiner Performance — persönlich begleitet.</p>' +
       '<span class="btn btn-dark btn-sm btn-block">1:1 ansehen</span></a>' +
       '</div>';
@@ -771,7 +778,7 @@
     html += '<div class="card dash-block" style="margin-top:16px;border-left:3px solid var(--accent-2)">' +
       '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:20px;justify-content:space-between">' +
       '<div style="flex:1;min-width:260px">' +
-      '<h3 class="h-card" style="margin-bottom:6px">Unsicher, wo du anfangen sollst?</h3>' +
+      '<h2 class="h-card" style="margin-bottom:6px">Unsicher, wo du anfangen sollst?</h2>' +
       '<p class="muted" style="font-size:0.93rem;margin:0">Schick mir deinen Score-Screenshot mit dem Wort SCORE — ich sage dir kurz und ehrlich, welcher Hebel für dich zuerst kommt. Kostenlos, direkt mit mir.</p></div>' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;flex-shrink:0">' +
       (ig ? '<a class="btn btn-dark btn-sm" href="' + ig + '" target="_blank" rel="noopener" data-track="score_dm_click">📸 Per Instagram-DM</a>' : '') +
@@ -841,7 +848,7 @@
       '</div></div>';
 
     /* ---------- 7. TEILBARE SCORE-CARD ---------- */
-    html += '<h3 class="h-card" style="margin:38px 0 14px">Deine Score-Card</h3>' +
+    html += '<h2 class="h-card" style="margin:38px 0 14px">Deine Score-Card</h2>' +
       '<div class="mm-scorecard" id="scoreCard">' +
       '<div class="sc-top"><span class="sc-brand">MALE<strong>METRIX</strong></span><span class="sc-level">' + r.level + '</span></div>' +
       '<div class="sc-score"><span class="sc-num">' + r.total + '</span><span class="sc-of">/100</span></div>' +
@@ -1072,6 +1079,22 @@
         if (!hadDraft || !t.attemptId()) t.startAttempt();
       }
       resyncSteps();
+      /* Wiedereinstieg: Wer bei Frage 60 aufgehört hat, soll nicht 60-mal
+         „Weiter" durch die eigenen Antworten tippen. Der Entwurf enthält
+         die Antworten längst — also an die erste UNBEANTWORTETE Frage
+         springen. Ist alles beantwortet, bleibt es bei Frage 1. */
+      if (hadDraft) {
+        const firstOpen = steps.findIndex(s => {
+          const v = state.answers[s.q.id];
+          if (s.q.type === "fields") return (s.q.fields || []).some(f => f.required && !state.answers[f.id]);
+          if (s.q.type === "multi") return !Array.isArray(v) || !v.length;
+          return v === undefined || v === null || v === "";
+        });
+        if (firstOpen > 0) {
+          state.idx = firstOpen;
+          MM.toast("Weiter bei Frage " + (firstOpen + 1) + " — deine bisherigen Antworten sind gespeichert");
+        }
+      }
       telOnce("started", "score_started", telBase());
       if (hadDraft) telOnce("resumed", "score_resumed", telBase());
       show("checkWizard");

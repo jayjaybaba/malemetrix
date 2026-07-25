@@ -67,6 +67,7 @@
 
   function progress() { var h = document.documentElement; var max = h.scrollHeight - h.clientHeight; bar.style.width = (max > 0 ? (h.scrollTop / max * 100) : 0) + "%"; }
   document.addEventListener("scroll", progress, { passive: true });
+  progress();   // Startwert setzen (kam bisher vom doppelten Handler am Seitenende)
 
   function show(html) { content.innerHTML = html; gate.hidden = true; content.hidden = false; progress(); if (window.MM && MM.track) MM.track("master_unlocked", {}); }
   async function attempt(code, silent) {
@@ -95,8 +96,8 @@
   if (input) input.addEventListener("keydown", function (e) { if (e.key === "Enter") attempt(input.value); });
 })();
 </script>
-<script>
-  (function(){var bar=document.getElementById("bpProgress");function upd(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;bar.style.width=(max>0?(h.scrollTop/max*100):0)+"%";}document.addEventListener("scroll",upd,{passive:true});upd();})();
-</script>
+<!-- Der Fortschrittsbalken hing an zwei zeichengleichen scroll-Handlern:
+     progress() im Block darüber macht bereits dasselbe. Der zweite lief bei
+     jedem Scroll-Event zusätzlich und schrieb denselben Wert. -->
 </body>
 </html>

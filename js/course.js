@@ -379,7 +379,10 @@
       if (rec.p) { // Hauptaufgabe erledigt → zählt zur Tagesart
         if (dt === "strength") res.strength.done++; else if (dt === "engine") res.engine.done++; else if (dt === "recover" || dt === "reset" || dt === "mobility") res.recover.done++; else if (dt === "move") res.move++;
       }
-      if (rec.move) res.move++;
+      /* Nicht doppelt zählen: an einem MOVE-Tag hat die Zeile darüber den
+         Tag bereits gutgeschrieben. Sonst meldet die Woche "5 von 5"
+         erreicht, obwohl vier Tage geloggt wurden. */
+      if (rec.move && dt !== "move") res.move++;
       if (rec.nutrition) res.nutrition++;
       if (rec.recover) res.recoverNights = (res.recoverNights || 0) + 1;
       if (rec.p || rec.move || rec.recover) res.active++;
@@ -409,9 +412,12 @@
   /* ---- Recheck / Trend (P20) ---- */
   function rechecks() { return S.get("course_rechecks", {}) || {}; }
   function latestRecheck(metric) { var rc = rechecks(); var pts = ["w12", "w8", "w4", "w0"]; for (var i = 0; i < pts.length; i++) if (rc[pts[i]] && rc[pts[i]][metric] != null && rc[pts[i]][metric] !== "") return { point: pts[i], val: rc[pts[i]][metric] }; return null; }
-  function trendCount(metric) { var rc = rechecks(); var n = 0; ["w0", "w4", "w8", "w12"].forEach(function (p) { if (rc[p] && rc[p][metric] != null && rc[p][metric] !== "") n++; }); return n; }
-
   /* ---- Weekly Pulse + Adjustment (P4, P20) ---- */
+  /* Freitextfelder erlauben "94,5". parseFloat schneidet am Komma ab und
+     macht daraus 94 — aus einem echten Fortschritt wird rechnerisch
+     Stagnation und damit eine falsche Plan-Anpassung. */
+  function numDE(v) { var x = parseFloat(String(v == null ? "" : v).replace(",", ".")); return isFinite(x) ? x : NaN; }
+
   function pulses() { return S.get("c2_pulse", {}) || {}; }
   function savePulse(week, obj) { var p = pulses(); p[week] = obj; S.set("c2_pulse", p); }
   // Mode-spezifische Adhärenz: anteilig über die trainingsrelevanten Win-Bedingungen
@@ -452,10 +458,10 @@
     // Trend statt Einzelwert (P20)
     var prev = pulses()[week - 1];
     var waistTrend = null;
-    if (inp.waist && prev && prev.inp && prev.inp.waist) waistTrend = parseFloat(inp.waist) - parseFloat(prev.inp.waist);
+    if (inp.waist && prev && prev.inp && prev.inp.waist) waistTrend = numDE(inp.waist) - numDE(prev.inp.waist);
     var stagnant = (waistTrend != null && Math.abs(waistTrend) < 0.3);
     if ((g === "cut" || g === "recomp") && stagnant && prev && prev.stagnant) return { code: "adjust", title: "ADJUST — eine Variable", cls: "adjust", text: { de: "Adhärenz hoch, Taille aber mehrere Wochen unverändert (Trend, nicht Einzeltag). Ändere jetzt GENAU EINE Variable — z. B. 500–800 Schritte/Tag mehr ODER eine Engine-Einheit mehr ODER ~10 % weniger Kalorien. Nicht alles gleichzeitig.", en: "Adherence high, but waist unchanged over multiple weeks (trend, not a single day). Change EXACTLY ONE variable — e.g. +500–800 steps/day OR one more engine session OR ~10% fewer calories. Not all at once." }, stagnant: true };
-    if (g === "build" && inp.waist && prev && prev.inp && prev.inp.waist && (parseFloat(inp.waist) - parseFloat(prev.inp.waist)) > 1) return { code: "adjust", title: "BODY FAT GUARDRAIL", cls: "adjust", text: { de: "Gewicht/Taille steigen schneller als gewollt. Nicht „mehr essen“ — zieh den Überschuss etwas zurück, Progression im Gym bleibt der Fokus.", en: "Weight/waist rising faster than intended. Not “eat more” — pull the surplus back a bit, keep gym progression the focus." } };
+    if (g === "build" && inp.waist && prev && prev.inp && prev.inp.waist && (numDE(inp.waist) - numDE(prev.inp.waist)) > 1) return { code: "adjust", title: "BODY FAT GUARDRAIL", cls: "adjust", text: { de: "Gewicht/Taille steigen schneller als gewollt. Nicht „mehr essen“ — zieh den Überschuss etwas zurück, Progression im Gym bleibt der Fokus.", en: "Weight/waist rising faster than intended. Not “eat more” — pull the surplus back a bit, keep gym progression the focus." } };
     return { code: "ontrack", title: "ON TRACK", cls: "ontrack", text: { de: "Adhärenz gut, Richtung stimmt. Plan beibehalten — Konstanz ist gerade dein stärkster Hebel.", en: "Adherence good, direction right. Keep the plan — consistency is your strongest lever right now." }, stagnant: stagnant };
   }
 
