@@ -8,3 +8,13 @@ _src/
 # versioniert ist ausschließlich proxy/wrangler.toml.example
 proxy/wrangler.toml
 proxy/.wrangler/
+
+# Interner Optimierungs-Audit NICHT ins öffentliche Repo.
+# GitHub Pages liefert jede Datei im Wurzelverzeichnis aus — auch Markdown
+# (geprüft: /SCORE_V2_LOGIC.md antwortet mit HTTP 200). OPTIMIERUNGEN.md
+# benennt offene Punkte bei Ratenbegrenzung, Telemetrie-Ingest und der
+# Abweichung zwischen Datenschutzerklärung und Konto-Sync. So etwas gehört
+# nicht auf die eigene Domain. Die Datei bleibt lokales Arbeitsdokument;
+# wenn sie versioniert werden soll, dann in einem privaten Repo oder als
+# um die Sicherheitsbefunde bereinigte Fassung.
+OPTIMIERUNGEN.md
