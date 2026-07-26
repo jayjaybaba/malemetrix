@@ -161,7 +161,12 @@ GESCHLOSSEN.forEach(function (name) {
   ok(/protokoll.html/.test(src), name + ": führt zum Kaufweg");
   ok(/noindex/.test(src), name + ": nicht indexierbar");
   ok(/Was in diesem Kapitel steht/.test(src), name + ": sagt, was drinsteht");
-  ok(/master-ebook.html/.test(src), name + ": Käufer finden den Weg zum Volltext");
+  /* Der Volltext liegt im Vault von ebooks/protokoll.html (zehn Kapitel plus
+     Abschluss), nicht mehr im Kompendium. Geprüft wird der Käufer-Hinweis mit
+     seinem seitenrelativen Link — der Kaufweg oben zeigt auf ../protokoll.html
+     und ist damit unterscheidbar. */
+  ok(/Schon gekauft\?/.test(src) && /href="protokoll\.html"/.test(src),
+    name + ": Käufer finden den Weg zum Volltext");
   ok(!/kostenloses Ebook|Gratis herunterladen/.test(src), name + ": kein Gratis-Versprechen mehr");
 });
 var stack = read("ebooks/ultimate-stack.html");
