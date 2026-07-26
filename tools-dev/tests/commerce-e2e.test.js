@@ -2,7 +2,7 @@
    MALEMETRIX — Commerce-Robustheit + Auth (nach abgeschlossenem 1-€-Livetest)
    Der kontrollierte E2E-Testpfad (1-€-Testprodukt + ?e2e/?recover) ist nach
    erfolgreichem Livetest vollständig zurückgebaut. Diese Suite sichert den
-   PRODUKTIVEN Zahlungsweg ab: DAS PROTOKOLL bleibt exakt 49 €, kein Client-
+   PRODUKTIVEN Zahlungsweg ab: DAS PROTOKOLL bleibt exakt 99 €, kein Client-
    Preis, PayPal-Server-Verifikation, Idempotenz, iOS-Recovery, CORS,
    autoritative Auth (ES256/verify_jwt) — und dass der Testpfad wirklich weg ist.
    Ausführen:  node tools-dev/tests/commerce-e2e.test.js
@@ -26,10 +26,10 @@ var fulfillment = read("supabase/functions/mm-commerce/fulfillment.mjs");
 var edge = edgeIndex + "\n" + fulfillment;
 
 /* ===== 1) DAS PROTOKOLL: Preis unverändert auf beiden Seiten ===== */
-group("DAS PROTOKOLL · 49 € unangetastet");
+group("DAS PROTOKOLL · 99 € unangetastet");
 (function () {
-  ok(/id:\s*"protokoll"[\s\S]{0,200}price:\s*49\.00/.test(shopData), "Client: protokoll price 49.00");
-  ok(/"protokoll":\s*\{\s*priceCents:\s*4900/.test(fulfillment), "Server: protokoll 4900 Cent");
+  ok(/id:\s*"protokoll"[\s\S]{0,200}price:\s*99\.00/.test(shopData), "Client: protokoll price 99.00");
+  ok(/"protokoll":\s*\{\s*priceCents:\s*9900/.test(fulfillment), "Server: protokoll 9900 Cent");
   ok(/entitlements:\s*\["protocol",\s*"twelve_week"\]/.test(fulfillment), "Server: protokoll-Entitlements unverändert");
 })();
 

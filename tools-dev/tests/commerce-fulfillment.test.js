@@ -50,11 +50,11 @@ function makeDb(opts = {}) {
   };
 }
 
-const CAP_OK = { id: "CAP-123", status: "COMPLETED", amountCents: 4900, currency: "EUR" };
+const CAP_OK = { id: "CAP-123", status: "COMPLETED", amountCents: 9900, currency: "EUR" };
 const BASE = { userId: "user-a", email: "a@example.com", orderNo: null, items: [], productIds: ["protokoll"] };
 const OWN_ORDER = {
   provider: "paypal", provider_ref: "CAP-123", user_id: "user-a",
-  status: "paid", total_cents: 4900, currency: "EUR", product_keys: ["protocol", "twelve_week"],
+  status: "paid", total_cents: 9900, currency: "EUR", product_keys: ["protocol", "twelve_week"],
 };
 
 (async () => {
@@ -62,13 +62,13 @@ const OWN_ORDER = {
     await import("../../supabase/functions/mm-commerce/fulfillment.mjs");
 
   group("Katalog server-autoritativ (P0.2)");
-  ok(PRODUCTS.protokoll && PRODUCTS.protokoll.priceCents === 4900, "protokoll kostet serverseitig exakt 4900 Cent");
+  ok(PRODUCTS.protokoll && PRODUCTS.protokoll.priceCents === 9900, "protokoll kostet serverseitig exakt 9900 Cent");
   ok(PRODUCTS.protokoll.currency === "EUR", "protokoll ist EUR");
   ok(JSON.stringify([...PRODUCTS.protokoll.entitlements].sort()) === JSON.stringify(["protocol", "twelve_week"]),
     "protokoll trägt genau protocol + twelve_week");
   {
     const v = validateProducts(["protokoll", "protokoll"]);
-    ok(v.ok && v.expectedCents === 4900, "doppelte Produkt-IDs werden dedupliziert (kein 9800)");
+    ok(v.ok && v.expectedCents === 9900, "doppelte Produkt-IDs werden dedupliziert (kein 9800)");
   }
   {
     const v = validateProducts(["protokoll", "hax0r-product"]);
@@ -142,7 +142,7 @@ const OWN_ORDER = {
   }
   {
     const db = makeDb();
-    const r = await fulfillVerifiedCapture({ ...BASE, capture: { ...CAP_OK, amountCents: 9900 } }, db);
+    const r = await fulfillVerifiedCapture({ ...BASE, capture: { ...CAP_OK, amountCents: 12900 } }, db);
     ok(r.status === 409 && r.body.error === "amount_mismatch", "abweichend hoher Betrag → reject (exakter Preis)");
   }
   {
@@ -190,7 +190,7 @@ const OWN_ORDER = {
   }
   {
     const db = makeDb();
-    const r = await fulfillVerifiedCapture({ ...BASE, capture: { status: "COMPLETED", amountCents: 4900, currency: "EUR" } }, db);
+    const r = await fulfillVerifiedCapture({ ...BASE, capture: { status: "COMPLETED", amountCents: 9900, currency: "EUR" } }, db);
     ok(r.status === 404 && r.body.error === "capture_not_found", "Capture ohne ID → capture_not_found");
   }
 

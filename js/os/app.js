@@ -377,7 +377,7 @@
       if (wN >= 2) upLines.push("Du hast bereits " + wN + " Körperdaten-Einträge — sie fließen direkt in dein System ein, nichts geht verloren.");
       html += '<div class="card"><span class="card-num" style="color:var(--accent)">WARUM JETZT</span>' +
         upLines.map(function (l) { return '<p class="muted" style="margin:8px 0 0">' + esc(l) + '</p>'; }).join("") +
-        '<p class="muted" style="margin:8px 0 12px">DAS PROTOKOLL (einmalig 49 €) schaltet das komplette System frei: 12-Week Programm, Today, Training, Nutrition, Intelligenz &amp; Foresight.</p>' +
+        '<p class="muted" style="margin:8px 0 12px">DAS PROTOKOLL (einmalig 99 €) schaltet das komplette System frei: 12-Week Programm, Today, Training, Nutrition, Intelligenz &amp; Foresight.</p>' +
         '<a href="protokoll.html" class="btn btn-primary btn-sm" data-track="upgrade_view">Dein System aufbauen →</a></div>';
     } else {
       html += '<div class="card os-accent os-start"><h1 class="os-big" style="font-size:1.5rem">Dein System startet hier</h1><ol class="os-steps">' +
@@ -1741,7 +1741,7 @@
             payment_already_claimed: "Diese Zahlung ist bereits einem anderen Konto zugeordnet. Melde dich mit dem Konto an, mit dem du gekauft hast.",
             order_not_found: "Zu dieser ID wurde bei PayPal keine Zahlung gefunden. Bitte ID prüfen.",
             capture_not_found: "Zu dieser ID wurde bei PayPal keine Zahlung gefunden. Bitte ID prüfen.",
-            amount_mismatch: "Die gefundene Zahlung passt nicht zu DAS PROTOKOLL (49 €). Bitte melde dich beim Support.",
+            amount_mismatch: "Die gefundene Zahlung passt nicht zu DAS PROTOKOLL (99 €). Bitte melde dich beim Support.",
             currency_mismatch: "Die gefundene Zahlung ist nicht in EUR. Bitte melde dich beim Support.",
             not_captured: "Die Zahlung ist bei PayPal noch nicht abgeschlossen. Bitte in Kürze erneut prüfen.",
             capture_incomplete: "Die Zahlung ist bei PayPal noch nicht abgeschlossen. Bitte in Kürze erneut prüfen.",

@@ -66,7 +66,7 @@
         '<div class="masterguide-row" style="display:grid;grid-template-columns:0.9fr 1.1fr;gap:0">' +
         coverHTML(featured, true) +
         '<div class="ebook-body" style="justify-content:center">' +
-        '<span class="product-badge" style="position:static;display:inline-block;margin-bottom:12px;align-self:flex-start">' + T("eb.inProtocol", "Im Protokoll · 49 €") + '</span>' +
+        '<span class="product-badge" style="position:static;display:inline-block;margin-bottom:12px;align-self:flex-start">' + T("eb.inProtocol", "Im Protokoll · 99 €") + '</span>' +
         '<p style="font-size:0.95rem">' + esc(tr(featured.desc)) + '</p>' +
         '<div class="ebook-meta"><span>' + fileFormatLabel(featured) + '</span><span>' + featured.minutes + ' ' + T("eb.minutes", "Min. Lesezeit") + '</span></div>' +
         readControl(featured, "", "align-self:flex-start") +

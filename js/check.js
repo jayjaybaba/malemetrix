@@ -825,7 +825,7 @@
       '<p class="small muted" style="margin-bottom:18px">Beide Wege im Überblick — kein Muss: Der Score, die Guides und die Tools oben sind komplett kostenlos.</p>' +
       '<div class="grid-2">' +
       '<a class="card offer-card featured" href="protokoll.html" data-track="cta_protokoll"><span class="card-num">SELBSTSTÄNDIG</span>' +
-      '<h3 style="font-size:1.05rem;margin:6px 0 2px">DAS PROTOKOLL</h3><p class="offer-price">49 €<small> einmalig</small></p>' +
+      '<h3 style="font-size:1.05rem;margin:6px 0 2px">DAS PROTOKOLL</h3><p class="offer-price">99 €<small> einmalig</small></p>' +
       '<p class="small muted" style="margin:0 0 14px">Das komplette MaleMetrix-System inkl. interaktivem 12-Wochen-Programm — für die selbstständige Umsetzung.</p>' +
       '<span class="btn btn-primary btn-sm btn-block">Protokoll ansehen</span></a>' +
       '<a class="card offer-card" href="coaching.html" data-track="cta_coaching"><span class="card-num">INDIVIDUELL</span>' +

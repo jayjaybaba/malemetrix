@@ -355,7 +355,7 @@ group("11 · Kein Verweis führt in ein geschlossenes Kapitel");
     ok(sm.indexOf("ebooks/" + z + ".html") < 0, "sitemap.xml führt " + z + " nicht mehr");
   });
   ok(!/data-ebook-read|unlockBoxForm|data-read=/.test(lib), "ebooks.html hat kein E-Mail-Gate mehr");
-  ok(/49 €/.test(lib) && /INHALTSVERZEICHNIS/.test(lib), "ebooks.html ist als Inhaltsverzeichnis mit Preis ausgewiesen");
+  ok(/99 €/.test(lib) && /INHALTSVERZEICHNIS/.test(lib), "ebooks.html ist als Inhaltsverzeichnis mit Preis ausgewiesen");
   ok(!/Kostenlose Ebooks|kostenlos freischalten|Lesen ohne Anmeldung/.test(lib), "ebooks.html verspricht keine kostenlosen Ebooks mehr");
   var ebJs = read("js/ebooks.js");
   ok(/b\.gated \?/.test(ebJs) && !/MM\.unlock/.test(ebJs), "die Bibliotheks-Kachel kennzeichnet bezahlte Kapitel und gated nichts per E-Mail");

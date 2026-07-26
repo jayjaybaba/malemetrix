@@ -31,7 +31,7 @@
 // (Produkt-IDs). Preis, Währung und Entitlements bestimmt ausschließlich der
 // Server. Unbekannte IDs werden abgelehnt, nie still toleriert.
 export const PRODUCTS = {
-  "protokoll": { priceCents: 4900, currency: "EUR", entitlements: ["protocol", "twelve_week"] },
+  "protokoll": { priceCents: 9900, currency: "EUR", entitlements: ["protocol", "twelve_week"] },
 };
 
 export function validateProducts(productIds, catalog = PRODUCTS) {

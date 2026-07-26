@@ -228,7 +228,7 @@ ok(/V\.deepLinks/.test(checkJs), "check.js nutzt die kontextuelle Deep-Link-Engi
 ok(/data-track="protokoll_chapter_/.test(checkJs), "… und trackt das konkrete Kapitel weiterhin");
 ok(/data-track="protokoll_chapter_/.test(checkJs), "Diagnose-Link trackt kapitelspezifisch (protokoll_chapter_<engpass>)");
 ok(!/href="protokoll\.html" data-track="protokoll_from_result"/.test(checkJs), "generischer protokoll.html-Link im Diagnose-Block ersetzt");
-ok(/data-track="cta_protokoll"/.test(checkJs), "Produkt-CTA (49 €) auf der Ergebnisseite bleibt erhalten");
+ok(/data-track="cta_protokoll"/.test(checkJs), "Produkt-CTA (99 €) auf der Ergebnisseite bleibt erhalten");
 
 group("Flagship Motion #01 · MM/MECHANISM-Clip (Assets)");
 /* Der Clip sitzt im Volltext von Kapitel 04 (Blutwerte), das inzwischen zum

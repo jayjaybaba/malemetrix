@@ -338,7 +338,7 @@ group("S21/S22 · Magazin: Score verlinkt, Vorschaubilder gesetzt");
 /* ================================================================ S23/S24/S29 */
 group("S23/S24/S29 · Strukturierte Daten, Index-Wahrheit");
 (function () {
-  [["protokoll.html", "Product", "49.00"], ["coaching.html", "Service", "149.00"]].forEach(function (t) {
+  [["protokoll.html", "Product", "99.00"], ["coaching.html", "Service", "149.00"]].forEach(function (t) {
     var m = read(t[0]).match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
     ok(!!m, "S23: " + t[0] + " führt strukturierte Daten");
     var o = JSON.parse(m[1]);

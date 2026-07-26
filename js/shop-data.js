@@ -32,7 +32,7 @@
       id: "protokoll",
       name: "DAS PROTOKOLL — Der komplette Männer-Guide",
       cat: "digital", catLabel: "Digital · Performance-System · Sofort-Zugang",
-      price: 49.00,
+      price: 99.00,
       digital: true,
       emoji: "📕",
       badge: "System + Programm",
