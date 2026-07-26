@@ -115,11 +115,24 @@
      und nur nach echtem AES-GCM-Decrypt neu vergeben. localStorage steuert
      nur Komfort-UI — Premium-Inhalt öffnet ausschließlich per Decrypt.
      ========================================================================= */
+  /* Ein Code ist genau dann echt, wenn er einen Vault aufschliesst — das ist
+     ein kryptografischer Beweis (AES-256-GCM), kein Datenbank-Eintrag. Geprüft
+     wird gegen jeden Payload, der auf der aktuellen Seite liegt. */
+  var VAULT_IDS = ["courseVault", "protoVault", "stackVault"];
+  function pageVaults() {
+    return VAULT_IDS.filter(function (id) { return !!document.getElementById(id); });
+  }
   function tryValidateCode(code) {
-    if (!window.MM || !MM.vault || !document.getElementById("courseVault")) return Promise.resolve(false);
+    if (!window.MM || !MM.vault) return Promise.resolve(false);
     var c = MM.vault.norm(code);
-    if (!c) return Promise.resolve(false);
-    return MM.vault.open("courseVault", c).then(function () { return true; }).catch(function () { return false; });
+    var ids = pageVaults();
+    if (!c || !ids.length) return Promise.resolve(false);
+    return ids.reduce(function (chain, id) {
+      return chain.then(function (ok) {
+        if (ok) return true;
+        return MM.vault.open(id, c).then(function () { return true; }).catch(function () { return false; });
+      });
+    }, Promise.resolve(false));
   }
   function localEntitlements() { var e = S.get("account_entitlements", []); return Array.isArray(e) ? e.slice() : []; }
   function grantLocal(keys) {
@@ -524,11 +537,24 @@
   function claimAccessCode(code) {
     var norm = (window.MM && MM.vault) ? MM.vault.norm(code) : String(code || "").trim().toUpperCase();
     if (!norm) return Promise.resolve({ ok: false, message: "Kein Code eingegeben." });
+    function grantByProof() {
+      return tryValidateCode(norm).then(function (valid) {
+        if (!valid) return { ok: false, message: "Code nicht erkannt." };
+        S.setRaw("course_code", norm); grantLocal(["protocol", "twelve_week"]);
+        S.setRaw("account_access_validation", { version: VALIDATION_VERSION, validated: true, validated_at: nowStamp() });
+        emit();
+        return { ok: true, local: true, message: "Zugang auf diesem Gerät bestätigt." };
+      });
+    }
     if (backend && _user) {
       return backend.rpc("claim_access_code", { code: norm }).then(function (r) {
-        if (r.error) return { ok: false, message: "Code nicht erkannt." };
-        return loadAccountState().then(function () { emit(); return { ok: true }; });
-      });
+        if (!r.error) return loadAccountState().then(function () { emit(); return { ok: true }; });
+        /* Der Server kennt nur Codes aus seiner Tabelle. Die ausgelieferten
+           Zugangscodes sind aber zugleich die Vault-Schluessel — wer damit
+           entschluesseln kann, hat nachweislich gekauft. Deshalb ist eine
+           Server-Ablehnung hier nicht das Ende, sondern der Beweis entscheidet. */
+        return grantByProof();
+      }).catch(function () { return grantByProof(); });
     }
     return tryValidateCode(norm).then(function (valid) {
       if (!valid) return { ok: false, message: "Code nicht erkannt." };
