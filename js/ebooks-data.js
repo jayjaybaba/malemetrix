@@ -56,6 +56,18 @@ window.MM_EBOOKS = [
     gated: true
   },
   {
+    id: "modafinil",
+    kicker: { de: "MaleMetrix · Kognition & Wachheit", en: "MaleMetrix · Cognition & Wakefulness" },
+    cover: "linear-gradient(150deg,#10263c,#05070b)",
+    badge: { de: "Neu · Kognition", en: "New · Cognition" },
+    title: { de: "Modafinil — Wachheit ohne Nervosität", en: "Modafinil — wakefulness without the jitter" },
+    desc: { de: "Warum ein Eugeroicum etwas grundsätzlich anderes ist als ein Stimulans: der Wach-Schlaf-Kippschalter, die vier Wirkwege (Dopamin atypisch, Histamin, Orexin, Glutamat/GABA) und was die Meta-Analysen zur Kognition bei Gesunden wirklich zeigen. Plus der Baseline-Effekt — wer am meisten profitiert.",
+            en: "Why a eugeroic is fundamentally different from a stimulant: the sleep-wake flip-flop, the four pathways (atypical dopamine, histamine, orexin, glutamate/GABA) and what the meta-analyses on cognition in healthy people actually show. Plus the baseline effect — who benefits most." },
+    minutes: 45,
+    read: "ebooks/modafinil.html",
+    gated: true
+  },
+  {
     id: "selank",
     kicker: { de: "MaleMetrix · Peptide & Neurochemie", en: "MaleMetrix · Peptides & Neurochemistry" },
     cover: "linear-gradient(150deg,#0b2a3f,#05070b)",

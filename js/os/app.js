@@ -1031,6 +1031,26 @@
   }
 
   /* =========================== LEARN =========================== */
+
+  /* Ziel für „DAS PROTOKOLL" im Learn-Raster.
+     Käufer gehören in den Reader (ebooks/protokoll.html) — der schaltet sich
+     selbst frei (URL-Code → gemerkter Code → Server-Entitlement). Nur wer das
+     Protokoll NICHT besitzt, sieht die Verkaufsseite. Vorher zeigte die Kachel
+     immer auf die Verkaufsseite, also bekamen auch zahlende Nutzer eine
+     Bezahlaufforderung statt ihres Kapitels. */
+  function protocolLink() {
+    var owns = false;
+    try {
+      owns = !!(MM.account && MM.account.hasAccess && MM.account.hasAccess("protocol"));
+    } catch (e) {}
+    if (!owns) return { href: "protokoll.html", owned: false };
+    // Gemerkter Zugangscode wird angehängt, falls der Reader ihn noch nicht
+    // lokal hat (z. B. anderes Gerät, aber eingeloggter Account).
+    var code = "";
+    try { code = MM.store.get("course_code", "") || localStorage.getItem("mm_protokoll_code") || ""; } catch (e) {}
+    return { href: "ebooks/protokoll.html" + (code ? "?code=" + encodeURIComponent(code) : ""), owned: true };
+  }
+
   function vLearn() {
     var pw = OS.pathway();
     var html = "";
@@ -1049,9 +1069,14 @@
           }).join(""));
       } catch (e) {}
     }
+    var pl = protocolLink();
     html += sec("Learn · verstehe dein System",
       '<div class="os-learn-grid">' +
-      '<a class="os-learn" href="protokoll.html"><b>DAS PROTOKOLL</b><span>Das Referenzwerk — 10 Kapitel, eine Reihenfolge. Warum dein System funktioniert.</span></a>' +
+      '<a class="os-learn" href="' + pl.href + '"><b>DAS PROTOKOLL</b><span>' +
+      (pl.owned
+        ? 'Dein Referenzwerk — 10 Kapitel, eine Reihenfolge. Weiterlesen, wo du aufgehört hast.'
+        : 'Das Referenzwerk — 10 Kapitel, eine Reihenfolge. Warum dein System funktioniert.') +
+      '</span></a>' +
       '<a class="os-learn" href="ebooks.html"><b>Library</b><span>Deep Dives: Body · Engine · Recovery · Hormone · Health.</span></a>' +
       '<a class="os-learn" href="labor.html"><b>MaleMetrix Labs</b><span>Deine Biologie über die Zeit — Werte werden zu Kontext.</span></a>' +
       '<a class="os-learn" href="blutwerte.html"><b>Blood &amp; Labs (Guide)</b><span>Die Biomarker, die für Männer zählen.</span></a>' +

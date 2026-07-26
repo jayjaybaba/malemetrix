@@ -98,6 +98,10 @@
     <div class="hero-grid-bg"></div>
     <div class="container" style="position:relative">
       <div class="section-head" style="max-width:860px">
+        <!-- Besitzer-Leiste: wird per JS gefüllt, wenn dieses Gerät bereits
+             Zugang zum Protokoll hat. Käufer sollen hier keine Kaufaufforderung
+             sehen, sondern den direkten Weg in ihr Kapitel. -->
+        <div id="ownerBar" hidden></div>
         <span class="eyebrow">MaleMetrix Performance-System · Sofort-Zugang</span>
         <h1 class="h-display">Das <span class="text-grad">Referenzwerk</span> hinter MaleMetrix. Verstehe die Systeme hinter deinem Körper.</h1>
         <p class="lead" style="margin-top:20px">Körperkomposition (Cut · Recomp · Build · Perform), Kraft, Cardio &amp; VO₂, Schlaf, Supplemente, Health- &amp; Longevity, Hormone und Fertilität — sauber und ehrlich erklärt. Du weißt danach, welche Hebel wirklich zählen und welche du ignorieren kannst. <strong>DAS PROTOKOLL erklärt. Das 12-Week System führt.</strong> Kein Bro-Science. Kein Hype.</p>
@@ -290,6 +294,42 @@
 <script src="js/i18n.js"></script>
 <script src="js/main.js"></script>
 <script>
+/* Besitzer erkennen und ihnen den Reader anbieten statt des Kauf-Buttons.
+   Diese Seite lädt account.js nicht, prüft also nur lokale Belege:
+   den vom Reader gemerkten Zugangscode, den Code aus dem Kauf und die
+   lokal gespiegelten Entitlements. Kein Beleg → Seite bleibt unverändert. */
+(function () {
+  "use strict";
+  function ownedLocally() {
+    try { if (localStorage.getItem("mm_protokoll_code")) return true; } catch (e) {}
+    try {
+      var cc = window.MM && MM.store ? MM.store.get("course_code", "") : "";
+      if (cc) return true;
+    } catch (e) {}
+    try {
+      var ents = window.MM && MM.store ? MM.store.get("account_entitlements", []) : [];
+      if (Array.isArray(ents) && ents.indexOf("protocol") >= 0) return true;
+    } catch (e) {}
+    return false;
+  }
+  function readerHref() {
+    var code = "";
+    try { code = (window.MM && MM.store ? MM.store.get("course_code", "") : "") || ""; } catch (e) {}
+    return "ebooks/protokoll.html" + (code ? "?code=" + encodeURIComponent(code) : "");
+  }
+  function render() {
+    var bar = document.getElementById("ownerBar");
+    if (!bar || !ownedLocally()) return;
+    bar.hidden = false;
+    bar.style.cssText = "display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;" +
+      "border:1px solid var(--accent-line);border-radius:14px;padding:16px 20px;margin-bottom:26px;background:var(--card-2)";
+    bar.innerHTML = '<div><strong style="display:block">Du besitzt DAS PROTOKOLL.</strong>' +
+      '<span class="small muted">Dein Zugang ist auf diesem Gerät gespeichert — du musst nichts erneut kaufen.</span></div>' +
+      '<a class="btn btn-primary btn-sm" href="' + readerHref() + '">Jetzt lesen →</a>';
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", render);
+  else render();
+})();
 (function () {
   "use strict";
   function buy() {
