@@ -39,6 +39,7 @@
   var backend = null;
   var _user = null, _profile = null, _entitlements = null;
   var _cloudScore = null, _cloudCycle = null, _subscription = null;
+  var _role = null;   // serverseitige Rolle, nie aus localStorage
   var _state = "loading";
   var _subs = [];
   var _initPromise = null;
@@ -678,6 +679,17 @@
     getCurrentUser: function () { return _user; },
     getProfile: function () { return _profile; },
     getEntitlements: function () { return (_entitlements || localEntitlements()).slice(); },
+    /* Rolle kommt vom Server (public.user_roles, an auth.uid() gebunden).
+       Ohne Session gibt es keine Rolle — localStorage wird bewusst NICHT
+       als Quelle akzeptiert. */
+    role: function () { return _role || null; },
+    loadRole: function () {
+      if (!backend || !_user) { _role = null; return Promise.resolve(null); }
+      return backend.from ? backend.from("user_roles").select("role").eq("user_id", _user.id).maybeSingle()
+        .then(function (r) { _role = (r && r.data && r.data.role) || null; return _role; })
+        .catch(function () { _role = null; return null; })
+        : Promise.resolve(null);
+    },
     // Phase 9: Abo-Zustand für MM.entitlements.billingState (null ohne Provider).
     subscription: function () { return _subscription ? { state: _subscription.state, plan: _subscription.plan, cancel_at_period_end: _subscription.cancel_at_period_end, current_period_end: _subscription.current_period_end } : null; },
     hasAccess: function (key) { return (_entitlements || localEntitlements()).indexOf(key) >= 0; },

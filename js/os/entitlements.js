@@ -59,9 +59,19 @@
     return "FREE";
   }
 
+  /* Owner sieht alles — auch kuenftige Inhalte, ohne dass je Kapitel ein
+     Entitlement angelegt werden muss. Die Rolle kommt AUSSCHLIESSLICH vom
+     Server (MM.account.role()), nie aus einer E-Mail-Pruefung im Browser und
+     nie aus localStorage. */
+  function isOwner() {
+    try { return !!(MM.account && MM.account.role && MM.account.role() === "owner"); }
+    catch (e) { return false; }
+  }
+
   function can(cap) {
     cap = String(cap || "").toUpperCase();
     if (CAPS.indexOf(cap) < 0) return false;
+    if (isOwner()) return true;
     var owned = capsFor(ents());
     if (!owned[cap]) return false;
     // Abo-gebundene Fähigkeiten erlöschen nur, wenn ein Abo existiert UND
@@ -89,7 +99,11 @@
     billingState: billingState,
     provenance: provenance,
     // Für Views bequem: alle aktiven Fähigkeiten als Objekt.
-    capabilities: function () { return capsFor(ents()); },
+    isOwner: isOwner,
+    capabilities: function () {
+      if (isOwner()) { var all = {}; CAPS.forEach(function (c) { all[c] = true; }); return all; }
+      return capsFor(ents());
+    },
     // Test-/Doku-Hook: Ist eine Fähigkeit prinzipiell abo-gebunden?
     isSubscriptionGated: function (cap) { return SUBSCRIPTION_GATED.indexOf(String(cap || "").toUpperCase()) >= 0; }
   };

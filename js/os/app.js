@@ -27,7 +27,7 @@
   function todayYmd() { var d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
 
   /* ---------- Routing ---------- */
-  var VIEWS = ["today", "plan", "track", "progress", "learn", "baseline", "pathway", "transform", "workout", "week", "settings", "coach", "advisor", "review", "twin", "simulator", "experiments", "protocol", "timeline", "memory", "map", "learned"];
+  var VIEWS = ["today", "plan", "track", "progress", "learn", "baseline", "pathway", "transform", "workout", "week", "settings", "coach", "advisor", "review", "twin", "simulator", "experiments", "protocol", "timeline", "memory", "map", "learned", "grants"];
   function view() { var h = (location.hash || "#today").slice(1).split("?")[0]; return VIEWS.indexOf(h) >= 0 ? h : "today"; }
   function hashParam(name) { var q = (location.hash || "").split("?")[1] || ""; var m = q.split("&").filter(function (kv) { return kv.split("=")[0] === name; })[0]; return m ? decodeURIComponent(m.split("=")[1] || "") : ""; }
   window.addEventListener("hashchange", function () { render(true); window.scrollTo(0, 0); });
@@ -56,7 +56,7 @@
 
   /* Kurzmeldung an die Live-Region in mein-protokoll.html. Absichtlich
      knapp: hier gehört der Ansichtsname hin, nicht die Ansicht. */
-  var VIEW_LABEL = { today: "Today", plan: "Plan", track: "Track", progress: "Progress", learn: "Learn", baseline: "Baseline", pathway: "Pathway", transform: "Transform", workout: "Workout", week: "Wochenreview", settings: "Einstellungen", coach: "Coach", advisor: "Advisor", review: "Review", twin: "Twin", simulator: "Simulator", experiments: "Experimente", protocol: "Protokoll", timeline: "Timeline", memory: "Memory", map: "Performance Map", learned: "Gelernt" };
+  var VIEW_LABEL = { today: "Today", plan: "Plan", track: "Track", progress: "Progress", learn: "Learn", baseline: "Baseline", pathway: "Pathway", transform: "Transform", workout: "Workout", week: "Wochenreview", settings: "Einstellungen", coach: "Coach", advisor: "Advisor", review: "Review", twin: "Twin", simulator: "Simulator", experiments: "Experimente", protocol: "Protokoll", timeline: "Timeline", memory: "Memory", map: "Performance Map", learned: "Gelernt", grants: "Zugänge verwalten" };
   function announce(msg) {
     var el = document.getElementById("mmStatus");
     if (!el) return;
@@ -1030,6 +1030,76 @@
     img.src = url;
   }
 
+
+  /* ===================== ZUGÄNGE VERWALTEN (nur Owner) =====================
+     Sichtbar ausschliesslich, wenn der Server die Rolle bestaetigt hat. Die
+     Sichtbarkeit ist reine Bequemlichkeit — die eigentliche Autorisierung
+     passiert in der Edge Function mm-admin, die jeden Aufruf gegen
+     public.user_roles prueft. Wer diesen Block per DevTools einblendet,
+     bekommt vom Server trotzdem 403. */
+  function vGrants() {
+    if (!(MM.entitlements && MM.entitlements.isOwner && MM.entitlements.isOwner())) {
+      return '<div class="card"><p class="muted">Dieser Bereich ist dem Konto-Inhaber vorbehalten.</p></div>';
+    }
+    return sec("Zugänge verwalten",
+      '<p class="small muted" style="margin:0 0 12px">Gib einer E-Mail-Adresse kostenlosen Zugang zu DAS PROTOKOLL — oder entziehe ihn wieder. ' +
+      'Empfänger erhalten ausschließlich das Produkt, nie Adminrechte. Existiert noch kein Konto, bleibt die Einladung offen und greift automatisch bei der Registrierung.</p>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">' +
+      '<label class="small" for="grEmail" style="flex:1;min-width:200px">E-Mail-Adresse' +
+      '<input id="grEmail" type="email" autocomplete="off" spellcheck="false" placeholder="name@beispiel.de" ' +
+      'style="width:100%;margin-top:4px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(127,127,127,0.06);color:var(--text)"></label></div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+      '<button id="grAdd" class="btn btn-primary btn-sm">Zugang geben</button>' +
+      '<button id="grDel" class="os-ghost">Zugang entziehen</button>' +
+      '<button id="grList" class="os-ghost">Liste laden</button></div>' +
+      '<p id="grMsg" class="small" role="status" aria-live="polite" style="display:none;margin-top:10px"></p>' +
+      '<div id="grTable" style="margin-top:12px"></div>');
+  }
+
+  function grantsCall(action, email) {
+    var msg = document.getElementById("grMsg");
+    function say(t, gut) {
+      if (!msg) return;
+      msg.style.display = "block";
+      msg.style.color = gut ? "var(--green,#3ddc84)" : "var(--amber,#f5a623)";
+      msg.textContent = t;
+    }
+    if (!(MM.account && MM.account.invokeFunction)) { say("Kein Konto-Backend aktiv.", false); return; }
+    say("Wird ausgeführt…", true);
+    MM.account.invokeFunction("mm-admin", { action: action, email: email, product_key: "protocol" })
+      .then(function (r) {
+        var d = r && (r.data || r);
+        if (!d || d.error) {
+          var TXT = {
+            forbidden: "Nur der Konto-Inhaber darf das.",
+            unauthorized: "Bitte zuerst anmelden.",
+            invalid_email: "Diese E-Mail-Adresse ist nicht gültig.",
+            not_found: "Für diese Adresse gibt es keinen aktiven Zugang.",
+            cannot_revoke_self: "Du kannst deinen eigenen Zugang nicht entziehen.",
+            cannot_revoke_owner: "Einem Konto-Inhaber kann der Zugang nicht entzogen werden.",
+            ambiguous_account: "Zu dieser Adresse gibt es mehrere Konten — bitte manuell prüfen.",
+            unknown_product: "Unbekanntes Produkt."
+          };
+          say(TXT[d && d.error] || "Das hat nicht geklappt.", false);
+          return;
+        }
+        if (action === "list") {
+          var rows = (d.grants || []).map(function (g) {
+            return '<div class="os-decision" style="margin:6px 0"><b>' + esc(g.email_norm) + '</b>' +
+              '<span class="s">' + esc(g.status) + ' · ' + esc((g.granted_at || "").slice(0, 10)) +
+              (g.user_id ? ' · Konto verknüpft' : ' · Einladung offen') + '</span></div>';
+          }).join("");
+          document.getElementById("grTable").innerHTML = rows || '<p class="small muted">Noch keine Vergaben.</p>';
+          say("Liste geladen.", true);
+          return;
+        }
+        say(action === "grant"
+          ? (d.linked ? "Zugang vergeben und mit dem Konto verknüpft." : "Einladung gespeichert — greift bei der Registrierung.")
+          : "Zugang entzogen.", true);
+      })
+      .catch(function () { say("Verbindung zum Server fehlgeschlagen.", false); });
+  }
+
   /* =========================== LEARN =========================== */
 
   /* Ziel für „DAS PROTOKOLL" im Learn-Raster.
@@ -1618,7 +1688,7 @@
     if (MM.activation) { try { MM.activation.trackOnce(); } catch (e) {} }   // Funnel-Meilensteine, je genau 1×
     var v = view();
     var body = v === "plan" ? vPlan() : v === "track" ? vTrack() : v === "progress" ? vProgress() : v === "learn" ? vLearn() : v === "baseline" ? vBaseline() : v === "pathway" ? vPathway() : v === "transform" ? vTransform() : v === "workout" ? vWorkout() : v === "week" ? vWeek() : v === "settings" ? vSettings() :
-      v === "coach" ? vCoach() : v === "advisor" ? vAdvisor() : v === "review" ? vReview() : v === "twin" ? vTwin() : v === "simulator" ? vSimulator() : v === "experiments" ? vExperiments() : v === "protocol" ? vProtocol() : v === "timeline" ? vTimeline() : v === "memory" ? vMemory() : v === "map" ? vMap() : v === "learned" ? vLearned() : vToday(snap);
+      v === "coach" ? vCoach() : v === "advisor" ? vAdvisor() : v === "review" ? vReview() : v === "twin" ? vTwin() : v === "simulator" ? vSimulator() : v === "experiments" ? vExperiments() : v === "protocol" ? vProtocol() : v === "timeline" ? vTimeline() : v === "memory" ? vMemory() : v === "map" ? vMap() : v === "learned" ? vLearned() : v === "grants" ? vGrants() : vToday(snap);
     var fab = (v !== "workout" && v !== "settings" && snap.state !== "signed_out") ? '<button class="os-fab" data-fab aria-label="Schnell erfassen">+</button>' : "";
     host.innerHTML = '<div class="os-shell os-env-' + (v === "progress" || v === "workout" ? "performance" : v === "plan" ? "metabolic" : v === "learn" && OS.pathway() === "enhanced" ? "clinical" : "instrument") + '">' + navBar(v) + '<div class="os-body" tabindex="-1">' + body + '</div>' + fab + '</div>';
     if (v === "progress") loadPhotoCompare();
@@ -1640,6 +1710,12 @@
       var t = e.target;
       var out = t.closest("#mmOut"); if (out) { MM.account.signOut(); return; }
       var imp = t.closest("#mmImport"); if (imp) { imp.disabled = true; imp.textContent = "Übernehme…"; MM.account.importLocalData().then(function (r) { var m = document.getElementById("mmImportMsg"); if (m) { m.style.display = "block"; m.textContent = r.ok ? "Vollständig übernommen. Deine lokalen Daten bleiben als Backup." : ((r.status && r.status.state === "partial") ? "Teilweise übernommen — bitte erneut versuchen." : (r.message || "Fehlgeschlagen — bitte erneut versuchen.")); } setTimeout(render, 900); }); return; }
+      var ga = t.closest("#grAdd"), gd = t.closest("#grDel"), gl = t.closest("#grList");
+      if (ga || gd || gl) {
+        var em = (document.getElementById("grEmail") || {}).value || "";
+        grantsCall(ga ? "grant" : gd ? "revoke" : "list", em);
+        return;
+      }
       var cb = t.closest("#mmClaimBtn"); if (cb) { var val = (document.getElementById("mmClaim") || {}).value; var m2 = document.getElementById("mmClaimMsg"); cb.disabled = true; MM.account.claimAccessCode(val).then(function (r) { if (m2) { m2.style.display = "block"; m2.style.color = r.ok ? "var(--green,#3ddc84)" : "var(--amber,#f5a623)"; m2.textContent = r.ok ? "Zugang aktiviert." : (r.message || "Code nicht erkannt."); } cb.disabled = false; if (r.ok) { if (MM.track) MM.track("claim_access", {}); setTimeout(render, 700); } }); return; }
       // Zahlung prüfen (P0.10): server-autoritative PayPal-Recovery im Konto.
       // Löst NIE eine neue Zahlung aus — reine Verifikation bei PayPal.

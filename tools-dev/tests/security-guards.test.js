@@ -124,6 +124,46 @@ group("G6 · Keine absoluten medizinischen Wirkversprechen");
   ok(treffer.length === 0, "keine Formulierung aus der Negativliste (gefunden: " + (treffer.join("; ") || "nichts") + ")");
 })();
 
+
+/* ------------------------------------------------------------------ G7 */
+group("G7 · Owner-Rolle ist serverseitig und nicht faelschbar");
+(function () {
+  var mig = read("supabase/migrations/20260726000011_owner_roles_and_grants.sql");
+  ok(/create table if not exists public\.user_roles/.test(mig), "user_roles existiert");
+  ok(/user_id\s+uuid primary key references auth\.users\(id\)/.test(mig),
+    "die Rolle haengt an auth.users.id, nicht an einer E-Mail");
+  ok(/create policy "own role read"[\s\S]{0,160}for select/.test(mig),
+    "authenticated darf user_roles nur LESEN");
+  ok(!/create policy[^;]*on public\.user_roles for (insert|update|delete|all)/i.test(mig),
+    "keine Schreib-Policy — niemand kann sich selbst zum Owner machen");
+  ok(/security definer/.test(mig) && /is_owner\(uid uuid\)/.test(mig), "zentrale is_owner()-Pruefung existiert");
+
+  /* Die Owner-E-Mail darf nirgends im ausgelieferten Frontend stehen. */
+  var leck = JS_HTML.filter(function (f) { return /ural\.b@live\.de/i.test(read(f)); });
+  ok(leck.length === 0, "keine Owner-E-Mail im Frontend (gefunden: " + (leck.join(", ") || "nichts") + ")");
+
+  var ent = read("js/os/entitlements.js");
+  ok(/MM\.account && MM\.account\.role/.test(ent), "die Rolle wird vom Konto gelesen, nicht aus localStorage");
+  ok(!/@live\.de|===\s*["']owner["']\s*\|\|/.test(ent.replace(/role\(\) === "owner"/g, "")),
+    "keine E-Mail-Sonderfaelle in der Zugriffslogik");
+})();
+
+/* ------------------------------------------------------------------ G8 */
+group("G8 · Manuelle Zugangsvergabe gibt nur Produkte, nie Rollen");
+(function () {
+  var fn = read("supabase/functions/mm-admin/index.ts");
+  ok(/auth\.getUser\(/.test(fn), "Identitaet kommt aus dem verifizierten Token");
+  ok(/from\("user_roles"\)[\s\S]{0,120}role !== "owner"/.test(fn), "nur Owner darf die Funktion nutzen");
+  ok(!/from\("user_roles"\)[\s\S]{0,200}\.(insert|upsert|update)\(/.test(fn),
+    "die Funktion vergibt niemals eine Rolle");
+  ok(/cannot_revoke_self/.test(fn), "der Owner kann sich nicht selbst entziehen");
+  ok(/cannot_revoke_owner/.test(fn), "einem Owner kann der Zugang nicht entzogen werden");
+  ok(/ERLAUBTE_PRODUKTE/.test(fn) && /unknown_product/.test(fn), "nur bekannte Produkte sind vergebbar");
+  ok(/normalize\("NFKC"\)/.test(fn) && /toLowerCase\(\)/.test(fn),
+    "E-Mails werden gegen Schreibweisen-Tricks normalisiert");
+  ok(/ambiguous_account/.test(fn), "mehrdeutige Konten werden nicht blind bedient");
+})();
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 if (failed) process.exit(1);
