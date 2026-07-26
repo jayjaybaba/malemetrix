@@ -249,8 +249,15 @@ group("G9 · Apple Pay wird nur versprochen, wenn es auch funktioniert");
   ok(fs.existsSync(path.join(ROOT, ".nojekyll")),
     ".nojekyll vorhanden — sonst waere /.well-known/ nicht erreichbar");
 
-  ok(/stripeLinks:\s*\{/.test(cfg) && /"protokoll":\s*""/.test(cfg),
-    "der Schalter steht in config.js und ist im Auslieferungsstand leer");
+  /* Der Wert darf leer sein (Zahlart aus) oder eine oeffentliche
+     buy.stripe.com-Adresse — aber niemals irgendetwas anderes. Ein
+     Geheimschluessel oder eine fremde Domain an dieser Stelle waere der
+     teuerste denkbare Fehler in dieser Datei. */
+  var wert = (cfg.match(/"protokoll":\s*"([^"]*)"/) || [])[1];
+  ok(wert !== undefined, "der Schalter steht in config.js");
+  ok(wert === "" || /^https:\/\/buy\.stripe\.com\/[A-Za-z0-9_]+$/.test(wert),
+    "der Zahlungslink ist leer oder eine echte buy.stripe.com-Adresse (ist: " +
+    (wert ? wert.slice(0, 30) + "…" : "leer") + ")");
 })();
 
 /* ------------------------------------------------------------------ G10 */

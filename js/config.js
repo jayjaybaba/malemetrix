@@ -103,7 +103,11 @@ window.MM_CONFIG = {
   // einmal manuell frei (My MaleMetrix → Zugänge verwalten). Der Checkout
   // sagt dem Käufer das ehrlich an. Details in COMMERCE.md.
   stripeLinks: {
-    "protokoll": ""      // z. B. "https://buy.stripe.com/eVa5kQ0000000000"
+    // Zahlungslink plink_1TxTWQDjofqc7MMz0ug76LpN · DAS PROTOKOLL ·
+    // 99,00 EUR einmalig, inklusive USt. · Rückleitung auf
+    // checkout.html?bezahlt=stripe. Diese Adresse ist öffentlich und
+    // ungefährlich — sie ersetzt keinen Schlüssel.
+    "protokoll": "https://buy.stripe.com/cNiaEXbKT99r4Qe7RR9fW00"
   },
 
   // --- Versand -------------------------------------------------------------
