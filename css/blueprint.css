@@ -280,3 +280,73 @@
   .bp-protocta-h { font-size: 1.2rem; }
   .bp-protocta-actions .btn { flex: 1 1 auto; text-align: center; }
 }
+
+/* ==========================================================================
+   PROTOKOLL-READER — Atmosphäre statt flachem Schwarz (P19)
+   Ein einzelnes Foto flächig hinter 400 KB Text würde entweder den Text
+   erschlagen oder unter dem nötigen Schleier verschwinden. Stattdessen:
+   eine feste, geschichtete Tiefenebene hinter dem Satzspiegel — und
+   Kapitel-Auftakte, über deren Bild der Text tatsächlich hinwegrollt.
+   ========================================================================== */
+.bp-atmos { position: relative; }
+.bp-atmos::before {
+  content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
+  background:
+    radial-gradient(120% 80% at 12% -10%, rgba(0,194,255,.16), transparent 55%),
+    radial-gradient(110% 70% at 88% 8%, rgba(46,124,246,.13), transparent 58%),
+    radial-gradient(90% 60% at 50% 108%, rgba(0,194,255,.10), transparent 60%),
+    linear-gradient(180deg, #0a1018 0%, #07090d 42%, #05070b 100%);
+}
+/* Feines Raster + Vignette: gibt der Fläche Materialität, ohne zu lenken. */
+.bp-atmos::after {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255,255,255,.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.022) 1px, transparent 1px);
+  background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(120% 90% at 50% 0%, #000 10%, transparent 78%);
+  mask-image: radial-gradient(120% 90% at 50% 0%, #000 10%, transparent 78%);
+}
+/* Der Lesetext bekommt eine eigene, minimal abgesetzte Fläche — sorgt für
+   Kontrast über der Atmosphäre, ohne wie eine Karte zu wirken. */
+.bp-atmos .bp { position: relative; }
+
+/* ---------- KAPITEL-AUFTAKT: Text rollt über dem Bild ---------- */
+.bp-chapter-open {
+  position: relative; margin: 0 calc(50% - 50vw) 10px; width: 100vw;
+  min-height: clamp(320px, 52vh, 520px);
+  display: flex; align-items: flex-end;
+  overflow: hidden; isolation: isolate;
+}
+.bp-chapter-open .shot {
+  position: absolute; inset: 0; z-index: -2;
+  background-size: cover; background-position: center 38%;
+  background-attachment: fixed;          /* der Parallax-Effekt beim Rollen */
+  transform: scale(1.02);
+}
+.bp-chapter-open .veil {
+  position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(180deg, rgba(5,7,11,.55) 0%, rgba(5,7,11,.72) 45%, var(--bp-ink) 97%);
+}
+.bp-chapter-open .cap { width: 100%; max-width: 820px; margin: 0 auto; padding: 0 20px 34px; }
+.bp-chapter-open .bp-part-no {
+  display: block; font-size: .72rem; letter-spacing: .34em; margin-bottom: 10px;
+  text-shadow: 0 2px 14px rgba(0,0,0,.65);
+}
+.bp-chapter-open h2 {
+  font-size: clamp(1.9rem, 5.4vw, 3rem); line-height: 1.02; letter-spacing: -.02em;
+  color: #fff; margin: 0; text-shadow: 0 3px 26px rgba(0,0,0,.7);
+}
+.bp-chapter-open .sub {
+  color: #cfe0ee; font-size: 1.04rem; margin: 12px 0 0; max-width: 54ch;
+  text-shadow: 0 2px 14px rgba(0,0,0,.6);
+}
+/* iOS ruckelt bei fixed-Backgrounds, und reduzierte Bewegung heißt: kein
+   Parallax. Beides faellt sauber auf ein statisches Bild zurueck. */
+@media (hover: none), (prefers-reduced-motion: reduce) {
+  .bp-chapter-open .shot { background-attachment: scroll; }
+}
+@media (max-width: 560px) {
+  .bp-chapter-open { min-height: 300px; }
+  .bp-chapter-open .cap { padding-bottom: 26px; }
+}
