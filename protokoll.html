@@ -313,11 +313,10 @@
     return false;
   }
   /* Volltext fuer Kaeufer: DAS PROTOKOLL, zehn Kapitel plus Abschluss. */
-  function readerHref() {
-    var code = "";
-    try { code = (window.MM && MM.store ? MM.store.get("course_code", "") : "") || ""; } catch (e) {}
-    return "ebooks/protokoll.html" + (code ? "?code=" + encodeURIComponent(code) : "");
-  }
+  /* Kein ?code= in der URL: Der Reader schaltet sich aus dem gemerkten Code
+     bzw. dem Konto-Entitlement selbst frei. Ein Code in der Adresszeile
+     landet sonst in Verlauf, Lesezeichen und geteilten Links. */
+  function readerHref() { return "ebooks/protokoll.html"; }
   function render() {
     var bar = document.getElementById("ownerBar");
     if (!bar || !ownedLocally()) return;

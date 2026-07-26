@@ -7,6 +7,12 @@
 (function () {
   "use strict";
 
+  /* Zustimmung zu sofort bereitgestellten digitalen Inhalten. Wortlaut und
+     Version stehen an EINER Stelle, damit Checkout, Order und Bestaetigung
+     nachweislich denselben Text dokumentieren (§ 356 Abs. 5 BGB). */
+  const DIGITAL_CONSENT_VERSION = "digital-consent-2026-07";
+  const DIGITAL_CONSENT_TEXT = "Digitale Inhalte: Ich verlange ausdrücklich, dass vor Ablauf der Widerrufsfrist mit der Vertragserfüllung begonnen wird, und bestätige, dass mein Widerrufsrecht mit Beginn der Vertragserfüllung erlischt.";
+
   const CFG = window.MM_CONFIG || {};
   const $ = (s) => document.querySelector(s);
   /* Name und E-Mail stammen aus dem Bestellformular und werden in
@@ -42,19 +48,12 @@
     return String(r.code || r.error || "unknown");
   }
 
-  /* ---------- Automatische Code-Auslieferung nach bestätigter Zahlung ------
-     Die Zugangscodes liegen AES-verschlüsselt vor und werden erst nach einem
-     erfolgreichen PayPal-Capture entschlüsselt und angezeigt. Bei Vorkasse
-     (Zahlung nicht sofort bestätigbar) kommt der Code nach Zahlungseingang
-     per E-Mail. Payload neu erzeugen: node tools-dev/vault.mjs encrypt ... */
-  const DELIVERY_VAULT = {"v":1,"iter":150000,"salt":"0hirgaoETrAqNs5bo9600Q==","iv":"1bvizyOGoFjxO76B","ct":"fQNCYtGwCYPIHjdGlC+fewdbZu3YjpK2uZsL9YH+egROX1/6Mpke1OTfYYTchBeLC240"};
-  const DK = ["MMD-", "A3DFF4F6", "159A8C28", "8578F44B"];
-  async function deliveryCodes() {
-    try {
-      if (!(window.MM && MM.vault)) return null;
-      return JSON.parse(await MM.vault.openRaw(DELIVERY_VAULT, DK.join("")));
-    } catch (e) { return null; }
-  }
+  /* Zugangscodes werden NICHT mehr im Browser ausgeliefert. Verschluesselter
+     Payload und Schluessel lagen zuvor gemeinsam im ausgelieferten Skript —
+     damit war der Schutz wirkungslos. Der Zugang kommt jetzt ausschliesslich
+     aus dem Konto: PayPal wird serverseitig geprueft, das Entitlement
+     serverseitig vergeben, der Reader holt sein Schluesselmaterial ueber
+     resolveProductAccess. */
 
   function items() {
     return MM.cart.items().map(i => ({ ...i, p: MM.cart.product(i.id) })).filter(i => i.p);
@@ -139,7 +138,8 @@
       '<div style="display:grid;gap:12px;margin:28px 0">' +
       '<label class="checkbox-row"><input type="checkbox" id="coAgb" required><span>Ich akzeptiere die <a href="agb.html" target="_blank" style="text-decoration:underline">AGB</a> und habe die <a href="agb.html#widerruf" target="_blank" style="text-decoration:underline">Widerrufsbelehrung</a> sowie die <a href="datenschutz.html" target="_blank" style="text-decoration:underline">Datenschutzerklärung</a> zur Kenntnis genommen. *</span></label>' +
       (items().some(i => i.p.digital) ?
-        '<label class="checkbox-row"><input type="checkbox" id="coDigital"><span>Digitale Inhalte: Ich stimme zu, dass mit der Lieferung vor Ablauf der Widerrufsfrist begonnen wird, und weiß, dass mein Widerrufsrecht damit erlischt.</span></label>' : '') +
+        '<label class="checkbox-row"><input type="checkbox" id="coDigital" required aria-describedby="coDigitalHint"><span>' + DIGITAL_CONSENT_TEXT + '</span></label>' +
+        '<p id="coDigitalHint" class="small" style="color:var(--muted-2);margin:-4px 2px 0">Pflichtangabe für sofort bereitgestellte digitale Inhalte. Unabhängig davon gilt unsere freiwillige 30-Tage-Geld-zurück-Garantie.</p>' : '') +
       '</div>' +
 
       '<div id="payAction"></div>' +
@@ -204,7 +204,7 @@
       window.paypal.Buttons({
         style: { layout: "vertical", color: "blue", shape: "pill", label: "paypal" },
         onClick: (data, actions) => {
-          if (!validateForm()) { MM.toast("Bitte Felder & AGB prüfen"); return actions.reject(); }
+          if (!validateForm()) { MM.toast("Bitte Felder, AGB und die Zustimmung zu digitalen Inhalten prüfen"); return actions.reject(); }
           return actions.resolve();
         },
         createOrder: (data, actions) => actions.order.create({
@@ -275,8 +275,27 @@
       el.classList.toggle("invalid", bad);
       if (bad) ok = false;
     });
-    if (!$("#coAgb").checked) return false;
+    const agb = $("#coAgb");
+    agb.closest(".checkbox-row").classList.toggle("invalid", !agb.checked);
+    if (!agb.checked) ok = false;
+    /* Digitale Inhalte werden sofort bereitgestellt — ohne diese ausdrueckliche
+       Zustimmung darf der Kauf nicht starten. */
+    const dig = document.getElementById("coDigital");
+    if (dig) {
+      dig.closest(".checkbox-row").classList.toggle("invalid", !dig.checked);
+      if (!dig.checked) ok = false;
+    }
+    if (!ok) {
+      const first = document.querySelector("#coForm .invalid, .checkbox-row.invalid input, .invalid");
+      if (first && first.focus) { try { first.focus(); } catch (e) {} }
+    }
     return ok;
+  }
+
+  /* Einheitlicher Gate vor JEDEM Kaufweg (PayPal wie Vorkasse). */
+  function digitalConsentGiven() {
+    const dig = document.getElementById("coDigital");
+    return !dig || dig.checked;
   }
 
   function buildOrder(payMethod) {
@@ -297,7 +316,15 @@
       productIds: list.map(i => i.p.id),
       shipping: t.hasPhysical ? MM.eur(t.ship) : "entfällt",
       total: MM.eur(t.total),
-      payMethod
+      payMethod,
+      /* Nachweis der Zustimmung zu sofort bereitgestellten digitalen Inhalten:
+         Zeitpunkt, Wortlaut und Textversion wandern mit der Bestellung. */
+      digitalConsent: list.some(i => i.p.digital) ? {
+        given: !!(document.getElementById("coDigital") || {}).checked,
+        at: now.toISOString(),
+        version: DIGITAL_CONSENT_VERSION,
+        text: DIGITAL_CONSENT_TEXT
+      } : null
     };
   }
 
@@ -318,7 +345,12 @@
       Versand: order.shipping,
       Gesamt: order.total,
       Zahlungsart: order.payMethod,
-      Status: opts.paypalPaid ? "BEZAHLT (PayPal)" : "offen"
+      Status: opts.paypalPaid ? "BEZAHLT (PayPal)" : "offen",
+      /* Nachweis nach § 356 Abs. 5 BGB: Wortlaut und Version der Zustimmung
+         gehen mit der Bestellbestaetigung raus. */
+      "Digitale Inhalte — Zustimmung": order.digitalConsent
+        ? (order.digitalConsent.given ? "JA am " + order.digitalConsent.at + " (" + order.digitalConsent.version + "): " + order.digitalConsent.text : "NEIN")
+        : "entfällt (kein digitales Produkt)"
     });
 
     MM.cart.clear();
@@ -328,20 +360,20 @@
     // den exponierten Client-Schlüssel im Produktivbetrieb tot legt. Nur ohne
     // Cloud fällt die Auslieferung auf den (dokumentiert schwächeren) Vault
     // zurück, damit bestehende Abläufe nicht brechen.
-    const codes = (opts.paypalPaid && !opts.serverGrant) ? await deliveryCodes() : null;
-    renderSuccess(order, res.viaMailto, opts.paypalPaid, codes, !!opts.serverGrant);
+    renderSuccess(order, res.viaMailto, opts.paypalPaid, !!opts.serverGrant);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function submit() {
-    if (!validateForm()) { MM.toast("Bitte prüfe die markierten Felder & bestätige die AGB"); return; }
+    if (!validateForm()) { MM.toast("Bitte prüfe die markierten Felder, die AGB und die Zustimmung zu digitalen Inhalten"); return; }
     const btn = $("#coSubmit");
     if (btn) { btn.disabled = true; btn.textContent = "Bestellung wird übermittelt…"; }
+    if (!digitalConsentGiven()) { MM.toast("Bitte stimme der sofortigen Bereitstellung digitaler Inhalte zu"); return; }
     const order = buildOrder(selectedMethod() === "paypal" ? "PayPal" : "Vorkasse / Überweisung");
     await finalizeOrder(order);
   }
 
-  function renderSuccess(order, viaMailto, paypalPaid, codes, serverGrant) {
+  function renderSuccess(order, viaMailto, paypalPaid, serverGrant) {
     const bank = CFG.bank || {};
     // Server-Grant: Zugang liegt im Konto — kein Client-Code, kein Vault.
     if (serverGrant) {
@@ -361,43 +393,21 @@
     /* 12-Wochen-Programm: Zugang nach Kauf.
        Bei Server-Grant zeigt der Konto-Block oben den Zugang; die Code-Blöcke
        entfallen dann komplett (kein Client-Code mehr). */
+    /* Zugang kommt aus dem Konto. Ohne serverseitigen Grant gibt es hier
+       keinen Code und keinen Direktlink — nur den ehrlichen Hinweis, wie es
+       weitergeht. */
     let courseBlock = serverGrant ? (accountBlock || "") : "";
-    if (!serverGrant && (order.productIds || []).indexOf("kurs-12w") !== -1) {
-      const code = (codes && codes.protokoll) || "";
-      if (paypalPaid && code) {
-        const link = "kurs-programm.html?code=" + encodeURIComponent(code);
-        courseBlock = '<div class="card" style="text-align:left;margin-bottom:24px;border-color:var(--accent-line)">' +
-          '<span class="card-num" style="color:var(--accent)">🎓 DEIN PROGRAMM-ZUGANG</span>' +
-          '<p class="muted" style="margin:6px 0 14px">Dein 12-Wochen-Programm ist freigeschaltet. Dein Zugangscode:</p>' +
-          '<div style="font-family:monospace;font-size:1.5rem;font-weight:700;letter-spacing:2px;color:var(--text);background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:14px;text-align:center;margin-bottom:16px">' + code + '</div>' +
-          '<a class="btn btn-primary btn-block" href="' + link + '">Programm jetzt starten →</a>' +
-          '<p class="small" style="color:var(--muted-2);margin-top:12px">Tipp: Speichere diesen Code. Du gibst ihn einmalig auf der Programmseite ein, danach bleibt der Zugang auf deinem Gerät.</p></div>';
-      } else {
-        courseBlock = '<div class="card" style="text-align:left;margin-bottom:24px">' +
-          '<span class="card-num">🎓 DEIN PROGRAMM-ZUGANG</span>' +
-          '<p class="muted" style="margin-top:6px">Sobald deine Zahlung eingegangen ist, erhältst du per E-Mail deinen persönlichen Zugangscode für das 12-Wochen-Programm — in der Regel innerhalb von 24 Stunden. Damit schaltest du das Programm auf der Programmseite frei.</p></div>';
-      }
+    const kauftProtokoll = (order.productIds || []).indexOf("protokoll") !== -1;
+    if (!serverGrant && kauftProtokoll) {
+      courseBlock += '<div class="card" style="text-align:left;margin-bottom:24px">' +
+        '<span class="card-num">DEIN ZUGANG</span>' +
+        '<p class="muted" style="margin-top:6px">Sobald deine Zahlung bestätigt ist, wird DAS PROTOKOLL deinem Konto zugeordnet. ' +
+        'Melde dich dafür mit der E-Mail-Adresse an, mit der du bestellt hast — der Zugang erscheint dann in ' +
+        '<a href="mein-protokoll.html">My MaleMetrix</a> auf allen deinen Geräten.</p>' +
+        '<p class="small" style="color:var(--muted-2);margin-top:10px">Hat die Zuordnung nicht geklappt? In My MaleMetrix kannst du ' +
+        'deine PayPal-Transaktions-ID prüfen lassen — das löst keine neue Zahlung aus.</p></div>';
     }
 
-    /* DAS PROTOKOLL: Sofort-Zugang nach Kauf */
-    if ((order.productIds || []).indexOf("protokoll") !== -1) {
-      const pcode = (codes && codes.protokoll) || "";
-      if (paypalPaid && pcode) {
-        /* DAS PROTOKOLL — die 10-Kapitel-Fassung im Vault. */
-        const plink = "ebooks/protokoll.html?code=" + encodeURIComponent(pcode);
-        courseBlock += '<div class="card" style="text-align:left;margin-bottom:24px;border-color:var(--accent-line)">' +
-          '<span class="card-num" style="color:var(--accent)">📕 DEIN PROTOKOLL-ZUGANG</span>' +
-          '<p class="muted" style="margin:6px 0 14px">Dein Premium-Ebook „DAS PROTOKOLL" ist freigeschaltet. Dein Zugangscode:</p>' +
-          '<div style="font-family:monospace;font-size:1.5rem;font-weight:700;letter-spacing:2px;color:var(--text);background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:14px;text-align:center;margin-bottom:16px">' + pcode + '</div>' +
-          '<a class="btn btn-primary btn-block" href="' + plink + '">Jetzt lesen →</a>' +
-          '<a class="btn btn-dark btn-block" style="margin-top:10px" href="kurs-programm.html?code=' + encodeURIComponent(pcode) + '">🎓 Inklusive: interaktives 12-Wochen-Programm starten →</a>' +
-          '<p class="small" style="color:var(--muted-2);margin-top:12px">Tipp: Speichere den Code. Er schaltet Ebook UND Programm frei — einmalig eingeben, danach bleibt der Zugang auf deinem Gerät.</p></div>';
-      } else {
-        courseBlock += '<div class="card" style="text-align:left;margin-bottom:24px">' +
-          '<span class="card-num">📕 DEIN PROTOKOLL-ZUGANG</span>' +
-          '<p class="muted" style="margin-top:6px">Sobald deine Zahlung eingegangen ist, erhältst du per E-Mail deinen Zugangscode für „DAS PROTOKOLL" — in der Regel innerhalb von 24 Stunden. Der Code schaltet auch das enthaltene interaktive 12-Wochen-Programm frei.</p></div>';
-      }
-    }
 
     let payBlock;
     if (paypalPaid) {

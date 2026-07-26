@@ -1042,9 +1042,9 @@
       owns = !!(MM.account && MM.account.hasAccess && MM.account.hasAccess("protocol"));
     } catch (e) {}
     if (!owns) return { href: "protokoll.html", owned: false };
-    var code = "";
-    try { code = MM.store.get("course_code", "") || localStorage.getItem("mm_protokoll_code") || ""; } catch (e) {}
-    return { href: "ebooks/protokoll.html" + (code ? "?code=" + encodeURIComponent(code) : ""), owned: true };
+    /* Ohne ?code= — der Reader schaltet sich selbst frei (gemerkter Code oder
+       Konto-Entitlement). Secrets gehoeren nicht in die Adresszeile. */
+    return { href: "ebooks/protokoll.html", owned: true };
   }
 
   function vLearn() {
