@@ -104,6 +104,31 @@ group("G5 · Kein Client-Produkt ohne serverseitiges Gegenstück");
   ok(clientIds.length > 0, "Client-Katalog gelesen (" + clientIds.length + " Produkte)");
   ok(fehlend.length === 0,
     "jedes Client-Produkt existiert serverseitig (fehlend: " + (fehlend.join(", ") || "keins") + ")");
+
+  /* Client- und Serverpreis müssen übereinstimmen: Der Server prüft den
+     gezahlten Betrag, ein Auseinanderlaufen lässt jede Zahlung auflaufen. */
+  var cP = (shop.match(/price:\s*([0-9]+(?:\.[0-9]+)?)/) || [])[1];
+  var sP = (srv.match(/priceCents:\s*([0-9]+)/) || [])[1];
+  ok(cP && sP && Math.round(parseFloat(cP) * 100) === parseInt(sP, 10),
+    "Client-Preis (" + cP + " €) und Server-Preis (" + sP + " Cent) stimmen überein");
+
+  /* Sichtbare Preise werden in mehreren Schreibweisen gesetzt: "99 €",
+     "99&nbsp;€" und im Englischen "€99". Eine frühere Preisänderung fasste
+     nur die erste Form an, sodass auf mehreren Seiten der alte Preis
+     stehen blieb. Daher wird hier jede Schreibweise gegen den Katalog
+     geprüft — Versandschwellen und der Coaching-Monatspreis ausgenommen. */
+  var ERLAUBT = [cP.replace(/\.00$/, ""), "149", "199", "50", "400", "3,90", "3.90"];
+  var falsch = [];
+  shipped([".html", ".js"]).forEach(function (f) {
+    var t = read(f);
+    var re = /(?:^|[^0-9])([0-9]+(?:[.,][0-9]{2})?)(?:&nbsp;|&#160;| |\s)*€|€\s*([0-9]+(?:[.,][0-9]{2})?)/g, m;
+    while ((m = re.exec(t))) {
+      var betrag = m[1] || m[2];
+      if (ERLAUBT.indexOf(betrag) < 0) falsch.push(f + " → " + betrag + " €");
+    }
+  });
+  ok(falsch.length === 0,
+    "kein abweichender Preis in einer der Schreibweisen (gefunden: " + (falsch.slice(0, 8).join("; ") || "nichts") + ")");
 })();
 
 /* ------------------------------------------------------------------ G6 */
