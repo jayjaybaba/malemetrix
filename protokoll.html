@@ -312,11 +312,10 @@
     } catch (e) {}
     return false;
   }
-  function readerHref() {
-    var code = "";
-    try { code = (window.MM && MM.store ? MM.store.get("course_code", "") : "") || ""; } catch (e) {}
-    return "ebooks/protokoll.html" + (code ? "?code=" + encodeURIComponent(code) : "");
-  }
+  /* Volltext fuer Kaeufer: das Kompendium. NICHT ebooks/protokoll.html —
+     dieser Reader ("Das Protokoll 2.0") traegt noch die alte 14-Kapitel-
+     Struktur; gueltig ist die 10-Kapitel-Fassung. */
+  function readerHref() { return "ebooks/master-ebook.html"; }
   function render() {
     var bar = document.getElementById("ownerBar");
     if (!bar || !ownedLocally()) return;
@@ -324,8 +323,8 @@
     bar.style.cssText = "display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;" +
       "border:1px solid var(--accent-line);border-radius:14px;padding:16px 20px;margin-bottom:26px;background:var(--card-2)";
     bar.innerHTML = '<div><strong style="display:block">Du besitzt DAS PROTOKOLL.</strong>' +
-      '<span class="small muted">Dein Zugang ist auf diesem Gerät gespeichert — du musst nichts erneut kaufen.</span></div>' +
-      '<a class="btn btn-primary btn-sm" href="' + readerHref() + '">Jetzt lesen →</a>';
+      '<span class="small muted">Alle 10 Kapitel liegen vollständig im Kompendium — mit dem Zugangscode aus deiner Bestellbestätigung.</span></div>' +
+      '<a class="btn btn-primary btn-sm" href="' + readerHref() + '">Zum Kompendium →</a>';
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", render);
   else render();

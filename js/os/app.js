@@ -1033,22 +1033,20 @@
   /* =========================== LEARN =========================== */
 
   /* Ziel für „DAS PROTOKOLL" im Learn-Raster.
-     Käufer gehören in den Reader (ebooks/protokoll.html) — der schaltet sich
-     selbst frei (URL-Code → gemerkter Code → Server-Entitlement). Nur wer das
-     Protokoll NICHT besitzt, sieht die Verkaufsseite. Vorher zeigte die Kachel
-     immer auf die Verkaufsseite, also bekamen auch zahlende Nutzer eine
-     Bezahlaufforderung statt ihres Kapitels. */
+     WICHTIG: NICHT auf ebooks/protokoll.html verlinken. Dieser Vault-Reader
+     heißt „Das Protokoll 2.0" und trägt noch die ALTE 14-Kapitel-Struktur
+     (00–13). Die gültige Fassung ist die 10-Kapitel-Konsolidierung aus P17,
+     und die steht auf protokoll.html — dort ist die Kapitelliste im Klartext
+     nachzählbar (01–10 + Abschluss).
+     Käufer erkennen wir trotzdem, damit sie oben die Besitzer-Leiste sehen
+     statt einer Kaufaufforderung; der Volltext liegt für sie im Kompendium,
+     worauf protokoll.html sie weiterleitet. */
   function protocolLink() {
     var owns = false;
     try {
       owns = !!(MM.account && MM.account.hasAccess && MM.account.hasAccess("protocol"));
     } catch (e) {}
-    if (!owns) return { href: "protokoll.html", owned: false };
-    // Gemerkter Zugangscode wird angehängt, falls der Reader ihn noch nicht
-    // lokal hat (z. B. anderes Gerät, aber eingeloggter Account).
-    var code = "";
-    try { code = MM.store.get("course_code", "") || localStorage.getItem("mm_protokoll_code") || ""; } catch (e) {}
-    return { href: "ebooks/protokoll.html" + (code ? "?code=" + encodeURIComponent(code) : ""), owned: true };
+    return { href: "protokoll.html", owned: owns };
   }
 
   function vLearn() {
