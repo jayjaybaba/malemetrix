@@ -63,10 +63,36 @@ window.MM_CONFIG = {
   // Client-ID gesetzt ist.
   paypalMe: "",
 
-  // Optional: Stripe Payment Links pro Produkt-ID.
-  // Beispiel: { "starter-report": "https://buy.stripe.com/xxx" }
-  // Sobald ein Link hinterlegt ist, wird er im Checkout bevorzugt angeboten.
-  stripeLinks: {},
+  // --- Apple Pay / Google Pay / Karte / Klarna (Stripe Payment Link) -------
+  //
+  // Das ist der Schalter für Apple Pay. Apple Pay lässt sich technisch nicht
+  // ohne Händlerkonto anbieten — es braucht einen Zahlungsdienstleister, der
+  // gegenüber Apple für die Zahlung geradesteht. Der schnellste Weg dahin ist
+  // eine von Stripe gehostete Bezahlseite, weil Stripe die Apple-Domain-
+  // Verifizierung für die eigene Seite selbst übernimmt.
+  //
+  // AKTIVIEREN (ca. 10 Minuten, kein Code):
+  // 1. Konto auf stripe.com anlegen (kostenlos, keine Grundgebühr).
+  // 2. Dashboard → Zahlungsarten → Apple Pay, Google Pay, Karte und Klarna
+  //    aktivieren. Apple Pay ist für gehostete Bezahlseiten standardmäßig an.
+  // 3. Dashboard → Zahlungslinks → "Neu" → Produkt "DAS PROTOKOLL", Preis
+  //    99 €, einmalig. Danach unter "Nach der Zahlung" → "Weiterleitung zu
+  //    einer Seite" eintragen:
+  //      https://www.malemetrix.com/checkout.html?bezahlt=stripe
+  // 4. Die entstandene URL (beginnt mit https://buy.stripe.com/) hier unten
+  //    bei "protokoll" einsetzen. Fertig — die Zahlart erscheint sofort.
+  //
+  // Solange der Wert leer ist, wird die Zahlart NICHT angeboten. Es wird
+  // bewusst kein Apple-Pay-Versprechen angezeigt, das nicht eingelöst würde.
+  //
+  // WICHTIG zur Auslieferung: PayPal schaltet den Zugang automatisch frei,
+  // weil die Zahlung serverseitig geprüft wird. Für Stripe existiert diese
+  // Prüfung noch nicht — dort schaltest du den Zugang nach der Zahlung
+  // einmal manuell frei (My MaleMetrix → Zugänge verwalten). Der Checkout
+  // sagt dem Käufer das ehrlich an. Details in COMMERCE.md.
+  stripeLinks: {
+    "protokoll": ""      // z. B. "https://buy.stripe.com/eVa5kQ0000000000"
+  },
 
   // --- Versand -------------------------------------------------------------
   shipping: {
@@ -131,6 +157,26 @@ window.MM_CONFIG = {
   // 2. Deine Domain unten eintragen, z. B. "www.malemetrix.com".
   // Solange leer, werden Events nur lokal gezählt (im Browser, für dich
   // sichtbar über MM.funnel() in der Konsole) und nirgendwo hingesendet.
+  // --- Reichweitenmessung --------------------------------------------------
+  //
+  // Solange plausibleDomain leer ist, wird NICHTS übertragen: alle Ereignisse
+  // laufen nur lokal im Browser des Besuchers. Das heißt im Klartext, dass du
+  // deine Besucherzahlen, deine Abbruchstellen und deine Kaufquote nicht sehen
+  // kannst. Ohne diese Zahlen ist jede Umsatzplanung geraten.
+  //
+  // AKTIVIEREN (2 Minuten, kostet ab ca. 9 €/Monat):
+  // 1. Konto auf plausible.io anlegen und "www.malemetrix.com" als Website
+  //    hinzufügen. Kein Skript einbauen — das erledigt js/analytics.js.
+  // 2. Unten "www.malemetrix.com" eintragen. Fertig.
+  //
+  // Plausible ist cookielos und bildet keine personenbezogenen Profile; die
+  // Datenschutzerklärung deckt diesen Fall in Abschnitt 7 bereits ab. Es wird
+  // bewusst kein Anbieter vorbelegt: Ein Skript zu laden, hinter dem kein
+  // Konto steht, sendet Daten ins Leere und wäre in der Datenschutzerklärung
+  // falsch beschrieben.
+  //
+  // Welche Ereignisse den Kauf-Trichter bilden, steht im Kopf von
+  // js/analytics.js.
   analytics: {
     plausibleDomain: "",   // z. B. "www.malemetrix.com"
     plausibleSrc: "https://plausible.io/js/script.tagged-events.js"

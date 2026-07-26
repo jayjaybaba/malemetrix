@@ -464,12 +464,12 @@ group("11c · My-Protokoll-Bottom-Navigation: sichtbar, bedienbar, korrekt aktiv
 group("12 · Touch-Target: „Ergebnis senden“ erfüllt 44 px");
 (function () {
   var css = fs.readFileSync(path.join(ROOT, "css/style.css"), "utf8");
-  ok(/#emailForm \.btn[\s\S]{0,60}min-height:\s*44px/.test(css),
+  ok(/#scoreLead \.btn[\s\S]{0,120}min-height:\s*44px/.test(css),
     "CSS garantiert mindestens 44 px für den Absende-Button");
-  ok(/#emailForm input\s*\{[^}]*min-height:\s*44px|#emailForm input \{ min-height: 44px|#emailForm \.btn,\s*\n#emailForm input \{ min-height: 44px; \}/.test(css),
+  ok(/#scoreLead input\[type="email"\][\s\S]{0,80}min-height:\s*44px/.test(css),
     "… und für die Eingabefelder daneben");
   var js = fs.readFileSync(path.join(ROOT, "js/check.js"), "utf8");
-  ok(/id="btnSendResult"[^>]*class="btn btn-primary"|class="btn btn-primary" id="btnSendResult"/.test(js),
+  ok(/class="btn btn-primary" id="scoreLeadSend"/.test(js),
     "der Button bleibt ein vollwertiger .btn (kein .btn-sm mit kleinerem Padding)");
   ok(/id="fbSubmit"[^>]*min-height:44px/.test(js), "auch der Feedback-Button hält 44 px ein");
 })();

@@ -272,7 +272,8 @@ group("S15 · Die Ergebnisseite hat eine erste Überschriftenebene");
   ok(/<h1 class="lvl-h">/.test(c), "die Ergebniszeile ist eine h1");
   ok(/MaleMetrix Score ' \+ r\.total \+ ' von 100/.test(c), "der Score steht für Screenreader in der Überschrift");
   ok(!/<h3 class="h-card"/.test(c), "keine Abschnittsüberschrift ist mehr h3");
-  ok((c.match(/<h2 class="h-card"/g) || []).length === 4, "die vier Abschnitte sind h2");
+  /* Fuenf, seit die Ergebnis-Erfassung als eigener Abschnitt dazugekommen ist. */
+  ok((c.match(/<h2 class="h-card"/g) || []).length === 5, "die fuenf Abschnitte sind h2");
   ok(/const target = sec\.querySelector\("h1"\) \|\| sec;/.test(c), "nach dem Wechsel wird die Überschrift fokussiert");
   var css = read("css/style.css");
   ok(/\.os14-score-hero \.lvl b, \.os14-score-hero \.lvl \.lvl-h/.test(css), "die h1 sieht aus wie vorher das <b>");
@@ -338,7 +339,7 @@ group("S21/S22 · Magazin: Score verlinkt, Vorschaubilder gesetzt");
 /* ================================================================ S23/S24/S29 */
 group("S23/S24/S29 · Strukturierte Daten, Index-Wahrheit");
 (function () {
-  [["protokoll.html", "Product", "99.00"], ["coaching.html", "Service", "149.00"]].forEach(function (t) {
+  [["protokoll.html", "Product", "99.00"], ["coaching.html", "Service", "199.00"]].forEach(function (t) {
     var m = read(t[0]).match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
     ok(!!m, "S23: " + t[0] + " führt strukturierte Daten");
     var o = JSON.parse(m[1]);
@@ -374,8 +375,8 @@ group("S23/S24/S29 · Strukturierte Daten, Index-Wahrheit");
 group("S25–S28 · Preise, Versand, Zeitangabe, klickbare Ziele");
 (function () {
   var c = read("js/check.js");
-  ok(!/ab 149/.test(c), "S25: die erfundene Preisspanne ist weg");
-  ok(/149 €<small> \/ Monat · monatlich kündbar<\/small>/.test(c), "S25: es steht dort, was überall sonst steht");
+  ok(!/ab 149|ab 199/.test(c), "S25: die erfundene Preisspanne ist weg");
+  ok(/199 €<small> \/ Monat · monatlich kündbar<\/small>/.test(c), "S25: es steht dort, was überall sonst steht");
   ok(!/Versandkostenfrei/.test(read("checkout.html")), "S26: keine Versandkostenschwelle bei digitaler Lieferung");
   ok(/Digitale Lieferung, keine Versandkosten/.test(read("checkout.html")), "S26: … sondern die Wahrheit");
   ["index.html", "ueber.html", "js/os/app.js"].forEach(function (f) {

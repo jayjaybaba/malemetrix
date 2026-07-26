@@ -812,6 +812,32 @@
     });
     html += '</div>';
 
+    /* ---------- 6a. ERGEBNIS SICHERN — die Liste ----------------------------
+       Hier steht die Stelle mit dem höchsten Interesse der ganzen Seite: Der
+       Besucher hat gerade sieben Minuten investiert und sein persönliches
+       Ergebnis samt Plan vor sich. Wer jetzt nicht kauft, ist danach für
+       immer weg — es sei denn, wir dürfen ihn erreichen.
+
+       Rechtlich sind das zwei verschiedene Dinge, und deshalb sind es hier
+       zwei getrennte Häkchen: Das eigene Ergebnis zuzuschicken ist Erfüllung
+       dessen, was der Besucher angefordert hat. Ihm später weitere E-Mails zu
+       schicken, ist Werbung und braucht eine eigene, freiwillige und nicht
+       vorangekreuzte Einwilligung (Art. 6 Abs. 1 lit. a DSGVO, § 7 UWG). */
+    html += '<div class="card dash-block" id="scoreLead" style="margin-top:16px;border-left:3px solid var(--accent)">' +
+      '<span class="card-num" style="color:var(--accent)">ERGEBNIS SICHERN</span>' +
+      '<h2 class="h-card" style="margin:2px 0 6px">Soll ich dir deine Auswertung schicken?</h2>' +
+      '<p class="small muted" style="margin:0 0 16px">Dein Score, dein Engpass und dein 7-Tage-Plan — schwarz auf weiß in deinem Postfach, damit du in zwei Wochen noch weißt, woran du arbeiten wolltest.</p>' +
+      '<div class="form-row" style="max-width:520px">' +
+      '<div class="field"><label for="scoreLeadName">Vorname</label><input type="text" id="scoreLeadName" autocomplete="given-name" placeholder="Dein Vorname"></div>' +
+      '<div class="field"><label for="scoreLeadEmail">E-Mail *</label><input type="email" id="scoreLeadEmail" autocomplete="email" placeholder="du@beispiel.de" required></div>' +
+      '</div>' +
+      '<label class="checkbox-row" style="margin:6px 0 4px"><input type="checkbox" id="scoreLeadOptin">' +
+      '<span>Schick mir außerdem, was ich als Nächstes angehen sollte — ein paar Mails zu den Hebeln aus meinem Ergebnis. Jederzeit mit einem Klick abbestellbar.</span></label>' +
+      '<button class="btn btn-primary" id="scoreLeadSend" style="margin-top:14px">Auswertung schicken</button>' +
+      '<p class="small" style="color:var(--muted-2);margin-top:10px">Kein Konto nötig. Deine Antworten aus dem Score übertragen wir nicht — nur dein Ergebnis. Details in der <a href="datenschutz.html" style="text-decoration:underline">Datenschutzerklärung</a>.</p>' +
+      '<div id="scoreLeadDone" style="display:none;margin-top:14px"></div>' +
+      '</div>';
+
     /* ---------- 6b. Personalisierte Empfehlung + 2 Wege ---------- */
     const rec = C.productRecommendation(r);
     const recColor = rec.kind === 'medical' ? 'var(--red)' : (rec.kind === 'coaching' ? 'var(--accent-2)' : 'var(--accent)');
@@ -829,7 +855,7 @@
       '<p class="small muted" style="margin:0 0 14px">Das komplette MaleMetrix-System inkl. interaktivem 12-Wochen-Programm — für die selbstständige Umsetzung.</p>' +
       '<span class="btn btn-primary btn-sm btn-block">Protokoll ansehen</span></a>' +
       '<a class="card offer-card" href="coaching.html" data-track="cta_coaching"><span class="card-num">INDIVIDUELL</span>' +
-      '<h3 style="font-size:1.05rem;margin:6px 0 2px">1:1 Coaching</h3><p class="offer-price">149 €<small> / Monat · monatlich kündbar</small></p>' +
+      '<h3 style="font-size:1.05rem;margin:6px 0 2px">1:1 Coaching</h3><p class="offer-price">199 €<small> / Monat · monatlich kündbar</small></p>' +
       '<p class="small muted" style="margin:0 0 14px">Individuelle Analyse und laufende Optimierung deiner Performance — persönlich begleitet.</p>' +
       '<span class="btn btn-dark btn-sm btn-block">1:1 ansehen</span></a>' +
       '</div>';
@@ -971,16 +997,11 @@
     html += '<div class="card dash-block" style="margin-top:24px"><h3 style="margin-bottom:14px">Dein Ergebnis sichern</h3>' +
       '<div style="display:flex;gap:12px;flex-wrap:wrap">' +
       '<a class="btn btn-dark" href="report.html">📄 Vollständigen Report öffnen (PDF)</a>' +
-      '<button class="btn btn-dark" id="btnEmailResult">✉️ Ergebnis per E-Mail erhalten</button>' +
+      '<button class="btn btn-dark" id="btnEmailResult">✉️ Ergebnis per E-Mail erhalten</button>' + /* führt nach oben zum Formular */
       '<button class="btn btn-dark" id="btnShare">🔗 Score kopieren &amp; teilen</button>' +
       '<button class="btn btn-ghost" id="btnRestart">Check neu starten</button>' +
       '</div>' +
-      '<div id="emailForm" style="display:none;margin-top:20px;max-width:420px">' +
-      '<div class="field"><label for="resName">Vorname</label><input type="text" id="resName" placeholder="Dein Vorname"></div>' +
-      '<div class="field"><label for="resEmail">E-Mail</label><input type="email" id="resEmail" placeholder="du@beispiel.de"></div>' +
-      '<button class="btn btn-primary" id="btnSendResult">Ergebnis senden</button>' +
-      '<p class="small muted" style="margin-top:10px">Wir nutzen deine E-Mail nur, um dir dein Ergebnis zu schicken. Details in der <a href="datenschutz.html" style="text-decoration:underline">Datenschutzerklärung</a>.</p>' +
-      '</div></div>';
+      '</div>';
 
     /* ---------- Social Proof + Disclaimer ---------- */
     html += '<div data-mm-trust style="margin-top:28px"></div>';
@@ -1143,17 +1164,33 @@
       }
     });
 
+    /* Der Knopf unten wiederholt das Angebot nur — das Formular selbst steht
+       weiter oben, direkt am Ergebnis. Zwei konkurrierende Formulare auf
+       derselben Seite wären eine Entscheidung zu viel. */
     $("#btnEmailResult").addEventListener("click", () => {
-      const f = $("#emailForm");
-      const opening = f.style.display === "none";
-      f.style.display = opening ? "" : "none";
-      if (opening) telOnce("email_opened", "score_email_result_opened", {});
+      const box = $("#scoreLead");
+      if (!box) return;
+      box.scrollIntoView({ behavior: "smooth", block: "center" });
+      const inp = $("#scoreLeadEmail");
+      if (inp) setTimeout(() => inp.focus({ preventScroll: true }), 420);
+      telOnce("email_opened", "score_email_result_opened", {});
     });
 
-    $("#btnSendResult").addEventListener("click", async () => {
-      const name = $("#resName").value.trim();
-      const email = $("#resEmail").value.trim();
-      if (!email || !email.includes("@")) { MM.toast("Bitte gültige E-Mail eingeben"); return; }
+    $("#scoreLeadSend").addEventListener("click", async () => {
+      const btn = $("#scoreLeadSend");
+      const name = $("#scoreLeadName").value.trim();
+      const email = $("#scoreLeadEmail").value.trim();
+      /* Bewusst nachsichtig: Wer hier an einer strengen Prüfung scheitert,
+         ist als Interessent verloren. Die Zustellung entscheidet ohnehin. */
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+        MM.toast("Bitte gültige E-Mail eingeben");
+        $("#scoreLeadEmail").focus();
+        return;
+      }
+      const optin = !!($("#scoreLeadOptin") || {}).checked;
+      btn.disabled = true;
+      btn.textContent = "Wird gesendet…";
+
       const keysAll = ["body", "strength", "fuel", "recovery", "blood", "drive", "execution"];
       const payload = {
         Typ: "Score-Ergebnis",
@@ -1161,13 +1198,42 @@
         "E-Mail": email,
         Score: r.total + "/100 (" + r.level + ")",
         Archetyp: r.archetype.name,
-        Engpass: r.bottleneck.name
+        Engpass: r.bottleneck.name,
+        /* Nachweis der Werbeeinwilligung: ohne diesen Eintrag darf die
+           Adresse ausschließlich für die Zustellung dieses einen Ergebnisses
+           verwendet werden. */
+        "Newsletter-Einwilligung": optin
+          ? "JA am " + new Date().toISOString() + " — Einwilligung am Score-Ergebnis, freiwillig, nicht vorangekreuzt"
+          : "NEIN — nur einmalige Zustellung des Ergebnisses"
       };
       keysAll.forEach(k => payload[C.moduleNames[k]] = r.scores[k] + "/100");
-      const res = await MM.sendForm("MaleMetrix Score: " + r.total + "/100 — " + (name || email), payload);
+
+      let res = { viaMailto: false };
+      try {
+        res = await MM.sendForm("MaleMetrix Score: " + r.total + "/100 — " + (name || email), payload);
+      } catch (e) { /* unten wird trotzdem sauber quittiert */ }
+
+      /* Nur wer zugestimmt hat, landet in der Liste. */
+      if (optin && MM.subscribe) {
+        try { await MM.subscribe(email, "score_result", { quiet: true, name: name }); }
+        catch (e) { /* Zustellung des Ergebnisses hat Vorrang */ }
+      }
+
       /* Nur die Tatsache des Absendens — niemals Name oder E-Mail. */
       tel("score_email_result_submitted", {});
-      MM.toast(res.viaMailto ? "E-Mail-Programm geöffnet" : "Ergebnis gesendet — check dein Postfach");
+      if (MM.track) MM.track("leadmagnet_signup", { source: "score_result", optin: optin ? "ja" : "nein" });
+
+      const done = $("#scoreLeadDone");
+      if (done) {
+        done.style.display = "";
+        done.innerHTML = '<div class="alert alert-ok" style="padding:12px 16px"><span class="alert-icon">✅</span><div>' +
+          (res.viaMailto
+            ? '<strong>E-Mail-Programm geöffnet</strong> — schick die vorbereitete Nachricht ab, dann bekommst du deine Auswertung.'
+            : '<strong>Unterwegs.</strong> Deine Auswertung liegt gleich in deinem Postfach' +
+              (optin ? ' — und du hörst von mir, sobald es zum nächsten Hebel etwas zu sagen gibt.' : '.')) +
+          '</div></div>';
+      }
+      btn.textContent = "Gesendet";
     });
 
     $("#btnShare").addEventListener("click", async () => {

@@ -117,10 +117,15 @@ group("G5 · Kein Client-Produkt ohne serverseitiges Gegenstück");
      nur die erste Form an, sodass auf mehreren Seiten der alte Preis
      stehen blieb. Daher wird hier jede Schreibweise gegen den Katalog
      geprüft — Versandschwellen und der Coaching-Monatspreis ausgenommen. */
-  var ERLAUBT = [cP.replace(/\.00$/, ""), "149", "199", "50", "400", "3,90", "3.90"];
+  var ERLAUBT = [cP.replace(/\.00$/, ""), "199", "50", "400", "3,90", "3.90"];
   var falsch = [];
   shipped([".html", ".js"]).forEach(function (f) {
-    var t = read(f);
+    /* Kommentare zaehlen nicht: Ein Betrag in einer Erklaerung fuer den
+       Entwickler steht auf keiner Seite und ist kein Preisversprechen. */
+    var t = read(f)
+      .replace(/<!--[\s\S]*?-->/g, "")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "");
     var re = /(?:^|[^0-9])([0-9]+(?:[.,][0-9]{2})?)(?:&nbsp;|&#160;| |\s)*€|€\s*([0-9]+(?:[.,][0-9]{2})?)/g, m;
     while ((m = re.exec(t))) {
       var betrag = m[1] || m[2];
@@ -187,6 +192,70 @@ group("G8 · Manuelle Zugangsvergabe gibt nur Produkte, nie Rollen");
   ok(/normalize\("NFKC"\)/.test(fn) && /toLowerCase\(\)/.test(fn),
     "E-Mails werden gegen Schreibweisen-Tricks normalisiert");
   ok(/ambiguous_account/.test(fn), "mehrdeutige Konten werden nicht blind bedient");
+})();
+
+/* ------------------------------------------------------------------ G9 */
+group("G9 · Apple Pay wird nur versprochen, wenn es auch funktioniert");
+(function () {
+  var co = read("js/checkout.js");
+  var cfg = read("js/config.js");
+
+  ok(/function stripeLinkFor\s*\(/.test(co) && /function applePayAvailable\s*\(/.test(co),
+    "Zahlart und Geraetefaehigkeit werden getrennt geprueft");
+  ok(/const stripeUrl = stripeLinkFor\(\);[\s\S]{0,120}applePayAvailable\(\)/.test(co),
+    "Apple Pay erscheint nur bei hinterlegtem Link UND faehigem Geraet");
+  ok(/buy\\\.stripe\\\.com/.test(co) || /buy\\.stripe\\.com/.test(co),
+    "der Zahlungslink wird gegen die Stripe-Domain geprueft");
+  ok(/list\.length !== 1 \|\| list\[0\]\.qty !== 1/.test(co),
+    "ein Produktlink gilt nur fuer genau dieses eine Produkt — sonst zahlte der Kaeufer einen anderen Betrag");
+
+  /* Die Rueckleitung von Stripe ist kein Zahlungsnachweis. Wuerde sie Zugang
+     vergeben, koennte jeder die URL selbst aufrufen. */
+  var rueck = (co.match(/function renderStripeReturn\(\)[\s\S]*?\n  }/) || [""])[0];
+  ok(rueck.length > 0, "es gibt eine eigene Behandlung der Rueckkehr");
+  ok(!/serverGrant|ACCESS GRANTED|renderSuccess|vault|Zugangscode/i.test(rueck),
+    "die Rueckkehr vergibt keinen Zugang und zeigt keinen Code");
+
+  /* Ein Stripe-Geheimschluessel darf niemals im Frontend liegen. */
+  var leck = JS_HTML.filter(function (f) { return /sk_(live|test)_[A-Za-z0-9]/.test(read(f)); });
+  ok(leck.length === 0, "kein Stripe-Secret im Frontend (gefunden: " + (leck.join(", ") || "nichts") + ")");
+
+  /* Auslieferung: der Kaeufer muss erfahren, dass der Zugang bei diesem Weg
+     nicht sofort kommt. Sonst ist es ein Versprechen, das brechen wird. */
+  ok(/Zugang schalten wir nach Zahlungseingang frei/.test(co),
+    "die verzoegerte Freischaltung wird im Checkout angesagt");
+
+  /* .well-known wird von GitHub Pages nur mit .nojekyll ausgeliefert. */
+  ok(fs.existsSync(path.join(ROOT, ".nojekyll")),
+    ".nojekyll vorhanden — sonst waere /.well-known/ nicht erreichbar");
+
+  ok(/stripeLinks:\s*\{/.test(cfg) && /"protokoll":\s*""/.test(cfg),
+    "der Schalter steht in config.js und ist im Auslieferungsstand leer");
+})();
+
+/* ------------------------------------------------------------------ G10 */
+group("G10 · Der dokumentierte Kauf-Trichter wird wirklich gemessen");
+(function () {
+  var an = read("js/analytics.js");
+  var block = (an.match(/DER KAUF-TRICHTER[\s\S]*?Die drei wichtigsten/) || [""])[0];
+  var events = (block.match(/^ {5}([a-z][a-z0-9_]+)(?= )/gm) || []).map(function (s) { return s.trim(); });
+  ok(events.length >= 8, "der Trichter ist dokumentiert (" + events.length + " Stufen)");
+
+  /* Frueher standen hier sieben Ereignisse aus laengst entfernten Produkten.
+     Eine Trichter-Dokumentation, die nichts misst, ist schlimmer als keine:
+     Sie sieht nach Ueberblick aus und ist keiner. */
+  var quelle = JS_HTML.map(read).join("\n");
+  var tot = events.filter(function (e) {
+    return quelle.indexOf('MM.track("' + e) < 0 &&
+           quelle.indexOf('track("' + e) < 0 &&
+           quelle.indexOf('data-track="' + e) < 0;
+  });
+  ok(tot.length === 0, "jede Trichterstufe wird auch ausgeloest (tote Stufen: " + (tot.join(", ") || "keine") + ")");
+
+  ok(/plausibleDomain: ""/.test(read("js/config.js")),
+    "kein Anbieter vorbelegt, hinter dem kein Konto steht");
+  ok(/Abschnitt 7|Reichweitenmessung/.test(read("datenschutz.html")),
+    "die Datenschutzerklaerung deckt die Reichweitenmessung ab");
 })();
 
 console.log("\n==============================");

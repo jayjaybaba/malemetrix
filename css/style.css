@@ -1109,6 +1109,7 @@ input[type="range"]::-moz-range-thumb {
 .alert-warn { background: var(--amber-soft); border: 1px solid rgba(245, 181, 74, 0.35); color: #f8d9a0; }
 .alert-danger { background: var(--red-soft); border: 1px solid rgba(240, 106, 106, 0.35); color: #f5b8b8; }
 .alert-info { background: var(--accent-soft); border: 1px solid var(--accent-line); color: #bcd5fb; }
+.alert-ok { background: var(--green-soft); border: 1px solid rgba(45, 212, 167, 0.35); color: #9ff0d8; }
 
 .priority-card { border-left: 3px solid var(--accent); }
 .priority-card .pri-rank { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-2); letter-spacing: 0.12em; text-transform: uppercase; display: block; margin-bottom: 8px; }
@@ -2545,8 +2546,12 @@ body > * { position: relative; z-index: 0; }
    spätere Padding-/Schriftgrößen-Änderung den Touch-Standard nicht
    unbemerkt unterschreitet. Optik bleibt unverändert — es ist ein Boden,
    kein neues Maß. */
-#emailForm .btn,
-#emailForm input { min-height: 44px; }
+/* Tippflaeche der Ergebnis-Erfassung: mindestens 44 px, sonst ist der
+   Absende-Knopf auf dem Telefon nicht sicher zu treffen. */
+#scoreLead .btn,
+#scoreLead input[type="email"],
+#scoreLead input[type="text"] { min-height: 44px; }
+#scoreLead .checkbox-row input { min-width: 22px; min-height: 22px; }
 
 /* ---- SCORE V2 · DATENLÜCKEN — unbekannt ist nicht „normal" ---- */
 .mm-gaps { display: flex; flex-direction: column; }

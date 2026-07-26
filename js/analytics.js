@@ -4,24 +4,33 @@
    immer lokal mit, damit du den Funnel auch ohne Anbieter sehen kannst:
    In der Browser-Konsole → MM.funnel()
 
-   Conversion-Events (Funnel):
-     score_start_click     Klick auf "Score starten" (Nav, Hero, Check-Intro)
-     check_started         Score-Wizard nach Consent gestartet
-     check_completed       Score abgeschlossen (props: score, bottleneck, archetype)
-     cta_protokoll         Klick Richtung Protokoll-Verkaufsseite
-     cta_stack_review      Klick Richtung Stack Review
-     cta_founder           Klick Richtung Founder-Runde
-     cta_termin            Klick Richtung Analysegespräch/Erstgespräch
-     founder_apply_submit  Founder-Bewerbungsformular: Klick auf Absenden
-     founder_apply_sent    Founder-Bewerbung übermittelt
-     stack_review_submit   Stack-Review-Formular: Klick auf Absenden
-     stack_review_sent     Stack-Review-Anfrage übermittelt (props: plan)
-     booking_submitted     Terminanfrage übermittelt
-     score_dm_click        Score-Einordnung per Instagram-DM angefragt
-     score_mail_click      Score-Einordnung per E-Mail angefragt
-     protokoll_unlocked    Protokoll-Ebook freigeschaltet
-   Anbieter-Anbindung: MM_CONFIG.analytics.plausibleDomain setzen (Plausible)
-   oder MM.track in dieser Datei um einen weiteren Adapter ergänzen.
+   DER KAUF-TRICHTER — diese Kette entscheidet über den Umsatz. Sie ist so
+   geordnet, wie ein Besucher sie durchläuft; jede Stufe zeigt, wo Menschen
+   verloren gehen:
+
+     score_start_click          Klick auf "Score starten" (Nav, Hero, Intro)
+     check_started              Score-Wizard nach Consent gestartet
+     check_completed            Score fertig (props: score, bottleneck, archetype)
+     leadmagnet_signup          E-Mail am Score-Ende hinterlassen  ← Liste
+     cta_protokoll              Klick Richtung Verkaufsseite
+     protokoll_add_to_cart      In den Warenkorb gelegt
+     checkout_started           Checkout geöffnet (props: value)
+     checkout_stripe_redirect   Zur Bezahlseite weitergeleitet (Apple Pay/Karte)
+     order_completed            Bestellung abgeschlossen (props: value, paid, method)
+     protokoll_unlocked         Zugang tatsächlich benutzt
+
+   Die drei wichtigsten Quotienten daraus:
+     check_completed / check_started        → hält der Score die Leute?
+     leadmagnet_signup / check_completed    → baust du eine Liste auf?
+     order_completed / checkout_started     → bricht die Kasse ab?
+
+   Daneben laufen rund 50 weitere Ereignisse (Tracker, Rechner, Programm,
+   My MaleMetrix). Sie sind fürs Produktverständnis nützlich, aber nicht
+   Teil des Kauf-Trichters.
+
+   AKTIVIEREN: MM_CONFIG.analytics.plausibleDomain in js/config.js setzen.
+   Ohne diesen Eintrag werden alle Ereignisse ausschließlich lokal im Browser
+   des Besuchers gezählt und nie übertragen — du siehst dann nichts.
    ========================================================================== */
 
 (function () {

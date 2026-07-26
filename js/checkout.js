@@ -100,11 +100,30 @@
        Weg, der den versprochenen sofortigen Zugang auch einlöst. Vorkasse
        bleibt verfügbar, aber als bewusste Entscheidung des Käufers. */
     const payOptions = [];
+    /* Apple Pay steht vorn, sobald das Gerät es wirklich kann — auf dem
+       iPhone ist das der Weg mit den wenigsten Abbrüchen. Auf allen anderen
+       Geräten führt derselbe Link zu Karte, Google Pay und Klarna, deshalb
+       heißt die Zahlart dort anders. */
+    const stripeUrl = stripeLinkFor();
+    const applePay = stripeUrl && applePayAvailable();
+    const stripeOption = {
+      id: "stripe",
+      name: applePay ? "Apple Pay" : "Kreditkarte / Google Pay / Klarna",
+      desc: (applePay
+        ? "Mit Face ID oder Touch ID bezahlen — ohne Formular, ohne Kartennummer. Karte, Google Pay und Klarna stehen auf derselben Seite zur Wahl."
+        : "Sichere Bezahlseite von Stripe. Auf dem iPhone steht dort zusätzlich Apple Pay bereit.") +
+        " Deinen Zugang schalten wir nach Zahlungseingang frei — meist innerhalb weniger Stunden."
+    };
+    /* Auf einem Apple-Pay-fähigen Gerät steht Apple Pay vorn: dort ist es
+       der Weg mit den wenigsten Abbrüchen. Überall sonst steht PayPal vorn,
+       weil nur dieser Weg den Zugang automatisch und sofort freischaltet. */
+    if (applePay) payOptions.push(stripeOption);
     if (CFG.paypalClientId) {
       payOptions.push({ id: "paypal_smart", name: "PayPal / Kreditkarte", desc: "Sicher mit PayPal, Kredit- oder Debitkarte zahlen — ohne die Seite zu verlassen. Zugang sofort nach der Zahlung." });
     } else if (CFG.paypalMe) {
       payOptions.push({ id: "paypal", name: "PayPal", desc: "Bezahle direkt nach der Bestellung per PayPal-Link." });
     }
+    if (stripeUrl && !applePay) payOptions.push(stripeOption);
     payOptions.push({
       id: "vorkasse", name: "Vorkasse / Überweisung",
       desc: bankConfigured()
@@ -165,6 +184,111 @@
     return (document.querySelector("input[name=payMethod]:checked") || {}).value || "vorkasse";
   }
 
+  /* ---------- Apple Pay / Karte / Klarna über eine Stripe-Bezahlseite -----
+     Apple Pay lässt sich nicht ohne Zahlungsdienstleister anbieten. Statt
+     eine eigene Apple-Merchant-Integration zu bauen (die eine Domain-
+     Verifizierungsdatei und ein Apple-Developer-Konto voraussetzt), führt
+     der Weg über eine von Stripe gehostete Bezahlseite: Stripe steht
+     gegenüber Apple für die Domain gerade, blendet Apple Pay auf jedem
+     fähigen Gerät automatisch ein und bietet daneben Karte, Google Pay und
+     Klarna an.
+
+     Die Zahlart erscheint ausschließlich, wenn in config.js wirklich ein
+     Zahlungslink hinterlegt ist. Ein Apple-Pay-Versprechen ohne
+     funktionierenden Weg dahinter wäre schlimmer als keine Zahlart. */
+
+  /* Ein Zahlungslink gilt pro Produkt. Er greift daher nur, wenn der
+     Warenkorb genau dieses eine Produkt in einfacher Menge enthält —
+     sonst stimmte der Betrag auf der Bezahlseite nicht mit dem Warenkorb
+     überein, und der Käufer zahlte etwas anderes als bestellt. */
+  function stripeLinkFor() {
+    const links = CFG.stripeLinks || {};
+    const list = items();
+    if (list.length !== 1 || list[0].qty !== 1) return "";
+    const url = links[list[0].p.id];
+    return (typeof url === "string" && /^https:\/\/(buy\.stripe\.com|[a-z0-9-]+\.stripe\.com)\//.test(url)) ? url : "";
+  }
+
+  /* Apple Pay wird nur beworben, wenn das Gerät es tatsächlich anbietet.
+     canMakePayments() prüft die Verfügbarkeit der Funktion, nicht ob eine
+     Karte hinterlegt ist — das ist die richtige Ebene, denn eine fehlende
+     Karte kann der Käufer auf der Stripe-Seite direkt ergänzen. */
+  function applePayAvailable() {
+    try {
+      return !!(window.ApplePaySession && window.ApplePaySession.canMakePayments());
+    } catch (e) { return false; }
+  }
+
+  /* Bestellung festhalten, bevor der Käufer die Seite verlässt. Sonst
+     zahlt jemand bei Stripe und wir wissen weder wer noch wofür. */
+  async function goToStripe() {
+    const url = stripeLinkFor();
+    if (!url) { MM.toast("Diese Zahlungsart steht für deinen Warenkorb nicht bereit"); return; }
+    if (!validateForm()) { MM.toast("Bitte prüfe die markierten Felder, die AGB und die Zustimmung zu digitalen Inhalten"); return; }
+    if (!digitalConsentGiven()) { MM.toast("Bitte stimme der sofortigen Bereitstellung digitaler Inhalte zu"); return; }
+
+    const btn = document.getElementById("coStripe");
+    if (btn) { btn.disabled = true; btn.textContent = "Bezahlseite wird geöffnet…"; }
+
+    const order = buildOrder(applePayAvailable() ? "Apple Pay (Stripe)" : "Karte / Google Pay / Klarna (Stripe)");
+    const orders = MM.store.get("orders", []);
+    orders.push(order);
+    MM.store.set("orders", orders);
+    /* Damit die Rückkehr von Stripe die Bestellung wiederfindet. */
+    MM.store.set("stripe_pending", { no: order.no, at: Date.now() });
+    if (MM.track) MM.track("checkout_stripe_redirect", { value: order.total });
+
+    /* Die Benachrichtigung darf den Kaufweg nicht blockieren. Antwortet der
+       Endpoint nicht, wird trotzdem weitergeleitet — die Bestellung liegt
+       bereits lokal, und ein Käufer, der auf einem toten Button hängen
+       bleibt, ist teurer als eine verspätete Benachrichtigung. */
+    const mitFrist = (pr, ms) => Promise.race([pr, new Promise(r => setTimeout(r, ms))]);
+    try {
+      await mitFrist(MM.sendForm("🛒 Neue Bestellung " + order.no + " — " + order.total + " (Stripe, Zahlung folgt)", {
+        Typ: "Bestellung",
+        Bestellnummer: order.no,
+        Name: order.name,
+        "E-Mail": order.email,
+        Adresse: order.address,
+        Artikel: order.items.join(" | "),
+        Versand: order.shipping,
+        Gesamt: order.total,
+        Zahlungsart: order.payMethod,
+        Status: "zur Bezahlseite weitergeleitet — Zahlungseingang bei Stripe prüfen",
+        "Digitale Inhalte — Zustimmung": order.digitalConsent
+          ? (order.digitalConsent.given ? "JA am " + order.digitalConsent.at + " (" + order.digitalConsent.version + "): " + order.digitalConsent.text : "NEIN")
+          : "entfällt (kein digitales Produkt)"
+      }), 4000);
+    } catch (e) { /* Weiterleitung darf daran nicht scheitern */ }
+
+    /* E-Mail und Bestellnummer mitgeben: Stripe füllt das Feld vor und
+       schreibt die Referenz in die Zahlung, damit sich beides zuordnen
+       lässt. */
+    const sep = url.indexOf("?") < 0 ? "?" : "&";
+    window.location.href = url + sep +
+      "prefilled_email=" + encodeURIComponent(order.email) +
+      "&client_reference_id=" + encodeURIComponent(order.no);
+  }
+
+  /* Rückkehr von der Bezahlseite. Stripe leitet mit ?bezahlt=stripe zurück.
+     Diese Rückleitung ist KEIN Zahlungsnachweis — sie sagt nur, dass der
+     Käufer den Vorgang durchlaufen hat. Deshalb wird hier kein Zugang
+     vergeben und auch keine Zahlung behauptet. */
+  function renderStripeReturn() {
+    const pending = MM.store.get("stripe_pending", null);
+    const nr = pending && pending.no ? pending.no : null;
+    MM.store.set("stripe_pending", null);
+    MM.cart.clear();
+    if (MM.track) MM.track("checkout_stripe_returned", {});
+    wrap.innerHTML = '<div class="order-success"><div class="success-icon">✅</div>' +
+      '<h1 class="h-section" style="margin-bottom:14px">Danke — deine Zahlung ist bei Stripe eingegangen.</h1>' +
+      (nr ? '<p class="muted" style="margin-bottom:10px">Deine Bestellnummer: <strong style="color:var(--text)">' + esc(nr) + '</strong></p>' : '') +
+      '<p class="muted" style="margin-bottom:28px">Du bekommst die Bestätigung per E-Mail. Deinen Zugang zu DAS PROTOKOLL schalten wir nach der Prüfung des Zahlungseingangs frei — in der Regel innerhalb weniger Stunden. Sobald er aktiv ist, findest du ihn in deinem Konto unter My MaleMetrix.</p>' +
+      '<div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">' +
+      '<a href="mein-protokoll.html" class="btn btn-primary">Zu My MaleMetrix</a>' +
+      '<a href="kontakt.html" class="btn btn-dark">Frage zur Bestellung</a></div></div>';
+  }
+
   function renderPayAction() {
     const box = document.getElementById("payAction");
     if (!box) return;
@@ -176,6 +300,12 @@
         '<div id="paypalBtns" style="margin-top:4px"></div>' +
         '<p class="small" style="color:var(--muted-2);margin-top:10px;text-align:center">Bitte Felder oben ausfüllen und AGB bestätigen, dann auf den PayPal-Button tippen.</p>';
       mountPayPal(t);
+    } else if (method === "stripe") {
+      const ap = applePayAvailable();
+      box.innerHTML = '<button class="btn btn-primary btn-lg btn-block" id="coStripe">' +
+        (ap ? ' Pay — ' : "Weiter zur Bezahlseite — ") + MM.eur(t.total) + '</button>' +
+        '<p class="small" style="color:var(--muted-2);margin-top:10px;text-align:center">Die Zahlung läuft auf der gesicherten Seite von Stripe. Wir sehen deine Kartendaten nie.</p>';
+      document.getElementById("coStripe").addEventListener("click", goToStripe);
     } else {
       box.innerHTML = '<button class="btn btn-primary btn-lg btn-block" id="coSubmit">Zahlungspflichtig bestellen — ' + MM.eur(t.total) + '</button>';
       document.getElementById("coSubmit").addEventListener("click", submit);
@@ -373,6 +503,31 @@
     await finalizeOrder(order);
   }
 
+  /* ---------- Nach dem Kauf: der eine nächste Schritt -----------------------
+     Der Moment direkt nach einem Kauf ist der einzige, in dem jemand
+     nachweislich bereit ist, Geld auszugeben — und beim Protokoll endet der
+     Kundenwert sonst bei 99 €. Genau daran scheitert später jede bezahlte
+     Werbung, weil 99 € einmalig keine Werbekosten tragen.
+
+     Bewusst zurückhaltend gebaut: Es erscheint nur nach einer bestätigten
+     Zahlung, nur beim Protokoll, und es ist kein zweiter Kaufabschluss,
+     sondern ein Erstgespräch. Ein Nachfassangebot, das den gerade gekauften
+     Artikel kleinredet, macht aus einem zufriedenen Käufer einen Rückgabe-
+     fall. */
+  function naechsterSchritt(order, paypalPaid, serverGrant) {
+    const bezahlt = !!(paypalPaid || serverGrant);
+    const hatProtokoll = (order.productIds || []).indexOf("protokoll") !== -1;
+    if (!bezahlt || !hatProtokoll) return "";
+    if (MM.track) MM.track("upsell_coaching_view", {});
+    return '<div class="card" style="text-align:left;margin-bottom:28px;border-color:var(--accent-line);background:linear-gradient(135deg,var(--accent-soft),transparent)">' +
+      '<span class="card-num">WENN DU NICHT ALLEIN STARTEN WILLST</span>' +
+      '<h3 style="margin:6px 0 8px">Das Protokoll erklärt das System. Ich kann es auf dich einstellen.</h3>' +
+      '<p class="muted" style="margin:0 0 16px;font-size:0.95rem">Im 1:1 Coaching schaue ich mir deine Werte, deinen Alltag und deinen Score persönlich an und steuere das Programm wöchentlich nach. Das Erstgespräch ist kostenlos und unverbindlich — danach 199 € im Monat, monatlich kündbar.</p>' +
+      '<a class="btn btn-primary btn-sm" href="coaching.html" data-track="upsell_coaching_click">Erstgespräch ansehen</a>' +
+      '<p class="small" style="color:var(--muted-2);margin:14px 0 0">Kein Muss: Das Protokoll ist vollständig und funktioniert allein.</p>' +
+      '</div>';
+  }
+
   function renderSuccess(order, viaMailto, paypalPaid, serverGrant) {
     const bank = CFG.bank || {};
     // Server-Grant: Zugang liegt im Konto — kein Client-Code, kein Vault.
@@ -448,6 +603,7 @@
       '<div class="summary-line grand"><span>Gesamt</span><span class="mono">' + order.total + '</span></div></div>' +
 
       '<p class="small" style="color:var(--muted-2);margin-bottom:24px">Physische Produkte versenden wir innerhalb von 2–4 Werktagen nach Zahlungseingang. Digitale Produkte erhältst du per E-Mail innerhalb von 48 Stunden nach Zahlungseingang.</p>' +
+      naechsterSchritt(order, paypalPaid, serverGrant) +
       '<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">' +
       '<button class="btn btn-dark" onclick="window.print()">Bestellung drucken</button>' +
       '<a href="index.html" class="btn btn-ghost">Zur Startseite</a></div></div>';
@@ -557,7 +713,10 @@
 
   /* ---------- Boot: ausstehende Zahlung hat Vorrang vor neuem Checkout ---- */
   const bootPending = getPending();
-  if (bootPending && (bootPending.paypalOrderId || bootPending.captureId)) {
+  const zurueckVonStripe = /[?&]bezahlt=stripe(&|$)/.test(window.location.search);
+  if (zurueckVonStripe) {
+    renderStripeReturn();
+  } else if (bootPending && (bootPending.paypalOrderId || bootPending.captureId)) {
     runRecovery(bootPending);
   } else {
     renderForm();
