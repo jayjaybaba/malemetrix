@@ -103,20 +103,25 @@ window.MM_CONFIG = {
   // einmal manuell frei (My MaleMetrix → Zugänge verwalten). Der Checkout
   // sagt dem Käufer das ehrlich an. Details in COMMERCE.md.
   stripeLinks: {
-    // VORÜBERGEHEND AUS — der Steuerstatus ist ungeklärt.
+    // Zahlungslink plink_1TxUWXDjofqc7MMzNA1IEKoE · DAS PROTOKOLL ·
+    // 99,00 EUR · Rückleitung auf checkout.html?bezahlt=stripe.
+    // Diese Adresse ist öffentlich und ersetzt keinen Schlüssel.
     //
-    // Der Zahlungslink ist fertig und funktioniert. Er ist nur deshalb nicht
-    // eingetragen, weil im Impressum "Kleinunternehmer gemäß § 19 UStG" steht
-    // und die Stripe-Bezahlseite auf der Quittung Umsatzsteuer ausweist.
-    // Weist ein Kleinunternehmer Steuer aus, schuldet er sie dem Finanzamt,
-    // auch wenn er sie nicht hätte ausweisen dürfen (§ 14c UStG). Deshalb
-    // läuft der Verkauf bis zur Klärung ausschließlich über PayPal, wo die
-    // Bestätigung aus diesem Projekt kommt und den § 19-Hinweis trägt.
+    // BEWUSST OHNE STEUERBERECHNUNG angelegt (managed_payments aus,
+    // automatic_tax aus, geprüft: amount_tax = 0). Grund: Im Impressum steht
+    // "Kleinunternehmer gemäß § 19 UStG". Weist ein Kleinunternehmer Steuer
+    // aus, schuldet er sie dem Finanzamt, auch wenn er sie nicht hätte
+    // ausweisen dürfen (§ 14c UStG). So verhält sich Stripe wie PayPal: Die
+    // einzige Stelle mit einer Steuerangabe ist die eigene Bestätigung aus
+    // diesem Projekt, die den § 19-Hinweis trägt (siehe ustHinweis unten).
     //
-    // WIEDER EINSCHALTEN, sobald der Steuerstatus geklärt ist: die Zeile
-    // darunter gegen die auskommentierte tauschen. Sonst ändert sich nichts.
-    //   "protokoll": "https://buy.stripe.com/cNiaEXbKT99r4Qe7RR9fW00"
-    "protokoll": ""
+    // WICHTIG für später: Am Produkt steht in Stripe weiterhin die
+    // Steuerkategorie "E-Buch" (txcd_10302000, in Deutschland 7 %). Sie ist
+    // wirkungslos, solange die Steuerberechnung am Zahlungslink aus ist —
+    // aber ein NEU im Dashboard angelegter Link hat sie standardmäßig AN.
+    // Neue Zahlungslinks deshalb immer ohne Steuerberechnung anlegen,
+    // solange der Steuerstatus nicht geklärt ist.
+    "protokoll": "https://buy.stripe.com/bJe7sL3en0CVbeC9ZZ9fW01"
   },
 
   // --- Versand -------------------------------------------------------------
