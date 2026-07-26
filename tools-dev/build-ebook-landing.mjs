@@ -198,7 +198,7 @@ function page(b) {
 
 /* ---- Bauen ---- */
 const ebooks = loadEbooks();
-const SKIP = new Set(['master-ebook']); // Premium / in Überarbeitung — kein Lead-Magnet
+const SKIP = new Set(); // Kompendium entfernt — DAS PROTOKOLL ist das Produkt
 mkdirSync(ROOT + 'lp', { recursive: true });
 
 let built = [];

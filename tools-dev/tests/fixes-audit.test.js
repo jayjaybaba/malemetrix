@@ -404,9 +404,11 @@ group("S30 · Kleinkram mit klarem Nutzen");
   var mc = read("supabase/functions/mm-commerce/index.ts");
   ok(!/detail: String\(e\?\.message/.test(mc), "mm-commerce reicht die Fehlerursache nicht mehr an den Client");
   ok(/console\.error\("\[mm-commerce\] unhandled"/.test(mc), "sie steht stattdessen im Funktions-Log");
-  var me = read("ebooks/master-ebook.html");
+  /* Das Kompendium wurde entfernt — DAS PROTOKOLL ist das Produkt. Geprüft
+     wird derselbe Punkt jetzt am Protokoll-Reader. */
+  var me = read("ebooks/protokoll.html");
   ok((me.match(/addEventListener\("scroll"/g) || []).length === 1, "der doppelte Scroll-Handler ist weg");
-  ok(/progress\(\);   \/\/ Startwert/.test(me), "der Startwert wird weiterhin gesetzt");
+  ok(/progress\(\);/.test(me), "der Startwert wird weiterhin gesetzt");
   /* Die Zahl wandert mit jedem Testlauf — geprüft wird, dass sie zur
      tatsächlichen Suite passt, nicht ein fester Wert. */
   var suiten = fs.readdirSync(path.join(ROOT, "tools-dev/tests")).filter(function (f) { return /\.test\.js$/.test(f); }).length;
@@ -543,7 +545,7 @@ group("D13/D14 · Toter Code entfernt, lebender erhalten");
   ["doc-table", "doc-figure", "doc-toc"].forEach(function (c) {
     ok(css.indexOf("." + c) >= 0, "D13: ." + c + " bleibt — Vault-Inhalte sind nicht prüfbar");
   });
-  ok(/masterVault/.test(read("ebooks/master-ebook.html")) && /css\/style\.css/.test(read("ebooks/master-ebook.html")),
+  ok(/protoVault/.test(read("ebooks/protokoll.html")) && /css\/style\.css/.test(read("ebooks/protokoll.html")),
     "… Beleg: die Vault-Seite lädt style.css und füllt ihren Inhalt erst zur Laufzeit");
 
   var bal = 0;

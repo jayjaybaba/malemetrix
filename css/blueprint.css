@@ -133,7 +133,7 @@
 .bp-toc ol { list-style: none; padding: 0; margin: 0; counter-reset: t; }
 .bp-toc li { counter-increment: t; margin: 2px 0; }
 .bp-toc a { display: flex; gap: 12px; padding: 7px 0; color: #c3ccd6; text-decoration: none; border-bottom: 1px dashed rgba(255,255,255,.06); font-size: .95rem; }
-.bp-toc a::before { content: counter(t, upper-roman); font-family: var(--font-mono, monospace); font-size: .72rem; color: var(--bp-cyan); flex: 0 0 34px; }
+.bp-toc a::before { content: counter(t, decimal-leading-zero); font-family: var(--font-mono, monospace); font-size: .72rem; color: var(--bp-cyan); flex: 0 0 34px; }
 .bp-toc a:hover { color: #fff; }
 
 /* Platform CTA */
