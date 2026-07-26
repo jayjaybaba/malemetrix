@@ -106,13 +106,13 @@ window.MM_EBOOKS = [
   },
   {
     id: "ultimate-stack",
-    kicker: { de: "MaleMetrix · High-End", en: "MaleMetrix · High-End" },
+    kicker: { de: "MaleMetrix · DAS PROTOKOLL", en: "MaleMetrix · THE PROTOCOL" },
     cover: "linear-gradient(150deg,#0a1424,#05070b)",
     img: "ebooks/img/ultimate-stack/cover.jpg",
-    badge: { de: "Premium · Zugangscode", en: "Premium · Access code" },
-    title: { de: "Der Ultimate Stack", en: "The Ultimate Stack" },
-    desc: { de: "Das evidenzbasierte High-End-Framework für Körperkomposition, Hormone, metabolische Kontrolle und Performance — ärztlich geführt und ehrlich eingeordnet. Alle besprochenen Wirkstoffe sind verschreibungspflichtig und gehören in ärztliche Hände. Privater Leitfaden, nur mit Zugangscode.",
-            en: "The evidence-based high-end framework for body composition, hormones, metabolic control and performance — physician-led and honestly framed. Every substance discussed is prescription-only and belongs in a doctor's hands. Private guide, access code required." },
+    badge: { de: "Kapitel 07", en: "Chapter 07" },
+    title: { de: "Der ultimative Stack", en: "The Ultimate Stack" },
+    desc: { de: "Kapitel 07 aus DAS PROTOKOLL: keine Supplement-Liste, sondern eine kuratierte Entscheidungsarchitektur — acht Bausteine mit je eigenem Job, von Metabolic und Anabolic Engine über die Cognitive Engine bis zum Health Shield. Der Volltext steht im Protokoll.",
+            en: "Chapter 07 of THE PROTOCOL: not a supplement list but a curated decision architecture — eight building blocks, each with its own job, from metabolic and anabolic engine through the cognitive engine to the health shield. Full text lives in the Protocol." },
     minutes: 19,
     read: "ebooks/ultimate-stack.html",
     gated: true

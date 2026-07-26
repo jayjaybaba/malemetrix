@@ -152,7 +152,7 @@ group("Kapitel sind geschlossen — Vorschau statt Volltext");
    deshalb, dass die öffentliche Seite genau das ist, was sie sein soll:
    eine Vorschau mit Kaufweg — und eben KEIN Volltext. */
 var GESCHLOSSEN = ["blueprint", "taeglich-trainieren", "schlaf-energie", "blutwerte-guide",
-  "testosteron", "glp1-agonisten", "supplements", "sexuelle-gesundheit",
+  "testosteron", "glp1-agonisten", "ultimate-stack", "supplements", "sexuelle-gesundheit",
   "11-injektionen", "gewohnheiten"];
 GESCHLOSSEN.forEach(function (name) {
   var src = read("ebooks/" + name + ".html");
@@ -169,8 +169,20 @@ GESCHLOSSEN.forEach(function (name) {
     name + ": Käufer finden den Weg zum Volltext");
   ok(!/kostenloses Ebook|Gratis herunterladen/.test(src), name + ": kein Gratis-Versprechen mehr");
 });
-var stack = read("ebooks/ultimate-stack.html");
-ok(/MM.vault.open/.test(stack), "der Ultimate Stack bleibt verschlüsselt wie bisher");
+/* EINE Quelle je Kapitel. Der Ultimate Stack lag frueher zusaetzlich als
+   eigener Vault vor — damit existierte Kapitel 07 zweimal und die beiden
+   Fassungen liefen auseinander. Der Volltext steht jetzt ausschliesslich im
+   protoVault von ebooks/protokoll.html. Dieser Test haelt das fest. */
+group("Kein Kapitel existiert zweimal");
+(function () {
+  var traeger = fs.readdirSync(path.join(ROOT, "ebooks"))
+    .filter(function (f) { return /\.html$/.test(f); })
+    .filter(function (f) { return /type="application\/json" id="[A-Za-z]*[Vv]ault/.test(read("ebooks/" + f)); });
+  ok(traeger.length === 1 && traeger[0] === "protokoll.html",
+    "genau eine Seite traegt einen Vault (gefunden: " + (traeger.join(", ") || "keine") + ")");
+  ok(!/stackVault|MM\.vault\.open/.test(read("ebooks/ultimate-stack.html")),
+    "Kapitel 07 hat keinen eigenen Vault mehr — kein zweiter Volltext");
+})();
 
 group("Lead-Seiten sammeln keine Adresse mehr für bezahlte Kapitel");
 ["blutwerte-guide", "gewohnheiten", "glp1-agonisten", "schlaf-energie",

@@ -38,9 +38,22 @@ node tools-dev/vault.mjs decrypt <payload.json> <DEIN-CODE>
 |------------------------------|-------------------------------|-------------------|
 | `ebooks/protokoll.html`      | `protokoll-content.html`      | `protoVault`      |
 | `kurs-programm.html`         | `course-data.js`              | `courseVault`     |
-| `ebooks/master-ebook.html`   | `master-content.html`         | (siehe Seite)     |
-| `ebooks/ultimate-stack.html` | `ultimate-stack-content.html` | (siehe Seite)     |
 | `intern.html`                | `intern-content.html`         | (siehe Seite)     |
+
+## EINE Quelle je Kapitel — nicht verhandelbar
+
+`ebooks/protokoll.html` ist der **einzige** Ort, an dem Kapiteltext liegt.
+Alle zehn Kapitel plus Abschluss stehen dort im `protoVault`.
+
+Vorher gab es Kapitel 07 zweimal: als eigener Vault in
+`ebooks/ultimate-stack.html` **und** im Protokoll. Beide Fassungen liefen
+auseinander — Leser bekamen je nach Weg unterschiedliche Texte. Der eigene
+Vault ist deshalb entfernt; die Seite ist jetzt eine Vorschau wie die neun
+anderen Kapitelseiten.
+
+`tools-dev/tests/visual-system.test.js` hält das fest: Genau eine Datei unter
+`ebooks/` darf einen Vault tragen. Ein zweiter Kapitel-Vault lässt die Suite
+scheitern. Wer Kapitelinhalt ändert, ändert ihn im Protokoll — nirgendwo sonst.
 
 > Klartext und Vault gehören zusammen: Nach jeder inhaltlichen Änderung
 > in `_src/` den zugehörigen Vault neu erzeugen und einsetzen.
