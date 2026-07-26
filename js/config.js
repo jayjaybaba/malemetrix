@@ -85,6 +85,18 @@ window.MM_CONFIG = {
   // Solange der Wert leer ist, wird die Zahlart NICHT angeboten. Es wird
   // bewusst kein Apple-Pay-Versprechen angezeigt, das nicht eingelöst würde.
   //
+  // ACHTUNG, EINMALZAHLUNG: Der Preis hinter dem Zahlungslink MUSS in Stripe
+  // als "einmalig" angelegt sein, nicht als "wiederkehrend". Die ganze Seite
+  // verspricht "99 €, einmalig, kein Abo" — ein wiederkehrender Preis würde
+  // jeden Käufer stattdessen jeden Monat erneut belasten. Im Stripe-Dashboard
+  // steht das beim Preis unter "Abrechnung": dort muss "Einmalig" stehen.
+  //
+  // NIEMALS hier eintragen: ein Schlüssel, der mit sk_ oder rk_ beginnt. Das
+  // sind Geheimschlüssel; diese Datei wird an jeden Besucher ausgeliefert.
+  // Öffentlich sein dürfen nur die buy.stripe.com-Adresse und pk_-Schlüssel.
+  // Der Wächter G9 in tools-dev/tests/security-guards.test.js bricht den
+  // Build, falls doch einmal einer hineingerät.
+  //
   // WICHTIG zur Auslieferung: PayPal schaltet den Zugang automatisch frei,
   // weil die Zahlung serverseitig geprüft wird. Für Stripe existiert diese
   // Prüfung noch nicht — dort schaltest du den Zugang nach der Zahlung

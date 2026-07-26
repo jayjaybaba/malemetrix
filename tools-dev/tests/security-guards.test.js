@@ -216,9 +216,29 @@ group("G9 · Apple Pay wird nur versprochen, wenn es auch funktioniert");
   ok(!/serverGrant|ACCESS GRANTED|renderSuccess|vault|Zugangscode/i.test(rueck),
     "die Rueckkehr vergibt keinen Zugang und zeigt keinen Code");
 
-  /* Ein Stripe-Geheimschluessel darf niemals im Frontend liegen. */
-  var leck = JS_HTML.filter(function (f) { return /sk_(live|test)_[A-Za-z0-9]/.test(read(f)); });
-  ok(leck.length === 0, "kein Stripe-Secret im Frontend (gefunden: " + (leck.join(", ") || "nichts") + ")");
+  /* Ein Stripe-Geheimschluessel darf niemals im Frontend liegen. Das gilt
+     fuer den Vollzugriff (sk_) genauso wie fuer eingeschraenkte Schluessel
+     (rk_): auch ein rk_live_ kann in fremder Hand die API im Namen des
+     Kontos aufrufen. Oeffentlich sein duerfen ausschliesslich der
+     pk_-Schluessel und die buy.stripe.com-Adresse. */
+  var leck = JS_HTML.filter(function (f) { return /\b(sk|rk)_(live|test)_[A-Za-z0-9]{10}/.test(read(f)); });
+  ok(leck.length === 0, "kein Stripe-Geheimschluessel im Frontend (gefunden: " + (leck.join(", ") || "nichts") + ")");
+
+  /* Auch nicht in irgendeiner anderen versionierten Datei — ein Schluessel
+     im Repo ist ein Schluessel in der Welt, sobald das Repo geteilt wird. */
+  var alle = [];
+  (function walk(dir) {
+    fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true }).forEach(function (e) {
+      var rel = dir ? dir + "/" + e.name : e.name;
+      if (e.name === ".git" || e.name === "node_modules") return;
+      if (e.isDirectory()) return walk(rel);
+      if (/\.(js|mjs|ts|html|json|md|sql|sh|yml|yaml|toml)$/.test(e.name)) alle.push(rel);
+    });
+  })("");
+  var repoLeck = alle.filter(function (f) {
+    return /\b(sk|rk)_(live|test)_[A-Za-z0-9]{20}/.test(read(f));
+  });
+  ok(repoLeck.length === 0, "kein Stripe-Geheimschluessel irgendwo im Repo (gefunden: " + (repoLeck.join(", ") || "nichts") + ")");
 
   /* Auslieferung: der Kaeufer muss erfahren, dass der Zugang bei diesem Weg
      nicht sofort kommt. Sonst ist es ein Versprechen, das brechen wird. */
