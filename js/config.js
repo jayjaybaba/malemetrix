@@ -103,11 +103,20 @@ window.MM_CONFIG = {
   // einmal manuell frei (My MaleMetrix → Zugänge verwalten). Der Checkout
   // sagt dem Käufer das ehrlich an. Details in COMMERCE.md.
   stripeLinks: {
-    // Zahlungslink plink_1TxTWQDjofqc7MMz0ug76LpN · DAS PROTOKOLL ·
-    // 99,00 EUR einmalig, inklusive USt. · Rückleitung auf
-    // checkout.html?bezahlt=stripe. Diese Adresse ist öffentlich und
-    // ungefährlich — sie ersetzt keinen Schlüssel.
-    "protokoll": "https://buy.stripe.com/cNiaEXbKT99r4Qe7RR9fW00"
+    // VORÜBERGEHEND AUS — der Steuerstatus ist ungeklärt.
+    //
+    // Der Zahlungslink ist fertig und funktioniert. Er ist nur deshalb nicht
+    // eingetragen, weil im Impressum "Kleinunternehmer gemäß § 19 UStG" steht
+    // und die Stripe-Bezahlseite auf der Quittung Umsatzsteuer ausweist.
+    // Weist ein Kleinunternehmer Steuer aus, schuldet er sie dem Finanzamt,
+    // auch wenn er sie nicht hätte ausweisen dürfen (§ 14c UStG). Deshalb
+    // läuft der Verkauf bis zur Klärung ausschließlich über PayPal, wo die
+    // Bestätigung aus diesem Projekt kommt und den § 19-Hinweis trägt.
+    //
+    // WIEDER EINSCHALTEN, sobald der Steuerstatus geklärt ist: die Zeile
+    // darunter gegen die auskommentierte tauschen. Sonst ändert sich nichts.
+    //   "protokoll": "https://buy.stripe.com/cNiaEXbKT99r4Qe7RR9fW00"
+    "protokoll": ""
   },
 
   // --- Versand -------------------------------------------------------------
