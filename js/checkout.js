@@ -383,7 +383,9 @@
     if ((order.productIds || []).indexOf("protokoll") !== -1) {
       const pcode = (codes && codes.protokoll) || "";
       if (paypalPaid && pcode) {
-        const plink = "ebooks/protokoll.html?code=" + encodeURIComponent(pcode);
+        /* Kompendium, NICHT ebooks/protokoll.html — dort lag die alte
+           14-Kapitel-Fassung; sie wurde entfernt. */
+        const plink = "ebooks/master-ebook.html?code=" + encodeURIComponent(pcode);
         courseBlock += '<div class="card" style="text-align:left;margin-bottom:24px;border-color:var(--accent-line)">' +
           '<span class="card-num" style="color:var(--accent)">📕 DEIN PROTOKOLL-ZUGANG</span>' +
           '<p class="muted" style="margin:6px 0 14px">Dein Premium-Ebook „DAS PROTOKOLL" ist freigeschaltet. Dein Zugangscode:</p>' +
