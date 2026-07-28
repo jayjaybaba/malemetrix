@@ -178,14 +178,22 @@
      Fokusphase vorbei ist und die Wirkung weder beurteilt noch bewusst
      abgewählt wurde. Nur Vorgänge mit `wirkungBis` zählen — Alt-Einträge
      von vor der Fokusphasen-Logik tauchen dadurch nie nachträglich auf. */
-  function wirkungOffen() {
+  /* Stabile Referenz eines Auftrags — ohne neuen Datenkey: Bereich + Start.
+     Ein zweiter Auftrag derselben Domäne am selben Tag kann nicht existieren
+     (start() archiviert den laufenden), damit ist der Schlüssel eindeutig. */
+  function wirkungRef(e) { return (e && e.domain ? e.domain : "") + ":" + (e && e.started ? e.started : ""); }
+
+  /* ALLE offenen Wirkungsprüfungen — nicht nur die zuletzt archivierte.
+     Sonst verschwindet Vorgang A, sobald Vorgang B ebenfalls offen ist.
+     Sortiert nach Fälligkeit: der dringendste zuerst. */
+  function wirkungOffeneListe() {
     function offenAus(e, quelle) {
       if (!e || !e.wirkungBis) return null;
       var v = e.wirkung && e.wirkung.verdict;
       if (istAbschluss(v)) return null;
       var p = quelle === "aktiv" ? (progress(e) || {}) : null;
       return {
-        quelle: quelle,
+        quelle: quelle, ref: wirkungRef(e),
         titel: e.title || "", domain: e.domain || "",
         days: e.days || 28,
         erledigt: quelle === "aktiv" ? p.erledigt : (e.erledigt || 0),
@@ -196,24 +204,35 @@
         vertagt: v === "offen"
       };
     }
+    var out = [];
     var f = current();
-    if (f) { var p = progress(f); return (p && p.abgelaufen) ? offenAus(f, "aktiv") : null; }
+    if (f) { var p = progress(f); if (p && p.abgelaufen) { var a = offenAus(f, "aktiv"); if (a) out.push(a); } }
     var h = S.get(KEY_DONE, []);
-    if (!Array.isArray(h) || !h.length) return null;
-    return offenAus(h[h.length - 1], "historie");
+    if (Array.isArray(h)) h.forEach(function (e) { var o = offenAus(e, "historie"); if (o) out.push(o); });
+    out.sort(function (x, y) { return x.faelligAm < y.faelligAm ? -1 : x.faelligAm > y.faelligAm ? 1 : 0; });
+    return out;
   }
+  /* Die nächste fällige offene Wirkungsprüfung (für die prominente Karte). */
+  function wirkungOffen() { return wirkungOffeneListe()[0] || null; }
 
   /* Wirkungs-Urteil erfassen — am laufenden/abgelaufenen Auftrag, sonst am
      zuletzt archivierten (additiv, ohne bestehende Felder umzuschreiben). */
-  function setWirkung(verdict, note) {
+  /* `ref` (Bereich:Start) adressiert einen BESTIMMTEN Vorgang — nötig, sobald
+     mehrere Wirkungsprüfungen offen sind. Ohne ref gilt wie bisher: laufender
+     Auftrag, sonst der zuletzt archivierte. */
+  function setWirkung(verdict, note, ref) {
     if (WIRKUNG.indexOf(verdict) < 0) return false;
     var rec = { verdict: verdict, date: ymd() };
     if (note) rec.note = String(note).slice(0, 200);
     var f = current();
-    if (f) { f.wirkung = rec; S.set(KEY, f); return true; }
+    if (f && (!ref || wirkungRef(f) === ref)) { f.wirkung = rec; S.set(KEY, f); return true; }
     var h = S.get(KEY_DONE, []);
-    if (Array.isArray(h) && h.length) { h[h.length - 1].wirkung = rec; S.set(KEY_DONE, h); return true; }
-    return false;
+    if (!Array.isArray(h) || !h.length) return false;
+    var i = -1;
+    if (ref) { for (var k = h.length - 1; k >= 0; k--) { if (wirkungRef(h[k]) === ref) { i = k; break; } } }
+    else i = h.length - 1;
+    if (i < 0) return false;
+    h[i].wirkung = rec; S.set(KEY_DONE, h); return true;
   }
 
   /* ------------------------------------------------------------- SCHREIBEN */
@@ -291,6 +310,8 @@
     umsetzung: umsetzung,
     wirkung: wirkung,
     wirkungOffen: wirkungOffen,
+    wirkungOffeneListe: wirkungOffeneListe,
+    ref: wirkungRef,
     setWirkung: setWirkung,
     wirkungLabel: function (v) { return WIRKUNG_LABEL[v] || v; },
     history: function () { var h = S.get(KEY_DONE, []); return Array.isArray(h) ? h : []; },

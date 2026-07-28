@@ -626,7 +626,9 @@
     oslabpanels: "lab_panels", oslabresults: "lab_results", oslabnotes: "lab_notes",  // Phase 4 (registriert in labs.js)
     // Phase 6 — Execution-Layer (registriert in execution.js)
     osoverlays: "os_overlays", osreschedules: "os_reschedules", osdecisions: "os_decisions",
-    osdaylog: "os_daylog", osreminderprefs: "os_reminder_prefs"
+    osdaylog: "os_daylog", osreminderprefs: "os_reminder_prefs",
+    // Paket 3 — Optimierungspunkte (registriert in js/points.js)
+    optpoints: "opt_points"
   };
   var LOCAL_ONLY = {
     os_events: "abgeleitetes, gekapptes Ereignis-Log (rekonstruierbar)",

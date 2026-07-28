@@ -17,7 +17,7 @@ Nutzer dort braucht.
 |---|---|---|---|
 | 1 | **Optimierungsbereich** (kompakt: „Bereich“) | Übergeordnetes Themengebiet; basiert auf den bestehenden 12 Score-Domains | System(e), Modul, Domain, Pillar |
 | 2 | **Engpass** | Der aktuell wichtigste begrenzende Faktor (Diagnose-Begriff, bleibt) | Limiter, Bottleneck (sichtbar) |
-| 3 | **Optimierungspunkt** | Das konkrete Thema, das aus einem Engpass abgeleitet und aktiv bearbeitet wird | — (neu; noch kein Datenobjekt, erst Paket 3) |
+| 3 | **Optimierungspunkt** | Das konkrete Thema, das aus einem Engpass abgeleitet und aktiv bearbeitet wird | — (Arbeitsobjekt in `mm_opt_points`, siehe unten) |
 | 4 | **Fokusphase** | Ausschließlich der zeitlich begrenzte Bearbeitungszeitraum | Sprint-/Zyklus-artige Zeitbegriffe im Fokus-Kontext |
 | 5 | **Ein Auftrag** | Die zentrale konkrete Aufgabe innerhalb einer Fokusphase (bestehendes Konzept, bleibt) | „Aufgabe“ (im Fokus-Kontext) |
 | 6 | **Ergebnisprüfung** | Oberbegriff für Umsetzungs- und Wirkungsprüfung | Review, Recheck, Check-in, Weekly Pulse, Reassessment (sichtbar) |
@@ -95,10 +95,57 @@ Nutzer dort braucht.
   Prüfungstag; der letzte Tag zum Abhaken liegt einen Tag davor. Sichtbar
   daher immer getrennt: „Fokusphase 14 Tage: 28.07.–10.08. ·
   Umsetzungsprüfung am 11.08.“
+
+## Optimierungspunkte (Paket 3, umgesetzt)
+
+**Kanonische Struktur:** `mm_opt_points` (`js/points.js`, Sync-Domäne
+`optpoints`, append-orientiert). Sie speichert ausschließlich Zuordnung,
+Status, Referenzen und zusammenfassende Ergebnisse — nie eine zweite Kopie
+der Umsetzung. Keine neue Tabelle, keine Migration.
+
+**Source of Truth je Information:**
+
+| Information | Maßgebliche Quelle |
+|---|---|
+| Auftrag, Fokusphase, tägliche Häkchen, Umsetzungs- und Wirkungsprüfung | `mm_focus` / `mm_focus_history` |
+| Premium-Experimente | `intel_experiments` (nur gelesen) |
+| Planentscheidungen | `intel_decisions` (nur referenziert) |
+| Zuordnung, Status, Referenz, Ergebnis-Zusammenfassung, persönlicher Standard | `mm_opt_points` |
+
+**Statusmodell** — sieben interne Zustände, je einer pro sichtbarer Gruppe:
+
+| Bestehender Zustand (Quelle) | Interner Zustand | Sichtbarer Status |
+|---|---|---|
+| Auftrag gestartet, Fokusphase läuft | `in_umsetzung` | In Umsetzung |
+| Punkt gespeichert, noch nicht bearbeitet | `erkannt` | Offen |
+| Fokusphase vorbei, Umsetzung nicht quittiert | `pruefung_faellig` | Prüfung fällig |
+| Wirkung vertagt (`wirkung.verdict = offen`) oder Vorgang archiviert ohne Urteil | `wirkung_offen` | Wirkung offen |
+| Wirkungsurteil erkennbar / teilweise / unklar / nicht weiter geprüft | `abgeschlossen` | Abgeschlossen |
+| Bewusst pausiert (manuell) | `pausiert` | Pausiert |
+| Manuell gesetzt **oder** ausreichend umgesetzt + keine Wirkung + ärztlicher Vorbehalt | `weitere_abklaerung` | Weitere Abklärung |
+
+Manuelle Zustände (`pausiert`, `weitere_abklaerung`) gewinnen über die
+Ableitung; sonst gewinnt immer die Quelle. Übergänge entstehen aus
+bestehenden Handlungen — der Nutzer wählt nie einen Status aus.
+
+**Entstehung:** Ein Punkt entsteht ausschließlich aus einer bestätigten
+Handlung — heute: dem Start eines Auftrags. Ein angezeigter Score-Engpass
+erzeugt nichts; wiederholte Scores sammeln keine unbestätigten Punkte an.
+
+**Duplikatregel (konservativ, zweistufig):** gleiche `source_type` +
+`source_id` ⇒ immer derselbe Punkt (Aktualisierung). Sonst: gleiche
+Quellart + gleicher Bereich + identisch normalisierter Titel + noch nicht
+abgeschlossen ⇒ Aktualisierung. Keine Ähnlichkeitssuche — fachlich
+verschiedene Punkte werden nie zusammengelegt.
+
+**Persönlicher Standard:** entsteht nie automatisch. Eine gute Umsetzung
+plus erkennbare Wirkung erzeugt nur eine *Empfehlung*; übernommen wird
+ausschließlich per ausdrücklicher Bestätigung (`standard.bestaetigt`).
+Ärztlicher Vorbehalt im Bereich unterdrückt die Empfehlung. Der Standard
+lebt im Punkt selbst — keine zweite Standardbibliothek.
+
 ## Noch offen (spätere Pakete)
 
-- Statusliste der Optimierungspunkte (Paket 3) — bis dahin bleiben die
-  bestehenden Verdict-Labels (KEEP/LIKELY HELPED …) unverändert.
 - Bereichswert-Anzeige 1–10 (Paket 4).
 - Englische OS-Navigation (Today/Plan/Track/Progress/Learn) und Modul-Namen
   (NBA, Foresight, Digital Twin …) — bewusst nicht Teil der fünf Familien.

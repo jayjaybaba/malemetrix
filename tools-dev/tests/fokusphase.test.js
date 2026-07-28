@@ -339,7 +339,7 @@ group("8 · Nachprüfung: Umsetzung vs. Ziel, Prüfungstag, offene Wirkung");
   const hist = nachReload.MM.focus.history();
   ok(hist[hist.length - 1].wirkung.verdict === "teilweise", "das Ergebnis steht am archivierten Vorgang");
   ok(/wirkungOffen/.test(trk) && /WIRKUNGSPRÜFUNG · OFFEN/.test(trk), "der Tracker rendert die offene Wirkungsprüfung als eigene Karte");
-  ok(/data-fwirkung="erkennbar"/.test(trk.split("WIRKUNGSPRÜFUNG · OFFEN")[0]) || /wirkungBtns\(\)/.test(trk), "die Erfassung ist dort direkt möglich");
+  ok(/wirkungBtns\(/.test(trk) && /data-fwirkung="' \+ q\[0\]/.test(trk), "die Erfassung ist dort direkt möglich");
 
   /* --- 8.5  Abschluss erst durch Ergebnis ODER bewusste Entscheidung ---- */
   const cVertagt = sandboxAt("2026-07-16", { mm_focus_history: c.__mem["mm_focus_history"] });
@@ -348,7 +348,7 @@ group("8 · Nachprüfung: Umsetzung vs. Ziel, Prüfungstag, offene Wirkung");
   ok(cVertagt.MM.focus.setWirkung("nicht_geprueft") === true, "die bewusste Entscheidung, nicht weiter zu prüfen, ist erfassbar");
   ok(cVertagt.MM.focus.wirkungOffen() === null, "erst diese Entscheidung schließt die offene Wirkungsprüfung ab");
   ok(cVertagt.MM.focus.wirkungLabel("nicht_geprueft") === "bewusst nicht weiter geprüft", "die Entscheidung ist ehrlich benannt (kein Ergebnis erfunden)");
-  ok(/data-fwirkung="nicht_geprueft"/.test(trk), "der Tracker bietet die bewusste Abwahl an");
+  ok(/nicht_geprueft\|Nicht weiter prüfen/.test(trk), "der Tracker bietet die bewusste Abwahl an");
 
   /* Alt-Einträge von vor der Fokusphasen-Logik tauchen nie als offen auf. */
   const cLegacy = sandboxAt("2026-07-16", { mm_focus_history: JSON.stringify([{ domain: "sleep", title: "Alt", started: "2026-05-01", until: "2026-05-29", erledigt: 21, ziel: 20, geschafft: true }]) });

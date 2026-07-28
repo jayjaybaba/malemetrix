@@ -1087,7 +1087,14 @@
              gilt die empfohlene Dauer des Auftrags. */
           const box = el.querySelector("#fpChips");
           const d = box ? parseInt(box.getAttribute("data-days"), 10) : undefined;
-          MM.focus.start(C.focusFor(r, d));
+          const auftrag = C.focusFor(r, d);
+          MM.focus.start(auftrag);
+          /* ERST HIER entsteht ein Optimierungspunkt: der Nutzer hat den
+             Engpass durch den Auftragsstart ausdrücklich übernommen. Das
+             bloße Anzeigen des Score-Ergebnisses erzeugt keinen Punkt.
+             Der Punkt referenziert den Auftrag nur — mm_focus bleibt die
+             maßgebliche Quelle für Fokusphase, Häkchen und Prüfungen. */
+          try { if (MM.points) MM.points.fromFocus(auftrag, { origin: "engpass" }); } catch (e) {}
           MM.toast("Auftrag übernommen — du findest ihn oben im Tracker.");
           setTimeout(() => { location.href = "tracker.html#focus"; }, 700);
         });

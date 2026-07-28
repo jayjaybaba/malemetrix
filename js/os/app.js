@@ -932,6 +932,11 @@
         '<button class="btn btn-primary btn-sm" id="cycDone">Durchlauf abschließen →</button></div>');
     }
 
+    /* OPTIMIERUNGSPUNKTE (Paket 3) — kompakt in der bestehenden Ansicht,
+       read-only. Die Wahrheit steht in der jeweiligen Quelle (mm_focus,
+       intel_experiments, intel_decisions); hier wird nur referenziert. */
+    html += optPointsSection();
+
     var arch = MM.store.get("c2_archive", []) || [];
     var hist = arch.map(function (a, i) { return '<div class="os-cycle"><b>Durchlauf ' + (i + 1) + '</b><span>' + esc((MODE[a.goal] || a.goal || "—")) + '</span><i>abgeschlossen ' + esc(a.ended || "") + '</i></div>'; }).join("");
     if (p.active) hist += '<div class="os-cycle on"><b>Durchlauf ' + (arch.length + 1) + '</b><span>' + esc(MODE[d.mode] || "") + '</span><i>aktiv · Woche ' + p.week + '</i></div>';
@@ -939,6 +944,29 @@
     if (MM.intelligence) html += '<a class="card os-row-cta" href="#timeline"><span class="tag">TIMELINE</span><b>Deine ganze Historie — Entscheidungen · Labs · Ergebnisprüfungen</b></a>';
     return html;
   }
+  /* Kompakte Punkt-Übersicht: Bereich · Status · nächste Prüfung · Ergebnis.
+     Keine neue Seite, keine Statusauswahl — der Status folgt den Handlungen. */
+  function optPointsSection() {
+    if (!(MM.points && MM.points.list)) return "";
+    var pts = [];
+    try { pts = MM.points.list(); } catch (e) { return ""; }
+    if (!pts.length) return "";
+    var offen = pts.filter(function (p) { return !p.abgeschlossen; });
+    var fertig = pts.filter(function (p) { return p.abgeschlossen; }).slice(-3);
+    function row(p) {
+      var naechste = p.status === "wirkung_offen" ? p.effect_review_date : p.review_date;
+      return '<div class="os-cmp-row"><span>' + esc(p.areaLabel || p.area || "—") + '</span>' +
+        '<b>' + esc(p.title) + '</b><i>·</i><b class="now">' + esc(p.statusLabel) + '</b>' +
+        (naechste && !p.abgeschlossen ? '<span class="small muted"> · Prüfung ' + esc(naechste) + '</span>' : '') +
+        (p.standard && p.standard.bestaetigt ? '<span class="small muted"> · persönlicher Standard</span>' : '') +
+        '</div>';
+    }
+    var inner = (offen.length ? offen.map(row).join("") : '<p class="small muted">Kein aktiver Optimierungspunkt.</p>') +
+      (fertig.length ? '<p class="small muted" style="margin-top:10px">Zuletzt abgeschlossen: ' +
+        fertig.map(function (p) { return esc(p.title) + (p.standard && p.standard.bestaetigt ? " (Standard)" : ""); }).join(" · ") + '</p>' : '');
+    return sec("Optimierungspunkte", inner);
+  }
+
   function loadPhotoCompare() {
     // Checkpoint-Karte nur zeigen, wenn die fälligen Fotos WIRKLICH fehlen (§8).
     var cp = document.getElementById("osCpCard");
