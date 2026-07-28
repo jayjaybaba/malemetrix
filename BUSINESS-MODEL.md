@@ -5,8 +5,8 @@
 
 ## 1. Ausgangslage (ACTUAL)
 
-- Aktuelles Angebot: **DAS PROTOKOLL 49 € einmalig** (schaltet das komplette
-  System frei, inkl. laufender Intelligenz/Foresight) + **1:1 Coaching 149 €/Monat**.
+- Aktuelles Angebot: **DAS PROTOKOLL 99 € einmalig** (schaltet das komplette
+  System frei, inkl. laufender Intelligenz/Foresight) + **1:1 Coaching 199 €/Monat**.
 - Laufende Grenzkosten pro aktivem Nutzer: Supabase (Sync/DB), optional KI
   (mm-ai), Push, Speicher. Bei einem **Einmalpreis** wachsen die kumulierten
   Kosten mit der Nutzungsdauer, der Umsatz nicht.
@@ -27,7 +27,7 @@ Dazu Supabase/Push/Storage: grob 0,05–0,20 €/aktiver Nutzer/Monat.
 Produkt funktioniert vollständig. Das begrenzt das Kostenrisiko strukturell.
 
 **Kernbefund:** Ein POWER-Nutzer verursacht ~1–1,50 €/Monat laufende Kosten.
-Über 24 Monate sind das ~24–36 € — bei 49 € Einmalpreis bleibt nach
+Über 24 Monate sind das ~24–36 € — bei 99 € Einmalpreis bleibt nach
 Zahlungsgebühren (~1,50 €) und Kosten eine schrumpfende Marge. **Ein
 KI-schweres Produkt dauerhaft für einen Einmalpreis ist strukturell fragil**
 (§60). Für LIGHT/ACTIVE-Nutzer trägt der Einmalpreis dagegen bequem.
@@ -36,7 +36,7 @@ KI-schweres Produkt dauerhaft für einen Einmalpreis ist strukturell fragil**
 
 | Modell | Erwartung | Friktion | LTV | Kosten-Alignment | Positionierung |
 |---|---|---|---|---|---|
-| A · 49 € Lifetime | einfach, fair | niedrig | niedrig | **schlecht** bei KI-Heavy | „ehrlich, kein Abo" |
+| A · 99 € Lifetime | einfach, fair | niedrig | niedrig | **schlecht** bei KI-Heavy | „ehrlich, kein Abo" |
 | B · Free + PRO-Abo | SaaS-üblich | hoch (Abo-Hürde) | hoch | gut | „laufende Intelligenz" |
 | C · Einmal-Programm + Intelligence-Abo | fair + laufend | mittel | hoch | **gut** | „Programm gehört dir, Intelligenz mietest du" |
 | D · Jahres-Mitgliedschaft | planbar | mittel | mittel-hoch | gut | „Jahresbegleitung" |
@@ -76,16 +76,16 @@ Eingaben (monatlich, anpassbar):
 | Score-Completion | 15 % | 25 % | 35 % |
 | Score→Account | 8 % | 15 % | 25 % |
 | Account→Paid (Protokoll) | 3 % | 6 % | 10 % |
-| Protokoll-Preis | 49 € | 49 € | 49 € |
+| Protokoll-Preis | 99 € | 99 € | 99 € |
 | Intelligence-Abo-Take (Modell E, später) | 0 % | 10 % | 20 % @ 9 €/M |
 | Zahlungsgebühr | ~3 % + 0,35 € | " | " |
 | Grenzkosten/aktiver Nutzer | 0,20 € | 0,30 € | 0,60 € |
-| Coaching-Conversion | 0,3 % | 0,8 % | 1,5 % @ 149 € |
+| Coaching-Conversion | 0,3 % | 0,8 % | 1,5 % @ 199 € |
 
 Beispiel-Rechnung BASE (illustrativ, nicht Realität):
 - Zahlende Protokoll-Käufer/Monat ≈ 5.000 × 0,25 × 0,15 × 0,06 ≈ **11**.
-- Protokoll-Umsatz ≈ 11 × 49 € ≈ **539 €/Monat** (Einmalzahlungen, nicht MRR).
-- Coaching ≈ 5.000 × 0,008 ≈ 40 Leads → wenige Abschlüsse × 149 € (kapazitäts-
+- Protokoll-Umsatz ≈ 11 × 99 € ≈ **1.089 €/Monat** (Einmalzahlungen, nicht MRR).
+- Coaching ≈ 5.000 × 0,008 ≈ 40 Leads → wenige Abschlüsse × 199 € (kapazitäts-
   begrenzt, §46).
 - Intelligence-Abo (später, 10 % von Käuferbasis @ 9 €) baut die einzige echte
   MRR-Komponente auf.
@@ -120,7 +120,7 @@ gehört hinter echte Nutzungsdaten, nicht davor.**
 
 ## 6. Gross Margin / LTV / CAC (ANNAHMEN)
 
-- Protokoll-Marge ≈ 49 € − 1,80 € Gebühr − (Nutzungsdauer × Grenzkosten). Für
+- Protokoll-Marge ≈ 99 € − Zahlungsgebühr (~3 % + 0,35 €) − (Nutzungsdauer × Grenzkosten). Für
   LIGHT/ACTIVE > 90 %; für POWER über 2+ Jahre fallend.
 - LTV ohne Abo ≈ Protokoll-Marge (+ ggf. Coaching). Mit Modell E deutlich höher.
 - CAC-Decke = LTV − Zielmarge; ohne echte Conversion-Daten **nicht seriös

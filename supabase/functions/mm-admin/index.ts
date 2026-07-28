@@ -28,9 +28,11 @@ function istEmail(e: string): boolean {
 }
 
 Deno.serve(async (req) => {
-  const pre = preflight(req);
-  if (pre) return pre;
-  const cors = corsHeaders(req);
+  // Muster wie in allen anderen Functions (edge.mjs P0.7): corsHeaders erwartet
+  // den Origin-STRING, preflight liefert IMMER eine 204-Response und darf nur
+  // für OPTIONS zurückgegeben werden.
+  const cors = corsHeaders(req.headers.get("origin") || "");
+  if (req.method === "OPTIONS") return preflight(cors);
   const json = (d: unknown, s = 200) => jsonResponse(d, s, cors);
 
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);

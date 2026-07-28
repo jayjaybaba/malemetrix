@@ -53,8 +53,8 @@ MY MALEMETRIX verbindet.
 ## Commerce & Sicherheit (unangetastet — DO NOT REGRESS eingehalten)
 
 - protocol- + twelve_week-Entitlements, PayPal, Vaults **unverändert** (Teil 18).
-- Score bleibt primärer kostenloser Funnel-Einstieg; Produkt-CTA (49 €) auf der
-  Ergebnisseite erhalten; Preis/Bundle (49 € einmalig · inkl. 12-Wochen-Programm)
+- Score bleibt primärer kostenloser Funnel-Einstieg; Produkt-CTA (99 €) auf der
+  Ergebnisseite erhalten; Preis/Bundle (99 € einmalig · inkl. 12-Wochen-Programm)
   überall konsistent zur Produktseite formuliert.
 - FREE-Preview-Kapitel bleiben frei (kein Pseudo-Paywalling von Bestandstexten).
 - Keine alte URL gelöscht (SEO); ebooks.html bleibt erreichbar.

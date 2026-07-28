@@ -6,7 +6,7 @@
 
 | Funktion | Status |
 | --- | --- |
-| **MaleMetrix Score-Check** — 45 Fragen, 7 gewichtete Scores, Engpass-Algorithmus, 7 Archetypen, Red-Flag-System, Radar-Chart, 7-Tage-Plan | ✅ läuft komplett im Browser |
+| **MaleMetrix Score-Check** — adaptiver Fragebogen, 12 gewichtete Bereiche (Score V2; im Profil zu 7 Säulen verdichtet), Engpass-Algorithmus, 7 Archetypen, Red-Flag-System, Radar-Chart, 7-Tage-Plan | ✅ läuft komplett im Browser |
 | **19 kostenlose Rechner** ([tools.html](tools.html)) — BMI, Körperfett (US Navy & Caliper), WHtR, LBM, Berkhan, BMR/TDEE/Cunningham, Protein, Makros, Wasser, FFMI, Idealgewicht, Casey-Butt-Muskelpotenzial, 1RM, Herzfrequenz, Wilks-2, Scheibenrechner | ✅ wissenschaftliche Formeln, metrisch/imperial |
 | **Training-Tracker** ([tracker.html](tracker.html)) — Sätze loggen mit Auto-Vorschlag aus dem letzten Mal, PRs, e1RM, Rest-Timer, Cardio (Pace/Tempo), Körpermaße + Gewichtschart, eigene & fertige Pläne, JSON-Export/Import | ✅ voll funktionsfähige Fitness-App, offline |
 | **Kostenlose Ebooks** ([ebooks.html](ebooks.html)) — 4 Guides inkl. Flaggschiff-Masterguide. Lesen offen (SEO), **PDF-Download per E-Mail freigeschaltet** | ✅ |
@@ -98,7 +98,7 @@ Die Seite trackt die wichtigsten Funnel-Schritte (Check gestartet/abgeschlossen,
 
 ## 12-Wochen-Programm (Selbststudium, ohne Coaching)
 
-Ein kaufbarer Online-Programm zum Selbermachen — dasselbe System wie das Coaching, aber ohne 1:1-Betreuung. **79 € einmalig.**
+Ein Online-Programm zum Selbermachen — dasselbe System wie das Coaching, aber ohne 1:1-Betreuung. **Teil von DAS PROTOKOLL (99 € einmalig), kein separater Kauf.**
 
 - **Verkaufsseite:** [kurs.html](kurs.html) — Kauf-Button legt das Produkt `kurs-12w` in den Warenkorb → Checkout.
 - **Programminhalt:** [kurs-programm.html](kurs-programm.html) — hinter einem Zugangscode. 12 Wochen mit To-dos zum Abhaken; der Fortschritt wird lokal im Browser gespeichert.
@@ -108,12 +108,11 @@ Ein kaufbarer Online-Programm zum Selbermachen — dasselbe System wie das Coach
   - **Vorkasse:** Code schickst du nach Zahlungseingang per E-Mail.
 - **Wichtig:** Das ist ein **einfacher, geteilter Code — kein echter Kopierschutz**. Für automatische Auslieferung, echten Schutz und Rechnungen später eine Programmplattform nutzen (elopage, Copecart, Digistore24) und dort den Kaufabschluss-Button hinterlegen.
 
-## Preise (Launch-/Founder-Phase, bewusst niedrig)
+## Preise (Live-Stand Juli 2026)
 
-- Coaching: Starter **99 €**, Transformation **399 €** (Founder, regulär 599 €), Premium **990 €** (regulär 1.490 €). Ratenzahlung ohne Aufschlag.
-- **12-Wochen-Programm (Selbststudium): 79 €** einmalig, ohne Coaching.
-- Shop: 8,90 €–84,90 €. Report 19 €, Schlaf-Guide 9,90 €.
-- **Kostenlos:** Score-Check, alle 19 Rechner, Training-Tracker, 3 Ebooks, Blutwerte-Checkliste, Analysegespräch.
+- **DAS PROTOKOLL: 99 €** einmalig — Referenzwerk inkl. 12-Wochen-Programm (einziges Kaufprodukt im Shop-Katalog).
+- **1:1 Coaching: 199 €/Monat**, monatlich kündbar. Erstgespräch kostenlos.
+- **Kostenlos:** Score-Check, alle 19 Rechner, Training-Tracker, Kalorien-Tagebuch, Blutwerte-Checkliste, Magazin, Analysegespräch.
 
 ## Bewusste Produkt-Entscheidungen
 
@@ -135,7 +134,7 @@ Ein kaufbarer Online-Programm zum Selbermachen — dasselbe System wie das Coach
 - Schriften lokal in `fonts/` (kein Google-Request, DSGVO-sauber, offline-fähig).
 - Vorschau lokal: `python serve.py 4173` → http://127.0.0.1:4173
 - Design-System: [css/style.css](css/style.css) · geteilte Logik: [js/main.js](js/main.js) · Sprache: [js/i18n.js](js/i18n.js) · Rechner: [js/tools.js](js/tools.js) · Tracker: [js/tracker.js](js/tracker.js) + [js/tracker-data.js](js/tracker-data.js) · Ebooks: [js/ebooks-data.js](js/ebooks-data.js) (Inhalt) + [js/ebooks.js](js/ebooks.js) (Renderer) · Programm: [js/course-data.js](js/course-data.js) (Inhalt) + [js/course.js](js/course.js) (Zugang/Fortschritt).
-- Scores-Gewichtung: Body 18 % · Fuel 18 % · Recovery 16 % · Strength 15 % · Execution 12 % · Drive 11 % · Blood 10 %.
+- Score-Logik: 12 gewichtete Bereiche (Score V2, kanonische Engine in [js/check-data.js](js/check-data.js)); Gewichte, Schwellen und Leitplanken in [SCORE_V2_LOGIC.md](SCORE_V2_LOGIC.md). Die 7 Profil-Säulen (Radar/Report) sind eine daraus abgeleitete, verdichtete Anzeige.
 
 ## Wichtiger Hinweis
 
