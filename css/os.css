@@ -247,6 +247,14 @@
 .os-cycle b { color: #fff; }
 .os-cycle span { color: var(--accent-2); font-size: 0.8rem; }
 .os-cycle i { color: var(--muted-2); font-size: 0.78rem; font-style: normal; margin-left: auto; }
+/* Antwort des Instruments nach dem Speichern (Track): Wert → Trend → Einordnung. */
+.os-track-echo {
+  margin: 12px 0 0; padding: 10px 12px;
+  border-left: 2px solid var(--accent-2, #00c2ff); border-radius: 0 8px 8px 0;
+  background: rgba(0, 194, 255, 0.06);
+  font-family: var(--font-mono, monospace); font-size: 0.78rem; letter-spacing: 0.06em;
+  color: var(--text, #e8ecf2);
+}
 .os-metriclist { margin-top: 12px; }
 .os-metriclist > div { display: flex; gap: 12px; border-bottom: 1px solid var(--line); padding: 6px 0; font-size: 0.84rem; }
 .os-metriclist span { color: var(--muted-2); }
