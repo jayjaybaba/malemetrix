@@ -56,7 +56,7 @@
 
   /* Kurzmeldung an die Live-Region in mein-protokoll.html. Absichtlich
      knapp: hier gehört der Ansichtsname hin, nicht die Ansicht. */
-  var VIEW_LABEL = { today: "Today", plan: "Plan", track: "Track", progress: "Progress", learn: "Learn", baseline: "Baseline", pathway: "Pathway", transform: "Transform", workout: "Workout", week: "Wochenreview", settings: "Einstellungen", coach: "Coach", advisor: "Advisor", review: "Review", twin: "Twin", simulator: "Simulator", experiments: "Experimente", protocol: "Protokoll", timeline: "Timeline", memory: "Memory", map: "Performance Map", learned: "Gelernt", grants: "Zugänge verwalten" };
+  var VIEW_LABEL = { today: "Today", plan: "Plan", track: "Track", progress: "Progress", learn: "Learn", baseline: "Baseline", pathway: "Pathway", transform: "Transform", workout: "Workout", week: "Wochenplan", settings: "Einstellungen", coach: "Coach", advisor: "Advisor", review: "Ergebnisprüfung", twin: "Twin", simulator: "Simulator", experiments: "Experimente", protocol: "Persönlicher Standard", timeline: "Timeline", memory: "Memory", map: "Performance Map", learned: "Gelernt", grants: "Zugänge verwalten" };
   function announce(msg) {
     var el = document.getElementById("mmStatus");
     if (!el) return;
@@ -155,7 +155,7 @@
     if (nba.why && nba.why.length) html += '<div class="nba-why"><span class="k">WARUM HEUTE</span>' + nba.why.map(function (w) { return '<p>' + esc(w) + '</p>'; }).join("") + '</div>';
     if (a.type === "repair") html += '<button class="btn btn-primary btn-sm" data-repair="' + esc(String(a.repairPd)) + '">Optionen ansehen →</button>';
     else if (a.deepLink === "#workout") html += '<a class="btn btn-primary btn-sm" href="#workout">Session starten →</a>';
-    else if (a.type === "decision_review") html += '<button class="btn btn-primary btn-sm" data-decreview="' + esc(a.decisionId) + '">Review öffnen →</button>';
+    else if (a.type === "decision_review") html += '<button class="btn btn-primary btn-sm" data-decreview="' + esc(a.decisionId) + '">Ergebnisprüfung öffnen →</button>';
     else if (a.deepLink && a.deepLink.indexOf(".html") >= 0) html += '<a class="btn btn-primary btn-sm" href="' + a.deepLink + '">Öffnen →</a>';
     else html += '<button class="btn btn-primary btn-sm" data-osdone="' + esc(a.id) + '">Erledigt ✓</button>';
     if (nba.secondary && nba.secondary.length) {
@@ -250,7 +250,7 @@
       if (d.mode) strip.push('<span class="os-stat"><span class="k">MODE</span><b>' + esc((MODE[d.mode] || d.mode).toUpperCase()) + '</b></span>');
       if (d.bottleneckName || d.bottleneck) strip.push('<span class="os-stat"><span class="k">ENGPASS</span><b>' + esc((d.bottleneckName || BN[d.bottleneck] || d.bottleneck).toUpperCase()) + '</b></span>');
       strip.push('<span class="os-stat"><span class="k">PROGRAMM</span><b>TAG ' + p.day + '<i>/84</i></b></span>');
-      if (p.nextReviewDays != null) strip.push('<a class="os-stat" href="#review"><span class="k">CHECK-IN</span><b>' + (p.nextReviewDays === 0 ? "HEUTE" : "IN " + p.nextReviewDays + (p.nextReviewDays === 1 ? " TAG" : " TAGEN")) + '</b></a>');
+      if (p.nextReviewDays != null) strip.push('<a class="os-stat" href="#review"><span class="k">PRÜFUNG</span><b>' + (p.nextReviewDays === 0 ? "HEUTE" : "IN " + p.nextReviewDays + (p.nextReviewDays === 1 ? " TAG" : " TAGEN")) + '</b></a>');
       html += '<div class="os-statstrip">' + strip.join("") + '</div>';
 
       // KONTEXT-BADGE (aktives Overlay, jederzeit beendbar)
@@ -281,7 +281,7 @@
       // INTELLIGENCE-VORSCHLAG (§21/§22) — bestätigen oder ablehnen, nie still.
       if (day.proposal) {
         var pr = day.proposal;
-        html += '<div class="intel-decision intel-tone-watch os-proposal"><div class="hd"><span class="verdict">' + (pr.type === "check" ? "CHECK FIRST" : "VORSCHLAG") + '</span>' + (day.bottleneck ? '<span class="bn">Limiter: ' + esc((MM.intelligence ? MM.intelligence.LABELS.BN[day.bottleneck.domain] : day.bottleneck.domain) || day.bottleneck.domain) + ' · ' + day.bottleneck.confidencePct + '%</span>' : '') + '</div>' +
+        html += '<div class="intel-decision intel-tone-watch os-proposal"><div class="hd"><span class="verdict">' + (pr.type === "check" ? "CHECK FIRST" : "VORSCHLAG") + '</span>' + (day.bottleneck ? '<span class="bn">Engpass: ' + esc((MM.intelligence ? MM.intelligence.LABELS.BN[day.bottleneck.domain] : day.bottleneck.domain) || day.bottleneck.domain) + ' · ' + day.bottleneck.confidencePct + '%</span>' : '') + '</div>' +
           '<b class="ttl">' + esc(pr.title) + '</b><p class="rsn">' + esc(pr.reason) + '</p>' +
           (pr.evidence.length ? '<div class="ev"><span>BASIEREND AUF</span>' + pr.evidence.map(function (e2) { return '<i>' + esc(e2) + '</i>'; }).join("") + '</div>' : '') +
           // Falsifizierbarkeit (§68): erwartetes Signal + Reassess-Kriterium sichtbar.
@@ -336,7 +336,7 @@
 
       // ENTSCHEIDUNGS-REVIEWS fällig (Closed-Loop-Ledger)
       X.dueDecisions().forEach(function (dec) {
-        html += '<div class="os-decision"><span class="tag">REVIEW FÄLLIG</span><b>' + esc(dec.what) + '</b><span class="s">Entschieden am ' + esc(fmtDateShort(dec.date)) + (dec.why ? ' — ' + esc(dec.why) : '') + '</span>' +
+        html += '<div class="os-decision"><span class="tag">ERGEBNISPRÜFUNG FÄLLIG</span><b>' + esc(dec.what) + '</b><span class="s">Entschieden am ' + esc(fmtDateShort(dec.date)) + (dec.why ? ' — ' + esc(dec.why) : '') + '</span>' +
           '<div class="ctl"><button class="os-chip" data-decclose="' + esc(dec.id) + '" data-outcome="kept">Behalten</button><button class="os-chip" data-decclose="' + esc(dec.id) + '" data-outcome="adjusted">Angepasst</button><button class="os-chip" data-decclose="' + esc(dec.id) + '" data-outcome="reverted">Zurückgenommen</button></div></div>';
       });
 
@@ -381,7 +381,7 @@
         '<a href="protokoll.html" class="btn btn-primary btn-sm" data-track="upgrade_view">Dein System aufbauen →</a></div>';
     } else {
       html += '<div class="card os-accent os-start"><h1 class="os-big" style="font-size:1.5rem">Dein System startet hier</h1><ol class="os-steps">' +
-        '<li><b>Score machen</b><span>Baseline deiner 12 Systeme — findet deinen Engpass.</span></li>' +
+        '<li><b>Score machen</b><span>Baseline deiner 12 Bereiche — findet deinen Engpass.</span></li>' +
         '<li><b>Pathway wählen</b><span>Health · Performance · Enhanced.</span></li>' +
         '<li><b>Baseline anlegen</b><span>Gewicht, Taille, Fotos, Kraftwerte.</span></li>' +
         '<li><b>Plan bauen</b><span>Programm, Nutrition, Training, Stack.</span></li></ol>' +
@@ -432,7 +432,7 @@
     if (!md) {
       return '<div class="os-head"><span class="eyebrow" style="margin:0">Performance Map</span></div>' +
         '<div class="card os-accent"><h1 class="os-big" style="font-size:1.4rem">Deine Map entsteht aus deinem Score.</h1>' +
-        '<p class="muted" style="margin:0 0 14px">Rund 7 Minuten, 12 Systeme, sofortige Auswertung — daraus baut MaleMetrix deine persönliche Karte: Engpass, Richtung, erster Schritt.</p>' +
+        '<p class="muted" style="margin:0 0 14px">Rund 7 Minuten, 12 Bereiche, sofortige Auswertung — daraus baut MaleMetrix deine persönliche Karte: Engpass, Richtung, erster Schritt.</p>' +
         '<a href="check.html" class="btn btn-primary">MaleMetrix Score starten →</a></div>';
     }
     var d = MM.account.getDashboardState();
@@ -443,11 +443,11 @@
     html += '<div class="mm-map-node"><span class="mm-map-k">DU · HEUTE</span>' +
       '<div class="mm-map-you">' + (md.total != null ? '<div class="mm-map-score"><b>' + md.total + '</b><span>/100</span></div>' : '') +
       '<div><b>' + esc(md.archetype || "Dein Ausgangspunkt") + '</b>' +
-      (md.weakest.length ? '<span class="s">Schwächste Systeme: ' + md.weakest.map(function (w) { return esc(w.name || w.key); }).join(" · ") + '</span>' : '') +
+      (md.weakest.length ? '<span class="s">Schwächste Bereiche: ' + md.weakest.map(function (w) { return esc(w.name || w.key); }).join(" · ") + '</span>' : '') +
       '</div></div></div>';
     html += '<div class="mm-map-spine" aria-hidden="true"></div>';
     // LIMITER
-    html += '<div class="mm-map-node warn"><span class="mm-map-k">PRIMÄRER LIMITER</span><b class="mm-map-big">' + esc(md.bottleneck || "—") + '</b>' +
+    html += '<div class="mm-map-node warn"><span class="mm-map-k">PRIMÄRER ENGPASS</span><b class="mm-map-big">' + esc(md.bottleneck || "—") + '</b>' +
       (md.bottleneckDyn ? '<span class="s">Dynamisch bestätigt: ' + esc(md.bottleneckDyn.domain) + ' · Konfidenz ' + md.bottleneckDyn.confidencePct + ' %</span>' : '<span class="s">Aus deinem Score — wird mit laufenden Daten dynamisch nachgeführt.</span>') + '</div>';
     html += '<div class="mm-map-spine" aria-hidden="true"></div>';
     // 12 WOCHEN
@@ -503,7 +503,7 @@
         return '<div class="os-outcome"><div class="hd"><b>' + esc(o.what) + '</b><span class="ver ver-' + esc(o.verdict.cls) + '">' + esc(o.verdict.label) + '</span></div>' +
           '<span class="s">' + esc(fmtDateShort(o.date)) + (o.from != null && o.to != null ? ' · ' + esc(o.from) + ' → ' + esc(o.to) : '') +
           (o.observed && o.observed.weightDelta != null ? ' · gemessen: Gewicht ' + (o.observed.weightDelta > 0 ? '+' : '') + o.observed.weightDelta + ' kg' : '') + '</span></div>';
-      }).join("") + '<p class="small muted" style="margin-top:10px">Jede Anpassung bekommt ein Review gegen echte Daten — das ist deine persönliche Evidenz, kein generisches Coaching.</p>');
+      }).join("") + '<p class="small muted" style="margin-top:10px">Jede Anpassung bekommt eine Ergebnisprüfung gegen echte Daten — das ist deine persönliche Evidenz, kein generisches Coaching.</p>');
     }
     return html;
   }
@@ -519,7 +519,7 @@
       var cls = "os-wday" + (dd.isToday ? " today" : "") + (dd.past ? " past" : "") + (dd.type === "strength" || dd.makeup ? " train" : "");
       var status = dd.past ? (dd.type === "strength" ? (dd.trainDone ? '<span class="ok">✓</span>' : '<span class="miss">verpasst</span>') : (dd.done ? '<span class="ok">✓</span>' : '')) : "";
       return '<div class="' + cls + '"><span class="wd">' + esc(dd.wd) + '</span><span class="dt">' + esc(fmtDateShort(dd.date)) + '</span><b>' + esc(dd.label) + '</b>' +
-        (dd.review ? '<span class="mk">REVIEW</span>' : '') + (dd.measure ? '<span class="mk">MESSEN</span>' : '') +
+        (dd.review ? '<span class="mk">PRÜFUNG</span>' : '') + (dd.measure ? '<span class="mk">MESSEN</span>' : '') +
         (dd.overlay ? '<span class="mk ov">' + esc((X.OVERLAYS[dd.overlay] || {}).label || dd.overlay) + '</span>' : '') + status + '</div>';
     }).join("") + '</div>';
     var missed = X.missedThisWeek().filter(function (m) { return !m.handled; });
@@ -527,7 +527,7 @@
     if (missed.length && weekOffset === 0) {
       repair = '<div class="os-decision"><span class="tag">WOCHE REPARIEREN</span><b>' + missed.length + ' Einheit' + (missed.length > 1 ? 'en' : '') + ' offen</b><span class="s">Die Vergangenheit bleibt, wie sie war — aber die Woche ist noch zu retten.</span><div class="ctl"><button class="os-chip" data-repair="' + missed[0].pd + '">Optionen ansehen</button></div></div>';
     }
-    var ics = '<div class="card"><span class="tag">KALENDER-EXPORT</span><p class="muted" style="margin:8px 0 12px">Nur echte Termine: Trainingstage, Nachhol-Sessions, Review, Messtag. Apple/Google-kompatibel (.ics). Kein Zwei-Wege-Sync — ehrlich gesagt.</p><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="icsTime" type="time" value="' + esc(OS.getP("calendar.trainTime", "18:00")) + '" style="padding:8px;border:1px solid var(--line);border-radius:8px;background:rgba(127,127,127,0.06);color:var(--text)"><button id="icsGo" class="os-ghost">Nächste 14 Tage als .ics</button></div></div>';
+    var ics = '<div class="card"><span class="tag">KALENDER-EXPORT</span><p class="muted" style="margin:8px 0 12px">Nur echte Termine: Trainingstage, Nachhol-Sessions, Ergebnisprüfung, Messtag. Apple/Google-kompatibel (.ics). Kein Zwei-Wege-Sync — ehrlich gesagt.</p><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="icsTime" type="time" value="' + esc(OS.getP("calendar.trainTime", "18:00")) + '" style="padding:8px;border:1px solid var(--line);border-radius:8px;background:rgba(127,127,127,0.06);color:var(--text)"><button id="icsGo" class="os-ghost">Nächste 14 Tage als .ics</button></div></div>';
     return sec("Week Planner", head + grid + '<p class="small muted" style="margin-top:8px">TRAIN = Kraft · ENGINE = Cardio · RECOVER/RESET = geplante Erholung (zählt als Erfolg).</p>') + repair + ics + '<div id="osSheet" class="os-sheet" hidden></div>';
   }
 
@@ -583,7 +583,7 @@
     var cyc = OS.currentCycle();
     function inp(id, label, val, ph) { return '<label class="os-field"><span>' + esc(label) + '</span><input id="' + id + '" type="number" inputmode="decimal" value="' + (val != null ? esc(val) : "") + '" placeholder="' + (ph || "—") + '"></label>'; }
     return sec("Baseline · dokumentiere deinen Start",
-      '<p class="small muted" style="margin:0 0 4px">Zyklus <span class="os-mono">' + esc(cyc.id.slice(-6)) + '</span> · Status ' + esc(cyc.status === "draft" ? "DRAFT (Programm noch nicht gestartet)" : cyc.status.toUpperCase()) + '</p>' +
+      '<p class="small muted" style="margin:0 0 4px">Programm-Durchlauf <span class="os-mono">' + esc(cyc.id.slice(-6)) + '</span> · Status ' + esc(cyc.status === "draft" ? "DRAFT (Programm noch nicht gestartet)" : cyc.status.toUpperCase()) + '</p>' +
       '<p class="muted">Du wirst nicht mehr genau wissen, wie du heute aussahst. Miss den Start — Woche 0 · 4 · 8 · 12 vergleichen sich später von selbst.</p>' +
       '<div class="os-grid2">' +
       inp("blW", "Gewicht (kg)", b.weight || (lw && lw.value) || null) + inp("blWa", "Taille (cm)", b.waist || (lwa && lwa.value) || null) +
@@ -610,7 +610,7 @@
         (r.enhanced && r.enhancedMarkers ? '<div class="os-enhmarkers"><span class="tag">ENHANCED-KONTEXT</span>' + [["Physique-Potenzial", r.enhancedMarkers.potential], ["Komplexität", r.enhancedMarkers.complexity], ["Monitoring", r.enhancedMarkers.monitoring], ["Reversibilität", r.enhancedMarkers.reversibility], ["Gesundheitskosten", r.enhancedMarkers.healthCost]].map(function (m) { return '<div class="row"><span>' + esc(m[0]) + '</span><b>' + esc(m[1]) + '</b></div>'; }).join("") + '</div>' : '') +
         '<div class="os-roadmap">' + r.phases.map(function (p, i) { return '<div class="os-phase"><span class="n">' + (i + 1) + '</span><div><b>' + esc(p.name) + '</b><span class="w">' + p.weeks + ' Wochen</span><p>' + esc(p.why) + '</p>' + (p.monitoring ? '<p class="small" style="color:var(--amber,#f5a623)">' + esc(p.monitoring) + '</p>' : '') + '</div></div>'; }).join("") + '</div>' +
         '<p class="small muted">Erwartbarer Muskelaufbau (' + r.months + ' Mon.): konservativ ' + r.gainRange.cons + ' kg · wahrscheinlich ' + r.gainRange.likely + ' kg · aggressiv ' + r.gainRange.aggr + ' kg. Spannen, keine Garantien.</p>' +
-        '<p style="margin-top:10px"><a class="btn btn-primary btn-sm" href="kurs-programm.html">Aktuellen 12-Wochen-Zyklus ' + (d.program && d.program.active ? "fortsetzen" : "starten") + ' →</a> <button class="os-ghost" id="txReset">Neu planen</button></p>');
+        '<p style="margin-top:10px"><a class="btn btn-primary btn-sm" href="kurs-programm.html">Aktuelles 12-Wochen-Programm ' + (d.program && d.program.active ? "fortsetzen" : "starten") + ' →</a> <button class="os-ghost" id="txReset">Neu planen</button></p>');
       if (r.enhanced) html += '<a class="card os-row-cta" href="coaching.html#enhanced"><span class="tag">SUPPORT</span><b>Enhanced Performance Support — 1:1 Begleitung mit Monitoring-Rhythmus</b></a>';
       else if ((t.input.targetWeightKg - t.input.weightKg) > 8) html += '<a class="card os-row-cta" href="coaching.html#muscle"><span class="tag">COACHING</span><b>Maximum Muscle — 1:1 Begleitung für ambitionierte Aufbauziele</b></a>';
       html += nobody("Aufbau und sichtbar schlanker werden passieren nicht in derselben Woche — sondern in derselben Roadmap. Wer beides gleichzeitig in 12 Wochen will, bekommt meist keins von beidem.");
@@ -767,7 +767,7 @@
     });
     var hist = MM.store.get("os_adjust_history", []) || [];
     var histHtml = hist.length ? '<p class="small muted" style="margin-top:8px">Letzte Anpassung: ' + esc(hist[hist.length - 1].date) + ' · ' + hist[hist.length - 1].oldKcal + ' → ' + hist[hist.length - 1].newKcal + ' kcal (' + esc(hist[hist.length - 1].reason) + ')</p>' : '';
-    return '<div class="os-review"><span class="tag">WOCHEN-REVIEW · NUTRITION</span>' +
+    return '<div class="os-review"><span class="tag">ERGEBNISPRÜFUNG · NUTRITION</span>' +
       '<div class="rows"><div class="row"><span>Protein-Ziel</span><b>' + adh.proteinDays + ' / ' + Math.max(adh.daysLogged, 7) + ' Tage' + (adh.daysLogged < 7 ? ' (nur ' + adh.daysLogged + ' geloggt)' : '') + '</b></div>' +
       '<div class="row"><span>Energie-Korridor</span><b>' + adh.energyDays + ' / ' + Math.max(adh.daysLogged, 7) + ' Tage</b></div>' +
       '<div class="row"><span>Gewichtstrend</span><b>' + (wt ? ((wt.delta > 0 ? "+" : "") + wt.delta + " kg / Woche") : "INSUFFICIENT DATA") + '</b></div></div>' +
@@ -928,15 +928,15 @@
         '<div class="rrow"><span>EXECUTION</span><b>' + (p.consistency != null ? p.consistency + " % Consistency" : "—") + '</b></div>' +
         '<div class="rrow"><span>NEXT MOVE</span><b>' + esc(MODE[rec.mode] || rec.mode) + (rec.repeatFoundation ? " (Fundament wiederholen)" : "") + '</b></div>' +
         '<p class="small" style="margin-top:8px">' + rec.why.map(esc).join(" ") + '</p>' +
-        '<p class="small muted">Abschließen &amp; archivieren macht diesen Zyklus unveränderlich und öffnet den nächsten.</p>' +
-        '<button class="btn btn-primary btn-sm" id="cycDone">Zyklus abschließen →</button></div>');
+        '<p class="small muted">Abschließen &amp; archivieren macht diesen Durchlauf unveränderlich und öffnet den nächsten.</p>' +
+        '<button class="btn btn-primary btn-sm" id="cycDone">Durchlauf abschließen →</button></div>');
     }
 
     var arch = MM.store.get("c2_archive", []) || [];
-    var hist = arch.map(function (a, i) { return '<div class="os-cycle"><b>Zyklus ' + (i + 1) + '</b><span>' + esc((MODE[a.goal] || a.goal || "—")) + '</span><i>abgeschlossen ' + esc(a.ended || "") + '</i></div>'; }).join("");
-    if (p.active) hist += '<div class="os-cycle on"><b>Zyklus ' + (arch.length + 1) + '</b><span>' + esc(MODE[d.mode] || "") + '</span><i>aktiv · Woche ' + p.week + '</i></div>';
-    if (hist) html += sec("Zyklus-Historie", '<div class="os-cycles">' + hist + '</div><p class="small muted">Historische Zyklen sind unveränderlich — sie sind deine Geschichte, nicht dein Arbeitsstand.</p>');
-    if (MM.intelligence) html += '<a class="card os-row-cta" href="#timeline"><span class="tag">TIMELINE</span><b>Deine ganze Historie — Entscheidungen · Labs · Reviews</b></a>';
+    var hist = arch.map(function (a, i) { return '<div class="os-cycle"><b>Durchlauf ' + (i + 1) + '</b><span>' + esc((MODE[a.goal] || a.goal || "—")) + '</span><i>abgeschlossen ' + esc(a.ended || "") + '</i></div>'; }).join("");
+    if (p.active) hist += '<div class="os-cycle on"><b>Durchlauf ' + (arch.length + 1) + '</b><span>' + esc(MODE[d.mode] || "") + '</span><i>aktiv · Woche ' + p.week + '</i></div>';
+    if (hist) html += sec("Programm-Historie", '<div class="os-cycles">' + hist + '</div><p class="small muted">Historische Durchläufe sind unveränderlich — sie sind deine Geschichte, nicht dein Arbeitsstand.</p>');
+    if (MM.intelligence) html += '<a class="card os-row-cta" href="#timeline"><span class="tag">TIMELINE</span><b>Deine ganze Historie — Entscheidungen · Labs · Ergebnisprüfungen</b></a>';
     return html;
   }
   function loadPhotoCompare() {
@@ -1146,7 +1146,7 @@
       '<a class="os-learn" href="ebooks.html"><b>Library</b><span>Deep Dives: Body · Engine · Recovery · Hormone · Health.</span></a>' +
       '<a class="os-learn" href="labor.html"><b>MaleMetrix Labs</b><span>Deine Biologie über die Zeit — Werte werden zu Kontext.</span></a>' +
       '<a class="os-learn" href="blutwerte.html"><b>Blood &amp; Labs (Guide)</b><span>Die Biomarker, die für Männer zählen.</span></a>' +
-      (MM.intelligence ? '<a class="os-learn" href="#protocol"><b>MY PROTOCOL</b><span>Dein Betriebshandbuch — dynamisch aus deinem echten Plan.</span></a>' : '') +
+      (MM.intelligence ? '<a class="os-learn" href="#protocol"><b>PERSÖNLICHER STANDARD</b><span>Dein Betriebshandbuch — dynamisch aus deinem echten Plan.</span></a>' : '') +
       '</div>');
     if (pw === "enhanced") {
       var F = E.ENHANCED_FRAMEWORK;
@@ -1193,7 +1193,7 @@
     var p = dec.primary || dec;
     var type = p.type || "keep";
     var html = '<div class="intel-decision intel-tone-' + (DEC_TONE[type] || "neutral") + '">' +
-      '<div class="hd"><span class="verdict">' + esc(DEC_LABEL[type] || type.toUpperCase()) + '</span>' + (dec.bottleneck ? '<span class="bn">Limiter: ' + esc((INTEL().LABELS.BN[dec.bottleneck.domain] || dec.bottleneck.domain)) + ' · ' + dec.bottleneck.confidencePct + '%</span>' : '') + '</div>' +
+      '<div class="hd"><span class="verdict">' + esc(DEC_LABEL[type] || type.toUpperCase()) + '</span>' + (dec.bottleneck ? '<span class="bn">Engpass: ' + esc((INTEL().LABELS.BN[dec.bottleneck.domain] || dec.bottleneck.domain)) + ' · ' + dec.bottleneck.confidencePct + '%</span>' : '') + '</div>' +
       '<b class="ttl">' + esc(p.title) + '</b>' +
       '<p class="rsn">' + esc(p.reason) + '</p>';
     if (p.evidence && p.evidence.length) html += '<div class="ev"><span>BASIEREND AUF</span>' + p.evidence.map(function (e) { return '<i>' + esc(e) + '</i>'; }).join("") + '</div>';
@@ -1283,11 +1283,11 @@
 
     // Module grid
     html += '<section class="os-sec"><h2 class="os-h2">Intelligence-Module</h2><div class="intel-grid">' +
-      module("#review", "WEEKLY REVIEW", "Wochen-Synthese + Verdict", I.review.reviewDue(ctx) ? "fällig" : "") +
+      module("#review", "ERGEBNISPRÜFUNG", "Wochen-Synthese + Verdict", I.review.reviewDue(ctx) ? "fällig" : "") +
       module("#twin", "DIGITAL TWIN", "Dein Modell über die Zeit", depth.pct + "% Reife") +
       module("#simulator", "WHAT IF?", "Szenarien vergleichen", "") +
       module("#experiments", "EXPERIMENTE", "Kontrolliert optimieren", (I.experiments.active().length ? "1 aktiv" : "")) +
-      module("#protocol", "MY PROTOCOL", "Dein Betriebshandbuch", "") +
+      module("#protocol", "PERSÖNLICHER STANDARD", "Dein Betriebshandbuch", "") +
       module("#timeline", "TIMELINE", "Deine Historie", "") +
       module("#learned", "GELERNT", "Was MaleMetrix über dich weiß — mit Evidenz-Klasse", (MM.activation ? MM.activation.depth().level : "")) +
       module("#map", "PERFORMANCE MAP", "Dein System auf einen Blick", "") +
@@ -1393,12 +1393,12 @@
 
   /* =========================== WEEKLY REVIEW =========================== */
   function vReview() {
-    if (!INTEL() || !INTEL().review) return '<div class="card"><p class="muted">Review lädt…</p></div>';
+    if (!INTEL() || !INTEL().review) return '<div class="card"><p class="muted">Ergebnisprüfung lädt…</p></div>';
     var I = INTEL(); var ctx = I.buildContext();
     var rev = I.review.generate(ctx);
     var eva = I.review.expectedVsActual(ctx);
     var html = '<div class="intel-back"><a href="#coach">← Coach</a></div>';
-    html += '<section class="os-sec"><span class="tag">WEEKLY INTELLIGENCE REVIEW</span>' +
+    html += '<section class="os-sec"><span class="tag">WÖCHENTLICHE ERGEBNISPRÜFUNG</span>' +
       '<h1 class="os-big" style="font-size:1.6rem">Woche ' + (rev.week || "—") + '</h1>' +
       '<div class="intel-revconf">' + confDot(rev.confidence.level) + '<span>' + esc(rev.confidence.level.toUpperCase()) + ' CONFIDENCE · ' + esc(rev.confidence.factors.join(" · ")) + '</span></div></section>';
     // P13/P5.2 — DECISION FIRST: die Wochenentscheidung ist das größte
@@ -1422,11 +1422,11 @@
     // Primary focus + do not change
     html += '<div class="intel-focus"><div class="fbox"><span class="os-k">PRIMÄRER FOKUS</span><b>' + esc(rev.primaryFocus) + '</b></div>' +
       (rev.doNotChange.length ? '<div class="fbox"><span class="os-k">NICHT ÄNDERN</span><b>' + rev.doNotChange.map(esc).join(" · ") + '</b></div>' : '') +
-      '<div class="fbox"><span class="os-k">NÄCHSTER REVIEW</span><b>in ' + rev.reviewInDays + ' Tagen</b></div></div>';
+      '<div class="fbox"><span class="os-k">NÄCHSTE ERGEBNISPRÜFUNG</span><b>in ' + rev.reviewInDays + ' Tagen</b></div></div>';
     // History
     html += '<div class="card"><span class="os-k">Trajektorie · erwartet vs. tatsächlich</span>' + svgTrajectory(ctx) + '</div>';
     var hist = I.review.reviews().filter(function (r) { return r.week !== rev.week; });
-    if (hist.length) html += '<section class="os-sec"><h2 class="os-h2">Frühere Reviews</h2><div class="intel-revhist">' + hist.slice(-6).reverse().map(function (r) { return '<div class="rh"><b>W' + r.week + '</b><span>' + esc(r.verdict) + '</span><i>' + esc(r.primaryFocus) + '</i></div>'; }).join("") + '</div><p class="small muted">Historische Reviews sind unveränderlich — sie ändern sich nicht mit neuen Daten.</p></section>';
+    if (hist.length) html += '<section class="os-sec"><h2 class="os-h2">Frühere Ergebnisprüfungen</h2><div class="intel-revhist">' + hist.slice(-6).reverse().map(function (r) { return '<div class="rh"><b>W' + r.week + '</b><span>' + esc(r.verdict) + '</span><i>' + esc(r.primaryFocus) + '</i></div>'; }).join("") + '</div><p class="small muted">Historische Ergebnisprüfungen sind unveränderlich — sie ändern sich nicht mit neuen Daten.</p></section>';
     return html;
   }
 
@@ -1523,7 +1523,7 @@
     var I = INTEL(); var ctx = I.buildContext();
     var p = I.protocol.current(ctx);
     var html = '<div class="intel-back"><a href="#coach">← Coach</a></div>';
-    html += '<section class="os-sec"><span class="tag">MY PROTOCOL · v' + p.version + '</span><h1 class="os-big" style="font-size:1.5rem">Dein Betriebshandbuch.</h1>' +
+    html += '<section class="os-sec"><span class="tag">PERSÖNLICHER STANDARD · v' + p.version + '</span><h1 class="os-big" style="font-size:1.5rem">Dein Betriebshandbuch.</h1>' +
       '<p class="muted" style="margin:0 0 6px">Dynamisch aus deinem echten Plan — nicht das allgemeine Protokoll, sondern deins.</p></section>';
     if (p.changedFrom && p.changedFrom.length) html += '<div class="intel-protochange"><span class="tag">GEÄNDERT SEIT v' + (p.version - 1) + '</span>' + p.changedFrom.map(function (c) { return '<p>' + esc(c.label) + ': <s>' + esc(c.from) + '</s> → <b>' + esc(c.to) + '</b></p>'; }).join("") + '</div>';
     html += '<div class="intel-proto">' + p.sections.map(function (s) { return '<div class="intel-psec"><span class="os-k">' + esc(s.label) + '</span><b>' + esc(s.value) + '</b>' + (s.detail ? '<i>' + esc(s.detail) + '</i>' : '') + '</div>'; }).join("") + '</div>';
@@ -1793,7 +1793,7 @@
       if (t.closest("#qlSave")) { var qk = parseFloat((document.getElementById("qlK") || {}).value), qp = parseFloat((document.getElementById("qlP") || {}).value); if (qk || qp) { OS.logFood({ name: "Eigener Eintrag", kcal: qk || 0, p: qp || 0, source: "quick" }); if (MM.toast) MM.toast("Geloggt."); render(); } return; }
       if (t.closest("#enSave")) { saveEngine(); return; }
       if (t.closest("#rcSave")) { var sh = parseFloat((document.getElementById("rcSleep") || {}).value); var en = parseInt((document.getElementById("rcEnergy") || {}).value, 10); var any = false; if (sh) { OS.logMetric("sleep", sh, "h"); any = true; } if (en) { OS.logMetric("energy", en, "/5"); any = true; } if (any) { if (MM.toast) MM.toast("Recovery gespeichert."); render(); } return; }
-      if (t.closest("#cycDone")) { OS.completeCycle(); if (MM.toast) MM.toast("Zyklus abgeschlossen — er ist jetzt Teil deiner Historie."); render(); return; }
+      if (t.closest("#cycDone")) { OS.completeCycle(); if (MM.toast) MM.toast("Durchlauf abgeschlossen — er ist jetzt Teil deiner Historie."); render(); return; }
       var shc = t.closest("[data-sharecard]"); if (shc) { downloadShareCard(shc.getAttribute("data-sharecard")); return; }
       if (t.closest("#coachPacket")) {
         var pk = buildCoachPacket();

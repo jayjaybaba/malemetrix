@@ -538,7 +538,7 @@
       '<div class="read"><span class="num">' + r.total + '<small>/100</small></span>' +
       '<div class="lvl"><h1 class="lvl-h">' + esc(r.level) + '<span class="sr-only"> — MaleMetrix Score ' + r.total + ' von 100</span></h1><span>' + r.levelText + '</span>' +
       (prev ? '<span class="delta ' + (r.total >= prev.total ? 'up' : 'down') + '">LETZTER CHECK ' + prev.total + ' → ' + r.total + '</span>' : '') + '</div></div>' +
-      '<div class="limiter"><span class="k">PRIMARY LIMITER</span><b>' + esc(V.primaryBottleneck.name).toUpperCase() + '</b><span class="v">' + (V.primaryBottleneck.value != null ? V.primaryBottleneck.value : "") + '</span></div>' +
+      '<div class="limiter"><span class="k">PRIMÄRER ENGPASS</span><b>' + esc(V.primaryBottleneck.name).toUpperCase() + '</b><span class="v">' + (V.primaryBottleneck.value != null ? V.primaryBottleneck.value : "") + '</span></div>' +
       '</div>';
 
     /* ---------- HAT DEIN AUFTRAG ETWAS GEBRACHT? --------------------------
@@ -560,9 +560,9 @@
       } else if (gehalten && delta <= 0) {
         fazit = "Du hast durchgezogen, der Score steht aber nicht besser. Das heißt nicht, dass es umsonst war: vier Wochen sind für manche Bereiche schlicht zu kurz. Es heißt, dass wir den nächsten Hebel woanders suchen.";
       } else if (!gehalten && delta > 0) {
-        fazit = "Der Score ist gestiegen, obwohl die Aufgabe nur teilweise lief. Nimm das nicht als Beweis — wahrscheinlicher ist, dass etwas anderes gewirkt hat oder die Messung schwankt.";
+        fazit = "Der Score ist gestiegen, obwohl der Auftrag nur teilweise lief. Nimm das nicht als Beweis — wahrscheinlicher ist, dass etwas anderes gewirkt hat oder die Messung schwankt.";
       } else {
-        fazit = "Die Aufgabe lief nur teilweise, und der Score steht nicht besser. Das ist kein Charakterproblem: die Aufgabe war vermutlich zu groß für deinen Alltag. Die nächste unten ist kleiner gedacht.";
+        fazit = "Der Auftrag lief nur teilweise, und der Score steht nicht besser. Das ist kein Charakterproblem: der Auftrag war vermutlich zu groß für deinen Alltag. Der nächste unten ist kleiner gedacht.";
       }
       html += '<div class="card dash-block" style="margin:0 0 22px;border-left:3px solid ' + (gehalten ? 'var(--accent)' : 'var(--muted-2)') + '">' +
         '<span class="card-num">DEIN LETZTER AUFTRAG</span>' +
@@ -620,7 +620,7 @@
       const rows = order.filter(d => V.domains[d] !== undefined && V.domains[d] !== null);
       if (!rows.length) return;
       html += '<div class="card dash-block" style="margin-bottom:22px">' +
-        '<div class="mm-secthead" style="margin-top:0"><span class="sys">MM / SYSTEMS</span><h2 class="t">Deine Systeme im Einzelnen</h2></div>' +
+        '<div class="mm-secthead" style="margin-top:0"><span class="sys">MM / BEREICHE</span><h2 class="t">Deine Optimierungsbereiche im Einzelnen</h2></div>' +
         '<p class="small muted" style="margin:0 0 12px">Nur die Bereiche, die für deinen Kontext tatsächlich erhoben wurden. Was nicht erfasst wurde, wird hier auch nicht behauptet.</p>' +
         '<div class="mm-sys wide">';
       rows.forEach(d => {
@@ -705,7 +705,7 @@
     html += '<div class="result-grid">' +
       '<div class="card"><h2 style="margin-bottom:6px;font-size:1.05rem">Dein Performance-Profil</h2><p class="small muted" style="margin-bottom:10px">Die grobe Übersicht in einem Bild: je weiter außen, desto stärker.</p>' +
       '<div class="radar-wrap">' + radarSVG(r.scores) + '</div></div>' +
-      '<div class="card"><div class="mm-secthead" style="margin-top:0"><span class="sys">MM / SYSTEMS</span><h2 class="t">Dein Profil im Überblick</h2></div><div class="mm-sys">';
+      '<div class="card"><div class="mm-secthead" style="margin-top:0"><span class="sys">MM / PROFIL</span><h2 class="t">Dein Profil im Überblick</h2></div><div class="mm-sys">';
     keys.forEach(k => {
       const v = r.scores[k];
       const flag = v < 40 && k !== bKey;
@@ -917,7 +917,7 @@
       const p = laufend && MM.focus.progress(laufend);
 
       html += '<div class="card dash-block" id="scoreFocus" style="margin-top:24px;border-left:3px solid var(--accent)">' +
-        '<span class="card-num" style="color:var(--accent)">DEINE EINE AUFGABE</span>';
+        '<span class="card-num" style="color:var(--accent)">EIN AUFTRAG</span>';
 
       /* Läuft schon einer? Dann zuerst der ehrliche Rückblick — sonst wäre
          der neue Auftrag eine Ausrede für den alten. */
@@ -926,10 +926,10 @@
           '<p class="small muted" style="margin:0 0 10px">„' + esc(laufend.title) + '" — ' +
           p.erledigt + ' von ' + laufend.target + ' Tagen erledigt, noch ' + p.offen + ' Tage. ' +
           (p.aufKurs ? 'Du liegst auf Kurs. Zieh das zu Ende, bevor du etwas Neues anfängst.'
-                     : 'Du liegst zurück. Entweder du holst auf — oder die Aufgabe war zu groß und du tauschst sie.') + '</p>' +
+                     : 'Du liegst zurück. Entweder du holst auf — oder der Auftrag war zu groß und du tauschst ihn.') + '</p>' +
           '<div style="display:flex;gap:12px;flex-wrap:wrap">' +
           '<a class="btn btn-primary" href="tracker.html#focus" data-track="focus_open">Im Tracker weiterführen</a>' +
-          '<button class="btn btn-ghost" id="btnFocusSwap" data-track="focus_swap">Gegen die neue Aufgabe tauschen</button>' +
+          '<button class="btn btn-ghost" id="btnFocusSwap" data-track="focus_swap">Gegen den neuen Auftrag tauschen</button>' +
           '</div>';
       } else {
         html += '<h3 style="font-size:1.15rem;margin:4px 0 6px">' + esc(f.title) + '</h3>' +
@@ -937,8 +937,9 @@
           '<p class="small" style="margin:0 0 14px"><strong>Ziel:</strong> ' + f.target + ' von 28 Tagen. ' +
           'Nicht 28 von 28 — ein verpasster Tag darf kein Grund zum Abbrechen sein. ' + esc(f.proof) + '</p>' +
           (f.arzt ? '<p class="small" style="color:var(--muted-2);margin:0 0 14px">' + esc(f.arzt) + '</p>' : '') +
+          '<p class="small muted" style="margin:0 0 14px">Dein Engpass bestimmt deinen Optimierungspunkt — daraus entsteht genau ein Auftrag. Die Fokusphase läuft 28 Tage; die Ergebnisprüfung beim nächsten Score fragt doppelt: umgesetzt — und hat es geholfen?</p>' +
           '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">' +
-          '<button class="btn btn-primary" id="btnFocusStart" data-track="focus_start">Aufgabe starten</button>' +
+          '<button class="btn btn-primary" id="btnFocusStart" data-track="focus_start">Auftrag starten</button>' +
           '<span class="small muted">Landet im Tracker, bleibt auf deinem Gerät — kein Konto, keine E-Mail.</span>' +
           '</div>';
       }
@@ -954,9 +955,9 @@
       const next = new Date(Date.now() + days * 86400000);
       const nice = next.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
       html += '<div class="card dash-block" id="scoreAgain" style="margin-top:24px;border-left:3px solid var(--accent-2)">' +
-        '<span class="card-num" style="color:var(--accent-2)">DEIN NÄCHSTER SCORE</span>' +
+        '<span class="card-num" style="color:var(--accent-2)">DEINE ERGEBNISPRÜFUNG</span>' +
         '<h3 style="font-size:1.15rem;margin:4px 0 6px">In 4 Wochen weißt du, ob es funktioniert hat.</h3>' +
-        '<p class="small muted" style="margin:0 0 14px">Ein einzelner Score sagt dir, wo du stehst. Erst der zweite sagt dir, ob dein Hebel der richtige war — dann siehst du hier den direkten Vergleich zu heute' +
+        '<p class="small muted" style="margin:0 0 14px">Ein einzelner Score sagt dir, wo du stehst. Erst der zweite prüft doppelt: Hast du deinen Auftrag umgesetzt — und hat er wirklich geholfen? Dann siehst du hier den direkten Vergleich zu heute' +
         (V.primaryBottleneck && V.primaryBottleneck.name ? ' und ob „' + esc(V.primaryBottleneck.name) + '" noch dein Engpass ist' : '') +
         '. Kürzer misst meist Rauschen, länger verlierst du den Bezug.</p>' +
         '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">' +
@@ -1041,7 +1042,7 @@
           e.preventDefault();
           if (!(MM.focus && C.focusFor)) return;
           MM.focus.start(C.focusFor(r));
-          MM.toast("Aufgabe übernommen — du findest sie oben im Tracker.");
+          MM.toast("Auftrag übernommen — du findest ihn oben im Tracker.");
           setTimeout(() => { location.href = "tracker.html#focus"; }, 700);
         });
       };

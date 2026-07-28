@@ -271,7 +271,7 @@
     if (p.abgelaufen) {
       return '<div class="card trk-focus" id="focus" style="margin-bottom:18px;border-left:3px solid ' +
         (p.geschafft ? "var(--accent)" : "var(--muted-2)") + '">' +
-        '<span class="card-num">DEINE AUFGABE · ABGESCHLOSSEN</span>' +
+        '<span class="card-num">DEIN AUFTRAG · ABGESCHLOSSEN</span>' +
         '<h3 style="font-size:1.05rem;margin:6px 0 4px">' + p.erledigt + ' von ' + f.target + ' Tagen' +
         (p.geschafft ? " — geschafft." : " — nicht ganz.") + '</h3>' +
         '<p class="small muted" style="margin:0 0 12px">' + esc(f.title) + '</p>' +
@@ -284,7 +284,7 @@
       ? "Auf Kurs."
       : "Du liegst zurück — hol auf oder setz das Ziel kleiner.";
     return '<div class="card trk-focus" id="focus" style="margin-bottom:18px;border-left:3px solid var(--accent)">' +
-      '<span class="card-num" style="color:var(--accent)">DEINE EINE AUFGABE · NOCH ' + p.offen + ' TAGE</span>' +
+      '<span class="card-num" style="color:var(--accent)">DEIN AUFTRAG · NOCH ' + p.offen + ' TAGE</span>' +
       '<h3 style="font-size:1.05rem;margin:6px 0 4px">' + esc(f.title) + '</h3>' +
       '<div class="trk-focus-bar" aria-hidden="true"><span style="width:' + p.prozent + '%"></span></div>' +
       '<p class="small muted" style="margin:8px 0 12px">' + p.erledigt + ' von ' + f.target + ' Tagen. ' + kurs + '</p>' +
@@ -292,7 +292,7 @@
       '<input type="checkbox" id="focusToday"' + (p.heuteErledigt ? " checked" : "") + '>' +
       '<span>' + esc(f.daily) + '</span></label>' +
       (f.arzt ? '<p class="small" style="color:var(--muted-2);margin:10px 0 0">' + esc(f.arzt) + '</p>' : '') +
-      '<p class="small" style="margin:10px 0 0"><button type="button" class="trk-focus-drop" id="focusDrop">Aufgabe beenden</button></p>' +
+      '<p class="small" style="margin:10px 0 0"><button type="button" class="trk-focus-drop" id="focusDrop">Auftrag beenden</button></p>' +
       '</div>';
   }
 
@@ -301,7 +301,7 @@
     if (box) box.addEventListener("change", () => { MM.focus.toggleDay(); render(); });
     const drop = document.getElementById("focusDrop");
     if (drop) drop.addEventListener("click", () => {
-      if (confirm(T("Aufgabe beenden? Der Fortschritt bleibt in deiner Historie erhalten.",
+      if (confirm(T("Auftrag beenden? Der Fortschritt bleibt in deiner Historie erhalten.",
                     "End this task? Your progress stays in your history."))) {
         MM.focus.clear(); render();
       }

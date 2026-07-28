@@ -225,7 +225,7 @@ group("8 · Nichts davon kostet etwas oder verlässt das Gerät");
   ok(!/fetch\(|XMLHttpRequest|sendBeacon|supabase/i.test(f), "focus.js sendet nichts nach außen");
   ok(!/e-?mail|newsletter|subscribe/i.test(f), "focus.js verlangt keine Adresse");
   const check = read("js/check.js");
-  const block = check.slice(check.indexOf("DEINE EINE AUFGABE"), check.indexOf("DEIN NÄCHSTER SCORE"));
+  const block = check.slice(check.indexOf(">EIN AUFTRAG<"), check.indexOf("DEINE ERGEBNISPRÜFUNG"));
   ok(!/protokoll\.html|49\s*€/.test(block), "der Auftrags-Block verkauft nichts — er ist der kostenlose Teil");
 })();
 
