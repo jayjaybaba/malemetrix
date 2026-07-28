@@ -62,6 +62,7 @@
   var bar = document.getElementById("bpProgress");
   var STORE = "mm_protokoll_code";
   var SCROLL_KEY = "mm_protokoll_scroll";
+  var PROG_KEY = "mm_protokoll_progress";
 
   function progress() { var h = document.documentElement; var max = h.scrollHeight - h.clientHeight; bar.style.width = (max > 0 ? (h.scrollTop / max * 100) : 0) + "%"; }
   var onScroll = null;   // wird von setupReading gesetzt, sobald der Text steht
@@ -114,6 +115,43 @@
       pill.addEventListener("click", function () { window.scrollTo({ top: saved, behavior: "smooth" }); hide(); });
       setTimeout(hide, 9000);
     }
+    /* Struktureller Lesefortschritt für My MaleMetrix (Weiterlesen-Kachel):
+       Prozent ist ein Höchststand (Zurückspringen zum Inhaltsverzeichnis
+       senkt ihn nicht), „done" bleibt gesetzt. Kapitel werden defensiv über
+       die Überschriften des entschlüsselten Werks erkannt — findet sich
+       nichts Brauchbares, bleibt es beim ehrlichen Prozentwert. */
+    var chapterHeads = (function () {
+      var hs = [].slice.call(content.querySelectorAll("h2"));
+      if (hs.length < 3) hs = [].slice.call(content.querySelectorAll("h3"));
+      return hs.filter(function (el) { return el.offsetParent !== null && (el.textContent || "").trim(); });
+    })();
+    function saveProgress() {
+      try {
+        var doc = document.documentElement;
+        var max = doc.scrollHeight - doc.clientHeight;
+        var y = window.scrollY || window.pageYOffset;
+        var pctNow = max > 0 ? Math.min(100, Math.round(y / max * 100)) : 0;
+        var prev = null;
+        try { prev = JSON.parse(localStorage.getItem(PROG_KEY) || "null"); } catch (e) {}
+        var pct = Math.max(pctNow, (prev && prev.pct) || 0);
+        var out = { v: 1, pct: pct, done: !!(prev && prev.done) || pct >= 97, ts: Date.now() };
+        if (chapterHeads.length) {
+          out.chTotal = chapterHeads.length;
+          if (pctNow >= ((prev && prev.pct) || 0) || !(prev && prev.title)) {
+            var mark = y + doc.clientHeight * 0.4, idx = 0;
+            for (var i = 0; i < chapterHeads.length; i++) {
+              if (chapterHeads[i].getBoundingClientRect().top + y <= mark) idx = i; else break;
+            }
+            out.ch = idx + 1;
+            out.title = (chapterHeads[idx].textContent || "").trim().slice(0, 90);
+          } else {
+            out.ch = prev.ch; out.title = prev.title;
+          }
+        } else if (prev) { out.ch = prev.ch; out.chTotal = prev.chTotal; out.title = prev.title; }
+        localStorage.setItem(PROG_KEY, JSON.stringify(out));
+      } catch (e) {}
+    }
+    saveProgress();
     /* Kein zweiter Scroll-Listener: Fortschrittsbalken, Zurück-Knopf und das
        Merken der Leseposition teilen sich denselben Handler (siehe progress). */
     var t = null;
@@ -122,7 +160,7 @@
       top.style.opacity = y > 500 ? "1" : "0";
       top.style.pointerEvents = y > 500 ? "auto" : "none";
       if (t) return;
-      t = setTimeout(function () { t = null; try { localStorage.setItem(SCROLL_KEY, String(window.scrollY || window.pageYOffset)); } catch (e) {} }, 400);
+      t = setTimeout(function () { t = null; try { localStorage.setItem(SCROLL_KEY, String(window.scrollY || window.pageYOffset)); } catch (e) {} saveProgress(); }, 400);
     };
   }
   async function attempt(code, silent, noPersist) {
