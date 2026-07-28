@@ -1146,20 +1146,27 @@
     var pr = protoProgress();
     if (ctx === "today" && pr && pr.done) return "";
     var pct = pr ? Math.max(0, Math.min(100, Math.round(pr.pct))) : 0;
-    var head, meta;
+    var head, meta, btn;
     if (!pr) {
-      head = "Jetzt lesen: Kapitel 1 →";
+      head = "Jetzt lesen: Kapitel 1";
       meta = "Dein Referenzwerk — 10 Kapitel, eine Reihenfolge.";
+      btn = "Protokoll lesen →";
     } else if (pr.done) {
-      head = "Wieder öffnen — dein Nachschlagewerk →";
+      head = "Dein Nachschlagewerk";
       meta = "Durchgelesen. Bleibt dein Referenzwerk für jede Entscheidung.";
+      btn = "Protokoll öffnen →";
     } else {
-      head = "Weiterlesen: " + (pr.title || pct + " % gelesen") + " →";
+      head = "Weiterlesen: " + (pr.title || pct + " % gelesen");
       meta = (pr.ch && pr.chTotal ? "Kapitel " + pr.ch + "/" + pr.chTotal + " · " : "") + pct + " % gelesen";
+      btn = "Weiterlesen →";
     }
+    /* Ganze Karte klickbar; der Button ist ein gestylter <span> (kein
+       interaktives Element im Link), optisch gleichwertig zum
+       „Programm starten"-Button der 12-Week-Karte. */
     return '<a class="card os-proto-cta" href="' + pl.href + '"><span class="tag">DAS PROTOKOLL</span><b>' + esc(head) + '</b>' +
       '<span class="os-proto-bar" aria-hidden="true"><i style="width:' + pct + '%"></i></span>' +
-      '<span class="s">' + esc(meta) + '</span></a>';
+      '<span class="s">' + esc(meta) + '</span>' +
+      '<span class="btn btn-primary os-proto-btn">' + esc(btn) + '</span></a>';
   }
 
   function vLearn() {
