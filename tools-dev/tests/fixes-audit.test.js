@@ -455,7 +455,9 @@ group("D4 · Kein doppelter 7-Bereiche-Block mehr");
 (function () {
   var c = read("js/check.js");
   ok(!/Deine 7 Bereiche/.test(c), "der Legacy-Block heißt nicht mehr wie das Produktversprechen");
-  ok(/Dein Profil im Überblick/.test(c), "er ist als Übersicht benannt");
+  /* Seit Paket 4 heißt die Verdichtung ausdrücklich „verdichtetes Profil“ —
+     klar getrennt von den 12 Optimierungsbereichen. */
+  ok(/Dein verdichtetes Profil/.test(c), "er ist als verdichtetes Profil benannt");
   ok(!/7 Bereiche, ein Bild/.test(c), "auch die Unterzeile nennt keine 7 Bereiche");
   ok(/radarSVG\(r\.scores\)/.test(c), "das Radar und die Werte bleiben unverändert");
   ok(!/7 Bereiche/.test(read("js/report.js")), "der Report zieht nach");

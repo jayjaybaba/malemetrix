@@ -157,7 +157,8 @@
   }
 
   /* ---------- Profil ---------- */
-  html += '<div class="r-section"><h2>0' + (r.flags && r.flags.length ? "3" : "2") + ' — Dein Profil im Überblick</h2>' +
+  html += '<div class="r-section"><h2>0' + (r.flags && r.flags.length ? "3" : "2") + ' — Dein verdichtetes Profil</h2>' +
+    '<p style="margin-bottom:10px;font-size:0.9rem;color:#8893a7">Sieben zusammengefasste Säulen auf der 100er-Skala — eine Verdichtung derselben Auswertung. Die einzelnen Optimierungsbereiche stehen weiter unten.</p>' +
     '<div class="r-grid-2"><div style="display:grid;place-items:center">' + radarLight(r.scores) + '</div>' +
     '<div class="r-bars">';
   keys.forEach(k => {
@@ -169,12 +170,51 @@
   html += '</div></div></div>';
 
   /* ---------- Einzel-Auswertung ---------- */
-  html += '<div class="r-section"><h2>Einzel-Auswertung im Überblick</h2><div class="r-grid-2">';
+  html += '<div class="r-section"><h2>Die sieben Säulen im Einzelnen</h2><div class="r-grid-2">';
   keys.forEach(k => {
     html += '<div class="r-box"><span class="r-tag">' + C.nm(k) + ' · ' + r.scores[k] + '/100</span>' +
       '<p style="font-size:0.86rem">' + moduleText(k, r.scores[k]) + '</p></div>';
   });
   html += '</div></div>';
+
+  /* ---------- Optimierungsbereiche mit Bereichswert (Paket 4) ----------
+     Dieselben Domain-Scores wie auf der Ergebnisseite, nur als 10er-Wert
+     dargestellt — über denselben kanonischen Helfer. Keine zweite Rechnung,
+     keine Speicherung, keine eigene Reihenfolge: Es gilt die bestehende
+     Priorisierung der Engine. Nur wenn die Domain-Daten wirklich gespeichert
+     sind (V2-Ergebnis); ältere Ergebnisse bekommen die heutige Struktur
+     nicht rückwirkend übergestülpt. */
+  (function () {
+    if (!V || V.legacy || !V.domains) return;
+    const order = C.domainKeys.concat(["enhancedControl", "therapyControl", "recoveryStatus"]);
+    const rows = order.filter(function (d) { return typeof V.domains[d] === "number" && isFinite(V.domains[d]); });
+    if (!rows.length) return;
+
+    html += '<div class="r-section"><h2>Deine Optimierungsbereiche im Detail</h2>' +
+      '<p style="margin-bottom:10px">Der <strong>Bereichswert</strong> ist dein Wert für einen Bereich auf einer 10er-Skala. Dein Gesamtscore bleibt davon unberührt und steht weiter auf 100. Aufgeführt sind nur Bereiche, die für deinen Kontext tatsächlich erhoben wurden.</p>' +
+      '<table><tr><th>Bereich</th><th>Bereichswert</th><th>Was diesen Wert bestimmt</th></tr>';
+
+    rows.forEach(function (d) {
+      const v = V.domains[d];
+      const meta = C.domainMeta[d] || { name: d };
+      const isPrimary = V.bn && d === V.bn.domain;
+      const gap = (V.gaps || []).filter(function (g) { return g && g.domain === d; })[0] || null;
+      const rs = C.areaReasons(a, d, V.gaps || [], 2);
+
+      let why = rs.gruende.map(function (g) { return esc(g.frage) + ": <strong>" + esc(g.antwort) + "</strong>"; });
+      rs.hinweise.forEach(function (h) { why.push(esc(h.text)); });
+      if (gap) why.push("Nicht erfasst: <strong>" + esc(gap.label) + "</strong>");
+      if (!why.length) why = ["Keine deiner Antworten hat in diesem Bereich Punkte gekostet."];
+
+      html += '<tr><td>' + esc(meta.name) + (isPrimary ? ' <span style="font-weight:400;color:#8893a7">— primärer Engpass</span>' : '') + '</td>' +
+        '<td>' + esc(C.areaValueLabel(v)) + '</td>' +
+        '<td style="font-weight:400;font-size:0.86rem">' + why.join("<br>") + '</td></tr>';
+    });
+
+    html += '</table>' +
+      '<p style="font-size:0.82rem;color:#8893a7;margin-top:10px">Die Reihenfolge folgt der Systematik der Auswertung, nicht der Höhe der Werte. Welcher Bereich dein Engpass ist, entscheidet die Auswertung — nicht der niedrigste Bereichswert.</p>' +
+      '</div>';
+  })();
 
   /* ---------- Archetyp ---------- */
   html += '<div class="r-section"><h2>Dein Performance-Typ</h2>' +

@@ -2762,6 +2762,100 @@ window.MM_CHECK = {
     return wsum ? Math.round(sum / wsum) : 0;
   };
 
+  /* =========================================================================
+     BEREICHSWERT (Paket 4) — REINE DARSTELLUNGSSCHICHT, KEINE ZWEITE ENGINE.
+     Der Bereichswert ist der bereits vorhandene Domain-Score auf der
+     10er-Skala:  Bereichswert = Domain-Score / 10.
+     Er wird nirgends gespeichert, nicht gewichtet, nicht klassifiziert, nicht
+     telemetriert und ersetzt keine Engine-Funktion. Intern und persistiert
+     bleibt alles auf 0–100; der MaleMetrix-Gesamtscore bleibt /100.
+     JEDE sichtbare Bereichswert-Darstellung läuft durch diese Helfer —
+     keine zweite Division oder Formatierung irgendwo sonst.
+     ========================================================================= */
+  C.areaValueFromDomainScore = function (score) {
+    if (typeof score !== "number" || !isFinite(score)) return null;
+    /* Domain-Scores sind per Engine auf 0–100 begrenzt (siehe domainScores).
+       Ein Wert außerhalb kann nur aus beschädigten Daten stammen — dann wird
+       lieber ehrlich nichts angezeigt als eine unsinnige Zahl wie -0,5/10.
+       KEINE Skalierung, KEIN Zurechtbiegen: nur gültig / nicht gültig. */
+    if (score < 0 || score > 100) return null;
+    return score / 10;
+  };
+  /* Deutsches Zahlenformat, höchstens eine Nachkommastelle, ganze Werte ohne
+     unnötiges „,0". Keine künstliche Untergrenze — 0 bleibt 0. */
+  C.formatAreaValue = function (score) {
+    var v = C.areaValueFromDomainScore(score);
+    if (v === null) return null;
+    return (Math.round(v * 10) / 10).toFixed(1).replace(/\.0$/, "").replace(".", ",");
+  };
+  C.AREA_VALUE_EMPTY = "Noch nicht bewertet";
+  C.areaValueLabel = function (score) {
+    var s = C.formatAreaValue(score);
+    return s === null ? C.AREA_VALUE_EMPTY : s + "/10";
+  };
+  /* Vollständiger Text für Screenreader — nie nur Farbe oder Balken. */
+  C.areaValueA11y = function (name, score) {
+    var s = C.formatAreaValue(score);
+    return String(name || "") + ": " + (s === null ? C.AREA_VALUE_EMPTY : "Bereichswert " + s + " von 10");
+  };
+
+  /* Antwort-Label zu einer beantworteten Frage — liest zurück, was der Nutzer
+     gewählt hat. Keine Textgenerierung. */
+  function answerLabel(q, ans) {
+    if (ans === undefined || ans === null || ans === "") return null;
+    if (q.type === "multi") {
+      var sel = arr(ans).map(function (v) {
+        var o = (q.options || []).find(function (x) { return String(x.v) === String(v); });
+        return o ? o.label : null;
+      }).filter(Boolean);
+      if (!sel.length) return null;
+      return sel.slice(0, 3).join(", ") + (sel.length > 3 ? " …" : "");
+    }
+    if (q.type === "scale") return String(ans);
+    var opt = (q.options || []).find(function (x) { return String(x.v) === String(ans); });
+    return opt ? opt.label : null;
+  }
+
+  /* „Warum dieser Wert?" — ausschließlich aus vorhandenen deterministischen
+     Quellen: den EIGENEN Antworten des Nutzers, bewertet mit derselben
+     Engine-Funktion wie der Score selbst (kein zweiter Rechenweg), den
+     dokumentierten Kontextmodifikatoren und der bestehenden Datenlücken-Liste.
+     Keine generierten Texte, keine Ursachenbehauptung, keine Diagnose.
+     `gruende` sind die Antworten, die den Wert am stärksten gedrückt haben. */
+  C.areaReasons = function (answers, domain, gaps, limit) {
+    var a = answers || {}, antworten = [], hinweise = [];
+    if (domain) {
+      C.scoredSteps(a).forEach(function (st) {
+        if (C.domainOf(st.q) !== domain) return;
+        var r = qPoints(st.q, a[st.q.id]);
+        if (!r || !r.max) return;
+        var kosten = r.max - r.p;
+        if (kosten <= 0) return;              // trägt den Wert — erklärt ihn nicht
+        var lbl = answerLabel(st.q, a[st.q.id]);
+        if (!lbl) return;
+        antworten.push({
+          id: st.q.id,
+          frage: String(st.q.title || "").replace(/\s*\?\s*$/, ""),
+          antwort: lbl, kosten: kosten
+        });
+      });
+      antworten.sort(function (x, y) { return y.kosten - x.kosten; });
+      C.MODIFIERS.forEach(function (m) {
+        if (!m.apply || m.apply[domain] === undefined) return;
+        var hit = false;
+        try { hit = !!m.when(a); } catch (e) { hit = false; }
+        if (hit) hinweise.push({ id: m.id, text: m.why });
+      });
+    }
+    var luecke = (gaps || []).filter(function (g) { return g && g.domain === domain; })[0] || null;
+    return {
+      gruende: antworten.slice(0, limit || 3),
+      hinweise: hinweise.slice(0, 1),
+      luecke: luecke,
+      gesamt: antworten.length
+    };
+  };
+
   /* V2-Domains → die 7 historischen Bereiche (Radar, Report, Programm). */
   C.legacyScores = function (d) {
     function g(k, fb) { return (d[k] === undefined || d[k] === null) ? fb : d[k]; }

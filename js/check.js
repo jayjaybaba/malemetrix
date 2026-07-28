@@ -623,23 +623,73 @@
         : '') +
       '</div>';
 
-    /* ---------- V2: SYSTEM SCORES (nur relevante Domains) ---------- */
+    /* ---------- OPTIMIERUNGSBEREICHE MIT BEREICHSWERT (Paket 4) ----------
+       Reine Darstellungsschicht über den bereits vorhandenen Domain-Scores:
+       Bereichswert = Domain-Score / 10, formatiert ausschließlich über den
+       kanonischen Helfer in check-data.js. Nichts wird gespeichert, neu
+       berechnet, gewichtet oder klassifiziert. Der Gesamtscore /100 oben
+       bleibt die primäre Zahl. */
     (function () {
       const order = C.domainKeys.concat(["enhancedControl", "therapyControl", "recoveryStatus"]);
-      const rows = order.filter(d => V.domains[d] !== undefined && V.domains[d] !== null);
-      if (!rows.length) return;
-      html += '<div class="card dash-block" style="margin-bottom:22px">' +
-        '<div class="mm-secthead" style="margin-top:0"><span class="sys">MM / BEREICHE</span><h2 class="t">Deine Optimierungsbereiche im Einzelnen</h2></div>' +
-        '<p class="small muted" style="margin:0 0 12px">Nur die Bereiche, die für deinen Kontext tatsächlich erhoben wurden. Was nicht erfasst wurde, wird hier auch nicht behauptet.</p>' +
-        '<div class="mm-sys wide">';
+      const rows = order.filter(d => typeof V.domains[d] === "number" && isFinite(V.domains[d]));
+      const head = '<div class="mm-secthead" style="margin-top:0"><span class="sys">MM / BEREICHE</span><h2 class="t">Deine Optimierungsbereiche</h2></div>';
+
+      /* Ältere Ergebnisse: die heutige Bereichsstruktur wird NICHT rückwirkend
+         über sie gelegt und kein Bereichswert erfunden. */
+      if (V.legacy || !rows.length) {
+        html += '<div class="card dash-block" style="margin-bottom:22px">' + head +
+          '<p class="small muted" style="margin:0">Für dieses frühere Ergebnis liegt nur das verdichtete Profil vor — detaillierte Bereichswerte wurden damals nicht gespeichert. Dein nächster Score zeigt sie dir.</p>' +
+          '</div>';
+        return;
+      }
+
+      /* Bereits vorhandene Optimierungspunkte werden NUR gelesen (Paket 3). */
+      let punkte = [];
+      try { punkte = (window.MM && MM.points && MM.points.list) ? MM.points.list() : []; } catch (e) { punkte = []; }
+      const punktZu = (d) => punkte.filter(p => p.area === d && !p.abgeschlossen)[0] || null;
+
+      /* Ein Bereichswert gehört zu SEINEM Score-Zeitpunkt. Er steigt nicht,
+         weil heute ein Häkchen gesetzt wurde — deshalb steht das Datum dabei. */
+      let scoreTag = "aus deinem letzten Score";
+      try {
+        const sd = new Date(r.date);
+        if (isFinite(sd.getTime())) scoreTag = "aus deinem Score vom " + sd.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
+      } catch (e) { /* Datum unlesbar: neutrale Formulierung bleibt stehen */ }
+
+      html += '<div class="card dash-block" style="margin-bottom:22px">' + head +
+        '<p class="small muted" style="margin:0 0 14px">Nur die Bereiche, die für deinen Kontext tatsächlich erhoben wurden — was nicht erfasst wurde, wird hier auch nicht behauptet. Der <strong>Bereichswert</strong> ist dein Wert für diesen Bereich auf einer 10er-Skala, ' + esc(scoreTag) + '; dein Gesamtscore bleibt oben auf 100.</p>' +
+        '<div class="mm-areas">';
+
       rows.forEach(d => {
         const v = V.domains[d];
         const meta = C.domainMeta[d] || { name: d };
         const isPrimary = d === V.primaryBottleneck.domain;
-        html += '<div class="row' + (isPrimary ? ' is-primary' : (v < 40 ? ' is-flag' : '')) + '" title="' + esc(meta.name) + '">' +
-          '<span class="id">' + esc(meta.short || meta.name).toUpperCase() + '</span>' +
-          '<div class="bar"><span style="width:' + v + '%"></span></div>' +
-          '<span class="val">' + v + '/100</span></div>';
+        const gap = (V.dataGaps || []).filter(g => g && g.domain === d)[0] || null;
+        const rs = C.areaReasons(r.answers || {}, d, V.dataGaps || [], 3);
+        const pt = punktZu(d);
+
+        let marks = "";
+        if (isPrimary) marks += '<span class="mk mk-primary">Primärer Engpass</span>';
+        if (gap) marks += '<span class="mk mk-gap">Datenbasis begrenzt</span>';
+
+        /* „Warum dieser Wert?" — nur echte, bereits vorhandene Belege. */
+        let why = "";
+        rs.gruende.forEach(g => {
+          why += '<li>' + esc(g.frage) + ': <strong>' + esc(g.antwort) + '</strong></li>';
+        });
+        rs.hinweise.forEach(h => { why += '<li>' + esc(h.text) + '</li>'; });
+        if (gap) why += '<li class="gapline">Für eine belastbarere Einordnung fehlt: <strong>' + esc(gap.label) + '</strong>' + (gap.why ? ' — ' + esc(gap.why) : '') + '</li>';
+        if (!why) why = '<li>In diesem Bereich hat keine deiner Antworten Punkte gekostet.</li>';
+
+        html += '<div class="mm-area' + (isPrimary ? ' is-primary' : '') + '">' +
+          '<div class="hd"><span class="nm">' + esc(meta.name) + '</span>' +
+          '<span class="val" aria-hidden="true">' + esc(C.areaValueLabel(v)) + '</span>' +
+          '<span class="sr-only">' + esc(C.areaValueA11y(meta.name, v)) + (isPrimary ? ". Primärer Engpass." : "") + (gap ? " Datenbasis begrenzt." : "") + '</span></div>' +
+          '<div class="bar" aria-hidden="true"><span style="width:' + v + '%"></span></div>' +
+          (marks ? '<p class="marks">' + marks + '</p>' : '') +
+          '<details class="why"><summary>Warum dieser Wert?</summary><ul>' + why + '</ul></details>' +
+          (pt ? '<p class="pt">Aktiver Optimierungspunkt: <strong>' + esc(pt.title) + '</strong> · ' + esc(pt.statusLabel) + '</p>' : '') +
+          '</div>';
       });
       html += '</div></div>';
     })();
@@ -714,7 +764,7 @@
     html += '<div class="result-grid">' +
       '<div class="card"><h2 style="margin-bottom:6px;font-size:1.05rem">Dein Performance-Profil</h2><p class="small muted" style="margin-bottom:10px">Die grobe Übersicht in einem Bild: je weiter außen, desto stärker.</p>' +
       '<div class="radar-wrap">' + radarSVG(r.scores) + '</div></div>' +
-      '<div class="card"><div class="mm-secthead" style="margin-top:0"><span class="sys">MM / PROFIL</span><h2 class="t">Dein Profil im Überblick</h2></div><div class="mm-sys">';
+      '<div class="card"><div class="mm-secthead" style="margin-top:0"><span class="sys">MM / PROFIL</span><h2 class="t">Dein verdichtetes Profil</h2></div><p class="small muted" style="margin:0 0 10px">Sieben zusammengefasste Säulen — eine Verdichtung derselben Auswertung, keine zweite Bereichsliste. Werte hier auf der 100er-Skala.</p><div class="mm-sys">';
     keys.forEach(k => {
       const v = r.scores[k];
       const flag = v < 40 && k !== bKey;

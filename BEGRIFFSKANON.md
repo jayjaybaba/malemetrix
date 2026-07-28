@@ -23,7 +23,7 @@ Nutzer dort braucht.
 | 6 | **Ergebnisprüfung** | Oberbegriff für Umsetzungs- und Wirkungsprüfung | Review, Recheck, Check-in, Weekly Pulse, Reassessment (sichtbar) |
 | 6a | **Umsetzungsprüfung** | Wurde der Auftrag ausreichend umgesetzt? (aus den täglichen Häkchen) | — |
 | 6b | **Wirkungsprüfung** | Hat die Maßnahme erkennbar geholfen? Darf später liegen als die Umsetzungsprüfung und bleibt bis dahin ehrlich „offen“ | — |
-| 7 | **Bereichswert** | Sichtbare 1–10-Darstellung eines Domain-Scores (Anzeige erst Paket 4); intern/persistiert bleibt alles 0–100, Gesamtscore bleibt /100 | — |
+| 7 | **Bereichswert** | Sichtbare 10er-Darstellung eines Domain-Scores (Paket 4, umgesetzt); intern/persistiert bleibt alles 0–100, Gesamtscore bleibt /100 | — |
 | 8 | **Persönlicher Standard** | Bewährte Maßnahme/Routine, dauerhaft übernommen | „MY PROTOCOL“ (Ansichtstitel) |
 
 ## Kontextregeln (nicht mechanisch ersetzen)
@@ -144,8 +144,65 @@ ausschließlich per ausdrücklicher Bestätigung (`standard.bestaetigt`).
 Ärztlicher Vorbehalt im Bereich unterdrückt die Empfehlung. Der Standard
 lebt im Punkt selbst — keine zweite Standardbibliothek.
 
+## Bereichswerte (Paket 4, umgesetzt)
+
+**Reine Darstellungsschicht.** `Bereichswert = Domain-Score / 10`. Es gibt
+keine zweite Skala, keine zweite Engine und keine Speicherung: Intern und
+persistiert bleibt alles 0–100, der Gesamtscore bleibt `/100` und die primäre
+Zahl auf der Seite.
+
+**Ein kanonischer Helfer** in `js/check-data.js` — jede sichtbare
+Bereichszahl geht durch ihn:
+
+| Funktion | Zweck |
+|---|---|
+| `C.areaValueFromDomainScore(score)` | gültigen Score erkennen, Rohwert `score/10` (sonst `null`) |
+| `C.formatAreaValue(score)` | deutsches Zahlenformat: Komma, höchstens eine Nachkommastelle |
+| `C.areaValueLabel(score)` | vollständiges Label `„5,6/10"` bzw. `„Noch nicht bewertet"` |
+| `C.areaValueA11y(name, score)` | vollständiger Screenreader-Satz statt bloßer Zahl |
+| `C.areaReasons(answers, domain, gaps, limit)` | Begründung aus vorhandenen Antworten, Modifikatoren und Datenlücken |
+
+**Formatregeln:** deutsches Dezimalkomma · höchstens eine Nachkommastelle ·
+ganze Werte ohne `,0` (70 → `7/10`) · **keine künstliche Untergrenze**
+(0 → `0/10`, 1 → `0,1/10`) · ungültig/fehlend → **„Noch nicht bewertet"**
+(nie 0, nie geraten).
+
+**Begründung („Warum dieser Wert?"):** ausschließlich deterministische
+Quellen — die eigenen Antworten des Nutzers, bewertet mit derselben
+Engine-Funktion wie der Score, plus die dokumentierten Kontextmodifikatoren
+und die bestehende Datenlücken-Liste. Keine generierten Texte, keine
+Ursachenbehauptung, keine Diagnose. Wo nichts Punkte gekostet hat, wird
+auch nichts erfunden.
+
+**Engpass:** kommt weiterhin ausschließlich aus der Engine
+(`C.primaryBottleneck`) — **nie** aus dem niedrigsten Bereichswert. Ein
+Bereich mit höherem Wert kann der Engpass sein, wenn Gewichtung und
+Zielbezug das so ergeben.
+
+**Trennung 12 ↔ 7:** Die 12 Score-Domains (+ Kontext-Domains) sind die
+**Optimierungsbereiche**. Die 7 Säulen sind das **verdichtete Profil** auf
+der 100er-Skala — keine zweite Bereichsliste und nie mit Bereichswerten.
+
+**Historie:** Ergebnisse ohne gespeicherte Domain-Daten bekommen die heutige
+Struktur nicht rückwirkend übergestülpt; sie zeigen das verdichtete Profil
+plus einen ehrlichen Hinweis. Kein Bereichswert wird aus einem Gesamtscore
+oder aus Profilsäulen zurückgerechnet.
+
+**Zeitbindung:** Ein Bereichswert gehört zu seinem Score-Zeitpunkt und wird
+mit dem Score-Datum benannt. Tagestracking verändert ihn nie.
+
+**Trend:** bewusst keiner. `check_history` speichert je Eintrag nur
+`{date, total, scores}` — also Gesamtwert und Profilsäulen, keine
+Domain-Details. Ein sicherer Bereichsvergleich ist damit heute nicht
+möglich, und ein unsicherer wird nicht behauptet (§15). Die bestehende
+Gesamtscore-Vergleichslogik bleibt unverändert in Gebrauch.
+
 ## Noch offen (spätere Pakete)
 
-- Bereichswert-Anzeige 1–10 (Paket 4).
+- Bereichswert im Tracker / in My MaleMetrix: bewusst nicht in Paket 4.
+  `tracker.html` und `mein-protokoll.html` laden `js/check-data.js` nicht —
+  und damit auch den kanonischen Helfer nicht. Die Datei allein für eine
+  formatierte Zahl auf eine Tagesseite zu legen, wäre nicht die kleinste
+  sichere Änderung; im OS ist zudem heute kein Domain-Score sichtbar.
 - Englische OS-Navigation (Today/Plan/Track/Progress/Learn) und Modul-Namen
   (NBA, Foresight, Digital Twin …) — bewusst nicht Teil der fünf Familien.

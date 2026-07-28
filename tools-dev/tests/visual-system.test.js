@@ -40,7 +40,7 @@ ok(/@media \(max-width: 560px\)/.test(strip), "Mobile: eigene 2-Spalten-Hierarch
 
 group("Diagnostic System Language · BODY/ENGINE/RECOVERY/…");
 ok(/\.mm-sys .row\.is-primary/.test(vs2) || /\.mm-sys \.row\.is-primary/.test(vs2), "Primary Bottleneck hat EINE klare Hervorhebung");
-ok(/PRIMARY/.test(vs2), "PRIMARY-Markierung in Mono-Mikrotypo");
+ok(/ENGPASS/.test(vs2), "Engpass-Markierung in Mono-Mikrotypo (Begriffskanon, kein englischer Marker)");
 ok(/is-flag/.test(vs2), "Medical-Flag-Zustand nutzt Rot (Status, nicht Deko)");
 
 group("Premium Access Moment · Kauf = Upgrade");
@@ -62,7 +62,8 @@ group("Score Result · diagnostische Systemliste statt Balken-Stapel");
 var check = read("js/check.js");
 ok(/mm-sys/.test(check) && /is-primary/.test(check), "Ergebnisseite nutzt .mm-sys mit Primary-Bottleneck-Highlight");
 ok(/MM \/ BEREICHE/.test(check), "Mono-Bereichsheader auf der Ergebnisseite");
-ok((check.match(/is-primary/g) || []).length >= 1 && /k === bKey/.test(check), "genau der Engpass wird als PRIMARY markiert (datengetrieben)");
+ok((check.match(/is-primary/g) || []).length >= 1 && /k === bKey/.test(check), "genau der Engpass wird hervorgehoben (datengetrieben)");
+ok(/\.mm-area\b/.test(vs2) && /\.mm-areas\b/.test(vs2), "Bereichskarten nutzen dieselben Tokens wie .mm-sys (kein zweites Designsystem)");
 
 group("P13/A2 · SYSTEM-READY-Moment nach Programm-Setup");
 var course = read("js/course.js");
