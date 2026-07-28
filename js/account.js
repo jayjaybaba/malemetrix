@@ -136,6 +136,18 @@
     }, Promise.resolve(false));
   }
   function localEntitlements() { var e = S.get("account_entitlements", []); return Array.isArray(e) ? e.slice() : []; }
+  /* Wirksame Entitlements = Server-Vergabe ∪ lokal bewiesene (Vault-Code) ∪
+     Owner-Rolle. WICHTIG: eine LEERE Server-Antwort darf lokal kryptografisch
+     bewiesene Käufe nicht verdrängen — vorher verlor ein Käufer mit
+     Geräte-Code seinen Zugang, sobald der Cloud-Sync [] lieferte. Die
+     Owner-Rolle kommt ausschließlich vom Server (user_roles) und besitzt
+     per Definition alle Produkte, auch ohne Entitlement-Zeile. */
+  function effectiveEntitlements() {
+    var e = (_entitlements || []).slice();
+    localEntitlements().forEach(function (k) { if (e.indexOf(k) < 0) e.push(k); });
+    if (_role === "owner") ["protocol", "twelve_week"].forEach(function (k) { if (e.indexOf(k) < 0) e.push(k); });
+    return e;
+  }
   function grantLocal(keys) {
     var e = localEntitlements();
     keys.forEach(function (k) { if (e.indexOf(k) < 0) e.push(k); });
@@ -456,7 +468,10 @@
       backend.select("program_cycles", { eq: { user_id: uid, status: "active" }, order: "updated_at", limit: 1, single: true }).then(function (r) { if (r.error) throw r.error; _cloudCycle = r.data || null; }),
       // Phase 9: Abo-Zustand (Tabelle existiert erst nach Migration 0008 — Fehler
       // sind hier gutartig: ohne Abo-Provider bleibt _subscription null).
-      backend.select("subscriptions", { eq: { user_id: uid }, order: "updated_at", limit: 1, single: true }).then(function (r) { _subscription = (r && !r.error && r.data) ? r.data : null; }).catch(function () { _subscription = null; })
+      backend.select("subscriptions", { eq: { user_id: uid }, order: "updated_at", limit: 1, single: true }).then(function (r) { _subscription = (r && !r.error && r.data) ? r.data : null; }).catch(function () { _subscription = null; }),
+      // Owner-Rolle (user_roles) gehört zum Kontozustand — gutartig bei Fehlern,
+      // sonst greift die Rolle erst nach einem separaten loadRole-Aufruf nie.
+      backend.select("user_roles", { eq: { user_id: uid }, single: true }).then(function (r) { _role = (r && !r.error && r.data && r.data.role) || null; }).catch(function () { _role = null; })
     ]);
   }
 
@@ -637,7 +652,7 @@
   }
 
   var api = {
-    snapshot: function () { return { state: _state, configured: configured(), user: _user, profile: _profile, entitlements: (_entitlements || localEntitlements()).slice(), sync: getSyncStatus() }; },
+    snapshot: function () { return { state: _state, configured: configured(), user: _user, profile: _profile, entitlements: effectiveEntitlements(), sync: getSyncStatus() }; },
     onChange: function (cb) { if (typeof cb === "function") _subs.push(cb); },
     whenReady: function () { return _initPromise || api.init(); },
 
@@ -678,21 +693,23 @@
 
     getCurrentUser: function () { return _user; },
     getProfile: function () { return _profile; },
-    getEntitlements: function () { return (_entitlements || localEntitlements()).slice(); },
+    getEntitlements: function () { return effectiveEntitlements(); },
     /* Rolle kommt vom Server (public.user_roles, an auth.uid() gebunden).
        Ohne Session gibt es keine Rolle — localStorage wird bewusst NICHT
        als Quelle akzeptiert. */
     role: function () { return _role || null; },
     loadRole: function () {
+      /* Über den Backend-Wrapper (select), nicht den rohen Client — backend.from
+         existiert im Adapter nicht; der alte Pfad lieferte deshalb IMMER null
+         und die Owner-Rolle kam nie im Client an. */
       if (!backend || !_user) { _role = null; return Promise.resolve(null); }
-      return backend.from ? backend.from("user_roles").select("role").eq("user_id", _user.id).maybeSingle()
-        .then(function (r) { _role = (r && r.data && r.data.role) || null; return _role; })
-        .catch(function () { _role = null; return null; })
-        : Promise.resolve(null);
+      return backend.select("user_roles", { eq: { user_id: _user.id }, single: true })
+        .then(function (r) { _role = (r && !r.error && r.data && r.data.role) || null; return _role; })
+        .catch(function () { _role = null; return null; });
     },
     // Phase 9: Abo-Zustand für MM.entitlements.billingState (null ohne Provider).
     subscription: function () { return _subscription ? { state: _subscription.state, plan: _subscription.plan, cancel_at_period_end: _subscription.cancel_at_period_end, current_period_end: _subscription.current_period_end } : null; },
-    hasAccess: function (key) { return (_entitlements || localEntitlements()).indexOf(key) >= 0; },
+    hasAccess: function (key) { return effectiveEntitlements().indexOf(key) >= 0; },
     canAccess: function (key) { return api.hasAccess(key); },
     resolveProductAccess: resolveProductAccess,
     getLatestScoreResult: function () { var ls = localScore(); if (_cloudScore && ls) return scoreDate(_cloudScore) > scoreDate(ls) ? _cloudScore : ls; return ls || _cloudScore; },
@@ -753,7 +770,7 @@
       if (!backend) return Promise.resolve({ ok: false, code: "not_configured", message: "Account-Sync ist auf diesem Gerät noch nicht aktiviert." });
       return backend.signIn(email);
     },
-    signOut: function () { if (backend && backend.signOut) return backend.signOut().then(function () { _user = null; _entitlements = null; _cloudScore = null; _cloudCycle = null; _profile = null; _accessCache = {}; setState("signed_out"); }); return Promise.resolve(); },
+    signOut: function () { if (backend && backend.signOut) return backend.signOut().then(function () { _user = null; _entitlements = null; _cloudScore = null; _cloudCycle = null; _profile = null; _role = null; _accessCache = {}; setState("signed_out"); }); return Promise.resolve(); },
 
     localInventory: function () {
       return { score: !!localScore(), program: !!(goal() && S.get("c2_start", "")), tracker: false, raw: { hasCode: !!S.get("course_code", "") } };
@@ -763,7 +780,7 @@
       var r = api.getLatestScoreResult();
       var prog = programView();
       var name = (_profile && _profile.first_name) || (S.get("unlock_name", "") || "").split(" ")[0] || "";
-      var ents = _entitlements || localEntitlements();
+      var ents = effectiveEntitlements();
       return {
         name: name,
         hasScore: !!(r && r.total != null),
