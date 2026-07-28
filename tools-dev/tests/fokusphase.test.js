@@ -37,6 +37,37 @@ function sandbox() {
   vm.runInContext(read("js/focus.js"), ctx);
   return ctx;
 }
+/* Sandbox mit FESTEM Heute-Datum — für Tagesgrenzen und Fälligkeiten. */
+function sandboxAt(today, store) {
+  const mem = Object.assign({}, store || {});
+  const RealDate = Date;
+  class FakeDate extends RealDate {
+    constructor(...a) { if (a.length === 0) super(today + "T12:00:00"); else super(...a); }
+    static now() { return new RealDate(today + "T12:00:00").getTime(); }
+  }
+  const ctx = {
+    localStorage: {
+      getItem: (k) => (k in mem ? mem[k] : null),
+      setItem: (k, v) => { mem[k] = String(v); },
+      removeItem: (k) => { delete mem[k]; }
+    },
+    console: { log() {}, error() {} },
+    Date: FakeDate, Math, JSON, Object, Array, String, Number, isNaN, parseInt, parseFloat
+  };
+  ctx.window = ctx; ctx.__mem = mem;
+  vm.createContext(ctx);
+  vm.runInContext(read("js/focus.js"), ctx);
+  return ctx;
+}
+/* 7-Tage-Auftrag: Start 01.07., letzter Umsetzungstag 07.07., Prüfung 08.07. */
+const F7 = {
+  v: 1, domain: "sleep", title: "Zur selben Zeit ins Bett", daily: "d",
+  target: 5, days: 7, started: "2026-07-01", until: "2026-07-08",
+  wirkfrist: 14, wirkungBis: "2026-07-15",
+  done: { "2026-07-01": true, "2026-07-02": true, "2026-07-03": true, "2026-07-05": true, "2026-07-06": true }
+};
+const store7 = () => ({ mm_focus: JSON.stringify(F7) });
+
 const R = { total: 55, bottleneck: { domain: "sleep", name: "Schlaf" } };
 const ymdLocal = (d) => d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
 
@@ -240,6 +271,88 @@ group("7 · Engine, Telemetrie, Persistenz unangetastet (Tests 23–25)");
   const foc = read("js/focus.js");
   ok(/var KEY = "focus";/.test(foc) && /var KEY_DONE = "focus_history";/.test(foc), "Datenkeys mm_focus/mm_focus_history unverändert");
   ok(/nie\s+zurückschreiben|NUR im Speicherabbild/i.test(foc), "Normalisierung dokumentiert: Alt-Daten werden nicht umgeschrieben");
+})();
+
+/* ==================================================================== 8 */
+group("8 · Nachprüfung: Umsetzung vs. Ziel, Prüfungstag, offene Wirkung");
+(function () {
+  /* --- 8.1  5 von 7 umgesetzt bei Ziel 5 — niemals „5 von 5" ----------- */
+  const c = sandboxAt("2026-07-08", store7());          // Prüfungstag
+  const u = c.MM.focus.umsetzung();
+  ok(u.erledigt === 5 && u.tage === 7, "Umsetzung wird als 5 von 7 Tagen geführt (Gesamttage als Nenner)");
+  ok(u.ziel === 5 && u.zielErreicht === true, "Ziel (5 Tage) und Zielstatus (erreicht) stehen getrennt daneben");
+  ok(u.quote === 71, "Umsetzungsquote 71 % (5/7), nicht 100 %");
+  ok(u.verdict === "ausreichend", "Zielstatus erreicht ⇒ ausreichend umgesetzt");
+
+  const trk = read("js/tracker.js"), chk = read("js/check.js");
+  ok(/u\.erledigt \+ ' von ' \+ u\.tage/.test(trk), "Tracker rendert Umsetzung gegen die Gesamttage");
+  ok(/Ziel: ' \+ u\.ziel \+ ' von ' \+ u\.tage/.test(trk) && /zielErreicht \? 'erreicht'/.test(trk), "Tracker zeigt Ziel und Zielstatus als eigene Angabe");
+  ok(!/' von ' \+ f\.target \+ ' Tagen/.test(trk), "kein Rest, der das Ziel als Nenner der Umsetzung ausgibt");
+  ok(/o\.erledigt \+ ' von ' \+ \(o\.days \|\| 28\) \+ ' Tagen umgesetzt/.test(chk), "Score-Bilanz nennt umgesetzte Tage von Gesamttagen");
+  ok(/Ziel: ' \+ o\.ziel \+ ' Tage/.test(chk), "Score-Bilanz führt das Ziel getrennt");
+
+  /* Konsistent über alle drei Dauern (Ziel ist nie der Nenner). */
+  [[7, 5], [14, 10], [28, 20]].forEach(([d, ziel]) => {
+    const done = {};
+    for (let i = 1; i <= ziel; i++) done["2026-07-" + ("0" + i).slice(-2)] = true;
+    const f = Object.assign({}, F7, { days: d, target: ziel, until: "2026-07-01", done: done });
+    f.until = c.MM.focus.addDays("2026-07-01", d);
+    const cc = sandboxAt(c.MM.focus.addDays("2026-07-01", d), { mm_focus: JSON.stringify(f) });
+    const uu = cc.MM.focus.umsetzung();
+    ok(uu.tage === d && uu.ziel === ziel && uu.erledigt === ziel && uu.zielErreicht === true,
+      d + " Tage: " + uu.erledigt + " von " + uu.tage + " umgesetzt, Ziel " + uu.ziel + " — getrennt geführt");
+  });
+
+  /* --- 8.2  letzter Umsetzungstag ≠ Prüfungstag ------------------------ */
+  const cLetzt = sandboxAt("2026-07-07", store7());     // letzter Umsetzungstag
+  const pL = cLetzt.MM.focus.progress();
+  ok(pL.letzterTag === "2026-07-07" && pL.pruefungAm === "2026-07-08", "letzter Umsetzungstag (07.07.) und Prüfungstag (08.07.) werden getrennt ausgewiesen");
+  ok(pL.abgelaufen === false && pL.vergangen === 7, "am letzten Umsetzungstag läuft die Phase noch — alle 7 Tage zählen");
+  ok(pL.offen === 1, "am letzten Umsetzungstag ist genau 1 Tag offen");
+  ok(c.MM.focus.progress().abgelaufen === true, "am Prüfungstag ist die Fokusphase abgelaufen (kein Abhaken mehr)");
+  ok(/fmtD\(f\.started\) \+ '–' \+ fmtD\(p\.letzterTag\)/.test(trk), "Tracker zeigt den Zeitraum bis zum letzten Umsetzungstag");
+  ok(/Umsetzungsprüfung am ' \+ fmtD\(p\.pruefungAm\)/.test(trk), "Tracker weist den Prüfungstag separat aus");
+  ok(!/fmtD\(f\.started\) \+ ' bis ' \+ fmtD\(f\.until\)/.test(trk), "die missverständliche Spanne Start-bis-Prüfungstag ist weg");
+  ok(/läuft bis zum ' \+ fmtNice\(parseYmd\(letzterTag\)\)/.test(chk), "Ergebnisseite nennt den letzten Umsetzungstag, nicht den Prüfungstag");
+  ok(/p\.offen === 1 \? ' TAG' : ' TAGE'/.test(trk), "Singular/Plural der Resttage stimmt");
+
+  /* --- 8.3  Phase fertig, Wirkungsprüfung liegt später ----------------- */
+  const off = c.MM.focus.wirkungOffen();
+  ok(off && off.quelle === "aktiv", "am Prüfungstag ist die Wirkungsprüfung als offen erkennbar");
+  ok(off.faelligAm === "2026-07-15" && off.beurteilbar === false, "Termin der Wirkungsprüfung liegt später und ist noch nicht beurteilbar");
+  ok(off.erledigt === 5 && off.ziel === 5 && off.days === 7, "der offene Vorgang kennt Umsetzung, Ziel und Dauer für die Anzeige");
+
+  /* --- 8.4  Nach dem Archivieren bleibt die offene Wirkung auffindbar --- */
+  c.MM.focus.clear();                                    // „Auftrag abschließen & archivieren"
+  ok(c.MM.focus.current() === null, "der Auftrag ist archiviert");
+  const nachArchiv = c.MM.focus.wirkungOffen();
+  ok(nachArchiv && nachArchiv.quelle === "historie", "die offene Wirkungsprüfung überlebt das Archivieren");
+  ok(nachArchiv.faelligAm === "2026-07-15" && nachArchiv.letzterTag === "2026-07-07", "Termin und letzter Umsetzungstag bleiben erhalten");
+
+  /* Reload = frische Engine auf demselben Speicher. */
+  const nachReload = sandboxAt("2026-07-16", { mm_focus_history: c.__mem["mm_focus_history"] });
+  const off2 = nachReload.MM.focus.wirkungOffen();
+  ok(off2 && off2.quelle === "historie", "nach Reload ist die offene Wirkungsprüfung weiterhin da");
+  ok(off2.beurteilbar === true, "nach Erreichen des Termins ist sie als fällig markiert");
+  ok(nachReload.MM.focus.setWirkung("teilweise") === true, "sie ist nach Reload weiterhin bearbeitbar");
+  ok(nachReload.MM.focus.wirkungOffen() === null, "mit gespeichertem Ergebnis ist sie nicht mehr offen");
+  const hist = nachReload.MM.focus.history();
+  ok(hist[hist.length - 1].wirkung.verdict === "teilweise", "das Ergebnis steht am archivierten Vorgang");
+  ok(/wirkungOffen/.test(trk) && /WIRKUNGSPRÜFUNG · OFFEN/.test(trk), "der Tracker rendert die offene Wirkungsprüfung als eigene Karte");
+  ok(/data-fwirkung="erkennbar"/.test(trk.split("WIRKUNGSPRÜFUNG · OFFEN")[0]) || /wirkungBtns\(\)/.test(trk), "die Erfassung ist dort direkt möglich");
+
+  /* --- 8.5  Abschluss erst durch Ergebnis ODER bewusste Entscheidung ---- */
+  const cVertagt = sandboxAt("2026-07-16", { mm_focus_history: c.__mem["mm_focus_history"] });
+  ok(cVertagt.MM.focus.setWirkung("offen") === true, "Vertagung (noch offen, später prüfen) lässt sich erfassen");
+  ok(cVertagt.MM.focus.wirkungOffen() !== null, "eine Vertagung schließt den Vorgang NICHT ab — er bleibt sichtbar");
+  ok(cVertagt.MM.focus.setWirkung("nicht_geprueft") === true, "die bewusste Entscheidung, nicht weiter zu prüfen, ist erfassbar");
+  ok(cVertagt.MM.focus.wirkungOffen() === null, "erst diese Entscheidung schließt die offene Wirkungsprüfung ab");
+  ok(cVertagt.MM.focus.wirkungLabel("nicht_geprueft") === "bewusst nicht weiter geprüft", "die Entscheidung ist ehrlich benannt (kein Ergebnis erfunden)");
+  ok(/data-fwirkung="nicht_geprueft"/.test(trk), "der Tracker bietet die bewusste Abwahl an");
+
+  /* Alt-Einträge von vor der Fokusphasen-Logik tauchen nie als offen auf. */
+  const cLegacy = sandboxAt("2026-07-16", { mm_focus_history: JSON.stringify([{ domain: "sleep", title: "Alt", started: "2026-05-01", until: "2026-05-29", erledigt: 21, ziel: 20, geschafft: true }]) });
+  ok(cLegacy.MM.focus.wirkungOffen() === null, "historische Alt-Aufträge werden nicht nachträglich als offene Wirkungsprüfung gemeldet");
 })();
 
 console.log("\n==============================");

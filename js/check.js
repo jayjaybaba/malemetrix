@@ -572,8 +572,10 @@
         : (gehalten ? "noch offen — Einschätzung im Tracker festhalten" : "nicht sicher beurteilbar (Umsetzung zu lückenhaft)");
       html += '<div class="card dash-block" style="margin:0 0 22px;border-left:3px solid ' + (gehalten ? 'var(--accent)' : 'var(--muted-2)') + '">' +
         '<span class="card-num">DEIN LETZTER AUFTRAG · ERGEBNISPRÜFUNG</span>' +
-        '<h3 style="font-size:1.1rem;margin:4px 0 6px">Umsetzung: ' + o.erledigt + ' von ' + o.ziel + ' Tagen' +
-        (gehalten ? ' — Ziel erreicht.' : ' — Ziel nicht erreicht.') + '</h3>' +
+        /* Umsetzung („X von Gesamttagen") und Ziel sind getrennte Angaben —
+           das Mindestziel ist nie der Nenner der Umsetzung. */
+        '<h3 style="font-size:1.1rem;margin:4px 0 6px">Umsetzung: ' + o.erledigt + ' von ' + (o.days || 28) + ' Tagen umgesetzt.</h3>' +
+        '<p class="small" style="margin:0 0 6px">Ziel: ' + o.ziel + ' Tage — <strong>' + (gehalten ? 'erreicht' : 'nicht erreicht') + '</strong></p>' +
         '<p class="small muted" style="margin:0 0 8px">„' + esc(o.title) + '" · Fokusphase ' + (o.days || 28) + ' Tage</p>' +
         '<p class="small" style="margin:0 0 8px"><strong>Wirkung:</strong> ' + esc(wLabel) + '</p>' +
         '<p class="small" style="margin:0">' + esc(fazit) + '</p>' +
@@ -941,7 +943,7 @@
       if (laufend && p && !p.abgelaufen) {
         html += '<h3 style="font-size:1.15rem;margin:4px 0 6px">Du hast schon einen laufenden Auftrag.</h3>' +
           '<p class="small muted" style="margin:0 0 10px">„' + esc(laufend.title) + '" — Fokusphase ' + laufend.days + ' Tage, ' +
-          p.erledigt + ' von ' + laufend.target + ' Tagen erledigt, noch ' + p.offen + ' Tage. ' +
+          p.erledigt + ' von ' + laufend.days + ' Tagen umgesetzt (Ziel: ' + laufend.target + '), noch ' + p.offen + (p.offen === 1 ? ' Tag' : ' Tage') + '. ' +
           (p.aufKurs ? 'Du liegst auf Kurs. Zieh das zu Ende, bevor du etwas Neues anfängst.'
                      : 'Du liegst zurück. Entweder du holst auf — oder der Auftrag war zu groß und du tauschst ihn.') + '</p>' +
           '<div style="display:flex;gap:12px;flex-wrap:wrap">' +
@@ -982,8 +984,10 @@
       let h3, body, btnLabel;
       if (cur) {
         const spaeter = cur.wirkungBis && cur.wirkungBis > cur.until;
-        h3 = 'Deine Fokusphase (' + cur.days + ' Tage) endet am ' + fmtNice(parseYmd(cur.until)) + '.';
-        body = '<p class="small muted" style="margin:0 0 6px"><strong>Umsetzungsprüfung</strong> am ' + fmtNice(parseYmd(cur.until)) + ' — wie viele Tage hast du umgesetzt? Bilanz im Tracker.</p>' +
+        /* `until` ist der PRÜFUNGSTAG; der letzte Tag zum Abhaken liegt davor. */
+        const letzterTag = MM.focus.addDays(cur.until, -1);
+        h3 = 'Deine Fokusphase (' + cur.days + ' Tage) läuft bis zum ' + fmtNice(parseYmd(letzterTag)) + '.';
+        body = '<p class="small muted" style="margin:0 0 6px"><strong>Umsetzungsprüfung</strong> am ' + fmtNice(parseYmd(cur.until)) + ' — dem Tag nach deinem letzten Umsetzungstag. Wie viele Tage hast du umgesetzt? Bilanz im Tracker.</p>' +
           '<p class="small muted" style="margin:0 0 6px"><strong>Wirkungsprüfung</strong> ' +
           (spaeter ? 'ab ' + fmtNice(parseYmd(cur.wirkungBis)) + ' — bis dahin gilt die Wirkung als offen.' : 'am selben Termin — hat es erkennbar geholfen?') + '</p>' +
           '<p class="small muted" style="margin:0 0 14px">Dein nächster <strong>vollständiger Score</strong> ist davon unabhängig — sinnvoll bleibt er nach rund 4 Wochen.</p>';
@@ -1126,7 +1130,7 @@
           const events = [];
           if (cur) {
             events.push({ d: parseYmd2(cur.until), sum: "MaleMetrix — Umsetzungsprüfung: Auftrag bilanzieren",
-              desc: "Ende deiner Fokusphase (" + cur.days + " Tage). Wie viele Tage hast du umgesetzt? Bilanz im Tracker: https://www.malemetrix.com/tracker.html" });
+              desc: "Deine Fokusphase (" + cur.days + " Tage) ist gestern zu Ende gegangen. Wie viele Tage hast du umgesetzt? Bilanz im Tracker: https://www.malemetrix.com/tracker.html" });
             if (cur.wirkungBis && cur.wirkungBis > cur.until) {
               events.push({ d: parseYmd2(cur.wirkungBis), sum: "MaleMetrix — Wirkungsprüfung",
                 desc: "Hat der Auftrag erkennbar geholfen? Einschätzung im Tracker festhalten — kein neuer Score nötig." });

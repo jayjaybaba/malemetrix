@@ -55,14 +55,19 @@
   /* Zulässige Wirkungs-Urteile (Wirkungsprüfung, getrennt von der
      Umsetzung): erkennbar · teilweise · nicht_erkennbar · offen · unklar
      („unklar" = Datenlage reicht nicht für ein Urteil). */
-  var WIRKUNG = ["erkennbar", "teilweise", "nicht_erkennbar", "offen", "unklar"];
+  var WIRKUNG = ["erkennbar", "teilweise", "nicht_erkennbar", "offen", "unklar", "nicht_geprueft"];
   var WIRKUNG_LABEL = {
     erkennbar: "Wirkung erkennbar",
     teilweise: "teilweise Wirkung erkennbar",
     nicht_erkennbar: "keine erkennbare Wirkung",
     offen: "Wirkung noch offen",
-    unklar: "Datenlage reicht nicht für ein Urteil"
+    unklar: "Datenlage reicht nicht für ein Urteil",
+    nicht_geprueft: "bewusst nicht weiter geprüft"
   };
+  /* „offen" ist eine Vertagung, kein Ergebnis: der Vorgang bleibt sichtbar.
+     Erst ein echtes Urteil oder die bewusste Entscheidung, nicht weiter zu
+     prüfen, schließt die Wirkungsprüfung ab. */
+  function istAbschluss(v) { return !!v && v !== "offen"; }
 
   /* ----------------------------------------------------------------- LESEN */
 
@@ -109,7 +114,12 @@
       /* Tage ohne Häkchen: ehrlich als „nicht erfasst oder nicht
          umgesetzt" — sie zählen nie als Erfolg, aber auch nicht
          automatisch als bewusstes Scheitern. */
-      ohneEintrag: Math.max(0, vergangen - erledigt)
+      ohneEintrag: Math.max(0, vergangen - erledigt),
+      /* `until` IST der Prüfungstag — der letzte Tag, an dem noch abgehakt
+         wird, liegt einen Tag davor. Beides getrennt ausweisen, damit die
+         Anzeige keinen Umsetzungstag zu viel behauptet. */
+      letzterTag: addDays(f.until, -1),
+      pruefungAm: f.until
     };
   }
 
@@ -130,8 +140,13 @@
       : "nicht_ausreichend";
     return {
       verdict: verdict,
-      erledigt: p.erledigt, ziel: f.target, tage: f.days,
+      /* Getrennt: tatsächlich umgesetzte Tage (erledigt von tage),
+         Mindestziel (ziel) und Zielstatus (zielErreicht). Niemals das
+         Ziel als Nenner der Umsetzung darstellen. */
+      erledigt: p.erledigt, tage: f.days, ziel: f.target,
+      zielErreicht: p.erledigt >= f.target,
       quote: p.quote, ohneEintrag: p.ohneEintrag,
+      letzterTag: p.letzterTag,
       faelligAm: f.until, faellig: p.abgelaufen
     };
   }
@@ -147,6 +162,7 @@
     var u = umsetzung(f);
     return {
       erfasst: f.wirkung || null,
+      abgeschlossen: istAbschluss(f.wirkung && f.wirkung.verdict),
       verdict: (f.wirkung && f.wirkung.verdict) || "offen",
       label: WIRKUNG_LABEL[(f.wirkung && f.wirkung.verdict) || "offen"],
       faelligAm: f.wirkungBis || f.until,
@@ -155,6 +171,36 @@
       /* Ohne ausreichende Umsetzung ist ein Wirkungs-Urteil nicht belastbar. */
       belastbar: u ? u.verdict !== "nicht_ausreichend" : false
     };
+  }
+
+  /* OFFENE WIRKUNGSPRÜFUNG — bleibt auffindbar, auch wenn der Auftrag
+     bereits archiviert wurde. Ein Vorgang gilt als offen, wenn seine
+     Fokusphase vorbei ist und die Wirkung weder beurteilt noch bewusst
+     abgewählt wurde. Nur Vorgänge mit `wirkungBis` zählen — Alt-Einträge
+     von vor der Fokusphasen-Logik tauchen dadurch nie nachträglich auf. */
+  function wirkungOffen() {
+    function offenAus(e, quelle) {
+      if (!e || !e.wirkungBis) return null;
+      var v = e.wirkung && e.wirkung.verdict;
+      if (istAbschluss(v)) return null;
+      var p = quelle === "aktiv" ? (progress(e) || {}) : null;
+      return {
+        quelle: quelle,
+        titel: e.title || "", domain: e.domain || "",
+        days: e.days || 28,
+        erledigt: quelle === "aktiv" ? p.erledigt : (e.erledigt || 0),
+        ziel: quelle === "aktiv" ? e.target : (e.ziel || 0),
+        letzterTag: quelle === "aktiv" ? p.letzterTag : addDays(e.until, -1),
+        faelligAm: e.wirkungBis,
+        beurteilbar: ymd() >= e.wirkungBis,
+        vertagt: v === "offen"
+      };
+    }
+    var f = current();
+    if (f) { var p = progress(f); return (p && p.abgelaufen) ? offenAus(f, "aktiv") : null; }
+    var h = S.get(KEY_DONE, []);
+    if (!Array.isArray(h) || !h.length) return null;
+    return offenAus(h[h.length - 1], "historie");
   }
 
   /* Wirkungs-Urteil erfassen — am laufenden/abgelaufenen Auftrag, sonst am
@@ -244,6 +290,7 @@
     lastOutcome: lastOutcome,
     umsetzung: umsetzung,
     wirkung: wirkung,
+    wirkungOffen: wirkungOffen,
     setWirkung: setWirkung,
     wirkungLabel: function (v) { return WIRKUNG_LABEL[v] || v; },
     history: function () { var h = S.get(KEY_DONE, []); return Array.isArray(h) ? h : []; },

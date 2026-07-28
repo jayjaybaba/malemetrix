@@ -262,12 +262,43 @@
      in diesen vier Wochen zählt. Alles andere im Tracker ist freiwillig. */
   function focusHTML() {
     if (!(window.MM && MM.focus)) return "";
-    const f = MM.focus.current();
-    if (!f) return "";
-    const p = MM.focus.progress(f);
     const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-
     const fmtD = (str) => String(str || "").slice(8, 10) + "." + String(str || "").slice(5, 7) + "." + String(str || "").slice(0, 4);
+
+    /* Buttons der Wirkungsprüfung — an beiden Orten identisch: am
+       abgelaufenen Auftrag und am bereits archivierten Vorgang. */
+    const wirkungBtns = () =>
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px">' +
+      '<button type="button" class="btn btn-sm btn-ghost" data-fwirkung="erkennbar">Wirkung erkennbar</button>' +
+      '<button type="button" class="btn btn-sm btn-ghost" data-fwirkung="teilweise">Teilweise</button>' +
+      '<button type="button" class="btn btn-sm btn-ghost" data-fwirkung="nicht_erkennbar">Keine erkennbare Wirkung</button>' +
+      '<button type="button" class="btn btn-sm btn-ghost" data-fwirkung="offen">Noch offen — später prüfen</button>' +
+      '<button type="button" class="btn btn-sm btn-ghost" data-fwirkung="nicht_geprueft">Nicht weiter prüfen</button>' +
+      '</div>';
+
+    const f = MM.focus.current();
+
+    /* Kein laufender Auftrag — aber vielleicht eine OFFENE WIRKUNGSPRÜFUNG
+       aus einem bereits archivierten Vorgang. Die darf nicht verschwinden:
+       die Umsetzung ist abgeschlossen, die Wirkung ist es nicht. */
+    if (!f) {
+      const off = MM.focus.wirkungOffen && MM.focus.wirkungOffen();
+      if (!off) return "";
+      return '<div class="card trk-focus" id="focus" style="margin-bottom:18px;border-left:3px solid var(--accent-2)">' +
+        '<span class="card-num" style="color:var(--accent-2)">WIRKUNGSPRÜFUNG · OFFEN</span>' +
+        '<h3 style="font-size:1.05rem;margin:6px 0 4px">Umsetzung abgeschlossen — die Wirkung ist noch offen.</h3>' +
+        '<p class="small muted" style="margin:0 0 8px">' + esc(off.titel) + ' · Fokusphase ' + off.days + ' Tage bis ' + fmtD(off.letzterTag) +
+        ' · umgesetzt: ' + off.erledigt + ' von ' + off.days + ' Tagen (Ziel: ' + off.ziel + ')</p>' +
+        '<p class="small" style="margin:0 0 8px"><strong>Wirkungsprüfung ' +
+        (off.beurteilbar ? 'fällig seit ' : 'terminiert für ') + fmtD(off.faelligAm) + '.</strong> ' +
+        (off.beurteilbar ? 'Hat der Auftrag erkennbar geholfen? Deine ehrliche Einschätzung:'
+                         : 'Bis dahin bleibt die Wirkung offen — du kannst sie jederzeit hier festhalten.') + '</p>' +
+        wirkungBtns() +
+        '<p class="small muted" style="margin:0">Der Vorgang ist archiviert; erst dein Wirkungsergebnis — oder die bewusste Entscheidung, nicht weiter zu prüfen — schließt ihn ab.</p>' +
+        '</div>';
+    }
+
+    const p = MM.focus.progress(f);
 
     /* Abgelaufen: ERGEBNISPRÜFUNG statt Checkbox — getrennt in Umsetzung
        (aus den Häkchen) und Wirkung (eigene Einschätzung, darf später
@@ -289,18 +320,17 @@
             : (!w.beurteilbar && w.spaeterAlsUmsetzung
               ? 'Sinnvoll ab ' + esc(fmtD(w.faelligAm)) + ' — bis dahin gilt die Wirkung als offen.'
               : 'Hat der Auftrag erkennbar geholfen? Deine ehrliche Einschätzung:')) + '</p>' +
-          '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px">' +
-          '<button type="button" class="btn btn-sm btn-ghost" data-fwirkung="erkennbar">Wirkung erkennbar</button>' +
-          '<button type="button" class="btn btn-sm btn-ghost" data-fwirkung="teilweise">Teilweise</button>' +
-          '<button type="button" class="btn btn-sm btn-ghost" data-fwirkung="nicht_erkennbar">Keine erkennbare Wirkung</button>' +
-          '<button type="button" class="btn btn-sm btn-ghost" data-fwirkung="offen">Noch offen — später prüfen</button>' +
-          '</div>';
+          wirkungBtns();
       }
       return '<div class="card trk-focus" id="focus" style="margin-bottom:18px;border-left:3px solid ' +
         (p.geschafft ? "var(--accent)" : "var(--muted-2)") + '">' +
         '<span class="card-num">DEIN AUFTRAG · ERGEBNISPRÜFUNG</span>' +
-        '<h3 style="font-size:1.05rem;margin:6px 0 4px">Umsetzung: ' + p.erledigt + ' von ' + f.target + ' Tagen — ' + uText + '.</h3>' +
-        '<p class="small muted" style="margin:0 0 10px">' + esc(f.title) + ' · Fokusphase ' + f.days + ' Tage · Quote ' + u.quote + ' %' +
+        /* Umsetzung, Ziel und Zielstatus sind DREI Angaben — das Ziel ist
+           nie der Nenner der Umsetzung („5 von 7", nicht „5 von 5"). */
+        '<h3 style="font-size:1.05rem;margin:6px 0 4px">Umsetzung: ' + u.erledigt + ' von ' + u.tage + ' Tagen — ' + uText + '.</h3>' +
+        '<p class="small" style="margin:0 0 6px">Ziel: ' + u.ziel + ' von ' + u.tage + ' Tagen — <strong>' +
+        (u.zielErreicht ? 'erreicht' : 'nicht erreicht') + '</strong> · Umsetzungsquote ' + u.quote + ' %</p>' +
+        '<p class="small muted" style="margin:0 0 10px">' + esc(f.title) + ' · Fokusphase ' + f.days + ' Tage (' + fmtD(f.started) + '–' + fmtD(u.letzterTag) + ') · Umsetzungsprüfung ' + fmtD(u.faelligAm) +
         (u.ohneEintrag ? ' · ' + u.ohneEintrag + (u.ohneEintrag === 1 ? ' Tag' : ' Tage') + ' ohne Häkchen (nicht erfasst oder nicht umgesetzt)' : '') + '</p>' +
         wBlock +
         '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">' +
@@ -316,13 +346,14 @@
       ? "Auf Kurs."
       : "Du liegst zurück — hol auf oder setz das Ziel kleiner.";
     return '<div class="card trk-focus" id="focus" style="margin-bottom:18px;border-left:3px solid var(--accent)">' +
-      '<span class="card-num" style="color:var(--accent)">DEIN AUFTRAG · NOCH ' + p.offen + ' TAGE</span>' +
+      '<span class="card-num" style="color:var(--accent)">DEIN AUFTRAG · NOCH ' + p.offen + (p.offen === 1 ? ' TAG' : ' TAGE') + '</span>' +
       '<h3 style="font-size:1.05rem;margin:6px 0 4px">' + esc(f.title) + '</h3>' +
-      '<p class="small muted" style="margin:0 0 8px">Fokusphase ' + f.days + ' Tage · ' + fmtD(f.started) + ' bis ' + fmtD(f.until) +
-      ' · Umsetzungsprüfung am ' + fmtD(f.until) +
+      /* Der letzte Umsetzungstag und der Prüfungstag sind NICHT derselbe Tag. */
+      '<p class="small muted" style="margin:0 0 8px">Fokusphase ' + f.days + ' Tage: ' + fmtD(f.started) + '–' + fmtD(p.letzterTag) +
+      ' · Umsetzungsprüfung am ' + fmtD(p.pruefungAm) +
       (f.wirkungBis && f.wirkungBis > f.until ? ' · Wirkungsprüfung ab ' + fmtD(f.wirkungBis) : '') + '</p>' +
       '<div class="trk-focus-bar" aria-hidden="true"><span style="width:' + p.prozent + '%"></span></div>' +
-      '<p class="small muted" style="margin:8px 0 12px">' + p.erledigt + ' von ' + f.target + ' Tagen. ' + kurs + '</p>' +
+      '<p class="small muted" style="margin:8px 0 12px">' + p.erledigt + ' von ' + f.days + ' Tagen umgesetzt · Ziel: ' + f.target + ' Tage. ' + kurs + '</p>' +
       '<label class="trk-focus-check">' +
       '<input type="checkbox" id="focusToday"' + (p.heuteErledigt ? " checked" : "") + '>' +
       '<span>' + esc(f.daily) + '</span></label>' +

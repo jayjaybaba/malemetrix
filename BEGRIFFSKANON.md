@@ -70,15 +70,31 @@ Nutzer dort braucht.
   als umgesetzt, gelten aber als „nicht erfasst oder nicht umgesetzt“, nicht
   als bewusstes Scheitern.
 - **Wirkungs-Urteile:** erkennbar · teilweise · nicht erkennbar · offen ·
-  unklar (Datenlage reicht nicht). Wirkungsprüfung nie vor Phasenende;
-  `wirkfrist` kann sie nach hinten legen (z. B. Training: Umsetzung nach
-  14 Tagen, Wirkung sinnvoll ab 28).
+  unklar (Datenlage reicht nicht) · nicht weiter geprüft (bewusste
+  Entscheidung). Wirkungsprüfung nie vor Phasenende; `wirkfrist` kann sie
+  nach hinten legen (z. B. Training: Umsetzung nach 14 Tagen, Wirkung
+  sinnvoll ab 28).
+- **„Offen“ ist kein Abschluss.** Eine Vertagung hält den Vorgang aktiv:
+  Die offene Wirkungsprüfung bleibt im Tracker sichtbar und bearbeitbar,
+  auch nachdem der Auftrag archiviert wurde. Abgeschlossen ist sie erst
+  mit einem echten Ergebnis oder der bewussten Entscheidung, nicht weiter
+  zu prüfen. (Alt-Aufträge von vor Paket 2 tauchen dabei nie nachträglich
+  als offen auf — Marker ist das Feld `wirkungBis`.)
 - **Fokusphase ≠ vollständiger Score:** Das Phasenende löst nur die
   Prüfungen aus; der vollständige Score behält seinen eigenen Rhythmus
   (~4 Wochen) und wird nie automatisch erzwungen.
 - **Abwärtskompatibilität:** Aufträge ohne gespeicherte Dauer gelten als
   28 Tage; Historie wird nie umgeschrieben, neue Felder sind additiv.
 
+## Anzeigeregeln (verbindlich)
+
+- **Umsetzung, Ziel und Zielstatus sind drei getrennte Angaben.** Das
+  Mindestziel ist nie der Nenner der Umsetzung: „5 von 7 Tagen umgesetzt ·
+  Ziel: 5 Tage — erreicht · Quote 71 %“, niemals „5 von 5“.
+- **Letzter Umsetzungstag ≠ Prüfungstag.** Technisch ist `until` der
+  Prüfungstag; der letzte Tag zum Abhaken liegt einen Tag davor. Sichtbar
+  daher immer getrennt: „Fokusphase 14 Tage: 28.07.–10.08. ·
+  Umsetzungsprüfung am 11.08.“
 ## Noch offen (spätere Pakete)
 
 - Statusliste der Optimierungspunkte (Paket 3) — bis dahin bleiben die
