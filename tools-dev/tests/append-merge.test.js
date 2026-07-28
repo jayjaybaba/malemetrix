@@ -132,6 +132,129 @@ tests.push(function () {
   });
 });
 
+/* --------------------------------------------------------------------------
+   5) KONFLIKT GLEICHE ID: derselbe Ledger-Eintrag wurde auf beiden Geräten
+      unterschiedlich geändert — der neuere updated_at-Stand muss gewinnen,
+      egal in welche Richtung gemerged wird.
+   -------------------------------------------------------------------------- */
+tests.push(function () {
+  group("Konflikt gleiche id: Cloud-Eintrag neuer ⇒ Cloud gewinnt");
+  var C = { user: { id: "u1" }, tables: { os_state: [
+    { user_id: "u1", domain: "inteldecisions", state: [
+      { id: "dec_1", status: "reviewed", updated_at: "2026-07-27T10:00:00Z" },
+      { id: "dec_9", status: "open" }
+    ], state_version: 9 }
+  ] } };
+  var M = freshEnv(C);
+  M.store.set("intel_decisions", [{ id: "dec_1", status: "open", updated_at: "2026-07-20T10:00:00Z" }]);
+  M.store.set("os_ver_inteldecisions", 3);
+  M.store.set("os_synced_inteldecisions", 2);   // dirty ⇒ Flush-Pfad
+  M.account.registerStateDomain("inteldecisions", "intel_decisions", { append: true });
+  return M.account.init().then(function () { return wait(2200); }).then(function () {
+    var row = cloudRow(C, "inteldecisions");
+    var d1 = (row.state || []).filter(function (e) { return e.id === "dec_1"; })[0];
+    ok(d1 && d1.status === "reviewed", "älterer lokaler Stand überschreibt den neueren Cloud-Stand NICHT");
+    ok(ids(row.state) === "dec_1,dec_9", "fremder Eintrag (dec_9) bleibt unverändert erhalten");
+    var l1 = (M.store.get("intel_decisions", []) || []).filter(function (e) { return e.id === "dec_1"; })[0];
+    ok(l1 && l1.status === "reviewed", "lokal übernimmt den neueren Cloud-Stand");
+  });
+});
+
+tests.push(function () {
+  group("Konflikt gleiche id: lokaler Eintrag neuer ⇒ lokal gewinnt");
+  var C = { user: { id: "u1" }, tables: { os_state: [
+    { user_id: "u1", domain: "inteldecisions", state: [
+      { id: "dec_1", status: "open", updated_at: "2026-07-20T10:00:00Z" }
+    ], state_version: 9 }
+  ] } };
+  var M = freshEnv(C);
+  M.store.set("intel_decisions", [{ id: "dec_1", status: "reviewed", updated_at: "2026-07-27T10:00:00Z" }]);
+  M.store.set("os_ver_inteldecisions", 3);
+  M.store.set("os_synced_inteldecisions", 2);
+  M.account.registerStateDomain("inteldecisions", "intel_decisions", { append: true });
+  return M.account.init().then(function () { return wait(2200); }).then(function () {
+    var row = cloudRow(C, "inteldecisions");
+    var d1 = (row.state || []).filter(function (e) { return e.id === "dec_1"; })[0];
+    ok(d1 && d1.status === "reviewed", "neuerer lokaler Stand setzt sich gegen älteren Cloud-Stand durch");
+  });
+});
+
+tests.push(function () {
+  group("Konflikt gleiche id: identischer Zeitstempel ⇒ deterministische Wahl");
+  var C = { user: { id: "u1" }, tables: { os_state: [
+    { user_id: "u1", domain: "inteldecisions", state: [
+      { id: "dec_1", note: "b", updated_at: "2026-07-27T10:00:00Z" }
+    ], state_version: 9 }
+  ] } };
+  var M = freshEnv(C);
+  M.store.set("intel_decisions", [{ id: "dec_1", note: "a", updated_at: "2026-07-27T10:00:00Z" }]);
+  M.store.set("os_ver_inteldecisions", 3);
+  M.store.set("os_synced_inteldecisions", 2);
+  M.account.registerStateDomain("inteldecisions", "intel_decisions", { append: true });
+  return M.account.init().then(function () { return wait(2200); }).then(function () {
+    var row = cloudRow(C, "inteldecisions");
+    var d1 = (row.state || []).filter(function (e) { return e.id === "dec_1"; })[0];
+    // JSON-Vergleich: "b" > "a" ⇒ deterministisch gewinnt die note:"b"-Variante,
+    // unabhängig davon, welches Gerät den Merge ausführt.
+    ok(d1 && d1.note === "b", "Gleichstand wird deterministisch aufgelöst (inhaltsbasiert, richtungsunabhängig)");
+    var l1 = (M.store.get("intel_decisions", []) || []).filter(function (e) { return e.id === "dec_1"; })[0];
+    ok(l1 && l1.note === "b", "lokal und Cloud konvergieren auf denselben Eintrag");
+  });
+});
+
+tests.push(function () {
+  group("Konflikt gleiche id: nur eine Seite hat updated_at ⇒ gestempelte Seite gewinnt");
+  var C = { user: { id: "u1" }, tables: { os_state: [
+    { user_id: "u1", domain: "inteldecisions", state: [
+      { id: "dec_1", status: "reviewed", updated_at: "2026-07-27T10:00:00Z" }
+    ], state_version: 9 }
+  ] } };
+  var M = freshEnv(C);
+  M.store.set("intel_decisions", [{ id: "dec_1", status: "open" }]);   // Alt-Eintrag ohne Stempel
+  M.store.set("os_ver_inteldecisions", 3);
+  M.store.set("os_synced_inteldecisions", 2);
+  M.account.registerStateDomain("inteldecisions", "intel_decisions", { append: true });
+  return M.account.init().then(function () { return wait(2200); }).then(function () {
+    var row = cloudRow(C, "inteldecisions");
+    var d1 = (row.state || []).filter(function (e) { return e.id === "dec_1"; })[0];
+    ok(d1 && d1.status === "reviewed", "Eintrag MIT Zeitstempel schlägt ungestempelten Alt-Eintrag");
+  });
+});
+
+tests.push(function () {
+  group("Konflikt gleiche id: ungültige Zeitstempel ⇒ kein Crash, deterministische Wahl");
+  var C = { user: { id: "u1" }, tables: { os_state: [
+    { user_id: "u1", domain: "inteldecisions", state: [
+      { id: "dec_1", note: "b", updated_at: "kein-datum" },
+      { id: "dec_7", note: "fremd" }
+    ], state_version: 9 }
+  ] } };
+  var M = freshEnv(C);
+  M.store.set("intel_decisions", [{ id: "dec_1", note: "a", updated_at: "kein-datum" }]);
+  M.store.set("os_ver_inteldecisions", 3);
+  M.store.set("os_synced_inteldecisions", 2);
+  M.account.registerStateDomain("inteldecisions", "intel_decisions", { append: true });
+  return M.account.init().then(function () { return wait(2200); }).then(function () {
+    var row = cloudRow(C, "inteldecisions");
+    var d1 = (row.state || []).filter(function (e) { return e.id === "dec_1"; })[0];
+    ok(d1 && d1.note === "b", "ungültige Zeitstempel fallen auf den deterministischen Inhaltsvergleich zurück");
+    ok(ids(row.state) === "dec_1,dec_7", "fremder Eintrag bleibt auch im Fehlerfall erhalten");
+  });
+});
+
+/* --------------------------------------------------------------------------
+   6) STATISCH: Die Ledger-Mutationen stempeln updated_at (Quelle der Regel).
+   -------------------------------------------------------------------------- */
+tests.push(function () {
+  group("Statisch: memory.js stempelt updated_at bei jeder Ledger-Mutation");
+  var fs = require("fs");
+  var src = fs.readFileSync(path.join(ROOT, "js/os/intelligence/memory.js"), "utf8");
+  ok(/status: "open", outcome: null[\s\S]{0,300}updated_at: new Date\(\)\.toISOString\(\)/.test(src), "recordDecision stempelt updated_at");
+  ok(/reviewedAt = todayYmd\(\); l\[i\]\.updated_at = new Date\(\)\.toISOString\(\)/.test(src), "reviewDecision stempelt updated_at");
+  ok(/supersededAt = todayYmd\(\); d\.updated_at = new Date\(\)\.toISOString\(\)/.test(src), "supersedeDecisionsInDomain stempelt updated_at");
+  return Promise.resolve();
+});
+
 /* ---- sequenziell ausführen ---- */
 tests.reduce(function (p, t) { return p.then(t); }, Promise.resolve()).then(function () {
   console.log("\n==============================");

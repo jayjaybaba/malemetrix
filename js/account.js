@@ -419,21 +419,55 @@
     OS_DOMAINS[name] = { key: storeKey, append: !!(opts && opts.append) };
     registerDomain(name, { flush: function () { return flushOsDomain(name); } });
   }
-  /* Vereinigung zweier Append-Stände: Basis bleibt unverändert, Einträge, die
-     nur im anderen Stand existieren, werden hinten angehängt. Identität über
-     `id` (alle intel_*-Historien tragen stabile IDs), sonst über den JSON-
-     Inhalt. Rückgabe null = nichts zu ergänzen ODER kein Array (dann greift
-     unverändert Last-write-wins). */
+  /* Vereinigung zweier Append-Stände: Einträge, die nur im anderen Stand
+     existieren, werden hinten angehängt. Identität über `id` (alle intel_*-
+     Historien tragen stabile IDs), sonst über den JSON-Inhalt. Rückgabe
+     null = nichts geändert ODER kein Array (dann greift Last-write-wins).
+
+     Konfliktregel bei GLEICHER id auf beiden Seiten (deterministisch,
+     richtungsunabhängig — beide Geräte kommen zum selben Ergebnis):
+       1. Der Eintrag mit dem neueren gültigen `updated_at` gewinnt —
+          ein älterer Stand kann einen neueren nie überschreiben.
+       2. Ein Eintrag MIT gültigem `updated_at` schlägt einen ohne
+          (gestempelt = nachweislich später bearbeitet als Alt-Einträge).
+       3. Gleichstand / beide ohne Zeitstempel: deterministischer
+          Inhaltsvergleich (JSON), damit die Wahl nicht von der
+          Merge-Richtung (Flush vs. Hydration) abhängt. */
+  function entryTime(e) {
+    if (!e || typeof e !== "object") return NaN;
+    var t = e.updated_at;
+    if (typeof t === "number" && isFinite(t)) return t;
+    if (typeof t === "string") { var p = Date.parse(t); if (!isNaN(p)) return p; }
+    return NaN;
+  }
+  function pickEntry(a, b) {
+    var ta = entryTime(a), tb = entryTime(b);
+    var va = !isNaN(ta), vb = !isNaN(tb);
+    if (va && vb && ta !== tb) return ta > tb ? a : b;
+    if (va !== vb) return va ? a : b;
+    var sa = "", sb = "";
+    try { sa = JSON.stringify(a); sb = JSON.stringify(b); } catch (err) { return a; }
+    return sa >= sb ? a : b;
+  }
   function mergeAppendStates(baseArr, otherArr) {
     if (!Array.isArray(baseArr) || !Array.isArray(otherArr)) return null;
     function keyOf(e) {
       if (e && typeof e === "object" && e.id != null) return "id:" + e.id;
       try { return "j:" + JSON.stringify(e); } catch (err) { return "j:?"; }
     }
-    var have = {}; baseArr.forEach(function (e) { have[keyOf(e)] = true; });
-    var missing = otherArr.filter(function (e) { return !have[keyOf(e)]; });
-    if (!missing.length) return null;
-    return baseArr.concat(missing);
+    var otherByKey = {};
+    otherArr.forEach(function (e) { otherByKey[keyOf(e)] = e; });
+    var have = {}, changed = false;
+    var out = baseArr.map(function (e) {
+      var k = keyOf(e); have[k] = true;
+      var o = otherByKey[k];
+      if (o === undefined || o === e) return e;
+      var win = pickEntry(e, o);
+      if (win !== e) changed = true;
+      return win;
+    });
+    otherArr.forEach(function (e) { if (!have[keyOf(e)]) { out.push(e); changed = true; } });
+    return changed ? out : null;
   }
   function osVer(name, kind) { return S.get("os_" + kind + "_" + name, kind === "synced" ? -1 : 0) || (kind === "synced" ? -1 : 0); }
   function bumpOsVer(name) { var v = osVer(name, "ver") + 1; S.setRaw("os_ver_" + name, v); return v; }

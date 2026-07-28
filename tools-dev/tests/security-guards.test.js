@@ -194,6 +194,46 @@ group("G8 · Manuelle Zugangsvergabe gibt nur Produkte, nie Rollen");
   ok(/ambiguous_account/.test(fn), "mehrdeutige Konten werden nicht blind bedient");
 })();
 
+/* ----------------------------------------------------------------- G8b */
+group("G8b · mm-admin: verify_jwt=false ist durch Handler-Auth vollstaendig gedeckt");
+(function () {
+  var fn = read("supabase/functions/mm-admin/index.ts");
+  var toml = read("supabase/config.toml");
+
+  /* Authentifizierung: Bearer-Pflicht mit 401, Identitaet server-autoritativ. */
+  ok(/authHeader\.startsWith\("Bearer "\)[\s\S]{0,60}unauthorized[\s\S]{0,20}401/.test(fn),
+    "ohne Bearer-Token endet der Request mit 401");
+  ok(/auth\.getUser\([\s\S]{0,80}authHeader\.replace\("Bearer ", ""\)/.test(fn) &&
+     /userErr \|\| !userData\?\.user\) return json\(\{ error: "unauthorized" \}, 401\)/.test(fn),
+    "das JWT wird server-autoritativ geprueft (getUser); ungueltig ⇒ 401");
+
+  /* Autorisierung: Owner-Rolle aus user_roles ueber die Token-Identitaet. */
+  ok(/from\("user_roles"\)\.select\("role"\)\.eq\("user_id", callerId\)/.test(fn),
+    "die Rollenpruefung laeuft ueber die Token-Identitaet (callerId), nie ueber Body-Daten");
+  ok(/rolle\.role !== "owner"\) return json\(\{ error: "forbidden" \}, 403\)/.test(fn),
+    "ohne Owner-Rolle endet der Request mit 403");
+
+  /* Reihenfolge: Auth + Rolle stehen VOR jeder Aktion und vor dem Body-Parse. */
+  var idxAuth = fn.indexOf('auth.getUser'), idxRole = fn.indexOf('from("user_roles")'),
+      idxBody = fn.indexOf('await req.json()'), idxAction = fn.indexOf('action === "list"');
+  ok(idxAuth > 0 && idxRole > idxAuth && idxBody > idxRole && idxAction > idxBody,
+    "Reihenfolge erzwungen: Token-Auth → Owner-Check → erst dann Body/Aktionen");
+
+  /* Keine Autorisierung ueber Client-Parameter oder CORS. */
+  ok(!/body\.(user_id|role|owner|caller)/.test(fn),
+    "keine Identitaets-/Rollenfelder aus dem Request-Body");
+  ok(/const callerId = userData\.user\.id/.test(fn),
+    "callerId stammt ausschliesslich aus dem verifizierten Token");
+  ok(/if \(req\.method === "OPTIONS"\) return preflight\(cors\)/.test(fn) &&
+     !/const pre = preflight\(req\)/.test(fn),
+    "preflight nur fuer OPTIONS (CORS ist Transport, keine Autorisierung)");
+
+  /* Platform-Ebene: verify_jwt=false ist konfiguriert UND begruendet noetig
+     (ES256-Projekt — die Legacy-Pruefung wuerde jeden Aufruf vorab ablehnen). */
+  ok(/\[functions\.mm-admin\]\s*\nverify_jwt = false/.test(toml),
+    "config.toml deklariert verify_jwt=false fuer mm-admin (Auth liegt im Handler)");
+})();
+
 /* ------------------------------------------------------------------ G9 */
 group("G9 · Apple Pay wird nur versprochen, wenn es auch funktioniert");
 (function () {
