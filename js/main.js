@@ -564,3 +564,29 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
   else init();
 })();
+
+/* =========================================================================
+   AMBIENT MOTION — Seitenkopf-Video (.mm-ambient in .page-head).
+   Gleiche Regeln wie der Home-Hero: preload=none, spielt nur im Viewport
+   und bei sichtbarem Tab, respektiert prefers-reduced-motion (Poster
+   bleibt stehen). Ein Handler für alle Seiten.
+   ========================================================================= */
+(function () {
+  "use strict";
+  var vids = document.querySelectorAll(".mm-ambient video");
+  if (!vids.length) return;
+  if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  function play(v) { var p = v.play(); if (p && p.catch) p.catch(function () {}); v.classList.add("is-live"); }
+  function pause(v) { try { v.pause(); } catch (e) {} }
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { e.isIntersecting ? play(e.target) : pause(e.target); });
+    }, { threshold: 0.15 });
+    vids.forEach(function (v) { io.observe(v); });
+  } else {
+    vids.forEach(play);
+  }
+  document.addEventListener("visibilitychange", function () {
+    vids.forEach(function (v) { document.hidden ? pause(v) : play(v); });
+  });
+})();
