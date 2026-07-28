@@ -2,7 +2,10 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- viewport-fit=cover: ohne das liefert env(safe-area-inset-bottom) auf
+       iPhones 0 und die fixe Bottom-Nav klebt lesbar-abgeschnitten an der
+       Unterkante (Home-Indikator/Safari-Leiste überdecken die Labels). -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>My MaleMetrix — dein persönlicher Zugang</title>
   <meta name="description" content="Dein Zugang zu DAS PROTOKOLL: das Protokoll zum Lesen und das interaktive 12-Wochen-Programm.">
   <meta name="robots" content="noindex">

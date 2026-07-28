@@ -11,6 +11,13 @@
   <link rel="stylesheet" href="../css/blueprint.css">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2307090d'/%3E%3Cpath d='M8.5 8.5l5.5 5.5M8.5 23.5l5.5-5.5' stroke='%23eef2f7' stroke-width='3.4' stroke-linecap='round' fill='none'/%3E%3Cpath d='M23.5 8.5l-5.5 5.5M23.5 23.5l-5.5-5.5' stroke='%2300c2ff' stroke-width='3.4' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
   <meta name="theme-color" content="#07090d">
+  <style>
+    /* Sehr langes Werk: style.css setzt global scroll-behavior:smooth, aber
+       animierte Sprünge über das gesamte Dokument (Inhalt-Knopf, Kapitel-
+       Anker, Weiterlesen) rendern in iOS Safari jeden Abschnitt auf dem Weg —
+       Speicherspitze, WebKit beendet die Seite. Hier gilt: sofort springen. */
+    html { scroll-behavior: auto !important; }
+  </style>
 </head>
 <body class="bp-wrap bp-atmos">
 
@@ -104,7 +111,11 @@
     top.className = "no-print";
     top.style.cssText = "position:fixed;right:16px;bottom:16px;z-index:60;padding:10px 14px;border:none;border-radius:999px;background:linear-gradient(135deg,#2e7cf6,#00c2ff);color:#fff;font-weight:700;font-size:0.85rem;box-shadow:0 6px 20px rgba(13,15,19,0.25);cursor:pointer;opacity:0;transition:opacity .2s;pointer-events:none";
     document.body.appendChild(top);
-    top.addEventListener("click", function () { window.scrollTo({ top: 0, behavior: "smooth" }); });
+    /* Sofort springen, NICHT smooth: ein animierter Scroll über das gesamte
+       Werk (sehr langes Dokument) zwingt iOS Safari, jeden Abschnitt auf dem
+       Weg zu rendern — Speicherspitze, WebKit beendet die Seite („Ein
+       Problem ist wiederholt aufgetreten"). */
+    top.addEventListener("click", function () { window.scrollTo(0, 0); });
     var saved = 0; try { saved = parseInt(localStorage.getItem(SCROLL_KEY) || "0", 10) || 0; } catch (e) {}
     if (saved > 600 && saved < document.documentElement.scrollHeight - window.innerHeight) {
       var pill = document.createElement("button");
@@ -112,7 +123,9 @@
       pill.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:61;padding:11px 18px;border:none;border-radius:999px;background:#0d0f13;color:#fff;font-weight:600;font-size:0.9rem;box-shadow:0 8px 26px rgba(0,0,0,0.35);cursor:pointer;max-width:92vw";
       document.body.appendChild(pill);
       var hide = function () { if (pill && pill.parentNode) pill.parentNode.removeChild(pill); };
-      pill.addEventListener("click", function () { window.scrollTo({ top: saved, behavior: "smooth" }); hide(); });
+      /* Gleicher Grund wie beim „↑ Inhalt"-Knopf: sofort springen statt
+         smooth über zigtausend Pixel animieren. */
+      pill.addEventListener("click", function () { window.scrollTo(0, saved); hide(); });
       setTimeout(hide, 9000);
     }
     /* Struktureller Lesefortschritt für My MaleMetrix (Weiterlesen-Kachel):
