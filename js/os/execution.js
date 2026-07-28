@@ -374,7 +374,10 @@
       options: [
         { key: "resume", label: "Weitermachen, wo ich war", line: away <= 10 ? "Empfohlen — " + away + " Tage kosten kein Programm." : "Möglich — erste Session bewusst leichter." },
         { key: "light", label: "Sanfter Wiedereinstieg", line: "Erste Session als 30-Minuten-Version, Protein-Floor, eine Messung. Dann normal weiter." },
-        p.active && !p.over ? { key: "pause", label: "Programm offiziell pausieren", line: "Pause stoppt den Programm-Tag — ehrlicher als stilles Verpassen." } : null
+        p.active && !p.over ? { key: "pause", label: "Programm offiziell pausieren", line: "Pause stoppt den Programm-Tag — ehrlicher als stilles Verpassen." } : null,
+        /* Ab 2 Wochen weg ist ein frischer Zyklus oft ehrlicher als Aufholen —
+           nutzt den bestehenden Neustart-Flow (archiviert, vermischt nichts). */
+        p.active && away >= 14 ? { key: "restart", label: "Neu starten", line: "Nach " + away + " Tagen oft der ehrlichste Weg — neuer 12-Wochen-Zyklus, der alte wird archiviert." } : null
       ].filter(Boolean)
     };
   }
