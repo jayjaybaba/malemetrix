@@ -103,7 +103,8 @@
     if (!P || !P.startMeasure) return "";
     var punkte = [], massnahmen = [];
     try {
-      P.list().forEach(function (p) { (p.istMassnahme ? massnahmen : punkte).push(p); });
+      /* Ein Leser, eine Trennlinie: der ausdrückliche Typ (Paket 8). */
+      P.list().forEach(function (p) { (p.entity_type === "measure" ? massnahmen : punkte).push(p); });
     } catch (e) { return ""; }
     var offen = punkte.filter(function (p) { return !p.abgeschlossen; });
     var aktiv = massnahmen.filter(function (m) { return !m.abgeschlossen; });
@@ -208,6 +209,299 @@
       opt("nicht_weiter_geprueft", "nicht weiter prüfen") + opt("weitere_abklaerung", "weitere Abklärung") + '</select></label>' +
       '</div><button class="btn btn-primary btn-sm" data-mnsave="' + esc(m.id) + '">Ergebnis speichern</button>';
   }
+  /* ==================== ALLTAGSTEST (Paket 8) ==========================
+     Abschluss- und Transferphase des bestehenden 12-Wochen-Durchlaufs.
+     Geprüft wird nur, ob bereits bewusst übernommene persönliche Standards
+     im normalen Alltag tragen — kein zweiter Score, keine neue Wirkung,
+     keine Bewertung der Person. */
+  var ET_TAG = {
+    normal: "Normalform", minimal: "Minimalform",
+    nein: "Heute nicht umgesetzt", unklar: "Nicht beurteilbar"
+  };
+  var ET_VERDICT = {
+    alltagstauglich: "Alltagstauglich",
+    teilweise_stabil: "Teilweise stabil",
+    nicht_stabil: "Noch nicht stabil",
+    nicht_beurteilbar: "Noch nicht beurteilbar"
+  };
+  var ET_VERDICT_TEXT = {
+    alltagstauglich: "Der Standard hat an den meisten Tagen getragen — in Normal- oder Minimalform.",
+    teilweise_stabil: "Der Standard gelang an mehreren Tagen, aber nicht durchgehend.",
+    nicht_stabil: "In dieser Form war der Standard im Alltag selten umsetzbar. Das sagt etwas über die Form, nicht über dich.",
+    nicht_beurteilbar: "Für eine faire Einordnung liegen zu wenige Tage vor."
+  };
+  var ET_HIND = {
+    zeit: "Zeit", planung: "Planung", muedigkeit: "Müdigkeit",
+    sozial: "soziale Situation", unterwegs: "unterwegs", vergessen: "vergessen",
+    nicht_praktikabel: "nicht praktikabel", vertraeglichkeit: "Beschwerden oder Verträglichkeit",
+    anderer: "anderer Grund"
+  };
+  var ET_ENTSCH = {
+    beibehalten: "Standard unverändert beibehalten",
+    minimalform_ergaenzen: "Minimalform dauerhaft ergänzen",
+    vereinfachen: "Standard vereinfachen",
+    erneut_testen: "erneut im Alltag testen",
+    pausieren: "vorerst pausieren",
+    nicht_behalten: "nicht dauerhaft beibehalten",
+    weitere_abklaerung: "weitere Abklärung"
+  };
+
+  /* Messdatenunterstützung — AUSSCHLIESSLICH lesend über die vorhandene
+     Auswertung aus Paket 5. Sie schlägt vor und benennt ihre Herkunft; sie
+     entscheidet nie und überschreibt nie eine manuelle Angabe. */
+  function etSignal(t, s, tag) {
+    if (!(window.MM && MM.focus && MM.focus.evaluateDay && s && s.area)) return null;
+    try {
+      /* `until` ist in der Auswertung aus Paket 5 exklusiv — daher der Tag
+         NACH dem letzten Alltagstest-Tag. */
+      var ev = MM.focus.evaluateDay({ domain: s.area, started: t.started_at, until: addDay(t.until, 1) }, tag);
+      if (!ev || ev.stufe === "C" || !ev.quelle) return null;
+      return ev;
+    } catch (e) { return null; }
+  }
+  function addDay(s, n) {
+    var q = String(s || "").split("-");
+    var d = new Date(+q[0], (+q[1] || 1) - 1, (+q[2] || 1) + n);
+    return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+  }
+
+  /* --- HEUTE: die tägliche Erfassung, eingebettet in die bestehende Fläche. */
+  function alltagstestHeute() {
+    if (!(OS.everydayTest)) return "";
+    var t = OS.everydayTest();
+    if (!t || t.completed_at) return "";
+    var heute = todayYmd();
+    var tage = OS.everydayDayList(t);
+    if (tage.indexOf(heute) < 0) {
+      /* Zeitraum vorbei: hier wird nichts mehr erfasst, nur verwiesen. */
+      return OS.everydayDue(t)
+        ? '<a class="card os-row-cta" href="#progress"><span class="tag">ALLTAGSTEST</span><b>Die sieben Tage sind vorbei — Ergebnisprüfung öffnen →</b></a>'
+        : "";
+    }
+    var nr = tage.indexOf(heute) + 1;
+    var inner = t.standards.map(function (s) {
+      var gesetzt = (t.days && t.days[heute] && t.days[heute][s.point_id]) || "";
+      var ev = etSignal(t, s, heute);
+      var hinweis = "";
+      if (ev) {
+        hinweis = '<p class="et-src">' + esc(ev.treffer
+          ? "Deine Daten sprechen heute dafür" + (ev.wert != null && ev.ziel ? " (" + ev.wert + "/" + ev.ziel + " " + (ev.einheit || "") + ")" : "")
+          : "Deine Daten zeigen dafür heute noch nichts") +
+          ' · Quelle: ' + esc(ev.quelle) + '. Du entscheidest.</p>';
+      }
+      return '<div class="et-std"><b>' + esc(s.label) + '</b>' +
+        (s.minimal ? '<span class="et-min">Minimalform: ' + esc(s.minimal) + '</span>' : '') +
+        '<div class="et-btns">' +
+        ["normal", "minimal", "nein", "unklar"].map(function (k) {
+          if (k === "minimal" && !s.minimal) return "";
+          return '<button class="et-b' + (gesetzt === k ? " on" : "") + '" data-etday="' + esc(k) +
+            '" data-etpt="' + esc(s.point_id) + '"' + (gesetzt === k ? ' aria-pressed="true"' : ' aria-pressed="false"') + '>' +
+            esc(ET_TAG[k]) + '</button>';
+        }).join("") + '</div>' + hinweis + '</div>';
+    }).join("");
+    return '<div class="card os-alltagstest"><span class="tag">ALLTAGSTEST · TAG ' + nr + ' VON ' + OS.ET_TAGE + '</span>' +
+      '<p class="muted small" style="margin:6px 0 12px">Trägt dein Standard auch heute? Minimalform zählt voll — sie ist kein Scheitern, sondern Alltagstauglichkeit.</p>' +
+      inner + '</div>';
+  }
+
+  /* --- ABSCHLUSSBEREICH: vorbereiten · laufen · prüfen · entscheiden. */
+  function alltagstestBlock() {
+    if (!(OS.everydayTest && MM.points && MM.points.standards)) return "";
+    var t = OS.everydayTest();
+
+    /* 1. Noch kein Alltagstest — Voraussetzungen und Vorbereitung. */
+    if (!t) return alltagstestStart();
+
+    /* 2. Abgeschlossen — eingefrorenes Ergebnis + offene Standardentscheidungen. */
+    if (t.completed_at) return alltagstestErgebnis(t, true);
+
+    /* 3. Prüfung fällig. */
+    if (OS.everydayDue(t)) return alltagstestPruefung(t);
+
+    /* 4. Läuft. */
+    var tage = OS.everydayDayList(t);
+    var nr = Math.max(1, tage.indexOf(todayYmd()) + 1);
+    return sec("Alltagstest",
+      '<div class="os-etbox"><p class="muted small" style="margin:0 0 10px">Läuft seit ' + esc(fmtD(t.started_at)) +
+      ' · letzter Tag ' + esc(fmtD(t.until)) + ' · Ergebnisprüfung ' + esc(fmtD(t.review_date)) + '</p>' +
+      (tage.indexOf(todayYmd()) >= 0 ? '<p class="small">Tag ' + nr + ' von ' + OS.ET_TAGE + ' — die Tageserfassung steht auf <a href="#today">Heute</a>.</p>' : '') +
+      t.standards.map(function (s) {
+        var z = OS.everydayTally(s.point_id, t);
+        return '<div class="et-row"><b>' + esc(s.label) + '</b><span>' +
+          'Normalform ' + z.normal + ' · Minimalform ' + z.minimal + ' · nicht umgesetzt ' + z.nein +
+          (z.unklar ? ' · nicht beurteilbar ' + z.unklar : '') + '</span></div>';
+      }).join("") +
+      '<p class="small muted" style="margin-top:10px">Die sieben Tage sind ein Prüfzeitraum für die Alltagstauglichkeit — keine Wirkfrist und keine zusätzliche Programmwoche.</p>' +
+      '<button class="os-ghost" id="etIcs">Ergebnisprüfung in den Kalender</button></div>');
+  }
+
+  function alltagstestStart() {
+    var kand = OS.everydayCandidates();
+    if (!kand.length) {
+      return sec("Alltagstest",
+        '<div class="os-etbox"><p>Für den Alltagstest brauchst du mindestens einen Standard, den du bereits umgesetzt, geprüft und bewusst übernommen hast.</p>' +
+        '<p class="small muted">Ein Optimierungspunkt, eine laufende Maßnahme oder eine noch offene Wirkung reichen dafür nicht.</p></div>');
+    }
+    var vor = OS.everydayPreselect();
+    var start = todayYmd();
+    return sec("Alltagstest",
+      '<div class="os-etbox" id="etStartBox">' +
+      '<p class="muted small" style="margin:0 0 12px">Prüfe sieben Tage lang, ob deine Standards auch an normalen Alltagstagen tragen — Arbeitstage, Wochenende, Termine, Zeitdruck. Kein zusätzliches Programm, keine künstliche Belastung.</p>' +
+      '<p class="small" style="margin:0 0 8px"><b>Wähle ein bis ' + OS.ET_MAX_STANDARDS + ' Standards.</b></p>' +
+      kand.map(function (s) {
+        var an = vor.indexOf(s.point_id) >= 0;
+        return '<div class="et-pick"><label><input type="checkbox" class="etSel" value="' + esc(s.point_id) + '"' + (an ? " checked" : "") + '> <b>' + esc(s.label) + '</b>' +
+          '<span class="muted small"> · Bereich ' + esc(s.bereich) + '</span></label>' +
+          (s.minimal
+            ? '<p class="et-min">Minimalform: ' + esc(s.minimal) + '</p>'
+            : '<label class="et-minin">Minimalform für belastete Tage (optional)<input type="text" maxlength="80" class="etMin" data-etpt="' + esc(s.point_id) + '" placeholder="z. B. zwei kurze Einheiten"></label>') +
+          '</div>';
+      }).join("") +
+      '<p class="small muted" style="margin:10px 0 4px">Zeitraum: ' + esc(fmtD(start)) + '–' + esc(fmtD(addDay(start, OS.ET_TAGE - 1))) +
+      ' · Ergebnisprüfung ' + esc(fmtD(addDay(start, OS.ET_TAGE))) + '</p>' +
+      '<p class="small muted" style="margin:0 0 12px">Die Vorauswahl startet nichts. Erst deine Bestätigung startet den Alltagstest.</p>' +
+      '<button class="btn btn-primary btn-sm" id="etStart">Alltagstest starten</button></div>');
+  }
+
+  function alltagstestPruefung(t) {
+    var inner = t.standards.map(function (s) {
+      var v = OS.everydayVerdict(s.point_id, t);
+      var z = v.tally;
+      var hind = (t.obstacles || {})[s.point_id] || "";
+      var ent = (t.decisions || {})[s.point_id] || "";
+      return '<div class="et-res"><b>' + esc(s.label) + '</b>' +
+        '<p class="et-meta">Bereich ' + esc(s.bereich) + ' · ' + esc(fmtD(t.started_at)) + '–' + esc(fmtD(t.until)) + '</p>' +
+        '<p class="et-tally">Normalform ' + z.normal + ' · Minimalform ' + z.minimal +
+        ' · nicht umgesetzt ' + z.nein + ' · nicht beurteilbar ' + (z.unklar + z.offen) + '</p>' +
+        '<p class="et-verdict">' + esc(ET_VERDICT[v.key]) + ' — ' + esc(ET_VERDICT_TEXT[v.key]) + '</p>' +
+        '<label class="et-sel">Hindernis (optional)<select data-ethind="' + esc(s.point_id) + '">' +
+        '<option value="">— keins angegeben —</option>' +
+        OS.ET_HINDERNISSE.map(function (h) {
+          return '<option value="' + h + '"' + (hind === h ? " selected" : "") + '>' + esc(ET_HIND[h]) + '</option>';
+        }).join("") + '</select></label>' +
+        '<label class="et-sel">Deine Entscheidung<select data-etdec="' + esc(s.point_id) + '">' +
+        '<option value="">— bitte wählen —</option>' +
+        OS.ET_ENTSCHEIDUNGEN.map(function (e2) {
+          return '<option value="' + e2 + '"' + (ent === e2 ? " selected" : "") + '>' + esc(ET_ENTSCH[e2]) + '</option>';
+        }).join("") + '</select></label></div>';
+    }).join("");
+    return sec("Alltagstest · Ergebnisprüfung",
+      '<div class="os-etbox">' + inner +
+      '<p class="small muted" style="margin:10px 0">Die Einordnung beschreibt, wie gut der Standard in dieser Form in deinen Alltag passt. Sie bewertet weder dich noch die Wirkung.</p>' +
+      '<button class="btn btn-primary btn-sm" id="etDone">Ergebnisprüfung abschließen</button></div>');
+  }
+
+  /* Eingefrorenes Ergebnis. Spätere Tracker- oder Katalogänderungen berühren
+     es nicht mehr — gezeigt wird ausschließlich das gespeicherte Ergebnis. */
+  function alltagstestErgebnis(t, mitAktionen) {
+    var P = MM.points;
+    var inner = t.standards.map(function (s) {
+      var r = (t.results || {})[s.point_id] || { tally: { normal: 0, minimal: 0, nein: 0, unklar: 0, offen: 0 }, verdict: "nicht_beurteilbar", hindernis: "" };
+      var z = r.tally || {};
+      var ent = (t.decisions || {})[s.point_id] || "";
+      var punkt = null;
+      try { punkt = P && P.get ? P.get(s.point_id) : null; } catch (e) {}
+      var offeneAktion = "";
+      if (mitAktionen && punkt && punkt.standard && punkt.standard.bestaetigt) {
+        /* Änderungen am Standard geschehen NUR nach ausdrücklicher
+           Bestätigung — die Entscheidung allein ändert nichts. */
+        if (ent === "minimalform_ergaenzen" && s.minimal && punkt.standard.minimal !== s.minimal) {
+          offeneAktion = '<div class="et-act"><p class="small">Minimalform „' + esc(s.minimal) + '" dauerhaft in deinen Standard aufnehmen?</p>' +
+            '<button class="btn btn-primary btn-sm" data-etmin="' + esc(s.point_id) + '">Minimalform dauerhaft ergänzen</button></div>';
+        } else if (ent === "nicht_behalten" && punkt.standard.aktiv !== false) {
+          offeneAktion = '<div class="et-act"><p class="small">Diesen Standard nicht dauerhaft beibehalten? Er bleibt in deiner Historie und in allen früheren Prüfungen erhalten.</p>' +
+            '<button class="os-ghost" data-etretire="' + esc(s.point_id) + '">Nicht dauerhaft beibehalten — bestätigen</button></div>';
+        }
+      }
+      return '<div class="et-res"><b>' + esc(s.label) + '</b>' +
+        '<p class="et-meta">Bereich ' + esc(s.bereich) + ' · ' + esc(fmtD(t.started_at)) + '–' + esc(fmtD(t.until)) + '</p>' +
+        '<p class="et-tally">Normalform ' + (z.normal || 0) + ' · Minimalform ' + (z.minimal || 0) +
+        ' · nicht umgesetzt ' + (z.nein || 0) + ' · nicht beurteilbar ' + ((z.unklar || 0) + (z.offen || 0)) + '</p>' +
+        (r.hindernis ? '<p class="et-meta">Häufigstes Hindernis: ' + esc(ET_HIND[r.hindernis] || r.hindernis) + '</p>' : '') +
+        '<p class="et-verdict">' + esc(ET_VERDICT[r.verdict] || r.verdict) + '</p>' +
+        (ent ? '<p class="et-meta">Entscheidung: ' + esc(ET_ENTSCH[ent] || ent) + '</p>' : '') +
+        (punkt && punkt.standard && punkt.standard.aktiv === false ? '<p class="et-meta">Nicht mehr als aktiver Standard geführt — die Historie bleibt erhalten.</p>' : '') +
+        offeneAktion + '</div>';
+    }).join("");
+    return sec("Alltagstest · Ergebnis",
+      '<div class="os-etbox"><p class="muted small" style="margin:0 0 10px">Abgeschlossen am ' + esc(fmtD(t.completed_at)) + ' — dieses Ergebnis bleibt unverändert.</p>' +
+      inner + '</div>');
+  }
+
+  /* --- 12-WOCHEN-ABSCHLUSS: nur vorhandene Daten, keine zweite Bewertung. */
+  function abschlussUebersicht(p, d) {
+    var P = window.MM && MM.points;
+    var punkte = [], massnahmen = [], stds = [];
+    try {
+      if (P && P.points) { punkte = P.points(); massnahmen = P.measures(); stds = P.standards(); }
+    } catch (e) {}
+    var auftraege = [];
+    try { auftraege = (MM.focus && MM.focus.history) ? MM.focus.history() : []; } catch (e) {}
+    var t = OS.everydayTest ? OS.everydayTest() : null;
+
+    var zeilen = [];
+    var start = MM.store.get("c2_start", "");
+    if (start) zeilen.push(["Programmbeginn", fmtD(start)]);
+    if (p && (p.week >= 12 || p.over)) zeilen.push(["Aktueller Stand", "Woche " + (p.week || 12) + " von 12"]);
+    var b = OS.baseline() || {};
+    if (b.score && d && d.hasScore && d.score != null) zeilen.push(["Score", b.score + " → " + d.score]);
+    else if (d && d.hasScore && d.score != null) zeilen.push(["Score", String(d.score)]);
+    if (d && (d.bottleneckName || d.bottleneck)) zeilen.push(["Ausgangsengpass", d.bottleneckName || d.bottleneck]);
+    var bearbeitet = punkte.filter(function (x) { return x.status !== "erkannt"; }).length;
+    if (punkte.length) zeilen.push(["Optimierungspunkte", bearbeitet + " von " + punkte.length + " bearbeitet"]);
+    var fertigeAuftraege = auftraege.filter(function (a) { return a && a.started; }).length;
+    if (fertigeAuftraege) zeilen.push(["Abgeschlossene Aufträge", String(fertigeAuftraege)]);
+    var geprueft = massnahmen.filter(function (m) { return m.measure_decision; }).length;
+    if (massnahmen.length) zeilen.push(["Geprüfte Maßnahmen", geprueft + " von " + massnahmen.length]);
+    if (stds.length) zeilen.push(["Persönliche Standards", String(stds.length)]);
+    if (t && t.completed_at) {
+      var kurz = t.standards.map(function (s) {
+        var r = (t.results || {})[s.point_id];
+        return s.label + ": " + (ET_VERDICT[r && r.verdict] || "—");
+      }).join(" · ");
+      zeilen.push(["Alltagstest", kurz]);
+    }
+
+    /* Offene Prüfungen verschwinden nie — der Abschluss beendet sie nicht. */
+    var offeneW = [];
+    try { offeneW = (MM.focus && MM.focus.wirkungOffeneListe) ? (MM.focus.wirkungOffeneListe() || []) : []; } catch (e) {}
+    var offeneM = massnahmen.filter(function (m) { return !m.abgeschlossen; });
+    var offen = "";
+    if (offeneW.length || offeneM.length) {
+      offen = '<div class="os-etopen"><span class="tag">OFFENE PRÜFUNGEN</span>' +
+        offeneW.map(function (w) {
+          return '<p>Wirkungsprüfung: ' + esc(w.title || w.domain || "Auftrag") +
+            (w.wirkungBis ? ' · fällig ' + esc(fmtD(w.wirkungBis)) : '') + '</p>';
+        }).join("") +
+        offeneM.map(function (m) {
+          return '<p>Maßnahmenprüfung: ' + esc(m.measure_label_snapshot || m.title) + ' · ' + esc(m.statusLabel) +
+            (m.review_date ? ' · Prüfung ' + esc(fmtD(m.review_date)) : '') + '</p>';
+        }).join("") +
+        '<p class="small muted">Diese Vorgänge bleiben offen. Der Programmabschluss beendet und bewertet sie nicht.</p></div>';
+    }
+
+    if (!zeilen.length && !offen) return "";
+    return '<div class="os-etsum"><span class="tag">DURCHLAUF IM ÜBERBLICK</span>' +
+      zeilen.map(function (z) { return '<div class="et-row"><b>' + esc(z[0]) + '</b><span>' + esc(z[1]) + '</span></div>'; }).join("") +
+      '<p class="small muted" style="margin-top:8px">Zusammengestellt aus deinen vorhandenen Einträgen. Was ein einzelner Schritt bewirkt hat, lässt sich daraus nicht ableiten.</p>' +
+      offen + '</div>' + naechsteEntscheidung();
+  }
+
+  /* Genau EINE nächste Hauptentscheidung — nichts davon läuft automatisch. */
+  function naechsteEntscheidung() {
+    return '<div class="os-etnext"><span class="tag">DEINE NÄCHSTE ENTSCHEIDUNG</span>' +
+      '<p class="small muted" style="margin:6px 0 10px">Eine Sache. Du entscheidest, nichts startet von selbst.</p>' +
+      '<label class="et-sel"><span class="vh">Nächste Entscheidung</span><select id="etNext">' +
+      '<option value="">— bitte wählen —</option>' +
+      '<option value="standards">Persönliche Standards weiterführen</option>' +
+      '<option value="punkt">Einen offenen Optimierungspunkt bearbeiten</option>' +
+      '<option value="wirkung">Eine offene Wirkung prüfen</option>' +
+      '<option value="neu">Einen neuen 12-Wochen-Durchlauf vorbereiten</option>' +
+      '<option value="stabil">Zunächst stabilisieren</option>' +
+      '<option value="abklaerung">Weitere Abklärung</option>' +
+      '</select></label><p class="small muted" id="etNextOut" style="margin:8px 0 0"></p></div>';
+  }
+
   function realityCheck(goalTxt, timeTxt, realTxt) {
     return '<div class="os-reality"><span class="tag">REALITY CHECK</span><div class="row"><span>Ziel</span><b>' + esc(goalTxt) + '</b></div><div class="row"><span>Zeit</span><b>' + esc(timeTxt) + '</b></div><div class="verdict">' + esc(realTxt) + '</div></div>';
   }
@@ -409,6 +703,10 @@
           (pr.type === "change" ? '<button class="btn btn-primary btn-sm" data-propapply>Übernehmen ✓</button>' : (pr.deepLink ? '<a class="btn btn-primary btn-sm" href="' + esc(pr.deepLink) + '">Ansehen →</a>' : '')) +
           '<button class="os-ghost" data-propdismiss="' + esc(pr.key) + '">Nicht jetzt</button></div></div>';
       }
+
+      // ALLTAGSTEST (Paket 8) — tägliche Erfassung auf der bestehenden
+      // Heute-Fläche. Keine eigene Seite, keine neue Navigation.
+      html += alltagstestHeute();
 
       // WAITING FOR DATA (§30/§31) — Entscheidung wartet bewusst. KEEP PLAN.
       if (day.waiting) {
@@ -1042,6 +1340,11 @@
         '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-dark btn-sm" data-sharecard="45">Card 4:5 (Feed) ↓</button><button class="btn btn-dark btn-sm" data-sharecard="916">Card 9:16 (Story) ↓</button></div></div>';
     }
 
+    /* ALLTAGSTEST (Paket 8) — Transferphase im BESTEHENDEN Abschlussfenster:
+       nach der Umsetzungsphase, vor dem endgültigen Programmabschluss. Keine
+       dreizehnte Woche, keine Verschiebung bestehender Programmtermine. */
+    if (p.active && (p.week >= 12 || p.over)) html += alltagstestBlock();
+
     // §66/§67 — W12: Transformation Report + Next Cycle
     if (p.active && (p.week >= 12 || p.over)) {
       var rec = E.nextCycleRecommendation({ mode: d.mode, waistNow: waN ? waN.value : null, weightDelta: (w0 && wN) ? wN.value - w0.value : null, waistDelta: (wa0 && waN) ? waN.value - wa0.value : null, strengthPct: trend ? trend.pct : null, executionPct: p.consistency });
@@ -1053,7 +1356,10 @@
         '<div class="rrow"><span>NEXT MOVE</span><b>' + esc(MODE[rec.mode] || rec.mode) + (rec.repeatFoundation ? " (Fundament wiederholen)" : "") + '</b></div>' +
         '<p class="small" style="margin-top:8px">' + rec.why.map(esc).join(" ") + '</p>' +
         '<p class="small muted">Abschließen &amp; archivieren macht diesen Durchlauf unveränderlich und öffnet den nächsten.</p>' +
-        '<button class="btn btn-primary btn-sm" id="cycDone">Durchlauf abschließen →</button></div>');
+        '<button class="btn btn-primary btn-sm" id="cycDone">Durchlauf abschließen →</button></div>' +
+        /* Konsolidierte Übersicht aus vorhandenen Daten — keine zweite
+           Gesamtbewertung, keine Erfolgspunktzahl, keine Kausalitätsaussage. */
+        abschlussUebersicht(p, d));
     }
 
     /* OPTIMIERUNGSPUNKTE (Paket 3) — kompakt in der bestehenden Ansicht,
@@ -1073,7 +1379,10 @@
   function optPointsSection() {
     if (!(MM.points && MM.points.list)) return "";
     var pts = [];
-    try { pts = MM.points.list(); } catch (e) { return ""; }
+    /* Nur Optimierungspunkte. Maßnahmen liegen in derselben kanonischen Liste
+       und wurden hier vorher mitgerendert — sie haben aber ihren eigenen
+       Block („Maßnahmen prüfen") und sind kein Optimierungspunkt (Paket 8). */
+    try { pts = MM.points.points ? MM.points.points() : MM.points.list().filter(function (p) { return !p.istMassnahme; }); } catch (e) { return ""; }
     if (!pts.length) return "";
     var offen = pts.filter(function (p) { return !p.abgeschlossen; });
     var fertig = pts.filter(function (p) { return p.abgeschlossen; }).slice(-3);
@@ -1938,6 +2247,37 @@
       }
       var mnNo = t.closest("[data-mnnostd]"); if (mnNo) { MM.points.declineStandard(mnNo.getAttribute("data-mnnostd")); render(); return; }
       var mnIcs = t.closest("[data-mnics]"); if (mnIcs) { massnahmeIcs(mnIcs.getAttribute("data-mnics")); return; }
+      /* --- Alltagstest (Paket 8): jeder Schritt ist eine ausdrückliche
+         Handlung. Kein Start, keine Entscheidung und keine Änderung an einem
+         persönlichen Standard geschieht automatisch. --- */
+      var etD = t.closest("[data-etday]");
+      if (etD) {
+        OS.setEverydayDay(etD.getAttribute("data-etpt"), etD.getAttribute("data-etday"));
+        render(); return;
+      }
+      if (t.closest("#etStart")) { startAlltagstest(); return; }
+      if (t.closest("#etDone")) {
+        var fertig = OS.completeEverydayTest();
+        if (!fertig) { if (MM.toast) MM.toast("Bitte für jeden Standard eine Entscheidung wählen."); return; }
+        if (MM.toast) MM.toast("Ergebnisprüfung abgeschlossen.");
+        render(); return;
+      }
+      if (t.closest("#etIcs")) { alltagstestIcs(); return; }
+      var etMin = t.closest("[data-etmin]");
+      if (etMin) {
+        var pidM = etMin.getAttribute("data-etmin");
+        var tt = OS.everydayTest() || { standards: [] };
+        var sM = (tt.standards || []).filter(function (x) { return x.point_id === pidM; })[0];
+        if (sM && MM.points.refineStandard) MM.points.refineStandard(pidM, { minimal: sM.minimal });
+        if (MM.toast) MM.toast("Minimalform dauerhaft ergänzt.");
+        render(); return;
+      }
+      var etRet = t.closest("[data-etretire]");
+      if (etRet) {
+        if (MM.points.retireStandard) MM.points.retireStandard(etRet.getAttribute("data-etretire"), "alltagstest");
+        if (MM.toast) MM.toast("Nicht mehr als aktiver Standard geführt — die Historie bleibt.");
+        render(); return;
+      }
       if (t.closest("#blSave")) { saveBaselineFromForm(); return; }
       if (t.closest("#txGo")) { runTransform(); return; }
       if (t.closest("#txReset")) { MM.store.remove("os_transformation"); render(); return; }
@@ -2055,6 +2395,14 @@
         OS.savePhoto(week, angle, fi.files[0]).then(function () { var st = document.getElementById("ph_" + angle); if (st) st.textContent = "✓ gespeichert (W" + week + ")"; });
         return;
       }
+      /* ---- Alltagstest (Paket 8): Hindernis und Entscheidung erfassen. Beides
+         wird gespeichert, aber nichts davon verändert einen persönlichen
+         Standard — dafür braucht es die ausdrückliche Bestätigung. ---- */
+      var eh = e.target.closest("[data-ethind]");
+      if (eh) { OS.setEverydayObstacle(eh.getAttribute("data-ethind"), e.target.value); return; }
+      var ed = e.target.closest("[data-etdec]");
+      if (ed) { if (e.target.value) OS.setEverydayDecision(ed.getAttribute("data-etdec"), e.target.value); return; }
+      if (e.target.id === "etNext") { zeigeNaechsteEntscheidung(e.target.value); return; }
       /* ---- Phase 6 Settings: sofort persistieren, kein Save-Button nötig ---- */
       var id = e.target.id;
       if (id === "rmEnabled") { X.setReminderPrefs({ enabled: e.target.checked }); render(); return; }
@@ -2249,6 +2597,71 @@
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
     } catch (e) {}
+  }
+
+  /* Start des Alltagstests — ausschließlich aus der ausdrücklichen
+     Bestätigung. Die Vorauswahl im Formular startet nichts. */
+  function startAlltagstest() {
+    var box = document.getElementById("etStartBox"); if (!box) return;
+    var ids = Array.prototype.slice.call(box.querySelectorAll(".etSel"))
+      .filter(function (c) { return c.checked; }).map(function (c) { return c.value; });
+    if (!ids.length) { if (MM.toast) MM.toast("Wähle mindestens einen persönlichen Standard."); return; }
+    if (ids.length > OS.ET_MAX_STANDARDS) {
+      if (MM.toast) MM.toast("Höchstens " + OS.ET_MAX_STANDARDS + " Standards gleichzeitig — sonst wird das Ergebnis nicht mehr deutbar.");
+      return;
+    }
+    /* Eine optionale Minimalform wird VOR dem Start festgelegt, nie danach. */
+    var minima = {};
+    Array.prototype.slice.call(box.querySelectorAll(".etMin")).forEach(function (i) {
+      if (i.value && i.value.trim()) minima[i.getAttribute("data-etpt")] = i.value.trim();
+    });
+    var t = OS.startEverydayTest(ids, minima);
+    if (!t) { if (MM.toast) MM.toast("Alltagstest konnte nicht gestartet werden."); return; }
+    if (MM.toast) MM.toast("Alltagstest gestartet — Ergebnisprüfung am " + fmtD(t.review_date) + ".");
+    render();
+  }
+
+  /* Ein einzelner Prüfungstermin, gleiche Form wie die übrigen Kalenderausgaben. */
+  function alltagstestIcs() {
+    var t = OS.everydayTest ? OS.everydayTest() : null;
+    if (!t || !t.review_date) return;
+    var plus1 = function (s) { return addDay(s, 1).replace(/-/g, ""); };
+    var flat = function (s) { return String(s).replace(/-/g, ""); };
+    var esc2 = function (s) { return String(s || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n"); };
+    var desc = "Standards: " + t.standards.map(function (s) { return s.label; }).join(" | ") +
+      " | Zeitraum: " + t.started_at + " bis " + t.until +
+      " | Geprueft wird die Alltagstauglichkeit, nicht Perfektion.";
+    var ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//MaleMetrix//Alltagstest//DE",
+      "BEGIN:VEVENT",
+      /* Stabile UID — ein erneuter Export erzeugt keinen zweiten Termin. */
+      "UID:mm-et-" + flat(t.started_at) + "-" + flat(t.review_date) + "@malemetrix",
+      "DTSTART;VALUE=DATE:" + flat(t.review_date),
+      "DTEND;VALUE=DATE:" + plus1(t.review_date),
+      "SUMMARY:" + esc2("Ergebnisprüfung: Alltagstest"),
+      "DESCRIPTION:" + esc2(desc),
+      "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+    try {
+      var url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
+      var a = document.createElement("a");
+      a.href = url; a.download = "malemetrix-alltagstest.ics";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    } catch (e) {}
+  }
+
+  /* Die nächste Hauptentscheidung wird benannt, nie ausgeführt: kein neuer
+     Durchlauf, kein Auftrag und keine Maßnahme startet von hier aus. */
+  function zeigeNaechsteEntscheidung(wahl) {
+    var out = document.getElementById("etNextOut"); if (!out) return;
+    var texte = {
+      standards: "Deine persönlichen Standards bleiben, wie sie sind. Du findest sie im Tracker.",
+      punkt: "Öffne deine Optimierungspunkte und wähle den, den du als Nächstes bearbeitest.",
+      wirkung: "Deine offenen Wirkungsprüfungen stehen im Tracker bereit, sobald du sie beurteilen kannst.",
+      neu: "Einen neuen Durchlauf startest du bewusst im Programm — hier passiert das nicht automatisch.",
+      stabil: "Nichts ändern ist eine vollwertige Entscheidung. Halte, was trägt.",
+      abklaerung: "Sprich die offenen Punkte ärztlich ab, bevor du weitergehst."
+    };
+    out.textContent = texte[wahl] || "";
   }
 
   function saveStack() {

@@ -382,6 +382,96 @@ Punkt werden nicht verhindert, sondern benannt: „Mehrere Veränderungen laufen
 gleichzeitig. Die Wirkung lässt sich dadurch schwerer eindeutig zuordnen."
 Kein automatisches negatives Urteil, keine Zusammenlegung.
 
+## Alltagstest und 12-Wochen-Abschluss (Paket 8)
+
+**Alltagstest** ist die Abschluss- und Transferphase des bestehenden
+12-Wochen-Durchlaufs. Er beantwortet genau eine Frage: *Bleiben bereits
+bewusst übernommene persönliche Standards auch an normalen, unperfekten
+Alltagstagen umsetzbar?*
+
+Er ist ausdrücklich **kein** zweiter Score, kein Premium-Experiment, kein
+weiterer Auftrag, keine Fokusphase, keine Maßnahmenprüfung, kein neues
+Tracking-System und keine medizinische Belastungsprüfung.
+
+**Position:** innerhalb des vorhandenen Abschlussfensters (ab Woche 12),
+vor dem endgültigen Programmabschluss. Die sieben Tage sind ein
+organisatorischer Prüfzeitraum, keine Wirkfrist und keine dreizehnte Woche:
+`c2_start` und die Programmdauer von 84 Tagen bleiben unberührt.
+
+**Voraussetzung:** mindestens ein ausdrücklich bestätigter persönlicher
+Standard. Ein Optimierungspunkt, eine laufende oder ungeprüfte Maßnahme, eine
+offene Wirkung, ein Score-Engpass oder ein Protokollkapitel genügen nie.
+
+**Auswahl:** ein bis drei Standards, bewusst bestätigt. Eine Vorauswahl (die
+zuletzt übernommenen) füllt das Formular vor und startet nichts.
+
+**Normalform und Minimalform:** Eine vorhandene Minimalform aus dem
+kanonischen Standard wird verwendet, nie kopiert oder ersetzt. Fehlt sie, wird
+keine erfunden; der Nutzer darf vor dem Start optional eine festlegen. Diese
+Rückfalloption überschreibt den bestehenden Standard nicht — sie gilt nur für
+diesen Alltagstest und kann nicht nachträglich, in Kenntnis des Ergebnisses,
+bestimmt werden.
+
+**Tageswerte — vier getrennte Angaben:** Normalform · Minimalform · heute
+nicht umgesetzt · nicht beurteilbar. Fehlende Daten gelten weder als umgesetzt
+noch als nicht umgesetzt. Zukünftige Tage werden nie bewertet.
+
+**Minimalform ist kein Scheitern.** Sie zählt voll als Umsetzung; der
+Alltagstest ist keine Perfektionsprüfung.
+
+**Messdaten:** ausschließlich lesend über die vorhandene Auswertung aus
+Paket 5, mit benannter Herkunft. Sie schlagen vor, entscheiden nie und
+überschreiben nie eine manuelle Angabe. Keine neue Automatikregel.
+
+**Einordnung** (bewusst grob und transparent, bewertet den Standard, nie den
+Nutzer): **Alltagstauglich** · **Teilweise stabil** · **Noch nicht stabil** ·
+**Noch nicht beurteilbar**. Ein Verträglichkeitshinweis schließt
+„Alltagstauglich" aus. Keine Erfolgsquote, keine Scheingenauigkeit.
+
+**Hindernis:** höchstens eines je problematischem Standard, optional, aus
+einer kompakten Liste. Keine Ursachenanalyse, keine Freitextpflicht.
+
+**Entscheidungen:** Standard unverändert beibehalten · Minimalform dauerhaft
+ergänzen · Standard vereinfachen · erneut im Alltag testen · vorerst
+pausieren · nicht dauerhaft beibehalten · weitere Abklärung. Keine davon
+geschieht automatisch.
+
+**Änderung eines Standards:** nur nach ausdrücklicher Bestätigung und immer
+additiv. „Minimalform dauerhaft ergänzen" schreibt `standard.minimal` und
+setzt `angepasstAm`. „Nicht dauerhaft beibehalten" setzt `standard.aktiv =
+false` samt `beendetAm` — der Standard wird nie gelöscht und verschwindet nie
+aus vergangenen Prüfungen.
+
+**Eingefroren:** Ein abgeschlossener Alltagstest bleibt unverändert. Spätere
+Tracker-, Messwert- oder Titeländerungen berühren sein Ergebnis nicht.
+
+**Speicher:** additiv am bestehenden Programmzustand (`os_cycle.everyday`).
+Gespeichert werden nur Referenzen auf Standards, der Zeitraum, die täglichen
+Entscheidungen, das Ergebnis und die Abschlussentscheidung — nie eine Kopie
+des Standards und nie eine Kopie von Messdaten. Kein neuer Speicherkey, keine
+Tabelle, keine Migration.
+
+**12-Wochen-Abschluss:** eine konsolidierte Übersicht ausschließlich aus
+vorhandenen Daten. Keine zweite Gesamtbewertung neben dem MaleMetrix Score,
+keine Erfolgspunktzahl, keine erfundenen Vorher-Nachher-Aussagen und keine
+Kausalitätsbehauptung. Offene Wirkungs- und Maßnahmenprüfungen bleiben
+sichtbar; der Abschluss beendet und bewertet sie nicht.
+
+**Nächste Entscheidung:** genau eine, benannt statt ausgeführt. Kein neuer
+Durchlauf, kein Auftrag, keine Maßnahme und kein Standard startet von dort.
+
+**Objektarten in `mm_opt_points`:** `entity_type` unterscheidet
+`optimization_point` und `measure` ausdrücklich. Alt-Einträge ohne das Feld
+werden zur Laufzeit deterministisch aus ihrer vorhandenen Form eingeordnet —
+kein Massen-Umschreiben. Duplikatregeln und Leser gelten je Objektart
+getrennt: eine Maßnahme erscheint nirgends als Optimierungspunkt und
+umgekehrt.
+
+**Aufbewahrung:** die Liste bleibt bei 60 Einträgen gekappt, aber nach
+fachlicher Priorität statt nach Alter — offene Optimierungspunkte, offene
+Maßnahmen, offene Prüfungen und persönliche Standards vor abgeschlossener
+Historie.
+
 ## Noch offen (spätere Pakete)
 
 - Bereichswert im Tracker / in My MaleMetrix: bewusst nicht in Paket 4.

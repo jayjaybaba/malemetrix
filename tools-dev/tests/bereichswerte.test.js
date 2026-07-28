@@ -260,7 +260,10 @@ group("7 · Begründung aus vorhandenen Daten, ohne erfundene Ursache (T21, T22,
 /* ==================================================================== 8 */
 group("8 · Optimierungspunkte nur lesend (T26, T27, T38)");
 (function () {
-  ok(/MM\.points && MM\.points\.list/.test(AREA_BLOCK), "die Ergebnisseite liest die bestehende Punktliste (T26)");
+  /* Seit Paket 8 über den typgetrennten Leser: eine Maßnahme trägt den Bereich
+     ihres Punktes und darf hier nicht als eigener Punkt erscheinen. Lesend
+     bleibt es unverändert. */
+  ok(/MM\.points && MM\.points\.points/.test(AREA_BLOCK), "die Ergebnisseite liest die bestehende Punktliste (T26)");
   ok(!/points\.upsert|points\.fromFocus|points\.setStatus|points\.adoptStandard/.test(AREA_CODE),
     "die Bereichsdarstellung schreibt nie in mm_opt_points (T26/T27)");
   ok(!/opt_points/.test(AREA_CODE), "kein direkter Speicherzugriff an der Punktliste vorbei (T26)");

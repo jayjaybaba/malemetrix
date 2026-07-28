@@ -128,7 +128,8 @@ group("3 · Ausdrücklicher Start und stabile Referenz (T10–T15)");
   ok(m.measure_label_snapshot === "Magnesium (abends)", "der Anzeigename liegt als Snapshot bei (T65)");
   ok(!m.evidence && !m.costMo && !m.why && !m.aliases, "kein vollständiger Katalogeintrag wird kopiert (T16)");
   ok(!m.baseline_snapshot, "ohne Ausgangswert wird keiner erfunden (T32)");
-  ok(Object.keys(m).length < 32, "die gespeicherte Struktur bleibt schlank (" + Object.keys(m).length + " Felder) (§24)");
+  /* Paket 8 ergänzt genau ein Feld: den expliziten Typkennzeichner. */
+  ok(Object.keys(m).length < 33, "die gespeicherte Struktur bleibt schlank (" + Object.keys(m).length + " Felder) (§24)");
 
   /* T13: identische aktive Referenz ⇒ kein Duplikat. */
   const n = c.P.list().length;

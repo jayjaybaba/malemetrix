@@ -64,7 +64,37 @@
     return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
   }
   function stamp() { return new Date().toISOString(); }
-  function uid() { var c = (S.get(SEQ, 0) || 0) + 1; S.set(SEQ, c); return "pt_" + c; }
+
+  /* KOLLISIONSFREIE ID (Paket 8).
+     Der Zähler allein genügt nicht. mm_opt_points wird geräteübergreifend per
+     Vereinigung zusammengeführt (registerStateDomain … append), mm_opt_seq
+     NICHT. Nach einem Merge, einer Kontowiederherstellung oder einem
+     Teil-Import kann der lokale Zähler also hinter der Liste liegen — dann
+     vergibt uid() eine bereits belegte ID. Folge: get()/mutate() treffen die
+     erste Zeile mit dieser ID, also die falsche, und beim nächsten Merge
+     verdrängen sich zwei fachlich verschiedene Einträge gegenseitig.
+     Deshalb: Zähler hinter den höchsten vergebenen Wert ziehen, gegen die
+     vorhandenen IDs prüfen und einen kurzen zufälligen Teil anhängen, damit
+     zwei Geräte nicht dieselbe nächste Nummer für verschiedene Einträge
+     vergeben. Alt-IDs (pt_1, pt_2 …) bleiben unverändert gültig. */
+  function suffix() {
+    try {
+      var a = new Uint8Array(2); crypto.getRandomValues(a);
+      return a[0].toString(16).padStart(2, "0") + a[1].toString(16).padStart(2, "0");
+    } catch (e) { return Math.floor(Math.random() * 65536).toString(16).padStart(4, "0"); }
+  }
+  function uid() {
+    var l = raw(), belegt = {}, c = S.get(SEQ, 0) || 0;
+    for (var i = 0; i < l.length; i++) {
+      belegt[l[i].id] = 1;
+      var n = /^pt_(\d+)/.exec(String(l[i].id || ""));
+      if (n && +n[1] > c) c = +n[1];
+    }
+    var id;
+    do { c++; id = "pt_" + c + "_" + suffix(); } while (belegt[id]);
+    S.set(SEQ, c);
+    return id;
+  }
 
   /* ----------------------------------------------------------- ZUSTÄNDE ---
      Bewusst nur sieben interne Zustände — je einer pro sichtbarer Gruppe.
@@ -90,7 +120,33 @@
   /* -------------------------------------------------------------- LESEN --- */
 
   function raw() { var l = S.get(KEY, []); return Array.isArray(l) ? l : []; }
-  function save(l) { S.set(KEY, l.slice(-MAX)); }
+
+  /* AUFBEWAHRUNG (Paket 8) — die Liste bleibt gekappt, aber sie kappt nicht
+     mehr nach Alter allein. Vorher verdrängten viele abgeschlossene
+     Maßnahmen den ältesten Eintrag, und das konnte ein noch offener
+     Optimierungspunkt sein, an dem gerade gearbeitet wird.
+     Reihenfolge des Erhalts (Rang 0 zuerst):
+       0 offener Optimierungspunkt · 1 offene Maßnahme · 2 offene Prüfung
+       3 persönlicher Standard · 4 abgeschlossene Historie (jüngere zuerst)
+     Keine unbegrenzte Speicherung, keine neue Liste, keine neue Tabelle. */
+  var OFFENE_PRUEFUNG = { pruefung_faellig: 1, wirkung_offen: 1 };
+  function keepRank(e) {
+    var d = decorate(e);
+    if (!d.abgeschlossen) return d.istMassnahme ? 1 : 0;
+    if (OFFENE_PRUEFUNG[d.status]) return 2;
+    if (d.standard && d.standard.bestaetigt) return 3;
+    return 4;
+  }
+  function save(l) {
+    if (l.length <= MAX) { S.set(KEY, l); return; }
+    var bewertet = l.map(function (e, i) { return { i: i, r: keepRank(e) }; });
+    /* Gleicher Rang ⇒ der jüngere Eintrag bleibt (höherer Index). */
+    bewertet.sort(function (a, b) { return a.r - b.r || b.i - a.i; });
+    var behalten = {};
+    bewertet.slice(0, MAX).forEach(function (x) { behalten[x.i] = 1; });
+    /* Die chronologische Reihenfolge der verbleibenden Einträge bleibt. */
+    S.set(KEY, l.filter(function (e, i) { return behalten[i]; }));
+  }
 
   function focusRef(e) { return (e && e.domain ? e.domain : "") + ":" + (e && e.started ? e.started : ""); }
 
@@ -164,11 +220,20 @@
     out.abgeschlossen = out.status === "abgeschlossen";
     out.standard = p.standard || null;
     out.istMassnahme = isMeasure(p);
+    /* Typ explizit und stabil (Paket 8). Alt-Einträge tragen ihn nicht; er
+       wird zur Laufzeit deterministisch aus der bereits vorhandenen Form
+       abgeleitet — kein Massen-Umschreiben, keine Migration. */
+    out.entity_type = p.entity_type || (out.istMassnahme ? "measure" : "optimization_point");
     return out;
   }
 
   function list() { return raw().map(decorate); }
   function active() { return list().filter(function (p) { return !p.abgeschlossen; }); }
+  /* Getrennte Leser, damit kein Konsument die beiden Objektarten vermischt:
+     eine Maßnahme ist kein Optimierungspunkt und darf nirgends als einer
+     erscheinen (und umgekehrt). */
+  function points() { return list().filter(function (p) { return p.entity_type === "optimization_point"; }); }
+  function measures() { return list().filter(function (p) { return p.entity_type === "measure"; }); }
   function get(id) { var l = list(); for (var i = 0; i < l.length; i++) { if (l[i].id === id) return l[i]; } return null; }
 
   /* ==================== MASSNAHMEN (Paket 7) ==============================
@@ -266,6 +331,7 @@
       optimization_point_id: o.optimization_point_id,
       measure_source: o.measure_source,
       measure_id: String(o.measure_id),
+      entity_type: "measure",
       measure_started_at: start,
       observation_days: tage,
       review_date: addDays(start, tage),
@@ -362,12 +428,18 @@
   }
   function findDuplicate(data) {
     var l = raw();
+    /* Die Duplikatregeln gelten je Objektart getrennt. upsert() erzeugt und
+       aktualisiert ausschließlich Optimierungspunkte; Maßnahmen laufen über
+       findMeasureIdx. Ohne diese Grenze könnte ein Punkt eine gleichnamige
+       Maßnahme überschreiben (Paket 8). */
     for (var i = 0; i < l.length; i++) {
+      if (isMeasure(l[i])) continue;
       if (l[i].source_type === data.source_type && data.source_id && l[i].source_id === data.source_id) return i;
     }
     if (!data.title) return -1;
     var n = norm(data.title);
     for (var k = 0; k < l.length; k++) {
+      if (isMeasure(l[k])) continue;
       var d = decorate(l[k]);
       if (d.abgeschlossen) continue;
       if (l[k].source_type !== data.source_type) continue;
@@ -399,7 +471,7 @@
       return decorate(l[idx]);
     }
     var neu = Object.assign({
-      id: uid(), created: ymd(), status: "erkannt",
+      id: uid(), created: ymd(), status: "erkannt", entity_type: "optimization_point",
       area: "", areaLabel: "", title: "", origin: "manuell",
       source_type: "manual", source_id: null,
       measure_summary: "", review_date: null, effect_review_date: null,
@@ -511,12 +583,44 @@
     var p = get(id); if (!p) return null;
     return mutate(id, { standard: null, status: "abgeschlossen", completed_at: ymd() });
   }
+
+  /* ------------------------------------------- STANDARD NACHSCHÄRFEN (P8) -
+     Ergebnisse des Alltagstests dürfen einen Standard ergänzen oder außer
+     Kraft setzen — beides ausschließlich nach ausdrücklicher Bestätigung und
+     beides ADDITIV. Der Standard wird nie gelöscht und verschwindet nie aus
+     vergangenen Prüfungen; nur sein sichtbarer aktiver Zustand ändert sich. */
+  function refineStandard(id, angaben) {
+    var p = get(id); if (!p || !p.standard || !p.standard.bestaetigt) return null;
+    angaben = angaben || {};
+    var neu = Object.assign({}, p.standard);
+    if (angaben.minimal != null) neu.minimal = String(angaben.minimal).slice(0, 120);
+    if (angaben.was) neu.was = String(angaben.was).slice(0, 160);
+    neu.angepasstAm = ymd();
+    neu.angepasstDurch = angaben.quelle || "alltagstest";
+    return mutate(id, { standard: neu });
+  }
+  /* „Nicht dauerhaft beibehalten" — der Eintrag bleibt vollständig lesbar. */
+  function retireStandard(id, grund) {
+    var p = get(id); if (!p || !p.standard || !p.standard.bestaetigt) return null;
+    var neu = Object.assign({}, p.standard, {
+      aktiv: false, beendetAm: ymd(), beendetGrund: grund || "alltagstest"
+    });
+    return mutate(id, { standard: neu });
+  }
+  /* Sichtbar gültige Standards. Alt-Einträge ohne `aktiv` bleiben enthalten. */
   function standards() {
+    return list().filter(function (p) { return p.standard && p.standard.bestaetigt && p.standard.aktiv !== false; });
+  }
+  /* Vollständige Standard-Historie inklusive beendeter — für Rückblicke. */
+  function standardsAll() {
     return list().filter(function (p) { return p.standard && p.standard.bestaetigt; });
   }
 
   MM.points = {
     list: list, active: active, get: get,
+    /* Typgetrennte Leser (Paket 8) — verhindern, dass eine Maßnahme als
+       Optimierungspunkt gerendert wird oder umgekehrt. */
+    points: points, measures: measures,
     upsert: upsert, fromFocus: fromFocus, focusRef: focusRef,
     setStatus: setStatus, resume: resume, mutate: mutate,
     /* Maßnahmenverknüpfung (Paket 7) — lesen, starten, Ergebnis erfassen. */
@@ -527,6 +631,8 @@
     MEASURE_LABEL: MEASURE_LABEL, WIRKUNG: WIRKUNG, WIRKUNG_LABEL: WIRKUNG_LABEL, ALLTAG: ALLTAG, DECISION: DECISION,
     standardEmpfohlen: standardEmpfohlen,
     adoptStandard: adoptStandard, declineStandard: declineStandard, standards: standards,
+    /* Paket 8 — Ergebnis des Alltagstests bewusst auf den Standard anwenden. */
+    refineStandard: refineStandard, retireStandard: retireStandard, standardsAll: standardsAll,
     label: function (st) { return LABEL[st] || st; },
     STATUS: STATUS, LABEL: LABEL
   };

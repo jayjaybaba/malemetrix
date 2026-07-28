@@ -686,7 +686,9 @@
 
       /* Bereits vorhandene Optimierungspunkte werden NUR gelesen (Paket 3). */
       let punkte = [];
-      try { punkte = (window.MM && MM.points && MM.points.list) ? MM.points.list() : []; } catch (e) { punkte = []; }
+      /* Nur Optimierungspunkte: Maßnahmen tragen den Bereich ihres Punktes und
+         würden hier sonst als eigener Punkt des Bereichs erscheinen (Paket 8). */
+      try { punkte = (window.MM && MM.points && MM.points.points) ? MM.points.points() : []; } catch (e) { punkte = []; }
       const punktZu = (d) => punkte.filter(p => p.area === d && !p.abgeschlossen)[0] || null;
 
       /* Ein Bereichswert gehört zu SEINEM Score-Zeitpunkt. Er steigt nicht,

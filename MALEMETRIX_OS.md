@@ -204,7 +204,21 @@ Tests: `node tools-dev/tests/phase95.test.js` (37) — AES-Inhaltsgrenze, Autori
 | Cold-Start-Provenance | Map zeigt „was MaleMetrix als Nächstes lernt" + „auf Basis deiner Baseline" vs „aus deinem Verlauf"; KEEP zeigt „was würde das ändern?" (falsifizierbar) |
 | Chaos-Harness | `tools-dev/tests/chaos.test.js` (20): korrupter Store, malformed/doppelter ICS, Idempotenz (Completion/Day-Close), 800er-Historie, Müll-Einheiten, dünne Daten → 0 erfundene Muster. **Fand+fixte ICS-Duplikations-Bug** (addBusy dedupe + Re-Import = frischer Snapshot) |
 
-Tests: `node tools-dev/tests/phase96.test.js` (26) + `chaos.test.js` (20). Gesamt 2917 Assertions über 31 Suiten. SW: mm-v163.
+Tests: `node tools-dev/tests/phase96.test.js` (26) + `chaos.test.js` (20). Gesamt 3056 Assertions über 32 Suiten. SW: mm-v164.
+
+## Paket 8 — Alltagstest, 12-Wochen-Abschluss, Konsolidierung
+| Piece | What it does |
+|---|---|
+| Alltagstest | Transferprüfung im BESTEHENDEN Abschlussfenster (ab Woche 12), 7 organisatorische Tage, keine dreizehnte Woche. Prüft nur, ob bestätigte persönliche Standards im normalen Alltag tragen — kein zweiter Score, keine neue Wirkung. Additiv am Programmzustand (`os_cycle.everyday`), kein neuer Key |
+| Vier Tageswerte | Normalform · Minimalform · nicht umgesetzt · nicht beurteilbar. Minimalform zählt voll. Fehlende Daten gelten in keine Richtung. Messdaten aus Paket 5 nur lesend, mit Herkunft, nie schreibend |
+| Einordnung | Alltagstauglich · Teilweise stabil · Noch nicht stabil · Noch nicht beurteilbar. Bewertet den Standard, nie den Nutzer. Verträglichkeitshinweis schließt „alltagstauglich" aus |
+| Standardänderung | Nur nach ausdrücklicher Bestätigung und additiv: `refineStandard` (Minimalform ergänzen), `retireStandard` (`aktiv:false`, nie gelöscht, Historie bleibt) |
+| 12-Wochen-Abschluss | Konsolidierte Übersicht aus vorhandenen Daten neben dem bestehenden Transformation Report. Keine zweite Gesamtbewertung, keine Kausalität. Offene Wirkungs-/Maßnahmenprüfungen bleiben sichtbar und werden nicht automatisch geschlossen. Genau EINE nächste Entscheidung — benannt, nie ausgeführt |
+| mm_opt_points-Integrität | **Fand+fixte ID-Kollision**: `opt_points` merged geräteübergreifend (append), `opt_seq` nicht — ein hinterherhinkender Zähler vergab belegte IDs, `get`/`mutate` trafen die falsche Zeile. Jetzt kollisionsfreie, gerätedistinkte IDs. Zusätzlich `entity_type` (Alt-Einträge zur Laufzeit eingeordnet), typgetrennte Leser, Duplikatregeln je Objektart, Aufbewahrung nach fachlicher Priorität statt nach Alter |
+| Auditzahl gemessen | `tools-dev/count-assertions.mjs` führt jede Suite aus und zählt; `--write` schreibt die Zeile. Der bis Paket 7 fortgeschriebene Wert lag 67 zu hoch |
+| Browser-QA im Repo | `tools-dev/qa/` (10 Skripte, `run-all.mjs`) — vorher flüchtig, jetzt reproduzierbar |
+
+Tests: `node tools-dev/tests/alltagstest.test.js` (213) — Voraussetzungen, Auswahl, Minimalform, Tageswerte, Kalendertage über Monats-/Jahreswechsel und Zeitumstellung, Einordnung, Standardänderung nur nach Bestätigung, eingefrorenes Ergebnis, Score-Trennung, offene Prüfungen, ID-Eindeutigkeit, Aufbewahrung, keine zweite Wahrheit.
 
 ## Future modules (contract)
 tracker · nutrition-logging · stack-adherence · labs · wearables:
