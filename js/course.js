@@ -838,10 +838,9 @@
       if (t2.hasAttribute && t2.hasAttribute("data-energy")) { setEnergyDay(clampedDay(), Number(t2.value)); var lbl = document.getElementById("c2eVal"); if (lbl) lbl.textContent = t2.value + "/5"; return; }
       if (t2.classList && t2.classList.contains("c2-rc")) { var rc = rechecks(); var cp = t2.getAttribute("data-cp"); if (!rc[cp]) rc[cp] = {}; rc[cp][t2.getAttribute("data-m")] = t2.value; S.set("course_rechecks", rc); return; }
     });
-    var reset = document.getElementById("courseReset");
-    if (reset && !reset._c2) { reset._c2 = true; reset.addEventListener("click", function () {
-      // P52/P53/P101 — Neustart = neuer Zyklus. Alte Rechecks dürfen NICHT die Baseline des
-      // neuen Zyklus werden. Wir archivieren den alten Zyklus und starten mit sauberer Baseline.
+    // P52/P53/P101 — Neustart = neuer Zyklus. Alte Rechecks dürfen NICHT die Baseline des
+    // neuen Zyklus werden. Wir archivieren den alten Zyklus und starten mit sauberer Baseline.
+    function startNewCycle() {
       if (!confirm(EN() ? "Start a new 12-week cycle? Goal, bottleneck, start date, days, daily checks AND the recheck baseline (W0–W12) are cleared for a fresh cycle. Your previous cycle is archived — it will not be mixed into the new one." : "Neuen 12-Wochen-Zyklus starten? Ziel, Engpass, Startdatum, Tage, tägliche Häkchen UND die Recheck-Baseline (W0–W12) werden für einen frischen Zyklus zurückgesetzt. Dein bisheriger Zyklus wird archiviert — er wird nicht mit dem neuen vermischt.")) return;
       try {
         var rc = rechecks();
@@ -856,7 +855,15 @@
       ["c2_reassess_4", "c2_reassess_8", "c2_reassess_12"].forEach(function (k) { S.del(k); });
       obState = { goal: "", bottleneck: "", start: "today", nutrition: "simple", days: [1, 3, 5] };
       view = "today"; render(); window.scrollTo({ top: 0, behavior: "smooth" });
-    }); }
+    }
+    var reset = document.getElementById("courseReset");
+    if (reset && !reset._c2) { reset._c2 = true; reset.addEventListener("click", startNewCycle); }
+    /* Deep-Link aus der Comeback-Karte in My MaleMetrix: ?restart=1 öffnet
+       denselben Neustart-Flow (inkl. Sicherheitsabfrage) direkt. */
+    if (!window.__c2RestartHandled && /[?&]restart=1\b/.test(location.search)) {
+      window.__c2RestartHandled = true;
+      setTimeout(startNewCycle, 150);
+    }
     document.addEventListener("mm:langchange", function () { if (!content.hidden) render(); });
   }
   function openSwitch() {
