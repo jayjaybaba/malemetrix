@@ -47,3 +47,9 @@ verify_jwt = false
 # alles ohne korrektes SCHEDULER_SECRET mit 403 ab.
 [functions.send-brief]
 verify_jwt = false
+
+# mm-admin: Browser-Function mit ES256-Session-Token — identischer Fall wie
+# mm-ai/delete-account (P10/P0.6). Der Handler validiert den Bearer-Token
+# autoritativ (getUser) und autorisiert ausschliesslich Owner via user_roles.
+[functions.mm-admin]
+verify_jwt = false

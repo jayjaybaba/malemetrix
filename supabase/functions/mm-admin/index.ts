@@ -28,9 +28,8 @@ function istEmail(e: string): boolean {
 }
 
 Deno.serve(async (req) => {
-  const pre = preflight(req);
-  if (pre) return pre;
-  const cors = corsHeaders(req);
+  const cors = corsHeaders(req.headers.get("origin") || "");
+  if (req.method === "OPTIONS") return preflight(cors);
   const json = (d: unknown, s = 200) => jsonResponse(d, s, cors);
 
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
