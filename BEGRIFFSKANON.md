@@ -317,6 +317,71 @@ den Volltext.
 hinterlegt." Fehlt nur der Abschnitt, führt der Link höchstens ins richtige
 Kapitel — nie zu einem falschen Anker.
 
+## Maßnahmenprüfung (Paket 7, umgesetzt)
+
+Eine kleine Verbindungsschicht zwischen bestehendem Stack, bestehenden
+Optimierungspunkten und bestehenden Ergebnisprüfungen — **keine zweite
+Maßnahmenbibliothek und keine zweite Review-Engine**.
+
+| Begriff | Bedeutung |
+|---|---|
+| **Maßnahme** | Konkreter bestehender Stack-Eintrag (oder Protokollabschnitt), mit dem ein Optimierungspunkt bearbeitet wird |
+| **Vorgeschlagene Maßnahme** | Fachlich passende Option, die noch nicht aktiv ist |
+| **Aktive Maßnahme** | Vom Nutzer ausdrücklich gestartet |
+| **Beobachtungszeitraum** | Organisatorische Prüfperiode (7 · 14 · 28 Tage) — **keine medizinische Wirkfrist** |
+| **Erfolgskriterium** | Vor dem Start festgelegtes Signal |
+| **Prüfungstermin** | Startdatum + Beobachtungszeitraum, in lokalen Kalendertagen |
+
+**Struktur:** Eine Maßnahmenverknüpfung ist ein eigener Eintrag derselben
+kanonischen Liste `mm_opt_points`, der über `optimization_point_id` auf
+seinen Optimierungspunkt zeigt. Kein neuer Speicher, kein neuer Key, keine
+Migration. Ein eigener Eintrag (statt eines Feldes am Punkt), weil an einem
+Punkt nacheinander — und ausnahmsweise gleichzeitig — mehrere Maßnahmen
+hängen dürfen.
+
+**Kanonische Quellen bleiben unberührt:** Stack-Katalog `MM.engines.SUPPS`
+(stabile IDs, Name, Evidenz, Warnhinweise) · Nutzer-Stack `os_stack` ·
+Optimierungspunkte und Standards `mm_opt_points` · Auftrag `mm_focus` ·
+Premium-Experimente `intel_experiments` (nur gelesen) · Kapitel
+`MM_CHECK.CHAPTERS` (nur gelesen). Gespeichert werden ausschließlich die
+stabile Referenz (`measure_source` + `measure_id`) und — für lesbare Historie
+auf Seiten ohne geladenen Katalog — ein unveränderlicher
+`measure_label_snapshot`. Nie eine Kopie des Katalogeintrags oder von
+Messdaten.
+
+**Entstehung:** Ausschließlich durch eine ausdrückliche Handlung
+(„Beobachtungszeitraum starten"). Kein Bereichswert, kein Engpass, kein
+Messwert, kein Kapitelaufruf und keine Empfehlung aktiviert etwas. Ein
+vorhandener Basis-Stack wird nie rückwirkend zugeordnet.
+
+**Duplikatregel:** gleicher `optimization_point_id` + `measure_source` +
+`measure_id` + noch nicht abgeschlossen ⇒ Aktualisierung, kein zweiter Test.
+Ähnliche Namen genügen nie; eine andere stabile ID bleibt eine eigene
+Maßnahme.
+
+**Ergebnisprüfung — vier getrennte Angaben:** Umsetzung · Wirkung ·
+Alltagstauglichkeit · Entscheidung. Aus guter Umsetzung folgt nie eine
+Wirkung, aus einer Wirkung nie ein Standard. Zulässige Wirkungsurteile:
+erkennbar · teilweise · keine erkennbare Veränderung · Datenlage
+unzureichend · noch nicht ausreichend beurteilbar. Entscheidungen:
+beibehalten · noch einmal beobachten · anpassen · pausieren · beenden ·
+nicht weiter prüfen · weitere Abklärung.
+
+**Statusmodell:** unverändert die sieben Zustände aus Paket 3; im
+Maßnahmenkontext heißt `in_umsetzung` sichtbar **„In Beobachtung"** und
+`erkannt` **„Vorgeschlagen"**. Keine zweite Statusmaschine.
+
+**Sicherheit:** Ein bestehender Monitoring- oder Warnhinweis aus dem Katalog
+wird wörtlich übernommen und setzt die Maßnahme auf **Weitere Abklärung**
+statt sie still zu aktivieren. Er verhindert außerdem jede
+Standardempfehlung — ebenso wie ein ärztlicher Vorbehalt. Keine neue
+medizinische Regel, keine Dosierung, keine Therapieentscheidung.
+
+**Mehrere Veränderungen:** Zwei gleichzeitig laufende Maßnahmen an einem
+Punkt werden nicht verhindert, sondern benannt: „Mehrere Veränderungen laufen
+gleichzeitig. Die Wirkung lässt sich dadurch schwerer eindeutig zuordnen."
+Kein automatisches negatives Urteil, keine Zusammenlegung.
+
 ## Noch offen (spätere Pakete)
 
 - Bereichswert im Tracker / in My MaleMetrix: bewusst nicht in Paket 4.

@@ -148,7 +148,9 @@
     out.storedStatus = p.status;
     var abgeleitet = null;
     if (!MANUELL[p.status]) {
-      if (p.source_type === "focus") {
+      if (p.source_type === "measure") {
+        abgeleitet = deriveFromMeasure(p);
+      } else if (p.source_type === "focus") {
         var hit = findFocus(p.source_id);
         if (hit) abgeleitet = deriveFromFocus(p, hit);
       } else if (p.source_type === "experiment") {
@@ -156,15 +158,197 @@
       }
     }
     out.status = abgeleitet || p.status;
-    out.statusLabel = LABEL[out.status] || out.status;
+    /* Im Maßnahmenkontext heißt „In Umsetzung" sichtbar „In Beobachtung" —
+       derselbe interne Zustand, nur die passende Sprache (Paket 3 bleibt). */
+    out.statusLabel = (p.source_type === "measure" ? MEASURE_LABEL[out.status] : LABEL[out.status]) || out.status;
     out.abgeschlossen = out.status === "abgeschlossen";
     out.standard = p.standard || null;
+    out.istMassnahme = isMeasure(p);
     return out;
   }
 
   function list() { return raw().map(decorate); }
   function active() { return list().filter(function (p) { return !p.abgeschlossen; }); }
   function get(id) { var l = list(); for (var i = 0; i < l.length; i++) { if (l[i].id === id) return l[i]; } return null; }
+
+  /* ==================== MASSNAHMEN (Paket 7) ==============================
+     Eine Maßnahmenverknüpfung ist ein EIGENER Eintrag derselben kanonischen
+     Liste, der über `optimization_point_id` auf seinen Optimierungspunkt
+     zeigt. Warum ein eigener Eintrag und kein Feld am Punkt: An einem Punkt
+     dürfen nacheinander (und ausnahmsweise gleichzeitig) mehrere Maßnahmen
+     hängen — als Feld ginge die erste beim Start der zweiten verloren.
+
+     Kein neuer Speicher, kein neuer Key, keine neue Statusmaschine: es gelten
+     dieselben sieben Zustände aus Paket 3.
+
+     Der Maßnahmenkatalog bleibt dort, wo er ist (Stack: MM.engines.SUPPS,
+     Protokoll: MM_CHECK.CHAPTERS). Gespeichert werden nur die stabile
+     Referenz und — für lesbare Historie auf Seiten ohne geladenen Katalog —
+     ein unveränderlicher Anzeigename. Nie eine Kopie des Katalogeintrags. */
+
+  var MEASURE_SOURCES = { stack: 1, protokoll: 1, experiment: 1, routine: 1 };
+  /* Organisatorische Prüfzeiträume — KEINE medizinischen Wirkfristen. */
+  var OBS_DAYS = [7, 14, 28];
+  var MEASURE_LABEL = {
+    erkannt: "Vorgeschlagen",
+    in_umsetzung: "In Beobachtung",
+    pruefung_faellig: "Prüfung fällig",
+    wirkung_offen: "Wirkung offen",
+    abgeschlossen: "Abgeschlossen",
+    pausiert: "Pausiert",
+    weitere_abklaerung: "Weitere Abklärung"
+  };
+
+  function isMeasure(p) { return !!(p && p.measure_source && p.measure_id); }
+  /* Kalendertage, nicht Millisekunden — wie in Paket 2. */
+  function addDays(s, n) {
+    var q = String(s || "").split("-");
+    var d = new Date(+q[0], (+q[1] || 1) - 1, (+q[2] || 1) + n);
+    return ymd(d);
+  }
+
+  /* Status einer Maßnahme aus ihrem eigenen Verlauf ableiten. Ein erfasstes
+     Ergebnis schließt ab; der erreichte Prüfungstermin macht sie fällig. */
+  function deriveFromMeasure(p) {
+    /* Erst eine echte Entscheidung schließt ab. Ein Wirkungsurteil allein
+       reicht NICHT — „noch nicht beurteilbar" ist ein Zwischenstand, kein
+       Ergebnis, und würde die Maßnahme sonst still beenden. */
+    if (p.measure_decision) return "abgeschlossen";
+    if (p.result_summary === "offen") return "wirkung_offen";
+    if (!p.measure_started_at) return "erkannt";
+    if (p.review_date && ymd() >= p.review_date) return "pruefung_faellig";
+    return "in_umsetzung";
+  }
+
+  /* Fachlich identisch heißt: derselbe Punkt, dieselbe Quelle, dieselbe
+     stabile ID — und noch nicht abgeschlossen. Ähnliche Namen genügen NIE. */
+  function findMeasureIdx(pointId, source, mid) {
+    var l = raw();
+    for (var i = 0; i < l.length; i++) {
+      if (!isMeasure(l[i])) continue;
+      if (l[i].optimization_point_id !== pointId) continue;
+      if (l[i].measure_source !== source || String(l[i].measure_id) !== String(mid)) continue;
+      if (decorate(l[i]).abgeschlossen) continue;
+      return i;
+    }
+    return -1;
+  }
+
+  /* Alle Maßnahmen eines Optimierungspunkts (dekoriert). */
+  function measuresFor(pointId) {
+    return list().filter(function (p) { return isMeasure(p) && p.optimization_point_id === pointId; });
+  }
+  /* Laufende Maßnahmen — Grundlage für den Hinweis aus §13. */
+  function activeMeasures(pointId) {
+    return measuresFor(pointId).filter(function (p) { return !p.abgeschlossen && p.measure_started_at; });
+  }
+
+  /* MASSNAHME STARTEN — ausschließlich aus einer ausdrücklichen Handlung.
+     Keine Empfehlung, kein Bereichswert, kein Engpass, kein Messwert und kein
+     Kapitelaufruf ruft das hier auf. */
+  function startMeasure(o) {
+    o = o || {};
+    if (!o.optimization_point_id || !MEASURE_SOURCES[o.measure_source] || !o.measure_id) return null;
+    var punkt = get(o.optimization_point_id);
+    if (!punkt) return null;
+    var tage = OBS_DAYS.indexOf(+o.observation_days) >= 0 ? +o.observation_days : 14;
+    var start = o.started_at || ymd();
+    var daten = {
+      area: punkt.area, areaLabel: punkt.areaLabel,
+      /* Anzeigename wird als unveränderlicher Snapshot gehalten, damit die
+         Historie auch dort lesbar bleibt, wo der Katalog nicht geladen ist.
+         Fachlich maßgeblich bleibt measure_id im Katalog. */
+      title: o.measure_label || String(o.measure_id),
+      measure_label_snapshot: o.measure_label || String(o.measure_id),
+      origin: "massnahme",
+      source_type: "measure",
+      source_id: o.optimization_point_id + "|" + o.measure_source + ":" + o.measure_id,
+      optimization_point_id: o.optimization_point_id,
+      measure_source: o.measure_source,
+      measure_id: String(o.measure_id),
+      measure_started_at: start,
+      observation_days: tage,
+      review_date: addDays(start, tage),
+      criterion_label: o.criterion_label || "",
+      criterion_source: o.criterion_source || "",
+      baseline_snapshot: o.baseline || null,
+      arztVorbehalt: !!o.arztVorbehalt || !!punkt.arztVorbehalt,
+      /* Ein bestehender Warn- oder Konflikthinweis wird übernommen, nie
+         abgeschwächt — er entscheidet über „Weitere Abklärung". */
+      measure_warning: o.warning || "",
+      status: o.warning ? "weitere_abklaerung" : "in_umsetzung"
+    };
+    var l = raw();
+    var idx = findMeasureIdx(o.optimization_point_id, o.measure_source, o.measure_id);
+    if (idx >= 0) {
+      /* Dieselbe aktive Referenz ⇒ aktualisieren, kein zweiter Test. Die
+         bereits erfassten Ergebnisfelder bleiben unangetastet. */
+      var alt = l[idx];
+      l[idx] = Object.assign({}, alt, daten, {
+        id: alt.id, created: alt.created,
+        measure_started_at: alt.measure_started_at || start,
+        result_summary: alt.result_summary, measure_decision: alt.measure_decision,
+        standard: alt.standard || null, updated_at: stamp()
+      });
+      save(l);
+      return decorate(l[idx]);
+    }
+    var neu = Object.assign({
+      id: uid(), created: ymd(), result_summary: "", measure_decision: null,
+      usability_result: "", standard: null, completed_at: null
+    }, daten, { updated_at: stamp() });
+    l.push(neu); save(l);
+    return decorate(neu);
+  }
+
+  /* ERGEBNIS EINER MASSNAHME — Umsetzung, Wirkung und Alltagstauglichkeit
+     bleiben getrennt. Aus guter Umsetzung folgt NIE automatisch eine Wirkung,
+     und aus einer Wirkung folgt NIE automatisch ein persönlicher Standard. */
+  var WIRKUNG = ["erkennbar", "teilweise", "nicht_erkennbar", "unklar", "offen"];
+  /* Zulässige Formulierungen — nie „bewiesen wirksam" oder „hat verursacht". */
+  var WIRKUNG_LABEL = {
+    erkennbar: "Wirkung subjektiv erkennbar", teilweise: "teilweise Verbesserung",
+    nicht_erkennbar: "keine erkennbare Veränderung", unklar: "Datenlage unzureichend",
+    offen: "noch nicht ausreichend beurteilbar"
+  };
+  var ALLTAG = ["gut", "maessig", "nicht_vertragen", "unklar"];
+  var DECISION = ["beibehalten", "weiter_beobachten", "anpassen", "pausiert",
+                  "beendet", "nicht_weiter_geprueft", "weitere_abklaerung"];
+
+  function setMeasureResult(id, r) {
+    var p = get(id); if (!p || !isMeasure(p)) return null;
+    r = r || {};
+    if (r.wirkung && WIRKUNG.indexOf(r.wirkung) < 0) return null;
+    if (r.alltag && ALLTAG.indexOf(r.alltag) < 0) return null;
+    if (r.decision && DECISION.indexOf(r.decision) < 0) return null;
+    var patch = {
+      umsetzung_result: r.umsetzung || "",
+      result_summary: r.wirkung || "",
+      usability_result: r.alltag || "",
+      measure_decision: r.decision || null
+    };
+    /* Der sichtbare Zustand folgt der Entscheidung — nicht umgekehrt. */
+    if (r.decision === "pausiert") patch.status = "pausiert";
+    else if (r.decision === "weitere_abklaerung" || r.alltag === "nicht_vertragen") patch.status = "weitere_abklaerung";
+    else if (r.decision === "weiter_beobachten") {
+      patch.status = "in_umsetzung";
+      patch.measure_decision = null;                 // bleibt offen, kein Abschluss
+      patch.review_date = addDays(ymd(), p.observation_days || 14);
+    } else if (r.wirkung === "offen") patch.status = "wirkung_offen";
+    else if (r.decision) { patch.status = "abgeschlossen"; patch.completed_at = ymd(); }
+    return mutate(id, patch);
+  }
+
+  /* §13 — mehrere gleichzeitig gestartete NEUE Maßnahmen an demselben Punkt
+     machen die Zuordnung unsicher. Das wird benannt, nicht verhindert und
+     nie automatisch negativ gewertet. */
+  function measureAmbiguity(pointId) {
+    var aktiv = activeMeasures(pointId);
+    return aktiv.length > 1
+      ? { mehrere: true, anzahl: aktiv.length,
+          text: "Mehrere Veränderungen laufen gleichzeitig. Die Wirkung lässt sich dadurch schwerer eindeutig zuordnen." }
+      : { mehrere: false, anzahl: aktiv.length, text: "" };
+  }
 
   /* ---------------------------------------------------------- DUPLIKATE ---
      Konservativ, in genau zwei Stufen:
@@ -278,6 +462,17 @@
      vom Aufrufer geraten). */
   function standardEmpfohlen(p) {
     if (!p || p.standard) return false;
+    /* Maßnahmen: ausreichende Umsetzung + nachvollziehbare Wirkung +
+       tragfähige Alltagstauglichkeit — und kein offener Warnhinweis. Die
+       Empfehlung ist NUR eine Empfehlung; übernommen wird ausschließlich
+       per adoptStandard (ausdrückliche Bestätigung). */
+    if (p.source_type === "measure") {
+      if (p.arztVorbehalt || p.measure_warning) return false;
+      if (p.usability_result === "nicht_vertragen" || p.usability_result === "unklar") return false;
+      if (p.result_summary !== "erkennbar" && p.result_summary !== "teilweise") return false;
+      if (p.umsetzung_result === "kaum" || p.umsetzung_result === "") return false;
+      return true;
+    }
     if (p.source_type !== "focus") return false;
     var hit = findFocus(p.source_id); if (!hit) return false;
     var rec = hit.rec;
@@ -324,6 +519,12 @@
     list: list, active: active, get: get,
     upsert: upsert, fromFocus: fromFocus, focusRef: focusRef,
     setStatus: setStatus, resume: resume, mutate: mutate,
+    /* Maßnahmenverknüpfung (Paket 7) — lesen, starten, Ergebnis erfassen. */
+    startMeasure: startMeasure, setMeasureResult: setMeasureResult,
+    measuresFor: measuresFor, activeMeasures: activeMeasures,
+    measureAmbiguity: measureAmbiguity, istMassnahme: isMeasure,
+    OBS_DAYS: OBS_DAYS, MEASURE_SOURCES: MEASURE_SOURCES,
+    MEASURE_LABEL: MEASURE_LABEL, WIRKUNG: WIRKUNG, WIRKUNG_LABEL: WIRKUNG_LABEL, ALLTAG: ALLTAG, DECISION: DECISION,
     standardEmpfohlen: standardEmpfohlen,
     adoptStandard: adoptStandard, declineStandard: declineStandard, standards: standards,
     label: function (st) { return LABEL[st] || st; },

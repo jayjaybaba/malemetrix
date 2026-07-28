@@ -822,3 +822,31 @@ a.os-stat:hover b { color: var(--status-active, #00c2ff); }
 .os14-cmd .line { font-family: var(--font-mono, monospace); font-size: 0.66rem; letter-spacing: 0.14em; color: var(--muted); margin: 0 0 10px; }
 .os14-cmd .line strong { color: var(--text); }
 .os14-cmd.rest .day { color: var(--status-improving, #2dd4a7); }
+
+/* ---- MASSNAHMENPRÜFUNG (Paket 7) ----
+   Nutzt dieselben Tokens wie die bestehenden Stack-Karten. Keine neue
+   Verwaltungsoberfläche, keine Ampel, kein zweites Designsystem. */
+.os-massnahme { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+  background: rgba(14, 18, 26, 0.55); margin-bottom: 10px; }
+.os-massnahme.is-due { border-color: var(--accent-line, rgba(0,194,255,0.35)); }
+.os-massnahme .mn-hd { display: flex; justify-content: space-between; gap: 10px;
+  align-items: baseline; flex-wrap: wrap; }
+.os-massnahme .mn-hd b { color: #fff; overflow-wrap: anywhere; }
+.os-massnahme .mn-st { font-family: var(--font-mono, monospace); font-size: 0.6rem;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted-2); white-space: nowrap; }
+.os-massnahme .mn-pt, .os-massnahme .mn-meta { color: var(--muted); font-size: 0.84rem;
+  margin: 4px 0; overflow-wrap: anywhere; }
+.os-massnahme .mn-note { color: var(--muted-2); font-size: 0.8rem; margin: 6px 0 8px; max-width: 62ch; }
+.os-massnahme .mn-warn { color: var(--amber, #f5a623); font-size: 0.84rem; margin: 6px 0; max-width: 62ch; }
+.os-mnstart, .os-mnhist { border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px 14px; margin-top: 10px; }
+.os-mnhist p { color: var(--muted-2); font-size: 0.82rem; margin: 6px 0; overflow-wrap: anywhere; }
+.mn-form { display: grid; gap: 10px; margin: 8px 0 12px; }
+@media (min-width: 700px) { .mn-form { grid-template-columns: 1fr 1fr; } }
+.mn-form label { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: var(--muted-2); }
+.mn-form select, .mn-form input {
+  padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px;
+  background: rgba(127, 127, 127, 0.06); color: var(--text); font: inherit; font-size: 0.88rem;
+  min-height: 40px; max-width: 100%;
+}
+.mn-form select:focus-visible, .mn-form input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }

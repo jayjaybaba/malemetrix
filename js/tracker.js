@@ -281,8 +281,31 @@
     const punktLine = (pt) => pt
       ? '<p class="small muted" style="margin:0 0 8px">Optimierungspunkt · Bereich ' + esc(pt.areaLabel || pt.area) +
         ' · <strong>' + esc(pt.statusLabel) + '</strong>' +
-        (pt.standard && pt.standard.bestaetigt ? ' · als persönlicher Standard übernommen' : '') + '</p>'
+        (pt.standard && pt.standard.bestaetigt ? ' · als persönlicher Standard übernommen' : '') + '</p>' +
+        massnahmenLine(pt)
       : "";
+
+    /* Maßnahmen zu diesem Optimierungspunkt — kompakt referenziert (Paket 7).
+       Der Tracker lädt den Stack-Katalog nicht; deshalb steht hier der
+       gespeicherte Anzeigename, während die Maßnahme fachlich über ihre
+       stabile ID im Katalog referenziert bleibt. Ohne Verknüpfung erscheint
+       nichts — keine leeren Platzhalter, keine neue Pflicht. */
+    const massnahmenLine = (pt) => {
+      if (!(window.MM && MM.points && MM.points.measuresFor && pt)) return "";
+      let ms = [];
+      try { ms = MM.points.measuresFor(pt.id).filter((m) => !m.abgeschlossen); } catch (e) { return ""; }
+      if (!ms.length) return "";
+      let out = ms.map((m) =>
+        '<p class="small muted" style="margin:0 0 4px">Maßnahme: <strong>' + esc(m.measure_label_snapshot || m.title) +
+        '</strong> · ' + esc(m.statusLabel) +
+        (m.review_date ? ' · Prüfung ' + esc(fmtD(m.review_date)) : '') +
+        (m.criterion_label ? ' · Erfolgssignal: ' + esc(m.criterion_label) : '') + '</p>').join("");
+      try {
+        const amb = MM.points.measureAmbiguity(pt.id);
+        if (amb.mehrere) out += '<p class="small" style="margin:0 0 8px;color:var(--muted-2)">' + esc(amb.text) + '</p>';
+      } catch (e) {}
+      return out;
+    };
 
     /* Persönlicher Standard: NUR nach ausdrücklicher Bestätigung. Eine gute
        Wirkung erzeugt eine Empfehlung — nie automatisch einen Standard. */
