@@ -1893,6 +1893,7 @@
         var ck = cb2.getAttribute("data-comeback"); X.ackComeback();
         if (ck === "light") { X.startOverlay({ mode: "busy", start: todayYmd(), end: todayYmd(), reason: "comeback", mods: { minutes: 30 } }); if (MM.toast) MM.toast("Sanfter Wiedereinstieg: 30-Minuten-Version heute."); }
         if (ck === "pause") { location.href = "kurs-programm.html"; return; }
+        if (ck === "restart") { location.href = "kurs-programm.html?restart=1"; return; }
         render(); return;
       }
       var wn = t.closest("[data-weeknav]"); if (wn && !wn.disabled) { weekOffset = Math.max(0, weekOffset + parseInt(wn.getAttribute("data-weeknav"), 10)); render(); return; }
