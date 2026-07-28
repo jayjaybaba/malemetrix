@@ -267,16 +267,48 @@
     const p = MM.focus.progress(f);
     const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-    /* Abgelaufen: Bilanz statt Checkbox — die Aufgabe ist vorbei. */
+    const fmtD = (str) => String(str || "").slice(8, 10) + "." + String(str || "").slice(5, 7) + "." + String(str || "").slice(0, 4);
+
+    /* Abgelaufen: ERGEBNISPRÜFUNG statt Checkbox — getrennt in Umsetzung
+       (aus den Häkchen) und Wirkung (eigene Einschätzung, darf später
+       liegen und bleibt bis dahin ehrlich offen). Kein automatischer
+       Score-Zwang: der vollständige Score bleibt unabhängig davon. */
     if (p.abgelaufen) {
+      const u = MM.focus.umsetzung(f);
+      const w = MM.focus.wirkung(f);
+      const uText = { ausreichend: "ausreichend umgesetzt", teilweise: "teilweise umgesetzt", nicht_ausreichend: "nicht ausreichend umgesetzt" }[u.verdict];
+      let wBlock;
+      if (w.erfasst) {
+        wBlock = '<p class="small" style="margin:0 0 12px"><strong>Wirkungsprüfung:</strong> ' + esc(w.label) +
+          (w.erfasst.date ? ' · erfasst am ' + esc(fmtD(w.erfasst.date)) : '') +
+          (w.verdict === "offen" && w.spaeterAlsUmsetzung ? ' — sinnvoll erneut prüfen ab ' + esc(fmtD(w.faelligAm)) + '.' : '') + '</p>';
+      } else {
+        wBlock = '<p class="small" style="margin:0 0 8px"><strong>Wirkungsprüfung:</strong> ' +
+          (u.verdict === "nicht_ausreichend"
+            ? 'Bei dieser Umsetzung lässt sich die Wirkung nicht sicher beurteilen — das ist kein Scheitern, sondern eine offene Frage.'
+            : (!w.beurteilbar && w.spaeterAlsUmsetzung
+              ? 'Sinnvoll ab ' + esc(fmtD(w.faelligAm)) + ' — bis dahin gilt die Wirkung als offen.'
+              : 'Hat der Auftrag erkennbar geholfen? Deine ehrliche Einschätzung:')) + '</p>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px">' +
+          '<button type="button" class="btn btn-sm btn-ghost" data-fwirkung="erkennbar">Wirkung erkennbar</button>' +
+          '<button type="button" class="btn btn-sm btn-ghost" data-fwirkung="teilweise">Teilweise</button>' +
+          '<button type="button" class="btn btn-sm btn-ghost" data-fwirkung="nicht_erkennbar">Keine erkennbare Wirkung</button>' +
+          '<button type="button" class="btn btn-sm btn-ghost" data-fwirkung="offen">Noch offen — später prüfen</button>' +
+          '</div>';
+      }
       return '<div class="card trk-focus" id="focus" style="margin-bottom:18px;border-left:3px solid ' +
         (p.geschafft ? "var(--accent)" : "var(--muted-2)") + '">' +
-        '<span class="card-num">DEIN AUFTRAG · ABGESCHLOSSEN</span>' +
-        '<h3 style="font-size:1.05rem;margin:6px 0 4px">' + p.erledigt + ' von ' + f.target + ' Tagen' +
-        (p.geschafft ? " — geschafft." : " — nicht ganz.") + '</h3>' +
-        '<p class="small muted" style="margin:0 0 12px">' + esc(f.title) + '</p>' +
+        '<span class="card-num">DEIN AUFTRAG · ERGEBNISPRÜFUNG</span>' +
+        '<h3 style="font-size:1.05rem;margin:6px 0 4px">Umsetzung: ' + p.erledigt + ' von ' + f.target + ' Tagen — ' + uText + '.</h3>' +
+        '<p class="small muted" style="margin:0 0 10px">' + esc(f.title) + ' · Fokusphase ' + f.days + ' Tage · Quote ' + u.quote + ' %' +
+        (u.ohneEintrag ? ' · ' + u.ohneEintrag + (u.ohneEintrag === 1 ? ' Tag' : ' Tage') + ' ohne Häkchen (nicht erfasst oder nicht umgesetzt)' : '') + '</p>' +
+        wBlock +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">' +
         '<a class="btn btn-primary btn-sm" href="check.html">' +
-        (p.geschafft ? "Jetzt den zweiten Score machen" : "Score wiederholen und neu ansetzen") + '</a>' +
+        (p.geschafft ? "Optional: zweiten Score machen" : "Score wiederholen und neu ansetzen") + '</a>' +
+        '<button type="button" class="trk-focus-drop" id="focusDrop">Auftrag abschließen &amp; archivieren</button>' +
+        '</div>' +
+        '<p class="small muted" style="margin:10px 0 0">Der vollständige Score bleibt davon unabhängig — sinnvoll nach rund 4 Wochen.</p>' +
         '</div>';
     }
 
@@ -286,6 +318,9 @@
     return '<div class="card trk-focus" id="focus" style="margin-bottom:18px;border-left:3px solid var(--accent)">' +
       '<span class="card-num" style="color:var(--accent)">DEIN AUFTRAG · NOCH ' + p.offen + ' TAGE</span>' +
       '<h3 style="font-size:1.05rem;margin:6px 0 4px">' + esc(f.title) + '</h3>' +
+      '<p class="small muted" style="margin:0 0 8px">Fokusphase ' + f.days + ' Tage · ' + fmtD(f.started) + ' bis ' + fmtD(f.until) +
+      ' · Umsetzungsprüfung am ' + fmtD(f.until) +
+      (f.wirkungBis && f.wirkungBis > f.until ? ' · Wirkungsprüfung ab ' + fmtD(f.wirkungBis) : '') + '</p>' +
       '<div class="trk-focus-bar" aria-hidden="true"><span style="width:' + p.prozent + '%"></span></div>' +
       '<p class="small muted" style="margin:8px 0 12px">' + p.erledigt + ' von ' + f.target + ' Tagen. ' + kurs + '</p>' +
       '<label class="trk-focus-check">' +
@@ -299,6 +334,11 @@
   function bindFocus() {
     const box = document.getElementById("focusToday");
     if (box) box.addEventListener("change", () => { MM.focus.toggleDay(); render(); });
+    /* Wirkungsprüfung: Einschätzung erfassen (erkennbar/teilweise/keine/offen). */
+    document.querySelectorAll("[data-fwirkung]").forEach((b) => b.addEventListener("click", () => {
+      MM.focus.setWirkung(b.getAttribute("data-fwirkung"));
+      render();
+    }));
     const drop = document.getElementById("focusDrop");
     if (drop) drop.addEventListener("click", () => {
       if (confirm(T("Auftrag beenden? Der Fortschritt bleibt in deiner Historie erhalten.",

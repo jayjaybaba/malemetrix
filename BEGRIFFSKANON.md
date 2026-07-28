@@ -20,7 +20,9 @@ Nutzer dort braucht.
 | 3 | **Optimierungspunkt** | Das konkrete Thema, das aus einem Engpass abgeleitet und aktiv bearbeitet wird | — (neu; noch kein Datenobjekt, erst Paket 3) |
 | 4 | **Fokusphase** | Ausschließlich der zeitlich begrenzte Bearbeitungszeitraum | Sprint-/Zyklus-artige Zeitbegriffe im Fokus-Kontext |
 | 5 | **Ein Auftrag** | Die zentrale konkrete Aufgabe innerhalb einer Fokusphase (bestehendes Konzept, bleibt) | „Aufgabe“ (im Fokus-Kontext) |
-| 6 | **Ergebnisprüfung** | Der Zeitpunkt, an dem getrennt geprüft wird: umgesetzt? geholfen? | Review, Recheck, Check-in, Weekly Pulse, Reassessment (sichtbar) |
+| 6 | **Ergebnisprüfung** | Oberbegriff für Umsetzungs- und Wirkungsprüfung | Review, Recheck, Check-in, Weekly Pulse, Reassessment (sichtbar) |
+| 6a | **Umsetzungsprüfung** | Wurde der Auftrag ausreichend umgesetzt? (aus den täglichen Häkchen) | — |
+| 6b | **Wirkungsprüfung** | Hat die Maßnahme erkennbar geholfen? Darf später liegen als die Umsetzungsprüfung und bleibt bis dahin ehrlich „offen“ | — |
 | 7 | **Bereichswert** | Sichtbare 1–10-Darstellung eines Domain-Scores (Anzeige erst Paket 4); intern/persistiert bleibt alles 0–100, Gesamtscore bleibt /100 | — |
 | 8 | **Persönlicher Standard** | Bewährte Maßnahme/Routine, dauerhaft übernommen | „MY PROTOCOL“ (Ansichtstitel) |
 
@@ -53,11 +55,34 @@ Nutzer dort braucht.
   `js/check-data.js` sind kalibriert — nur sichtbare Rahmentexte anfassen)
 - PWA: `manifest.webmanifest` (nur Labels; URLs/Hashes niemals ändern)
 
+## Fokusphasen-Regeln (Paket 2, umgesetzt)
+
+- Dauern: **7 · 14 · 28 Tage**; MaleMetrix empfiehlt je Auftrag eine Dauer
+  (`FOCUS[domain].dauer`), der Nutzer bestätigt oder wählt um.
+  Leitplanken: 7 = kurzer Einstieg / klar überprüfbare Verhaltensänderung ·
+  14 = Standard für Routinen · 28 = längere Eingewöhnung / langsame Trends.
+  Produktleitplanken, keine medizinischen Wirksamkeitsfristen.
+- **Ziel-Regel (Toleranzprinzip):** Ziel(d) = round(d × Ziel28 / 28),
+  begrenzt auf 1 … d−1. 20/28 → 5/7 → 10/14 („5 von 7 Tagen pro Woche“);
+  24/28 → 6/7 → 12/14. Perfektion (d von d) wird nie verlangt.
+- **Umsetzungs-Urteil:** ausreichend = Ziel erreicht · teilweise = mindestens
+  halbes Ziel · nicht ausreichend = darunter. Tage ohne Häkchen zählen nie
+  als umgesetzt, gelten aber als „nicht erfasst oder nicht umgesetzt“, nicht
+  als bewusstes Scheitern.
+- **Wirkungs-Urteile:** erkennbar · teilweise · nicht erkennbar · offen ·
+  unklar (Datenlage reicht nicht). Wirkungsprüfung nie vor Phasenende;
+  `wirkfrist` kann sie nach hinten legen (z. B. Training: Umsetzung nach
+  14 Tagen, Wirkung sinnvoll ab 28).
+- **Fokusphase ≠ vollständiger Score:** Das Phasenende löst nur die
+  Prüfungen aus; der vollständige Score behält seinen eigenen Rhythmus
+  (~4 Wochen) und wird nie automatisch erzwungen.
+- **Abwärtskompatibilität:** Aufträge ohne gespeicherte Dauer gelten als
+  28 Tage; Historie wird nie umgeschrieben, neue Felder sind additiv.
+
 ## Noch offen (spätere Pakete)
 
 - Statusliste der Optimierungspunkte (Paket 3) — bis dahin bleiben die
   bestehenden Verdict-Labels (KEEP/LIKELY HELPED …) unverändert.
-- Fokusphasen-Dauern 7/14/28 (Paket 2).
 - Bereichswert-Anzeige 1–10 (Paket 4).
 - Englische OS-Navigation (Today/Plan/Track/Progress/Learn) und Modul-Namen
   (NBA, Foresight, Digital Twin …) — bewusst nicht Teil der fünf Familien.

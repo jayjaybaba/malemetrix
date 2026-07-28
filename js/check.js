@@ -554,21 +554,28 @@
       if (o.erledigt === 0) return;                // nie begonnen → nichts zu sagen
       const delta = prev ? r.total - prev.total : null;
       const gehalten = o.geschafft;
+      /* Umsetzungs- und Wirkungsprüfung bleiben getrennt: `gehalten` ist die
+         Umsetzung; die Wirkung kommt aus der erfassten Einschätzung (Tracker)
+         oder — als Hinweis, nie als Beweis — aus dem Score-Vergleich. */
+      const wv = o.wirkung && o.wirkung.verdict;
       let fazit;
-      if (gehalten && delta > 0) {
-        fazit = "Du hast durchgezogen, und der Score ist gestiegen. Das ist der Fall, in dem der Hebel gestimmt hat — mach mit demselben Prinzip weiter.";
-      } else if (gehalten && delta <= 0) {
-        fazit = "Du hast durchgezogen, der Score steht aber nicht besser. Das heißt nicht, dass es umsonst war: vier Wochen sind für manche Bereiche schlicht zu kurz. Es heißt, dass wir den nächsten Hebel woanders suchen.";
+      if (gehalten && (wv === "erkennbar" || (!wv && delta > 0))) {
+        fazit = "Du hast durchgezogen, und die Wirkung ist erkennbar. Das spricht dafür, dass der Auftrag der richtige Hebel war — beweisen kann es ein einzelner Vergleich nicht. Mach mit demselben Prinzip weiter oder übernimm die Routine als persönlichen Standard.";
+      } else if (gehalten && (wv === "nicht_erkennbar" || (!wv && delta <= 0))) {
+        fazit = "Du hast durchgezogen, eine Wirkung ist aber nicht erkennbar. Das heißt nicht, dass es umsonst war: manche Bereiche brauchen schlicht länger. Es heißt, dass der nächste Hebel woanders liegen kann — oder dass mehr Daten nötig sind.";
       } else if (!gehalten && delta > 0) {
-        fazit = "Der Score ist gestiegen, obwohl der Auftrag nur teilweise lief. Nimm das nicht als Beweis — wahrscheinlicher ist, dass etwas anderes gewirkt hat oder die Messung schwankt.";
+        fazit = "Der Score ist gestiegen, obwohl der Auftrag nur teilweise lief. Nimm das nicht als Beweis — wahrscheinlicher ist, dass etwas anderes gewirkt hat oder die Messung schwankt. Die Wirkung des Auftrags selbst bleibt offen.";
       } else {
-        fazit = "Der Auftrag lief nur teilweise, und der Score steht nicht besser. Das ist kein Charakterproblem: der Auftrag war vermutlich zu groß für deinen Alltag. Der nächste unten ist kleiner gedacht.";
+        fazit = "Der Auftrag lief nur teilweise — die Wirkung lässt sich so nicht sicher beurteilen. Das ist kein Charakterproblem: der Auftrag war vermutlich zu groß für deinen Alltag. Der nächste unten ist kleiner gedacht.";
       }
+      const wLabel = wv ? MM.focus.wirkungLabel(wv)
+        : (gehalten ? "noch offen — Einschätzung im Tracker festhalten" : "nicht sicher beurteilbar (Umsetzung zu lückenhaft)");
       html += '<div class="card dash-block" style="margin:0 0 22px;border-left:3px solid ' + (gehalten ? 'var(--accent)' : 'var(--muted-2)') + '">' +
-        '<span class="card-num">DEIN LETZTER AUFTRAG</span>' +
-        '<h3 style="font-size:1.1rem;margin:4px 0 6px">' + o.erledigt + ' von ' + o.ziel + ' Tagen' +
+        '<span class="card-num">DEIN LETZTER AUFTRAG · ERGEBNISPRÜFUNG</span>' +
+        '<h3 style="font-size:1.1rem;margin:4px 0 6px">Umsetzung: ' + o.erledigt + ' von ' + o.ziel + ' Tagen' +
         (gehalten ? ' — Ziel erreicht.' : ' — Ziel nicht erreicht.') + '</h3>' +
-        '<p class="small muted" style="margin:0 0 8px">„' + esc(o.title) + '"</p>' +
+        '<p class="small muted" style="margin:0 0 8px">„' + esc(o.title) + '" · Fokusphase ' + (o.days || 28) + ' Tage</p>' +
+        '<p class="small" style="margin:0 0 8px"><strong>Wirkung:</strong> ' + esc(wLabel) + '</p>' +
         '<p class="small" style="margin:0">' + esc(fazit) + '</p>' +
         '</div>';
     })();
@@ -909,6 +916,16 @@
        Der zweite Score verglich dann Zufall mit Zufall. Hier steht deshalb
        GENAU EINE Aufgabe, abgeleitet aus dem Engpass, täglich abhakbar im
        Tracker. Kostet nichts, verlangt keine E-Mail, bleibt auf dem Gerät. */
+    /* Ziel-/Ketten-Texte je Dauer — auch vom Dauer-Umschalter genutzt. */
+    const fpZielHTML = (fx) => '<strong>Fokusphase:</strong> ' + fx.days + ' Tage' +
+      (fx.days === fx.empfohlen ? ' (empfohlen)' : '') +
+      ' · <strong>Ziel:</strong> ' + fx.target + ' von ' + fx.days + ' Tagen. ' +
+      'Nicht ' + fx.days + ' von ' + fx.days + ' — ein verpasster Tag darf kein Grund zum Abbrechen sein. ' + esc(fx.proof);
+    const fpKetteText = (fx) => 'Dein Engpass bestimmt deinen Optimierungspunkt — daraus entsteht genau ein Auftrag. ' +
+      'Die Fokusphase läuft ' + fx.days + ' Tage; am Ende steht die Umsetzungsprüfung: Wie viele Tage hast du umgesetzt? ' +
+      (fx.wirkfrist > fx.days
+        ? 'Die Wirkungsprüfung folgt sinnvoll erst nach ' + fx.wirkfrist + ' Tagen — bis dahin gilt die Wirkung ehrlich als offen.'
+        : 'Die Wirkungsprüfung — hat es erkennbar geholfen? — liegt am selben Termin.');
     (function () {
       if (!C.focusFor) return;
       const f = C.focusFor(r);
@@ -923,7 +940,7 @@
          der neue Auftrag eine Ausrede für den alten. */
       if (laufend && p && !p.abgelaufen) {
         html += '<h3 style="font-size:1.15rem;margin:4px 0 6px">Du hast schon einen laufenden Auftrag.</h3>' +
-          '<p class="small muted" style="margin:0 0 10px">„' + esc(laufend.title) + '" — ' +
+          '<p class="small muted" style="margin:0 0 10px">„' + esc(laufend.title) + '" — Fokusphase ' + laufend.days + ' Tage, ' +
           p.erledigt + ' von ' + laufend.target + ' Tagen erledigt, noch ' + p.offen + ' Tage. ' +
           (p.aufKurs ? 'Du liegst auf Kurs. Zieh das zu Ende, bevor du etwas Neues anfängst.'
                      : 'Du liegst zurück. Entweder du holst auf — oder der Auftrag war zu groß und du tauschst ihn.') + '</p>' +
@@ -934,10 +951,12 @@
       } else {
         html += '<h3 style="font-size:1.15rem;margin:4px 0 6px">' + esc(f.title) + '</h3>' +
           '<p class="small muted" style="margin:0 0 10px">' + esc(f.why) + '</p>' +
-          '<p class="small" style="margin:0 0 14px"><strong>Ziel:</strong> ' + f.target + ' von 28 Tagen. ' +
-          'Nicht 28 von 28 — ein verpasster Tag darf kein Grund zum Abbrechen sein. ' + esc(f.proof) + '</p>' +
+          '<div id="fpChips" data-days="' + f.days + '" role="group" aria-label="Dauer der Fokusphase" style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px">' +
+          [7, 14, 28].map((d) => '<button type="button" class="btn btn-sm ' + (d === f.days ? 'btn-dark' : 'btn-ghost') + '" data-fdays="' + d + '">' + d + ' Tage' + (d === f.empfohlen ? ' · empfohlen' : '') + '</button>').join('') +
+          '</div>' +
+          '<p class="small" style="margin:0 0 14px" id="fpZiel">' + fpZielHTML(f) + '</p>' +
           (f.arzt ? '<p class="small" style="color:var(--muted-2);margin:0 0 14px">' + esc(f.arzt) + '</p>' : '') +
-          '<p class="small muted" style="margin:0 0 14px">Dein Engpass bestimmt deinen Optimierungspunkt — daraus entsteht genau ein Auftrag. Die Fokusphase läuft 28 Tage; die Ergebnisprüfung beim nächsten Score fragt doppelt: umgesetzt — und hat es geholfen?</p>' +
+          '<p class="small muted" style="margin:0 0 14px" id="fpKette">' + fpKetteText(f) + '</p>' +
           '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">' +
           '<button class="btn btn-primary" id="btnFocusStart" data-track="focus_start">Auftrag starten</button>' +
           '<span class="small muted">Landet im Tracker, bleibt auf deinem Gerät — kein Konto, keine E-Mail.</span>' +
@@ -951,17 +970,36 @@
        Deshalb hier ein echter Termin statt eines Newsletters: die .ics-Datei
        landet im Kalender des Nutzers, wir speichern dafür nichts. */
     (function () {
-      const days = 28;
-      const next = new Date(Date.now() + days * 86400000);
-      const nice = next.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
+      /* Fokusphase und vollständiger Score sind GETRENNT: Das Ende der
+         Fokusphase löst nur die Umsetzungsprüfung (und ggf. später die
+         Wirkungsprüfung) aus — nie automatisch einen neuen Score. Der
+         vollständige Score behält seinen eigenen Rhythmus (~4 Wochen). */
+      const fmtNice = (x) => x.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
+      const parseYmd = (str) => { const q = String(str || "").split("-"); return new Date(+q[0], (+q[1] || 1) - 1, +q[2] || 1); };
+      const cur = (MM.focus && MM.focus.current) ? MM.focus.current() : null;
+      const t = new Date();
+      const scoreNice = fmtNice(new Date(t.getFullYear(), t.getMonth(), t.getDate() + 28));
+      let h3, body, btnLabel;
+      if (cur) {
+        const spaeter = cur.wirkungBis && cur.wirkungBis > cur.until;
+        h3 = 'Deine Fokusphase (' + cur.days + ' Tage) endet am ' + fmtNice(parseYmd(cur.until)) + '.';
+        body = '<p class="small muted" style="margin:0 0 6px"><strong>Umsetzungsprüfung</strong> am ' + fmtNice(parseYmd(cur.until)) + ' — wie viele Tage hast du umgesetzt? Bilanz im Tracker.</p>' +
+          '<p class="small muted" style="margin:0 0 6px"><strong>Wirkungsprüfung</strong> ' +
+          (spaeter ? 'ab ' + fmtNice(parseYmd(cur.wirkungBis)) + ' — bis dahin gilt die Wirkung als offen.' : 'am selben Termin — hat es erkennbar geholfen?') + '</p>' +
+          '<p class="small muted" style="margin:0 0 14px">Dein nächster <strong>vollständiger Score</strong> ist davon unabhängig — sinnvoll bleibt er nach rund 4 Wochen.</p>';
+        btnLabel = 'Prüftermine als Kalenderdatei sichern';
+      } else {
+        h3 = 'In 4 Wochen weißt du, ob es funktioniert hat.';
+        body = '<p class="small muted" style="margin:0 0 14px">Ein einzelner Score sagt dir, wo du stehst. Erst der zweite prüft doppelt: Hast du deinen Auftrag umgesetzt — und hat er wirklich geholfen? Dann siehst du hier den direkten Vergleich zu heute' +
+          (V.primaryBottleneck && V.primaryBottleneck.name ? ' und ob „' + esc(V.primaryBottleneck.name) + '" noch dein Engpass ist' : '') +
+          '. Kürzer misst meist Rauschen, länger verlierst du den Bezug.</p>';
+        btnLabel = 'Termin für den ' + scoreNice + ' sichern';
+      }
       html += '<div class="card dash-block" id="scoreAgain" style="margin-top:24px;border-left:3px solid var(--accent-2)">' +
         '<span class="card-num" style="color:var(--accent-2)">DEINE ERGEBNISPRÜFUNG</span>' +
-        '<h3 style="font-size:1.15rem;margin:4px 0 6px">In 4 Wochen weißt du, ob es funktioniert hat.</h3>' +
-        '<p class="small muted" style="margin:0 0 14px">Ein einzelner Score sagt dir, wo du stehst. Erst der zweite prüft doppelt: Hast du deinen Auftrag umgesetzt — und hat er wirklich geholfen? Dann siehst du hier den direkten Vergleich zu heute' +
-        (V.primaryBottleneck && V.primaryBottleneck.name ? ' und ob „' + esc(V.primaryBottleneck.name) + '" noch dein Engpass ist' : '') +
-        '. Kürzer misst meist Rauschen, länger verlierst du den Bezug.</p>' +
+        '<h3 style="font-size:1.15rem;margin:4px 0 6px">' + h3 + '</h3>' + body +
         '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">' +
-        '<a class="btn btn-dark" id="btnScoreIcs" href="#" download="malemetrix-score-recheck.ics" data-track="rescore_reminder">Termin für den ' + nice + ' sichern</a>' +
+        '<a class="btn btn-dark" id="btnScoreIcs" href="#" download="malemetrix-score-recheck.ics" data-track="rescore_reminder">' + btnLabel + '</a>' +
         '<span class="small muted">Kalenderdatei — es wird nichts gespeichert und nichts versendet.</span>' +
         '</div></div>';
     })();
@@ -1041,7 +1079,11 @@
         btn.addEventListener("click", (e) => {
           e.preventDefault();
           if (!(MM.focus && C.focusFor)) return;
-          MM.focus.start(C.focusFor(r));
+          /* Gewählte Fokusphasen-Dauer respektieren (7/14/28); ohne Auswahl
+             gilt die empfohlene Dauer des Auftrags. */
+          const box = el.querySelector("#fpChips");
+          const d = box ? parseInt(box.getAttribute("data-days"), 10) : undefined;
+          MM.focus.start(C.focusFor(r, d));
           MM.toast("Auftrag übernommen — du findest ihn oben im Tracker.");
           setTimeout(() => { location.href = "tracker.html#focus"; }, 700);
         });
@@ -1049,29 +1091,68 @@
       focusGo(el.querySelector("#btnFocusStart"));
       focusGo(el.querySelector("#btnFocusSwap"));
 
+      /* Dauer-Umschalter: aktualisiert Ziel- und Prüftexte VOR dem Start. */
+      const fpChips = el.querySelector("#fpChips");
+      if (fpChips) {
+        fpChips.addEventListener("click", (e) => {
+          const b = e.target.closest("[data-fdays]");
+          if (!b) return;
+          const d = parseInt(b.getAttribute("data-fdays"), 10);
+          const fx = C.focusFor(r, d);
+          fpChips.setAttribute("data-days", String(d));
+          fpChips.querySelectorAll("[data-fdays]").forEach((x) => {
+            const on = parseInt(x.getAttribute("data-fdays"), 10) === d;
+            x.classList.toggle("btn-dark", on);
+            x.classList.toggle("btn-ghost", !on);
+          });
+          const z = el.querySelector("#fpZiel"); if (z) z.innerHTML = fpZielHTML(fx);
+          const k = el.querySelector("#fpKette"); if (k) k.textContent = fpKetteText(fx).replace(/<[^>]+>/g, "");
+          tel("score_cta_clicked", { cta_id: "focus_days_" + d });
+        });
+      }
+
       const icsBtn = el.querySelector("#btnScoreIcs");
       if (icsBtn) {
         icsBtn.addEventListener("click", (e) => {
           e.preventDefault();
-          const d = new Date(Date.now() + 28 * 86400000);
-          const dd = new Date(d.getTime() + 86400000);
+          /* Termine folgen der gewählten Fokusphase: Umsetzungsprüfung am
+             Phasenende, Wirkungsprüfung ggf. später. Ohne laufenden Auftrag
+             bleibt es der Termin für den vollständigen Score (~4 Wochen).
+             Kalendertag-Arithmetik — keine Off-by-one an Tagesgrenzen. */
           const ymd = (x) => x.getFullYear() + String(x.getMonth() + 1).padStart(2, "0") + String(x.getDate()).padStart(2, "0");
-          const ics = [
-            "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//MaleMetrix//Score//DE",
-            "BEGIN:VEVENT",
-            "UID:score-" + ymd(d) + "-" + Math.random().toString(16).slice(2, 10) + "@malemetrix",
-            "DTSTART;VALUE=DATE:" + ymd(d),
-            "DTEND;VALUE=DATE:" + ymd(dd),
-            "SUMMARY:MaleMetrix Score wiederholen",
-            "DESCRIPTION:Zweiter Score — zeigt dir\\, ob dein Hebel funktioniert hat. Dauert ca. 7 Minuten: https://www.malemetrix.com/check.html",
-            "URL:https://www.malemetrix.com/check.html",
-            "BEGIN:VALARM", "TRIGGER:-PT9H", "ACTION:DISPLAY",
-            "DESCRIPTION:MaleMetrix Score wiederholen", "END:VALARM",
-            "END:VEVENT", "END:VCALENDAR"
-          ].join("\r\n");
+          const parseYmd2 = (str) => { const q = String(str || "").split("-"); return new Date(+q[0], (+q[1] || 1) - 1, +q[2] || 1); };
+          const plus1 = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate() + 1);
+          const cur = (MM.focus && MM.focus.current) ? MM.focus.current() : null;
+          const events = [];
+          if (cur) {
+            events.push({ d: parseYmd2(cur.until), sum: "MaleMetrix — Umsetzungsprüfung: Auftrag bilanzieren",
+              desc: "Ende deiner Fokusphase (" + cur.days + " Tage). Wie viele Tage hast du umgesetzt? Bilanz im Tracker: https://www.malemetrix.com/tracker.html" });
+            if (cur.wirkungBis && cur.wirkungBis > cur.until) {
+              events.push({ d: parseYmd2(cur.wirkungBis), sum: "MaleMetrix — Wirkungsprüfung",
+                desc: "Hat der Auftrag erkennbar geholfen? Einschätzung im Tracker festhalten — kein neuer Score nötig." });
+            }
+          } else {
+            const t2 = new Date();
+            events.push({ d: new Date(t2.getFullYear(), t2.getMonth(), t2.getDate() + 28), sum: "MaleMetrix Score wiederholen",
+              desc: "Vollständiger zweiter Score — der direkte Vergleich zu heute. Dauert ca. 7 Minuten: https://www.malemetrix.com/check.html" });
+          }
+          const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//MaleMetrix//Score//DE"].concat(
+            events.map((ev) => [
+              "BEGIN:VEVENT",
+              "UID:mm-" + ymd(ev.d) + "-" + Math.random().toString(16).slice(2, 10) + "@malemetrix",
+              "DTSTART;VALUE=DATE:" + ymd(ev.d),
+              "DTEND;VALUE=DATE:" + ymd(plus1(ev.d)),
+              "SUMMARY:" + ev.sum,
+              "DESCRIPTION:" + ev.desc.replace(/,/g, "\\,"),
+              "URL:https://www.malemetrix.com/check.html",
+              "BEGIN:VALARM", "TRIGGER:-PT9H", "ACTION:DISPLAY",
+              "DESCRIPTION:" + ev.sum, "END:VALARM",
+              "END:VEVENT"
+            ].join("\r\n"))
+          ).concat(["END:VCALENDAR"]).join("\r\n");
           const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
           const a = document.createElement("a");
-          a.href = url; a.download = "malemetrix-score-recheck.ics";
+          a.href = url; a.download = cur ? "malemetrix-ergebnispruefung.ics" : "malemetrix-score-recheck.ics";
           document.body.appendChild(a); a.click(); document.body.removeChild(a);
           setTimeout(() => URL.revokeObjectURL(url), 4000);
           MM.toast("Termin heruntergeladen — jetzt im Kalender öffnen");

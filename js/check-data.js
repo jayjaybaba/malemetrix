@@ -1574,140 +1574,168 @@ window.MM_CHECK = {
 
      Ein Score, der nur diagnostiziert, ist ein Flyer. Damit der zweite
      Durchlauf etwas zu vergleichen hat, braucht der erste einen Auftrag:
-     GENAU EINEN, für vier Wochen, täglich mit Ja/Nein beantwortbar.
+     GENAU EINEN, für eine Fokusphase von 7, 14 oder 28 Tagen, täglich mit
+     Ja/Nein beantwortbar. `dauer` ist die empfohlene Fokusphase,
+     `wirkfrist` der früheste sinnvolle Zeitpunkt der Wirkungsprüfung
+     (Produktleitplanke, keine medizinische Wirksamkeitsfrist).
 
      Regeln, die hier bewusst gelten:
      - Eine Aufgabe pro Engpass. Nicht drei. Wer fünf Dinge anfängt, macht
        keins vier Wochen lang durch.
-     - Das Ziel ist NICHT 28 von 28. Perfektion ist die falsche Messlatte und
-       der schnellste Weg zum Abbruch nach dem ersten verpassten Tag.
+     - Das Ziel ist NIE Perfektion (d von d Tagen). Die falsche Messlatte
+       ist der schnellste Weg zum Abbruch nach dem ersten verpassten Tag.
+       `target` ist das 28-Tage-Ziel; kürzere Fokusphasen übertragen die
+       Quote proportional (siehe focusTarget).
      - Keine Diagnose, keine Dosierung, keine Präparate. Wo etwas ärztlich
        gehört, steht das als `arzt` dabei und wird auch angezeigt.
      ========================================================================== */
   FOCUS: {
     bodyComposition: {
-      title: "Vier Wochen lang deine Zahlen führen — Gewicht täglich, Taille wöchentlich.",
+      title: "Deine Zahlen führen — Gewicht täglich, Taille wöchentlich.",
       daily: "Gewicht heute notiert",
       why: "Körperkomposition verschiebt sich zu langsam, um sie zu spüren. Ohne Messreihe hältst du normale Tagesschwankung für Fortschritt — oder übersiehst echten.",
       proof: "Beim zweiten Score hast du eine Kurve statt eines Gefühls.",
-      target: 20
+      target: 20, dauer: 28, wirkfrist: 28
     },
     training: {
-      title: "Vier Wochen, drei feste Trainingstage — dieselben Tage, jede Woche.",
+      title: "Drei feste Trainingstage — dieselben Tage, jede Woche.",
       daily: "Heute Plan eingehalten (trainiert oder geplanter Ruhetag)",
       why: "Dir fehlt keine Motivation, sondern Planbarkeit. Feste Tage schlagen gute Absichten, weil sie keine Entscheidung mehr verlangen.",
-      proof: "Zwölf Einheiten in vier Wochen — und ein Verlauf, der Progression zeigt.",
-      target: 24
+      proof: "Feste Einheiten Woche für Woche — und ein Verlauf, der Progression zeigt.",
+      target: 24, dauer: 14, wirkfrist: 28
     },
     movement: {
-      title: "Vier Wochen lang mindestens 7.000 Schritte am Tag.",
+      title: "Mindestens 7.000 Schritte am Tag.",
       daily: "Heute 7.000 Schritte erreicht",
       why: "Drei Einheiten pro Woche kompensieren keine dreizehn Stunden Sitzen. Alltagsbewegung ist der größere Teil deines Verbrauchs — und der, den du steuerst.",
-      proof: "20 von 28 Tagen über 7.000.",
-      target: 20
+      proof: "Die meisten Tage über 7.000 — nachlesbar statt gefühlt.",
+      target: 20, dauer: 14, wirkfrist: 14
     },
     sleep: {
-      title: "Vier Wochen lang zur selben Zeit ins Bett — ±30 Minuten.",
+      title: "Zur selben Zeit ins Bett — ±30 Minuten.",
       daily: "Heute zur geplanten Zeit ins Bett",
       why: "Der erste Hebel ist nicht die Dauer, sondern die Regelmäßigkeit. Ein fester Zeitpunkt bringt mehr als eine gute Nacht nach vier schlechten.",
-      proof: "20 von 28 Nächten zur selben Zeit — das sieht dein Recovery-Wert.",
-      target: 20
+      proof: "Die meisten Nächte zur selben Zeit — das sieht dein Recovery-Wert.",
+      target: 20, dauer: 14, wirkfrist: 14
     },
     recovery: {
-      title: "Vier Wochen lang zehn Minuten am Tag ohne Bildschirm und ohne Aufgabe.",
+      title: "Zehn Minuten am Tag ohne Bildschirm und ohne Aufgabe.",
       daily: "Heute zehn Minuten wirklich nichts",
       why: "Du bekommst genug Reize. Was fehlt, ist die Gegenbewegung — und die passiert nicht von selbst, sie braucht einen festen Platz im Tag.",
-      proof: "20 von 28 Tagen mit einer echten Pause.",
-      target: 20
+      proof: "Fast jeden Tag eine echte Pause.",
+      target: 20, dauer: 14, wirkfrist: 14
     },
     nutrition: {
-      title: "Vier Wochen lang jeden Tag dein Proteinziel treffen.",
+      title: "Jeden Tag dein Proteinziel treffen.",
       daily: "Proteinziel heute erreicht",
       why: "Protein ist der Makronährstoff, bei dem die Menge im Alltag am häufigsten danebengeht — und der, der Muskel schützt, wenn du im Defizit bist.",
-      proof: "20 von 28 Tagen im Ziel, nachlesbar im Tracker.",
-      target: 20
+      proof: "Die meisten Tage im Ziel, nachlesbar im Tracker.",
+      target: 20, dauer: 14, wirkfrist: 14
     },
     metabolic: {
-      title: "Vier Wochen lang nach der größten Mahlzeit zehn Minuten gehen.",
+      title: "Nach der größten Mahlzeit zehn Minuten gehen.",
       daily: "Heute nach dem Essen gegangen",
       why: "Die kleinste Gewohnheit mit dem besten Verhältnis von Aufwand zu Wirkung — sie braucht weder Ausrüstung noch Umziehen noch einen freien Termin.",
-      proof: "20 von 28 Tagen. Kostet dich insgesamt gut drei Stunden.",
-      target: 20
+      proof: "Zehn Minuten am Tag — läuft nebenbei, ohne Ausrüstung und ohne Termin.",
+      target: 20, dauer: 28, wirkfrist: 28
     },
     cardiovascular: {
-      title: "Vier Wochen lang 30 Minuten Bewegung am Tag — und einmal Blutdruck in Ruhe messen.",
+      title: "30 Minuten Bewegung am Tag — und einmal Blutdruck in Ruhe messen.",
       daily: "Heute 30 Minuten in Bewegung",
       why: "Herz-Kreislauf verläuft lange ohne Symptome. Bewegung ist der Hebel, den du selbst in der Hand hast.",
-      proof: "20 von 28 Tagen — plus ein gemessener Wert statt einer Vermutung.",
+      proof: "Bewegung an fast jedem Tag — plus ein gemessener Wert statt einer Vermutung.",
       arzt: "Die Einordnung deines Blutdrucks gehört ärztlich abgeklärt, nicht in einen Selbsttest.",
-      target: 20
+      target: 20, dauer: 28, wirkfrist: 28
     },
     hormonal: {
-      title: "Vier Wochen lang höchstens ein Abend mit Alkohol pro Woche.",
+      title: "Höchstens ein Abend mit Alkohol pro Woche.",
       daily: "Heute alkoholfrei",
       why: "Libido und Erektion sind Signale des Gesamtsystems, kein isolierter Hormonwert. Alkohol und Schlaf sind die zwei Stellschrauben, die du sofort selbst hast.",
-      proof: "24 von 28 Abenden ohne — das ist die sauberste Ausgangslage für ein Arztgespräch.",
-      arzt: "Bestehen die Beschwerden nach vier sauberen Wochen weiter, gehört das ärztlich abgeklärt. MaleMetrix stellt keine Diagnose.",
-      target: 24
+      proof: "Fast alle Abende ohne — das ist die sauberste Ausgangslage für ein Arztgespräch.",
+      arzt: "Bestehen die Beschwerden nach einer sauber umgesetzten Fokusphase weiter, gehört das ärztlich abgeklärt. MaleMetrix stellt keine Diagnose.",
+      target: 24, dauer: 28, wirkfrist: 28
     },
     energy: {
-      title: "Vier Wochen lang kein Koffein mehr nach 14 Uhr.",
+      title: "Kein Koffein mehr nach 14 Uhr.",
       daily: "Heute nach 14 Uhr koffeinfrei",
       why: "Koffein hat eine Halbwertszeit von rund fünf Stunden. Der Espresso um 16 Uhr wirkt um Mitternacht noch — und du merkst es nicht am Einschlafen, sondern am Tiefschlaf.",
-      proof: "20 von 28 Tagen — der Effekt zeigt sich meist in Woche zwei.",
-      target: 20
+      proof: "Der Effekt zeigt sich meist in der zweiten Woche.",
+      target: 20, dauer: 14, wirkfrist: 14
     },
     dataQuality: {
-      title: "Vier Wochen lang jeden Tag genau einen Wert eintragen.",
+      title: "Jeden Tag genau einen Wert eintragen.",
       daily: "Heute einen Wert eingetragen",
       why: "Du steuerst gerade ohne Instrumente. Welcher Wert es ist, ist zweitrangig — dass überhaupt einer da ist, entscheidet, ob dein nächster Score etwas zu vergleichen hat.",
-      proof: "20 Datenpunkte statt keinem.",
-      target: 20
+      proof: "Eine tägliche Messreihe statt keiner.",
+      target: 20, dauer: 7, wirkfrist: 7
     },
     execution: {
-      title: "Vier Wochen lang eine einzige Sache — jeden Tag dieselbe.",
+      title: "Eine einzige Sache — jeden Tag dieselbe.",
       daily: "Die eine Sache heute getan",
-      why: "Du weißt vermutlich genug. Was scheitert, ist die Menge auf einmal. Eine Sache vier Wochen ohne Ausnahme schlägt fünf Vorsätze für zehn Tage.",
-      proof: "20 von 28 Tagen — und der Beweis, dass du es kannst.",
-      target: 20
+      why: "Du weißt vermutlich genug. Was scheitert, ist die Menge auf einmal. Eine Sache konsequent jeden Tag schlägt fünf Vorsätze für zehn Tage.",
+      proof: "Fast jeden Tag umgesetzt — und der Beweis, dass du es kannst.",
+      target: 20, dauer: 14, wirkfrist: 14
     },
     enhancedControl: {
-      title: "Vier Wochen lang täglich Blutdruck messen und notieren.",
+      title: "Täglich Blutdruck messen und notieren.",
       daily: "Heute Blutdruck gemessen und notiert",
       why: "Kontrolle heißt hier Messung, nicht Anpassung. Blutdruck verschiebt sich am schnellsten und ist am einfachsten selbst zu erfassen.",
       proof: "Eine lückenlose Messreihe für das nächste ärztliche Gespräch.",
       arzt: "MaleMetrix gibt keine Einnahme-, Dosierungs- oder Präparateempfehlung. Änderungen gehören ärztlich begleitet.",
-      target: 24
+      target: 24, dauer: 28, wirkfrist: 28
     },
     therapyControl: {
-      title: "Vier Wochen lang deine Kontrollwerte führen — und den nächsten Arzttermin fest eintragen.",
+      title: "Deine Kontrollwerte führen — und den nächsten Arzttermin fest eintragen.",
       daily: "Heute Blutdruck gemessen und notiert",
       why: "Eine laufende Therapie lebt von Kontrolle. Die Messreihe führst du selbst; sie macht das nächste Gespräch konkret.",
-      proof: "Vier Wochen Verlauf statt einer Momentaufnahme im Wartezimmer.",
+      proof: "Ein laufender Verlauf statt einer Momentaufnahme im Wartezimmer.",
       arzt: "Einordnung und jede Änderung gehören zu der Ärztin oder dem Arzt, die die Therapie verordnet haben.",
-      target: 24
+      target: 24, dauer: 28, wirkfrist: 28
     },
     recoveryStatus: {
-      title: "Vier Wochen lang Schlaf und Blutdruck führen — und einen Termin zur Verlaufskontrolle machen.",
+      title: "Schlaf und Blutdruck führen — und einen Termin zur Verlaufskontrolle machen.",
       daily: "Heute Schlaf und Blutdruck notiert",
       why: "Nach dem Absetzen zählt der Verlauf mehr als jeder Einzelwert. Was du beitragen kannst, ist eine saubere Messreihe.",
-      proof: "Vier Wochen Verlauf, die das ärztliche Gespräch tragen.",
+      proof: "Ein sauberer Verlauf, der das ärztliche Gespräch trägt.",
       arzt: "Der Verlauf gehört ärztlich begleitet. MaleMetrix stellt keine Diagnose und empfiehlt keine Präparate.",
-      target: 24
+      target: 24, dauer: 28, wirkfrist: 28
     }
+  },
+
+  /* Zulässige Fokusphasen-Dauern (Paket 2). */
+  FOCUS_DAUERN: [7, 14, 28],
+
+  /* Ziel-Regel (Toleranzprinzip, dokumentiert): das bestehende 28-Tage-Ziel
+     wird proportional auf die gewählte Dauer übertragen —
+     Ziel(d) = round(d × Ziel28 / 28), begrenzt auf 1 … d−1.
+     Beispiele: 20/28 → 5/7 und 10/14 (exakt „5 von 7 Tagen pro Woche");
+     24/28 → 6/7 und 12/14. 28-Tage-Aufträge behalten ihr bisheriges Ziel
+     unverändert; Perfektion (d von d) wird nie verlangt. */
+  focusTarget: function (days, target28) {
+    var t = Math.round(days * (target28 || 20) / 28);
+    return Math.max(1, Math.min(t, days - 1));
   },
 
   /* Aus einem Ergebnis den Auftrag ableiten. Fällt auf `execution` zurück —
      das ist die Aufgabe, die für jeden gilt, dessen Engpass wir nicht
-     genauer benennen können. */
-  focusFor: function (result) {
+     genauer benennen können.
+     `days` ist optional (7/14/28); ohne Angabe gilt die empfohlene Dauer
+     des Auftrags (f.dauer, sonst 28). Datumsrechnung über Kalendertage
+     (setDate-Semantik), nicht über Millisekunden — kein Off-by-one an
+     Zeitumstellungen. Die Wirkungsprüfung liegt nie vor dem Ende der
+     Fokusphase: wirkfrist = max(gewählte Dauer, empfohlene Wirkfrist). */
+  focusFor: function (result, days) {
     var C = window.MM_CHECK;
     var bn = (result && result.bottleneck) || {};
     var f = C.FOCUS[bn.domain] || C.FOCUS.execution;
+    var empfohlen = f.dauer || 28;
+    var d = (C.FOCUS_DAUERN.indexOf(days) >= 0) ? days : empfohlen;
+    var wf = Math.max(d, f.wirkfrist || d);
     var start = new Date();
-    var end = new Date(start.getTime() + 28 * 86400000);
-    var ymd = function (d) {
-      return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+    var end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + d);
+    var wEnd = new Date(start.getFullYear(), start.getMonth(), start.getDate() + wf);
+    var ymd = function (x) {
+      return x.getFullYear() + "-" + ("0" + (x.getMonth() + 1)).slice(-2) + "-" + ("0" + x.getDate()).slice(-2);
     };
     return {
       v: 1,
@@ -1718,8 +1746,11 @@ window.MM_CHECK = {
       why: f.why,
       proof: f.proof,
       arzt: f.arzt || "",
-      target: f.target,
-      days: 28,
+      target: d === 28 ? f.target : C.focusTarget(d, f.target),
+      days: d,
+      empfohlen: empfohlen,
+      wirkfrist: wf,
+      wirkungBis: ymd(wEnd),
       started: ymd(start),
       until: ymd(end),
       scoreAtStart: (result && result.total) || null,

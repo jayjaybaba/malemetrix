@@ -508,7 +508,7 @@ group("14 · Rückkehr-Mechanik: Termin statt Newsletter");
   var js = fs.readFileSync(path.join(ROOT, "js/check.js"), "utf8");
   ok(/id="scoreAgain"/.test(js), "Ergebnisseite bietet den nächsten Score an");
   ok(/DEINE ERGEBNISPRÜFUNG/.test(js), "eigener, klar benannter Block");
-  ok(/28 \* 86400000/.test(js), "Vorschlag liegt bei 4 Wochen");
+  ok(/getDate\(\) \+ 28/.test(js), "Vorschlag liegt bei 4 Wochen (Kalendertage statt Millisekunden)");
   ok(/BEGIN:VCALENDAR/.test(js) && /DTSTART;VALUE=DATE:/.test(js), "echter Kalendereintrag (.ics), ganztägig");
   ok(/BEGIN:VALARM/.test(js), "mit Erinnerung, damit der Termin nicht untergeht");
   ok(!/newsletter|mailchimp|brevo\.com\/subscribe/i.test(js.split("scoreAgain")[1].slice(0, 2000)),
