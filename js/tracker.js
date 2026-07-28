@@ -316,6 +316,84 @@
       }).join("") +
       '</div>';
 
+    /* HEUTIGE ERFASSUNG — je nach Automatikstufe (Paket 5).
+       A: aus Messdaten erkannt, mit sichtbarer Herkunft und Korrekturweg.
+       B: Messdaten sprechen dafür — der Nutzer bestätigt ausdrücklich.
+       C: unveränderte Ja/Nein-Erfassung.
+       Ohne MM.focus.tagStatus (Alt-Stand) bleibt es bei der Checkbox. */
+    const heuteBlock = (f) => {
+      const cb = '<label class="trk-focus-check">' +
+        '<input type="checkbox" id="focusToday"' + (MM.focus.progress(f).heuteErledigt ? " checked" : "") + '>' +
+        '<span>' + esc(f.daily) + '</span></label>';
+      if (!MM.focus.tagStatus) return cb;
+      let t = null;
+      try { t = MM.focus.tagStatus(f); } catch (e) { t = null; }
+      if (!t || t.stufe === "C") return cb;
+
+      const beleg = (mitZiel) => {
+        let s = "";
+        if (t.wert != null) s += t.wert + (t.einheit ? " " + t.einheit : "") + " erfasst";
+        else if (t.quelle) s += "Erfasst";
+        if (mitZiel && t.ziel != null) s += " · Ziel: mindestens " + t.ziel + (t.einheit ? " " + t.einheit : "");
+        if (t.quelle) s += (s ? " · " : "") + "Quelle: " + esc(t.quelle);
+        return s;
+      };
+
+      /* Ausdrücklich korrigiert oder bestätigt — der Nutzer hat entschieden. */
+      if (t.manuell && (t.herkunft === "korrigiert" || t.herkunft === "bestaetigt")) {
+        return '<div class="trk-focus-auto"><p class="ta-head">' + esc(f.daily) + '</p>' +
+          '<p class="ta-state">' + (t.umgesetzt ? "Heute umgesetzt" : "Heute nicht umgesetzt") + '</p>' +
+          '<p class="ta-src">' + (t.herkunft === "bestaetigt" ? "Manuell bestätigt" : "Manuell korrigiert") + '</p>' +
+          '<button type="button" class="btn btn-sm btn-ghost" data-fday="toggle">Ändern</button></div>';
+      }
+
+      if (t.stufe === "A") {
+        if (t.umgesetzt && t.herkunft === "auto") {
+          return '<div class="trk-focus-auto is-done"><p class="ta-head">' + esc(f.daily) + '</p>' +
+            '<p class="ta-state">Heute umgesetzt</p>' +
+            '<p class="ta-ev">' + beleg(true) + '</p>' +
+            '<p class="ta-src">Automatisch aus Messdaten erkannt</p>' +
+            '<button type="button" class="btn btn-sm btn-ghost" data-fday="toggle">Ändern</button></div>';
+        }
+        const revidiert = t.revidiert
+          ? '<p class="ta-src">Ein früher erkannter Tag gilt nach einer Korrektur deiner Messdaten nicht mehr.</p>' : "";
+        return '<div class="trk-focus-auto"><p class="ta-head">' + esc(f.daily) + '</p>' +
+          '<p class="ta-state">Heute noch offen</p>' +
+          '<p class="ta-ev">' + (t.wert != null && t.ziel != null
+            ? t.wert + (t.einheit ? " " + t.einheit : "") + " von " + t.ziel + (t.einheit ? " " + t.einheit : "") + " erreicht"
+            : "Für heute liegen noch keine passenden Messdaten vor.") + '</p>' + revidiert +
+          '<p class="ta-src">Du kannst den Tag jederzeit selbst eintragen.</p>' +
+          '<button type="button" class="btn btn-sm btn-ghost" data-fday="ja">Umgesetzt</button> ' +
+          '<button type="button" class="btn btn-sm btn-ghost" data-fday="nein">Nicht umgesetzt</button></div>';
+      }
+
+      /* Stufe B — Vorschlag. Ohne Bestätigung entsteht KEIN Häkchen.
+         Vorgeschlagen wird NUR, wenn das Kriterium auch wirklich getroffen
+         ist: ein Wert unter dem Ziel spricht nicht für die Umsetzung. */
+      const kopf = '<div class="trk-focus-auto"><p class="ta-head">' + esc(f.daily) + '</p>';
+      if (!t.treffer) {
+        return kopf + '<p class="ta-state">Heute noch offen</p>' +
+          '<p class="ta-ev">' + (t.wert != null && t.ziel != null
+            ? t.wert + (t.einheit ? " " + t.einheit : "") + " von " + t.ziel + (t.einheit ? " " + t.einheit : "") + " erfasst — das reicht als Beleg nicht"
+            : "Für heute liegen keine passenden Messdaten vor.") + '</p>' +
+          '<button type="button" class="btn btn-sm btn-ghost" data-fday="ja">Umgesetzt</button> ' +
+          '<button type="button" class="btn btn-sm btn-ghost" data-fday="nein">Nicht umgesetzt</button></div>';
+      }
+      const warum = t.konflikt ? esc(t.konflikt)
+        : t.nichtDeckend ? "Dein Auftrag zählt " + esc(t.nichtDeckend) + " — das erfassen wir nicht. Der Wert oben ist ein verwandter, kein deckungsgleicher Beleg."
+        : "Dein Auftrag enthält zusätzliche Bedingungen, die Messdaten nicht belegen können.";
+      return kopf + '<p class="ta-state">Deine Messdaten sprechen dafür, dass du den Auftrag umgesetzt hast.</p>' +
+        '<p class="ta-ev">' + beleg(false) + '</p>' +
+        '<p class="ta-src">' + warum + ' Hast du ihn vollständig umgesetzt?</p>' +
+        '<button type="button" class="btn btn-sm btn-primary" data-fday="bestaetigen">Als umgesetzt bestätigen</button> ' +
+        '<button type="button" class="btn btn-sm btn-ghost" data-fday="nein">Nicht umgesetzt</button> ' +
+        '<button type="button" class="btn btn-sm btn-ghost" data-fday="spaeter">Später entscheiden</button></div>';
+    };
+
+    /* Messdaten der laufenden Fokusphase auswerten, BEVOR die Karte gebaut
+       wird — rein lesend für Stufe B/C, schreibend nur bei Stufe A und nur
+       für Tage ohne ausdrückliche Entscheidung. */
+    try { if (MM.focus.autoSync) MM.focus.autoSync(); } catch (e) {}
     const f = MM.focus.current();
 
     /* Kein laufender Auftrag — aber vielleicht eine OFFENE WIRKUNGSPRÜFUNG
@@ -379,7 +457,10 @@
         '<p class="small" style="margin:0 0 6px">Ziel: ' + u.ziel + ' von ' + u.tage + ' Tagen — <strong>' +
         (u.zielErreicht ? 'erreicht' : 'nicht erreicht') + '</strong> · Umsetzungsquote ' + u.quote + ' %</p>' +
         '<p class="small muted" style="margin:0 0 10px">' + esc(f.title) + ' · Fokusphase ' + f.days + ' Tage (' + fmtD(f.started) + '–' + fmtD(u.letzterTag) + ') · Umsetzungsprüfung ' + fmtD(u.faelligAm) +
-        (u.ohneEintrag ? ' · ' + u.ohneEintrag + (u.ohneEintrag === 1 ? ' Tag' : ' Tage') + ' ohne Häkchen (nicht erfasst oder nicht umgesetzt)' : '') + '</p>' +
+        (u.ohneEintrag ? ' · ' + u.ohneEintrag + (u.ohneEintrag === 1 ? ' Tag' : ' Tage') + ' ohne Häkchen (nicht erfasst oder nicht umgesetzt)' : '') +
+        /* Herkunft, KEINE zweite Quote: dieselben Tage, nur zusätzlich die
+           Angabe, wie viele davon aus Messdaten kamen. */
+        (u.ausTracking ? ' · davon ' + u.ausTracking + (u.ausTracking === 1 ? ' Tag' : ' Tage') + ' aus Tracking erkannt' : '') + '</p>' +
         punktLine(punktZu(MM.focus.ref ? MM.focus.ref(f) : null)) +
         wBlock +
         standardBlock(punktZu(MM.focus.ref ? MM.focus.ref(f) : null)) +
@@ -405,9 +486,7 @@
       punktLine(punktZu(MM.focus.ref ? MM.focus.ref(f) : null)) +
       '<div class="trk-focus-bar" aria-hidden="true"><span style="width:' + p.prozent + '%"></span></div>' +
       '<p class="small muted" style="margin:8px 0 12px">' + p.erledigt + ' von ' + f.days + ' Tagen umgesetzt · Ziel: ' + f.target + ' Tage. ' + kurs + '</p>' +
-      '<label class="trk-focus-check">' +
-      '<input type="checkbox" id="focusToday"' + (p.heuteErledigt ? " checked" : "") + '>' +
-      '<span>' + esc(f.daily) + '</span></label>' +
+      heuteBlock(f) +
       (f.arzt ? '<p class="small" style="color:var(--muted-2);margin:10px 0 0">' + esc(f.arzt) + '</p>' : '') +
       '<p class="small" style="margin:10px 0 0"><button type="button" class="trk-focus-drop" id="focusDrop">Auftrag beenden</button></p>' +
       '</div>' + weitereOffeneHTML(MM.focus.ref ? MM.focus.ref(f) : null) + standardsHTML();
@@ -459,6 +538,23 @@
   function bindFocus() {
     const box = document.getElementById("focusToday");
     if (box) box.addEventListener("change", () => { MM.focus.toggleDay(); render(); });
+    /* Tagesstatus aus der Messdatenbrücke (Paket 5). Jede Aktion ist eine
+       AUSDRÜCKLICHE Entscheidung des Nutzers und gewinnt damit dauerhaft
+       gegen jede spätere automatische Auswertung. „Später entscheiden"
+       schreibt bewusst nichts. */
+    document.querySelectorAll("[data-fday]").forEach((b) => b.addEventListener("click", () => {
+      if (!(window.MM && MM.focus && MM.focus.setDay)) return;
+      const a = b.getAttribute("data-fday");
+      let t = null;
+      try { t = MM.focus.tagStatus(); } catch (e) { t = null; }
+      const beleg = t ? { quelle: t.quelle, wert: t.wert, ziel: t.ziel } : null;
+      if (a === "spaeter") return;
+      if (a === "toggle") MM.focus.toggleDay();
+      else if (a === "ja") MM.focus.setDay(null, "ja", "manuell");
+      else if (a === "bestaetigen") MM.focus.setDay(null, "ja", "bestaetigt", beleg);
+      else if (a === "nein") MM.focus.setDay(null, "nein", "manuell");
+      render();
+    }));
     /* Wirkungsprüfung: Einschätzung erfassen (erkennbar/teilweise/keine/offen). */
     document.querySelectorAll("[data-fwirkung]").forEach((b) => b.addEventListener("click", () => {
       MM.focus.setWirkung(b.getAttribute("data-fwirkung"), null, b.getAttribute("data-fref") || null);

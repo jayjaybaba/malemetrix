@@ -197,6 +197,64 @@ Domain-Details. Ein sicherer Bereichsvergleich ist damit heute nicht
 möglich, und ein unsicherer wird nicht behauptet (§15). Die bestehende
 Gesamtscore-Vergleichslogik bleibt unverändert in Gebrauch.
 
+## Messdatenbrücke (Paket 5, umgesetzt)
+
+Vorhandene Mess- und Trackingdaten unterstützen „Ein Auftrag", wo sie ihn
+wirklich tragen — ohne zweite Datenwahrheit. Sichtbar heißt das:
+**Automatisch aus Messdaten erkannt · Aus Tracking vorgeschlagen ·
+Manuell bestätigt · Manuell korrigiert · Daten nicht ausreichend.**
+
+**Drei Automatikstufen** (Zuordnung über die stabile Domain-ID des Auftrags,
+nie über seinen sichtbaren Text):
+
+| Stufe | Bedeutung | Bereiche |
+|---|---|---|
+| **A** — automatisch erkennbar | eindeutiges objektives Kriterium, klarer Schwellenwert, eine kanonische Quelle | `cardiovascular` (30 min Bewegung) · `nutrition` (Proteinziel) · `bodyComposition` (Gewicht notiert) · `dataQuality` (ein Wert notiert) |
+| **B** — Bestätigung vorgeschlagen | Messdaten machen die Umsetzung wahrscheinlich, beweisen sie aber nicht | `training` (Log belegt keine Planbarkeit) · `movement` (Auftrag zählt **Schritte**, erfasst werden Minuten) · `sleep` (Auftrag betrifft die **Uhrzeit**, erfasst wird die Dauer) |
+| **C** — nur manuell | nicht zuverlässig ableitbar | `recovery` · `metabolic` · `hormonal` · `energy` · `execution` · `enhancedControl` · `therapyControl` · `recoveryStatus` |
+
+**Quellenmatrix** (ausschließlich reale bestehende Keys):
+
+| Kennzahl | Free-Quelle | OS-Quelle | Tageszuordnung | Kriterium | Konfliktregel |
+|---|---|---|---|---|---|
+| Bewegungsminuten | `mm_trk_daily.min` + `mm_trk_cardio.durationMin` + `mm_trk_sessions.duration` | — (OS führt keine Minuten) | lokaler Tag; ISO-Zeitstempel über die lokale `ymd()`-Regel | `cardiovascular`: Summe ≥ 30 min (Schwelle steht im Auftrag) · `movement`: Summe ≥ `mm_trk_plan.dailyMin` (Standard 25) als Anhaltspunkt | Free ist kanonisch; nur eine OS-Session ohne Minuten ⇒ Stufe B |
+| Trainingseinheit | `mm_trk_sessions` | `mm_os_workout_logs._sessions` | lokaler Tag der Einheit | Existenz (ODER, nie Summe) | Free zuerst, sonst OS — dieselbe Einheit kann nie doppelt zählen |
+| Protein | `mm_diary_<tag>` (Ziel `mm_goals.p`) | `mm_os_nutrition_log[tag]` (Ziel `mm_os_nutrition_plan.protein`) | lokaler Tag des Eintrags | ≥ 90 % des Ziels (bestehende Adhärenz-Definition) | OS kanonisch, sobald ein OS-Ernährungsplan existiert; **nie addieren**; kommen beide Welten zu unterschiedlichen Ergebnissen ⇒ keine Automatik, nur Vorschlag |
+| Gewicht notiert | `mm_trk_body.weightKg` | `mm_os_metrics` (`type:"weight"`) | lokaler Messtag | Existenz > 0 | ODER — Existenz kann nicht doppelt zählen |
+| Schlaf erfasst | `mm_trk_sleep` | `mm_os_metrics` (`type:"sleep"`) | **Aufwachtag** („Nacht auf" — bestehende Konvention) | Existenz > 0 | ODER |
+| Irgendein Wert | alle obigen | alle obigen | lokaler Tag | ≥ 1 Eintrag | ODER |
+| **Schritte** | — | — | — | — | **keine Quelle im Produkt** ⇒ nie Stufe A |
+| **Blutdruck** | — | — | — | — | **keine Quelle im Produkt** ⇒ Stufe C |
+
+**Source of Truth bleibt unverändert:** `mm_focus`/`mm_focus_history` für den
+Umsetzungsstatus · Tracker-/Diary-/OS-Logs für die Messwerte selbst ·
+`mm_opt_points` für Zuordnung und Status. `mm_focus` speichert nur den
+abgeleiteten Tagesstatus samt knapper Herkunft — nie eine Kopie der Messdaten.
+Es wird nie in Tracker- oder OS-Logs zurückgeschrieben.
+
+**Tagesstatus in `mm_focus.done`** (rein additiv, Alt-Bestand bleibt lesbar):
+
+| Wert | Bedeutung |
+|---|---|
+| `true` | Alt-Bestand — gilt als manuell umgesetzt |
+| `{v,s,q,src,val,ziel,at}` | `s`: `ja` / `nein` / `offen` · `q`: `manuell` / `bestaetigt` / `korrigiert` / `auto` / `auto_revidiert` |
+
+**Prioritätsregel:** ausdrückliche manuelle Entscheidung → verlässliche
+automatische Erkennung → Vorschlag → unbekannt. Ein manuell entschiedener Tag
+(`manuell`/`bestaetigt`/`korrigiert`) wird von keinem Messdatenlauf mehr
+angefasst. Fehlende Daten gelten weder als umgesetzt noch als nicht umgesetzt.
+
+**Messwertkorrektur:** Während der laufenden Fokusphase darf eine **rein
+automatische** Bewertung neu ausgewertet werden. Trägt der korrigierte Wert
+sie nicht mehr, wird sie zurückgenommen (`auto_revidiert`) und benannt — nie
+still in ein automatisches „nicht umgesetzt" verwandelt. Eine archivierte
+Ergebnisprüfung ist eingefroren: in `mm_focus_history` wandert nur das
+Ergebnis, nie die Tagesliste.
+
+**Umsetzung ≠ Wirkung.** Messdaten können eine Umsetzung belegen, nie eine
+Wirkung. Es gibt **eine** Umsetzungsquote; die Herkunft steht nur als Zusatz
+daneben („davon 3 Tage aus Tracking erkannt"), nie als zweite Quote.
+
 ## Noch offen (spätere Pakete)
 
 - Bereichswert im Tracker / in My MaleMetrix: bewusst nicht in Paket 4.
