@@ -44,7 +44,9 @@
     learn: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>'
   };
   function navBar(active) {
-    var items = [["today", "Today"], ["plan", "Plan"], ["track", "Track"], ["progress", "Progress"], ["learn", "Learn"]];
+    /* Für Käufer heißt der fünfte Tab nach dem Produkt, das sie bezahlt
+       haben — „Learn" ist nur der Zustand davor (§ Kauf-Sichtbarkeit). */
+    var items = [["today", "Today"], ["plan", "Plan"], ["track", "Track"], ["progress", "Progress"], ["learn", protocolLink().owned ? "Protokoll" : "Learn"]];
     return '<nav class="os-nav" aria-label="Hauptnavigation">' + items.map(function (it) {
       var on = active === it[0];
       return '<a href="#' + it[0] + '" class="' + (on ? "on" : "") + '"' + (on ? ' aria-current="page"' : '') + '>' +
@@ -256,6 +258,10 @@
       // KONTEXT-BADGE (aktives Overlay, jederzeit beendbar)
       html += contextBadge(day);
 
+      // DAS PROTOKOLL — Weiterlesen mit Fortschritt, bis das Werk durch ist.
+      // Danach verschwindet die Kachel; der Protokoll-Tab bleibt der Zugang.
+      html += protoCard("today");
+
       // Workout-Draft von heute → Resume statt Neuanfang
       var draft = MM.store.get("os_workout_draft", null);
       if (draft && draft.date === todayYmd() && !day.actions.some(function (a) { return (a.type === "workout" || a.type === "makeup_workout") && a.done; })) {
@@ -365,8 +371,10 @@
       // Sheet-Container (My Day Changed / Eat Now / Quick Capture)
       html += '<div id="osSheet" class="os-sheet" hidden></div>';
     } else if (d.access.twelve_week && p && p.notStarted) {
+      html += protoCard("today");
       html += '<div class="card os-accent"><span class="small muted os-k">' + esc(greetTime()) + esc(name) + '</span><h1 class="os-big" style="font-size:1.5rem">Dein 12-Week System ist startklar</h1><p class="muted" style="margin:0 0 14px">Dein Programm beginnt am gewählten Startdatum. Nutze die Zeit: <a href="#baseline" style="color:var(--accent)">Baseline anlegen →</a></p><a href="kurs-programm.html" class="btn btn-primary">Programm öffnen →</a></div>';
     } else if (d.access.twelve_week) {
+      html += protoCard("today");
       html += '<div class="card os-accent"><span class="small muted os-k">' + esc(greetTime()) + esc(name) + '</span><h1 class="os-big" style="font-size:1.5rem">Dein 12-Week System ist bereit</h1><p class="muted" style="margin:0 0 14px">Empfohlener Ablauf: erst <a href="#baseline" style="color:var(--accent)">Baseline</a>, dann Programm einrichten.</p><a href="kurs-programm.html" class="btn btn-primary">Programm starten →</a></div>';
     } else if (d.hasScore) {
       // Phase 8 (§5/§14/§15): erst der persönliche Wert (Map), dann der
@@ -1117,9 +1125,50 @@
     return { href: "ebooks/protokoll.html", owned: true };
   }
 
+  /* Lesefortschritt, den der Reader (ebooks/protokoll.html) beim Scrollen
+     ablegt. Roh aus localStorage, nicht MM.store — der Reader läuft ohne
+     OS-Kontext und schreibt denselben Schlüssel. */
+  function protoProgress() {
+    try {
+      var p = JSON.parse(localStorage.getItem("mm_protokoll_progress") || "null");
+      if (p && typeof p.pct === "number") return p;
+    } catch (e) {}
+    return null;
+  }
+
+  /* Weiterlesen-Kachel für Käufer. In TODAY nur, solange das Werk nicht
+     durchgelesen ist — danach räumt sie sich selbst weg und der Protokoll-Tab
+     bleibt der dauerhafte Zugang. In LEARN immer (dort ist sie der Kopf des
+     Tabs, nach dem Durchlesen als Nachschlage-Einstieg). */
+  function protoCard(ctx) {
+    var pl = protocolLink();
+    if (!pl.owned) return "";
+    var pr = protoProgress();
+    if (ctx === "today" && pr && pr.done) return "";
+    var pct = pr ? Math.max(0, Math.min(100, Math.round(pr.pct))) : 0;
+    var head, meta;
+    if (!pr) {
+      head = "Jetzt lesen: Kapitel 1 →";
+      meta = "Dein Referenzwerk — 10 Kapitel, eine Reihenfolge.";
+    } else if (pr.done) {
+      head = "Wieder öffnen — dein Nachschlagewerk →";
+      meta = "Durchgelesen. Bleibt dein Referenzwerk für jede Entscheidung.";
+    } else {
+      head = "Weiterlesen: " + (pr.title || pct + " % gelesen") + " →";
+      meta = (pr.ch && pr.chTotal ? "Kapitel " + pr.ch + "/" + pr.chTotal + " · " : "") + pct + " % gelesen";
+    }
+    return '<a class="card os-proto-cta" href="' + pl.href + '"><span class="tag">DAS PROTOKOLL</span><b>' + esc(head) + '</b>' +
+      '<span class="os-proto-bar" aria-hidden="true"><i style="width:' + pct + '%"></i></span>' +
+      '<span class="s">' + esc(meta) + '</span></a>';
+  }
+
   function vLearn() {
     var pw = OS.pathway();
     var html = "";
+    /* Käufer: das Protokoll ist der Kopf dieses Tabs — Weiterlesen-Karte mit
+       Fortschritt VOR allem anderen, ohne Scrollen sichtbar. */
+    var pl = protocolLink();
+    if (pl.owned) html += protoCard("learn");
     if (MM.intelligence && MM.intelligence.knowledge) {
       try {
         var ln = MM.intelligence.knowledge.learnNow();
@@ -1135,14 +1184,12 @@
           }).join(""));
       } catch (e) {}
     }
-    var pl = protocolLink();
-    html += sec("Learn · verstehe dein System",
+    html += sec((pl.owned ? "Vertiefung" : "Learn") + " · verstehe dein System",
       '<div class="os-learn-grid">' +
-      '<a class="os-learn" href="' + pl.href + '"><b>DAS PROTOKOLL</b><span>' +
-      (pl.owned
-        ? 'Dein Referenzwerk — 10 Kapitel, eine Reihenfolge. Weiterlesen, wo du aufgehört hast.'
-        : 'Das Referenzwerk — 10 Kapitel, eine Reihenfolge. Warum dein System funktioniert.') +
-      '</span></a>' +
+      (pl.owned ? "" :
+        '<a class="os-learn" href="' + pl.href + '"><b>DAS PROTOKOLL</b><span>' +
+        'Das Referenzwerk — 10 Kapitel, eine Reihenfolge. Warum dein System funktioniert.' +
+        '</span></a>') +
       '<a class="os-learn" href="ebooks.html"><b>Library</b><span>Deep Dives: Body · Engine · Recovery · Hormone · Health.</span></a>' +
       '<a class="os-learn" href="labor.html"><b>MaleMetrix Labs</b><span>Deine Biologie über die Zeit — Werte werden zu Kontext.</span></a>' +
       '<a class="os-learn" href="blutwerte.html"><b>Blood &amp; Labs (Guide)</b><span>Die Biomarker, die für Männer zählen.</span></a>' +
@@ -1698,6 +1745,7 @@
     if (navigated) {
       var b = host.querySelector(".os-body");
       if (b) { try { b.focus({ preventScroll: true }); } catch (e) { b.focus(); } }
+      VIEW_LABEL.learn = protocolLink().owned ? "Protokoll" : "Learn";   // Tab-Name = Ansage
       announce(VIEW_LABEL[v] || v);
     }
     bindOnce();

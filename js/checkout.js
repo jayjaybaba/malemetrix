@@ -536,11 +536,18 @@
       // VS2 — PREMIUM ACCESS MOMENT: der Kauf ist ein Produkt-Upgrade, kein
       // Formularabschluss. ACCESS GRANTED → freigeschaltete Systeme →
       // ASSIGNED TO YOUR ACCOUNT, mit kurzer funktionaler Unlock-Animation.
+      // Zwei gleichrangige Einstiege statt einem generischen „Jetzt starten":
+      // der Käufer entscheidet nur noch, WOMIT er beginnt — nicht, WO sein
+      // Kauf überhaupt liegt (§ Kauf-Sichtbarkeit).
+      const hatProto = (order.productIds || []).indexOf("protokoll") !== -1;
       var accountBlock = '<div class="mm-access">' +
         '<span class="stamp">ACCESS GRANTED</span>' +
         '<div class="grant">' + (hasCourse ? '<b>DAS PROTOKOLL</b><b>12-WEEK SYSTEM</b>' : '<b>DEIN ZUGANG</b>') + '</div>' +
         '<p class="assigned">ASSIGNED TO YOUR ACCOUNT · ALLE GERÄTE</p>' +
-        (hasCourse ? '<a class="btn btn-primary" style="margin-top:22px" href="mein-protokoll.html">Jetzt starten →</a>' : '') + '</div>';
+        (hatProto
+          ? '<div class="mm-access-choice"><a class="btn btn-primary" href="ebooks/protokoll.html" data-track="postbuy_read_protokoll">Das Protokoll lesen →</a>' +
+            '<a class="btn btn-dark" href="mein-protokoll.html" data-track="postbuy_start_program">12-Wochen-Programm starten →</a></div>'
+          : (hasCourse ? '<a class="btn btn-primary" style="margin-top:22px" href="mein-protokoll.html">Jetzt starten →</a>' : '')) + '</div>';
     }
     const isPaypalMe = order.payMethod === "PayPal" && CFG.paypalMe && !paypalPaid;
     const amountRaw = order.total.replace(/[^\d,]/g, "").replace(",", ".");
@@ -669,7 +676,10 @@
       '<span class="stamp">ACCESS GRANTED</span>' +
       '<div class="grant">' + (((data && data.entitlements) || []).indexOf("protocol") >= 0 ? '<b>DAS PROTOKOLL</b>' : '') + (((data && data.entitlements) || []).indexOf("twelve_week") >= 0 ? '<b>12-WEEK SYSTEM</b>' : '') + '</div>' +
       '<p class="assigned">ASSIGNED TO YOUR ACCOUNT · ALLE GERÄTE</p></div>' +
-      '<a href="mein-protokoll.html" class="btn btn-primary">Jetzt starten →</a>' +
+      (((data && data.entitlements) || []).indexOf("protocol") >= 0
+        ? '<div class="mm-access-choice"><a class="btn btn-primary" href="ebooks/protokoll.html" data-track="postbuy_read_protokoll">Das Protokoll lesen →</a>' +
+          '<a class="btn btn-dark" href="mein-protokoll.html" data-track="postbuy_start_program">12-Wochen-Programm starten →</a></div>'
+        : '<a href="mein-protokoll.html" class="btn btn-primary">Jetzt starten →</a>') +
       '</div>';
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
