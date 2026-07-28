@@ -2641,6 +2641,25 @@ body > * { position: relative; z-index: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .os14-hero-video { transition: none; } }
 
+/* ---- AMBIENT MOTION für Seitenköpfe: dasselbe Signature-Video wie der
+   Home-Hero (nach dem ersten Besuch im Browser-Cache — keine zweite
+   Ladung), stark abgedunkelt hinter .page-head. Hochwertigkeit ohne
+   Lesbarkeitsverlust; reduced-motion bleibt beim stehenden Poster. */
+.mm-ambient { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.mm-ambient video {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: 74% 32%;
+  opacity: 0; transition: opacity 1.2s ease;
+}
+.mm-ambient video.is-live { opacity: 1; }
+.mm-ambient .scrim {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(180deg, rgba(7,9,13,0.78) 0%, rgba(7,9,13,0.62) 34%, rgba(7,9,13,0.86) 72%, var(--bg-0) 100%);
+}
+.page-head > .container { position: relative; z-index: 1; }
+@media (prefers-reduced-motion: reduce) { .mm-ambient video { transition: none; } }
+
 /* Diagnose-Instrument im Hero: kein Card-Dashboard, ein Messgerät. */
 .os14-diag { border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline); padding: 26px 0 20px; position: relative; }
 .os14-diag .head { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.18em; color: var(--muted-2); margin-bottom: 18px; }

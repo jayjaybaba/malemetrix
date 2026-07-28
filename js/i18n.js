@@ -93,8 +93,8 @@
     "home.badge": { de: "Männergesundheit als System — nicht nach Bauchgefühl", en: "Men’s health as a system — not guesswork" },
     "home.h1": { de: "Bau den Körper.<br><span class=\"text-grad\">Schütz das System.</span>",
                  en: "Build the body.<br><span class=\"text-grad\">Protect the system.</span>" },
-    "home.lead": { de: "Training, Ernährung, Schlaf, Hormone und Gesundheit für Männer, die Job und Familie haben — datenbasiert statt nach Bauchgefühl. MaleMetrix findet zuerst deinen größten Engpass, bevor du Zeit, Geld oder Energie in die falschen Dinge steckst.",
-                   en: "Training, nutrition, sleep, hormones and health for men with a job and a family — data-driven, not guesswork. MaleMetrix first finds your biggest bottleneck, before you pour time, money or energy into the wrong things." },
+    "home.lead": { de: "Training, Ernährung, Schlaf und Hormone für Männer mit Job und Familie — Messwerte statt Bauchgefühl. MaleMetrix findet zuerst deinen größten Engpass, bevor du Zeit, Geld oder Energie in die falschen Dinge steckst.",
+                   en: "Training, nutrition, sleep and hormones for men with a job and a family — measurements, not guesswork. MaleMetrix first finds your biggest bottleneck, before you pour time, money or energy into the wrong things." },
     "home.trustline": { de: "~7 Minuten · kostenlos · sofortige Auswertung · kein E-Mail-Zwang", en: "~7 minutes · free · instant results · no email required" },
     "home.howLink": { de: "So funktioniert MaleMetrix ↓", en: "How MaleMetrix works ↓" },
 
