@@ -455,9 +455,9 @@ group("11c · My-Protokoll-Bottom-Navigation: sichtbar, bedienbar, korrekt aktiv
 
   /* Inhalt wird nicht verdeckt — und der Abstand existiert genau einmal */
   ok(/\.os-shell \{[^}]*padding-bottom: 48px/.test(css), "Desktop: normaler Abstand ohne feste Bar");
-  ok(/\.os-shell \{ padding-bottom: calc\(78px \+ env\(safe-area-inset-bottom/.test(css),
+  ok(/\.os-shell \{ padding-bottom: calc\(96px \+ env\(safe-area-inset-bottom/.test(css),
     "Mobil: genau ein Abstand für Barhöhe + Safe Area");
-  ok((css.match(/padding-bottom: calc\(78px/g) || []).length === 1, "kein doppelter Bottom-Abstand");
+  ok((css.match(/padding-bottom: calc\(96px/g) || []).length === 1, "kein doppelter Bottom-Abstand");
 })();
 
 /* ==================================================================== 12 */
