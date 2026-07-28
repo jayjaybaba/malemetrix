@@ -3313,50 +3313,187 @@ window.MM_CHECK = {
   /* --------------------------------------------------------- DEEP LINKS */
   /* Nicht jeder Link fuer jeden. Genau der naechste sinnvolle Weg. */
 
+  /* ===================== KAPITEL UND ABSCHNITTE (Paket 6) =================
+     EINE Zuordnung: Score-Domain → Protokoll-Kapitel → konkreter Abschnitt.
+     Kapitelnummer, Kapitelname und Datei stammen aus dem kanonischen
+     Kapitelindex (protokoll.html); die Abschnitte sind die dort tatsächlich
+     ausgewiesenen Inhalte der jeweiligen Kapitelseite.
+
+     Technischer Schlüssel ist IMMER die stabile ID (Kapitel-Key + Abschnitts-
+     Anker), nie die sichtbare deutsche Überschrift. Ein Label darf sich
+     ändern, ohne dass die Zuordnung bricht.
+
+     Die Kapitelseiten sind die Vorschauflächen des Werks: Sie nennen den
+     Abschnitt, den der Score meint, und führen von dort über den bereits
+     bestehenden Weg in den Volltext. Der Volltext-Reader bleibt unverändert
+     zugangsgeschützt — ein Abschnittsanker öffnet nichts, was ohne ihn
+     verschlossen wäre. */
   C.CHAPTERS = {
-    training:   { label: "Training",           href: "protokoll.html" },
-    body:       { label: "Körperkomposition",  href: "protokoll.html" },
-    protein:    { label: "Protein & Ernährung", href: "protokoll.html" },
-    sleep:      { label: "Schlaf",             href: "protokoll.html" },
-    sleepStack: { label: "Schlaf-Stack",       href: "protokoll.html" },
-    blood:      { label: "Blutwerte & Risiko", href: "protokoll.html" },
-    hormones:   { label: "Hormone",            href: "protokoll.html" },
-    sexual:     { label: "Sexuelle Gesundheit", href: "protokoll.html" },
-    glp1:       { label: "GLP-1",              href: "protokoll.html" },
-    stack:      { label: "Ultimate Stack",     href: "protokoll.html" },
-    habits:     { label: "Umsetzung",          href: "protokoll.html" },
-    daily:      { label: "Tägliche Bewegung",  href: "protokoll.html" }
+    fundament: {
+      nr: "01", label: "DAS FUNDAMENT", href: "ebooks/blueprint.html",
+      sections: {
+        "engpass-finden": "Wie du deinen Engpass findest",
+        "koerperkomposition": "Muskel und Fett als Stoffwechselorgane",
+        "reihenfolge": "Wo du anfängst, wenn alles gleichzeitig dran wäre"
+      }
+    },
+    training: {
+      nr: "02", label: "JEDEN TAG TRAINIEREN", href: "ebooks/taeglich-trainieren.html",
+      sections: {
+        "trainingsstruktur": "Drei Einheiten mit Progression statt sechs ohne",
+        "alltagsbewegung": "Alltagsbewegung als eigenständiger Hebel",
+        "progression": "Progression planen, statt härter zu schwitzen"
+      }
+    },
+    schlaf: {
+      nr: "03", label: "SCHLAF & REGENERATION", href: "ebooks/schlaf-energie.html",
+      sections: {
+        "schlafrhythmus": "Rhythmus schlägt Dauer",
+        "koffein-alkohol": "Koffein-Timing, Alkohol und der Tiefschlaf",
+        "schlafapnoe": "Schlafapnoe: die Anzeichen, die Männer übersehen"
+      }
+    },
+    blutwerte: {
+      nr: "04", label: "BLUTWERTE, RISIKO & LONGEVITY", href: "ebooks/blutwerte-guide.html",
+      sections: {
+        "werte-die-entscheiden": "Welche Werte eine Entscheidung verändern",
+        "apob-lpa": "ApoB und Lp(a)",
+        "hba1c-insulin": "HbA1c, Nüchterninsulin und der stille Vorlauf",
+        "blutdruck": "Blutdruck: der am meisten unterschätzte Einzelwert"
+      }
+    },
+    hormone: {
+      nr: "05", label: "HORMONE & TESTOSTERON", href: "ebooks/testosteron.html",
+      sections: {
+        "hpg-achse": "Wie die HPG-Achse funktioniert",
+        "t-werte-lesen": "Gesamt-T, freies T und SHBG richtig lesen",
+        "before-trt": "BEFORE TRT: was vorher geklärt sein muss"
+      }
+    },
+    glp1: {
+      nr: "06", label: "GLP-1 & METABOLIC MEDICINE", href: "ebooks/glp1-agonisten.html",
+      sections: { "muskelschutz": "Muskelverlust: das Hauptrisiko und wie man ihm begegnet" }
+    },
+    stack: {
+      nr: "07", label: "DER ULTIMATIVE STACK", href: "ebooks/ultimate-stack.html",
+      sections: { "health-shield": "Der Health Shield" }
+    },
+    supplemente: {
+      nr: "08", label: "SUPPLEMENTE MIT EVIDENZ", href: "ebooks/supplements.html",
+      sections: { "evidenz-liste": "Die kurze Liste mit belastbarer Evidenz" }
+    },
+    sexuell: {
+      nr: "09", label: "SEXUELLE GESUNDHEIT", href: "ebooks/sexuelle-gesundheit.html",
+      sections: { "erektion-als-marker": "Die Erektion als Frühwarnsystem für die Gefäße" }
+    },
+    injektionen: {
+      nr: "10", label: "INJEKTIONEN", href: "ebooks/11-injektionen.html",
+      sections: { "sicherheit": "Hygiene und Sicherheit" }
+    },
+    abschluss: {
+      nr: "→", label: "ABSCHLUSS · DAS SYSTEM ZUSAMMENSETZEN", href: "ebooks/gewohnheiten.html",
+      sections: { "umsetzung": "Wie aus Wissen dauerhafte Umsetzung wird" }
+    },
+    /* Vertiefung zu Kapitel 01 — sichtbar als solche gekennzeichnet, damit
+       Kanon und Bibliothek nicht verwechselt werden. */
+    proteinVertiefung: {
+      nr: "01 · VERTIEFUNG", label: "Protein ohne Kochen", href: "ebooks/protein-system.html",
+      vertiefung: true,
+      sections: {
+        "proteinmenge": "Wie viel Protein du wirklich brauchst",
+        "mahlzeitenstruktur": "Standardmahlzeiten, die immer funktionieren"
+      }
+    }
   };
 
+  /* Jede Domain der Engine erhält genau eine Zuordnung — fachlich gegen den
+     tatsächlichen Kapitelinhalt geprüft, nicht nach Wortähnlichkeit. */
   C.DOMAIN_CHAPTER = {
-    bodyComposition: "body", training: "training", movement: "daily", sleep: "sleep",
-    recovery: "sleepStack", nutrition: "protein", metabolic: "blood", cardiovascular: "blood",
-    hormonal: "hormones", energy: "sleep", dataQuality: "blood", execution: "habits",
-    enhancedControl: "blood", therapyControl: "hormones", recoveryStatus: "hormones"
+    bodyComposition: { chapter: "fundament",         section: "koerperkomposition" },
+    training:        { chapter: "training",          section: "trainingsstruktur" },
+    movement:        { chapter: "training",          section: "alltagsbewegung" },
+    sleep:           { chapter: "schlaf",            section: "schlafrhythmus" },
+    recovery:        { chapter: "schlaf",            section: "koffein-alkohol" },
+    energy:          { chapter: "schlaf",            section: "koffein-alkohol" },
+    nutrition:       { chapter: "proteinVertiefung", section: "proteinmenge" },
+    metabolic:       { chapter: "blutwerte",         section: "hba1c-insulin" },
+    cardiovascular:  { chapter: "blutwerte",         section: "blutdruck" },
+    dataQuality:     { chapter: "blutwerte",         section: "werte-die-entscheiden" },
+    hormonal:        { chapter: "hormone",           section: "t-werte-lesen" },
+    execution:       { chapter: "abschluss",         section: "umsetzung" },
+    enhancedControl: { chapter: "blutwerte",         section: "werte-die-entscheiden" },
+    therapyControl:  { chapter: "hormone",           section: "t-werte-lesen" },
+    recoveryStatus:  { chapter: "hormone",           section: "hpg-achse" }
   };
 
-  C.deepLinks = function (a, bottleneck, gaps) {
+  /* Der kanonische Auflöser — JEDE sichtbare Kapitelempfehlung läuft hier
+     durch. Liefert null, wenn keine belastbare Zuordnung existiert; dann
+     wird ehrlich nichts empfohlen statt irgendetwas verlinkt. Ein Abschnitt,
+     den es nicht (mehr) gibt, führt höchstens ins richtige Kapitel — nie zu
+     einem falschen Anker. `basis` erlaubt Unterseiten (z. B. ebooks/). */
+  C.chapterFor = function (domain, basis) {
+    var m = C.DOMAIN_CHAPTER[domain];
+    if (!m) return null;
+    var ch = C.CHAPTERS[m.chapter];
+    if (!ch || !ch.href) return null;
+    var sectionLabel = (ch.sections && ch.sections[m.section]) || null;
+    var href = (basis || "") + ch.href;
+    return {
+      domain: domain,
+      chapter: m.chapter, chapterLabel: ch.label, chapterNr: ch.nr,
+      vertiefung: !!ch.vertiefung,
+      section: sectionLabel ? m.section : null,
+      sectionLabel: sectionLabel,
+      href: href,
+      /* Nur anspringen, was es wirklich gibt. */
+      hrefSection: sectionLabel ? href + "#abschnitt-" + m.section : href,
+      quelle: ch.vertiefung ? "DAS PROTOKOLL · Kapitel " + ch.nr : "DAS PROTOKOLL · Kapitel " + ch.nr
+    };
+  };
+
+  /* Zugänglicher Linktext: nennt immer Abschnitt UND Kapitel, nie nur
+     „Öffnen". */
+  C.chapterLinkLabel = function (link) {
+    if (!link) return "";
+    return link.sectionLabel
+      ? "Abschnitt „" + link.sectionLabel + "“ in DAS PROTOKOLL öffnen"
+      : "Kapitel „" + link.chapterLabel + "“ in DAS PROTOKOLL öffnen";
+  };
+
+  C.CHAPTER_FALLBACK = "Für diesen Bereich ist aktuell noch kein direkter Protokollabschnitt hinterlegt.";
+
+  /* Nutzt dieselbe Zuordnung wie C.chapterFor — keine zweite Kapitelliste.
+     Der Engpass führt; Kontextkapitel ergänzen ihn, ohne die Priorisierung
+     der Engine zu verändern. */
+  C.deepLinks = function (a, bottleneck, gaps, basis) {
     a = a || {}; gaps = gaps || [];
     var st = C.statusOf(a);
     var out = [];
     var seen = {};
-    function push(key, why) {
+    function push(key, sectionKey, why) {
       var ch = C.CHAPTERS[key];
-      if (!ch || seen[key]) return;
+      if (!ch || !ch.href || seen[key]) return;
       seen[key] = true;
-      out.push({ key: key, label: ch.label, href: ch.href, why: why });
+      var label = (ch.sections && ch.sections[sectionKey]) || null;
+      var href = (basis || "") + ch.href;
+      out.push({
+        key: key, label: ch.label, nr: ch.nr, section: label ? sectionKey : null,
+        sectionLabel: label, href: href,
+        hrefSection: label ? href + "#abschnitt-" + sectionKey : href, why: why
+      });
     }
     /* 1) Der Engpass fuehrt */
-    if (bottleneck && C.DOMAIN_CHAPTER[bottleneck.domain]) {
-      push(C.DOMAIN_CHAPTER[bottleneck.domain], "Erklärt, warum " + bottleneck.name + " gerade dein Fortschritt bestimmt.");
+    if (bottleneck) {
+      var m = C.DOMAIN_CHAPTER[bottleneck.domain];
+      if (m) push(m.chapter, m.section, "Erklärt, warum " + bottleneck.name + " gerade dein Fortschritt bestimmt.");
     }
     /* 2) Kontextspezifisch */
     if (st === "enhanced" || st === "medical_trt" || st === "former_enhanced") {
-      push("blood", "Die wenigen Werte, die in deinem Kontext wirklich kontrolliert gehören.");
+      push("blutwerte", "werte-die-entscheiden", "Die wenigen Werte, die in deinem Kontext wirklich kontrolliert gehören.");
     }
-    if (C.sexualConcern(a)) push("sexual", "Ordnet Libido und Erektion ein, ohne daraus eine Diagnose zu machen.");
-    if (C.usesGlp1(a)) push("glp1", "Was unter GLP-1 über Muskelerhalt und Proteinzufuhr entscheidet.");
-    if (gaps.some(function (g) { return g.id === "steps" || g.id === "sitting"; })) push("daily", "Warum der Rest des Tages mehr wiegt als das Workout.");
+    if (C.sexualConcern(a)) push("sexuell", "erektion-als-marker", "Ordnet Libido und Erektion ein, ohne daraus eine Diagnose zu machen.");
+    if (C.usesGlp1(a)) push("glp1", "muskelschutz", "Was unter GLP-1 über Muskelerhalt und Proteinzufuhr entscheidet.");
+    if (gaps.some(function (g) { return g.id === "steps" || g.id === "sitting"; })) push("training", "alltagsbewegung", "Warum der Rest des Tages mehr wiegt als das Workout.");
     return out.slice(0, 3);
   };
 

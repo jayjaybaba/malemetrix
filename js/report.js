@@ -101,6 +101,17 @@
       '<tr><td>Status-Kontext</td><td>' + statusLbl + '</td></tr>' +
       '<tr><td>Primärer Engpass</td><td>' + (V.bn ? V.bn.name : "—") + (V.bn && V.bn.value != null ? " (" + V.bn.value + "/100)" : "") + '</td></tr>' +
       '<tr><td>Aussagesicherheit</td><td>' + (V.conf.label || V.conf.level) + '</td></tr>' +
+      /* Paket 6: das empfohlene Kapitel zum Engpass — als Text, damit es
+         auch im Ausdruck trägt. Nur bei echter Zuordnung. */
+      (function () {
+        let k = null;
+        try { k = V.bn ? C.chapterFor(V.bn.domain) : null; } catch (e) { k = null; }
+        if (!k) return '';
+        return '<tr><td>Empfohlenes Kapitel</td><td>' +
+          (k.sectionLabel ? esc(k.sectionLabel) + ' — ' : '') +
+          'DAS PROTOKOLL · Kapitel ' + esc(k.chapterNr) + ' · ' + esc(k.chapterLabel) +
+          (k.vertiefung ? ' (Vertiefung)' : '') + '</td></tr>';
+      })() +
       '</table>' +
       '<p style="margin-top:8px;font-size:0.9rem">' + (V.conf.reasons || []).join(" ") + '</p>' +
       (V.panel ? '<div class="r-box" style="margin-top:12px;border-left:4px solid #2e7cf6"><h3>' + V.panel.title + ' — ' + V.panel.verdict + '</h3>' +
@@ -205,6 +216,15 @@
       rs.hinweise.forEach(function (h) { why.push(esc(h.text)); });
       if (gap) why.push("Nicht erfasst: <strong>" + esc(gap.label) + "</strong>");
       if (!why.length) why = ["Keine deiner Antworten hat in diesem Bereich Punkte gekostet."];
+
+      /* Paket 6: der passende Abschnitt wird als TEXT genannt — der Report
+         wird auch gedruckt und exportiert, wo ein Link nichts nützt. */
+      let kap = null;
+      try { kap = C.chapterFor(d); } catch (e) { kap = null; }
+      if (kap && kap.sectionLabel) {
+        why.push('<span style="color:#8893a7">Passender Abschnitt: ' + esc(kap.sectionLabel) +
+          " (DAS PROTOKOLL · Kapitel " + esc(kap.chapterNr) + ")</span>");
+      }
 
       html += '<tr><td>' + esc(meta.name) + (isPrimary ? ' <span style="font-weight:400;color:#8893a7">— primärer Engpass</span>' : '') + '</td>' +
         '<td>' + esc(C.areaValueLabel(v)) + '</td>' +

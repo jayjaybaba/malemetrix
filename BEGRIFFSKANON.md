@@ -255,6 +255,68 @@ Ergebnis, nie die Tagesliste.
 Wirkung. Es gibt **eine** Umsetzungsquote; die Herkunft steht nur als Zusatz
 daneben („davon 3 Tage aus Tracking erkannt"), nie als zweite Quote.
 
+## Score → DAS PROTOKOLL (Paket 6, umgesetzt)
+
+Der Score findet den Engpass, DAS PROTOKOLL erklärt ihn — jetzt mit
+**konkretem Kapitel und konkretem Abschnitt** statt eines pauschalen
+Verweises. Sichtbare Begriffe: **Empfohlenes Kapitel · Passender Abschnitt ·
+Empfohlen, weil … · DAS PROTOKOLL**.
+
+**Eine kanonische Zuordnung** in `js/check-data.js` — `C.CHAPTERS`
+(Kapitelregister mit Nummer, Name, Datei, Abschnitten) und
+`C.DOMAIN_CHAPTER` (Domain → Kapitel + Abschnitt). Jede sichtbare Empfehlung
+läuft durch `C.chapterFor(domain, basis)`; es gibt keine zweite Kapitelliste
+und keine Domain-Abfrage in `check.js`, `report.js` oder einer HTML-Datei.
+
+**Technischer Schlüssel ist immer die stabile ID** (Kapitel-Key +
+Abschnitts-Anker `#abschnitt-<id>`), nie die sichtbare Überschrift. Ein
+Kapitel- oder Abschnittstitel darf umbenannt werden, ohne dass ein Link
+bricht — nur die Anzeige folgt.
+
+| Domain | Kapitel | Abschnitt |
+|---|---|---|
+| bodyComposition | 01 · DAS FUNDAMENT | Muskel und Fett als Stoffwechselorgane |
+| training | 02 · JEDEN TAG TRAINIEREN | Drei Einheiten mit Progression statt sechs ohne |
+| movement | 02 · JEDEN TAG TRAINIEREN | Alltagsbewegung als eigenständiger Hebel |
+| sleep | 03 · SCHLAF & REGENERATION | Rhythmus schlägt Dauer |
+| recovery · energy | 03 · SCHLAF & REGENERATION | Koffein-Timing, Alkohol und der Tiefschlaf |
+| nutrition | 01 · VERTIEFUNG · Protein ohne Kochen | Wie viel Protein du wirklich brauchst |
+| metabolic | 04 · BLUTWERTE, RISIKO & LONGEVITY | HbA1c, Nüchterninsulin und der stille Vorlauf |
+| cardiovascular | 04 · BLUTWERTE, RISIKO & LONGEVITY | Blutdruck: der am meisten unterschätzte Einzelwert |
+| dataQuality · enhancedControl | 04 · BLUTWERTE, RISIKO & LONGEVITY | Welche Werte eine Entscheidung verändern |
+| hormonal · therapyControl | 05 · HORMONE & TESTOSTERON | Gesamt-T, freies T und SHBG richtig lesen |
+| recoveryStatus | 05 · HORMONE & TESTOSTERON | Wie die HPG-Achse funktioniert |
+| execution | ABSCHLUSS | Wie aus Wissen dauerhafte Umsetzung wird |
+
+**Ernährung ist eine Vertiefung, kein Kanon-Kapitel.** Keines der zehn
+Kapitel behandelt Protein oder Ernährung; der Bereich verweist deshalb auf
+das Vertiefungs-Ebook „Protein ohne Kochen" und wird sichtbar als
+**Vertiefung** gekennzeichnet, damit Kanon und Bibliothek nicht verschwimmen.
+
+**Empfohlen, weil …** kommt ausschließlich aus `C.areaReasons` (Paket 4):
+höchstens drei echte Antworten des Nutzers plus höchstens eine Datenlücke.
+Keine generierten Texte, keine Diagnose, keine Kausalität. Ohne belastbare
+Gründe steht der ehrliche Satz „Empfohlen aufgrund deines priorisierten
+Optimierungsbereichs."
+
+**Priorisierung unverändert.** Paket 6 entscheidet nicht neu, welcher Bereich
+wichtig ist — es übersetzt die bestehende Engpass-Entscheidung. Der primäre
+Engpass bekommt genau eine prominente Empfehlung, jeder weitere Bereich
+höchstens eine kompakte; für den Engpass entfällt die kompakte, damit nichts
+doppelt erscheint.
+
+**Zugriff bleibt unberührt.** Ziel ist immer die bestehende Kapitelseite
+(`ebooks/<kapitel>.html#abschnitt-<id>`) — die Vorschaufläche des Werks. Der
+Volltext-Reader (`ebooks/protokoll.html`) ist AES-verschlüsselt und bleibt
+es; keine Empfehlung zeigt dorthin, ein Anker kann die Sperre also nicht
+einmal berühren. Von der Kapitelseite führt der bereits bestehende Weg in
+den Volltext.
+
+**Fehlt eine Zuordnung**, entsteht kein Link und kein Platzhalter, sondern:
+„Für diesen Bereich ist aktuell noch kein direkter Protokollabschnitt
+hinterlegt." Fehlt nur der Abschnitt, führt der Link höchstens ins richtige
+Kapitel — nie zu einem falschen Anker.
+
 ## Noch offen (spätere Pakete)
 
 - Bereichswert im Tracker / in My MaleMetrix: bewusst nicht in Paket 4.

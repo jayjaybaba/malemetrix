@@ -621,6 +621,47 @@
         ? '<p class="small" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted)"><strong style="color:var(--text)">Danach:</strong> ' +
             V.secondaryPriorities.slice(0, 3).map(s => esc(s.name) + (s.value != null ? ' (' + s.value + ')' : '')).join(' · ') + '</p>'
         : '') +
+      /* ---------- EMPFOHLENES KAPITEL (Paket 6) ----------
+         Übersetzt die BESTEHENDE Priorisierung in genau einen konkreten
+         Abschnitt. Keine neue Empfehlungslogik, keine zweite Hero-Zahl,
+         kein automatischer Auftrag und kein automatischer Punkt. */
+      (function () {
+        /* Alt-Ergebnisse ohne gespeicherte Domains bekommen KEINE Empfehlung:
+           ihr Engpass wurde gerade erst aus den Antworten nachgerechnet, war
+           damals aber nie gespeichert. Für sie bleibt es beim bestehenden
+           Hinweis auf das verdichtete Profil (Paket 6, §14). */
+        if (V.legacy) return "";
+        let link = null;
+        try { link = C.chapterFor(V.primaryBottleneck.domain); } catch (e) { link = null; }
+        if (!link) {
+          return '<p class="small muted" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">' +
+            esc(C.CHAPTER_FALLBACK) + '</p>';
+        }
+        /* „Empfohlen, weil …" — ausschließlich aus den bereits vorhandenen
+           Bereichsgründen (Paket 4). Keine generierten Sätze. */
+        let gruende = [], luecke = null;
+        try {
+          const rs = C.areaReasons(r.answers || {}, V.primaryBottleneck.domain, V.dataGaps || [], 2);
+          gruende = rs.gruende.map(g => g.frage + ": " + g.antwort);
+          if (rs.hinweise.length) gruende.push(rs.hinweise[0].text);
+          luecke = rs.luecke;
+        } catch (e) { gruende = []; luecke = null; }
+        const bw = C.areaValueLabel(V.domains[V.primaryBottleneck.domain]);
+        return '<div class="mm-chap" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">' +
+          '<span class="ch-kicker">Empfohlenes Kapitel</span>' +
+          '<p class="ch-sec">' + esc(link.sectionLabel || link.chapterLabel) + '</p>' +
+          '<p class="ch-src">DAS PROTOKOLL · Kapitel ' + esc(link.chapterNr) + ' · ' + esc(link.chapterLabel) +
+          (link.vertiefung ? ' <span class="ch-tag">Vertiefung</span>' : '') + '</p>' +
+          (gruende.length || luecke
+            ? '<p class="ch-why"><strong>Empfohlen, weil:</strong></p><ul class="ch-list">' +
+              gruende.slice(0, 3).map(g => '<li>' + esc(g) + '</li>').join('') +
+              (luecke ? '<li>Dazu fehlt dir: ' + esc(luecke.label) + '</li>' : '') + '</ul>'
+            : '<p class="ch-why">Empfohlen aufgrund deines priorisierten Optimierungsbereichs' +
+              (bw !== C.AREA_VALUE_EMPTY ? ' (Bereichswert ' + esc(bw) + ')' : '') + '.</p>') +
+          '<a class="btn btn-primary btn-sm" href="' + esc(link.hrefSection) + '" ' +
+          'aria-label="' + esc(C.chapterLinkLabel(link)) + '">Abschnitt öffnen</a>' +
+          '</div>';
+      })() +
       '</div>';
 
     /* ---------- OPTIMIERUNGSBEREICHE MIT BEREICHSWERT (Paket 4) ----------
@@ -689,6 +730,18 @@
           (marks ? '<p class="marks">' + marks + '</p>' : '') +
           '<details class="why"><summary>Warum dieser Wert?</summary><ul>' + why + '</ul></details>' +
           (pt ? '<p class="pt">Aktiver Optimierungspunkt: <strong>' + esc(pt.title) + '</strong> · ' + esc(pt.statusLabel) + '</p>' : '') +
+          /* Höchstens EIN passender Abschnitt je Bereich — kompakt, ohne dem
+             primären Engpass oben die Aufmerksamkeit zu nehmen. Ohne echte
+             Zuordnung entsteht kein Platzhalter und kein Link (Paket 6). */
+          (function () {
+            if (isPrimary) return "";               // oben bereits prominent
+            let l = null;
+            try { l = C.chapterFor(d); } catch (e) { l = null; }
+            if (!l || !l.sectionLabel) return "";
+            return '<p class="sec"><span class="k">Passender Abschnitt im Protokoll</span>' +
+              '<a href="' + esc(l.hrefSection) + '" aria-label="' + esc(C.chapterLinkLabel(l)) + '">' +
+              esc(l.sectionLabel) + '</a></p>';
+          })() +
           '</div>';
       });
       html += '</div></div>';
@@ -787,17 +840,25 @@
     html += '</div></div>';
 
     /* ---------- V2: KONTEXTUELLE VERTIEFUNG ----------
-       Der Score findet den Engpass, DAS PROTOKOLL erklärt ihn. Nur die
-       Kapitel, die zu Engpass UND Kontext passen — kein Link-Spam. */
+       Der Score findet den Engpass, DAS PROTOKOLL erklärt ihn. Das Kapitel
+       zum Engpass steht bereits oben als primäre Empfehlung — hier bleiben
+       nur die Kapitel, die aus dem KONTEXT dazukommen. Kein Karussell, keine
+       zweite Empfehlung für denselben Bereich (Paket 6). */
     (function () {
-      const links = (V.deepLinks || []).slice(0, 3);
+      let primaer = null;
+      try { primaer = C.chapterFor(V.primaryBottleneck.domain); } catch (e) { primaer = null; }
+      const links = (V.deepLinks || []).filter(l => !primaer || l.key !== primaer.chapter).slice(0, 2);
       if (!links.length) return;
       html += '<div class="card dash-block" style="margin-bottom:22px">' +
-        '<span class="card-num">WARUM DAS SO IST — DAS PROTOKOLL</span>' +
-        '<p class="small muted" style="margin:2px 0 12px">Der Score findet den Engpass. Diese Kapitel erklären, warum er entsteht.</p>' +
+        '<span class="card-num">AUS DEINEM KONTEXT — DAS PROTOKOLL</span>' +
+        '<p class="small muted" style="margin:2px 0 12px">Zusätzlich zu deinem Engpass: Diese Kapitel gehören zu deiner Ausgangslage.</p>' +
         '<div style="display:grid;gap:10px">' +
-        links.map(l => '<a href="' + l.href + '" data-track="protokoll_chapter_' + esc(l.key) + '" style="color:var(--accent-2);text-decoration:none;display:block">' +
-          '<strong>Kapitel ' + esc(l.label) + '</strong> <span class="muted" style="color:var(--muted)">— ' + esc(l.why) + '</span> →</a>').join('') +
+        links.map(l => '<a href="' + esc(l.hrefSection || l.href) + '" data-track="protokoll_chapter_' + esc(l.key) + '" ' +
+          'aria-label="' + esc((l.sectionLabel ? 'Abschnitt „' + l.sectionLabel + '“ in ' : 'Kapitel „' + l.label + '“ in ') + 'DAS PROTOKOLL öffnen') + '" ' +
+          'style="color:var(--accent-2);text-decoration:none;display:block">' +
+          '<strong>Kapitel ' + esc(l.nr) + ' · ' + esc(l.label) + '</strong>' +
+          (l.sectionLabel ? '<br><span class="muted" style="color:var(--muted)">Abschnitt: ' + esc(l.sectionLabel) + '</span>' : '') +
+          '<br><span class="muted" style="color:var(--muted)">' + esc(l.why) + '</span> →</a>').join('') +
         '</div></div>';
     })();
 
