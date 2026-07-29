@@ -204,7 +204,7 @@ Tests: `node tools-dev/tests/phase95.test.js` (37) — AES-Inhaltsgrenze, Autori
 | Cold-Start-Provenance | Map zeigt „was MaleMetrix als Nächstes lernt" + „auf Basis deiner Baseline" vs „aus deinem Verlauf"; KEEP zeigt „was würde das ändern?" (falsifizierbar) |
 | Chaos-Harness | `tools-dev/tests/chaos.test.js` (20): korrupter Store, malformed/doppelter ICS, Idempotenz (Completion/Day-Close), 800er-Historie, Müll-Einheiten, dünne Daten → 0 erfundene Muster. **Fand+fixte ICS-Duplikations-Bug** (addBusy dedupe + Re-Import = frischer Snapshot) |
 
-Tests: `node tools-dev/tests/phase96.test.js` (26) + `chaos.test.js` (20). Gesamt 3052 Assertions über 32 Suiten. SW: mm-v166.
+Tests: `node tools-dev/tests/phase96.test.js` (26) + `chaos.test.js` (20). Gesamt 3052 Assertions über 32 Suiten. SW: mm-v167.
 
 ## Paket 8 — Alltagstest, 12-Wochen-Abschluss, Konsolidierung
 | Piece | What it does |
