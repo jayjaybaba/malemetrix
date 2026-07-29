@@ -194,6 +194,28 @@ group("G8 · Manuelle Zugangsvergabe gibt nur Produkte, nie Rollen");
   ok(/ambiguous_account/.test(fn), "mehrdeutige Konten werden nicht blind bedient");
 })();
 
+/* ----------------------------------------------------------------- G8a */
+group("G8a · Mitgliederliste: nur lesend, vollstaendig, nur fuer den Owner");
+(function () {
+  var fn = read("supabase/functions/mm-admin/index.ts");
+  ok(/action === "list_members"/.test(fn), "list_members existiert");
+  /* Die Uebersicht darf NIE schreiben — sie ist reine Anzeige. */
+  var block = fn.split('action === "list_members"')[1].split('action === "grant"')[0];
+  ok(!/\.(insert|upsert|update|delete)\(/.test(block), "list_members ist strikt lesend");
+  /* Kontosuche paginiert ueber ALLE Konten — die Einzelseite perPage:1000
+     hat ab Konto 1001 vorhandene Konten uebersehen (stille Falsch-Einladung). */
+  ok(/async function alleKonten/.test(fn), "gemeinsame paginierte Kontoladung existiert");
+  ok(!/listUsers\(\{ page: 1, perPage: 1000 \}\)/.test(fn), "keine Einzelseiten-Abfrage mit 1000er-Deckel mehr");
+  ok(/MAX_PAGES/.test(fn) && /users\.length < PER_PAGE\) break/.test(fn),
+    "die Paginierung hat Abbruch UND harten Deckel gegen Endlosschleifen");
+  /* UI: Sichtbarkeit ist Bequemlichkeit, Autorisierung liegt beim Server. */
+  var app = read("js/os/app.js");
+  ok(/list_members/.test(app) && /grMembers/.test(app), "die App bindet die Mitgliederliste an");
+  ok(/isOwner\(\)\)\s*\{\s*html \+= sec\("Betreiber"/.test(app.replace(/\n/g, " ").replace(/\s+/g, " ")) ||
+     /isOwner && MM\.entitlements\.isOwner\(\)/.test(app),
+    "der Einstellungs-Einstieg erscheint nur fuer den Owner");
+})();
+
 /* ----------------------------------------------------------------- G8b */
 group("G8b · mm-admin: verify_jwt=false ist durch Handler-Auth vollstaendig gedeckt");
 (function () {
