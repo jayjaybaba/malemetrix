@@ -2644,12 +2644,17 @@ body > * { position: relative; z-index: 0; }
 .mm-access .grant b { display: block; font-family: var(--font-display); font-size: clamp(1.3rem, 5vw, 1.9rem); font-weight: 700; letter-spacing: 0.06em; animation: mm-rise 600ms 150ms cubic-bezier(.2,.8,.2,1) both; }
 .mm-access .grant b + b { animation-delay: 280ms; }
 .mm-access .assigned { margin-top: 16px; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.2em; color: var(--muted-2); animation: mm-rise 600ms 420ms both; }
+/* Zwei gleichrangige Einstiege nach dem Protokoll-Kauf: lesen oder starten.
+   Gestapelt, volle Breite auf Mobil — der Käufer wählt, er sucht nicht. */
+.mm-access-choice { display: flex; flex-direction: column; gap: 12px; margin: 22px auto 0; max-width: 420px; }
+.mm-access-choice .btn { width: 100%; animation: mm-rise 600ms 520ms both; }
+.mm-access-choice .btn + .btn { animation-delay: 640ms; }
 @keyframes mm-unlock { from { opacity: 0; transform: scale(0.94); letter-spacing: 0.5em; } to { opacity: 1; transform: scale(1); letter-spacing: 0.26em; } }
 @keyframes mm-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
 /* ---- MOTION — funktional, nie dekorativ; respektiert reduced motion ---- */
 @media (prefers-reduced-motion: reduce) {
-  .mm-access .stamp, .mm-access .grant b, .mm-access .assigned { animation: none; }
+  .mm-access .stamp, .mm-access .grant b, .mm-access .assigned, .mm-access-choice .btn { animation: none; }
 }
 
 /* ==========================================================================
@@ -2701,6 +2706,25 @@ body > * { position: relative; z-index: 0; }
   }
 }
 @media (prefers-reduced-motion: reduce) { .os14-hero-video { transition: none; } }
+
+/* ---- AMBIENT MOTION für Seitenköpfe: dasselbe Signature-Video wie der
+   Home-Hero (nach dem ersten Besuch im Browser-Cache — keine zweite
+   Ladung), stark abgedunkelt hinter .page-head. Hochwertigkeit ohne
+   Lesbarkeitsverlust; reduced-motion bleibt beim stehenden Poster. */
+.mm-ambient { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.mm-ambient video {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: 74% 32%;
+  opacity: 0; transition: opacity 1.2s ease;
+}
+.mm-ambient video.is-live { opacity: 1; }
+.mm-ambient .scrim {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(180deg, rgba(7,9,13,0.78) 0%, rgba(7,9,13,0.62) 34%, rgba(7,9,13,0.86) 72%, var(--bg-0) 100%);
+}
+.page-head > .container { position: relative; z-index: 1; }
+@media (prefers-reduced-motion: reduce) { .mm-ambient video { transition: none; } }
 
 /* Diagnose-Instrument im Hero: kein Card-Dashboard, ein Messgerät. */
 .os14-diag { border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline); padding: 26px 0 20px; position: relative; }

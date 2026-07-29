@@ -44,7 +44,9 @@
     learn: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>'
   };
   function navBar(active) {
-    var items = [["today", "Today"], ["plan", "Plan"], ["track", "Track"], ["progress", "Progress"], ["learn", "Learn"]];
+    /* Für Käufer heißt der fünfte Tab nach dem Produkt, das sie bezahlt
+       haben — „Learn" ist nur der Zustand davor (§ Kauf-Sichtbarkeit). */
+    var items = [["today", "Today"], ["plan", "Plan"], ["track", "Track"], ["progress", "Progress"], ["learn", protocolLink().owned ? "Protokoll" : "Learn"]];
     return '<nav class="os-nav" aria-label="Hauptnavigation">' + items.map(function (it) {
       var on = active === it[0];
       return '<a href="#' + it[0] + '" class="' + (on ? "on" : "") + '"' + (on ? ' aria-current="page"' : '') + '>' +
@@ -661,12 +663,17 @@
       if (d.hasScore && d.score != null) strip.push('<a class="os-stat" href="#map"><span class="k">SCORE</span><b>' + esc(String(d.score)) + '<i>/100</i></b></a>');
       if (d.mode) strip.push('<span class="os-stat"><span class="k">MODE</span><b>' + esc((MODE[d.mode] || d.mode).toUpperCase()) + '</b></span>');
       if (d.bottleneckName || d.bottleneck) strip.push('<span class="os-stat"><span class="k">ENGPASS</span><b>' + esc((d.bottleneckName || BN[d.bottleneck] || d.bottleneck).toUpperCase()) + '</b></span>');
+      if (OS.pathway()) strip.push('<a class="os-stat" href="#pathway"><span class="k">PATHWAY</span><b>' + esc(OS.PATHWAYS[OS.pathway()].label) + '</b></a>');
       strip.push('<span class="os-stat"><span class="k">PROGRAMM</span><b>TAG ' + p.day + '<i>/84</i></b></span>');
       if (p.nextReviewDays != null) strip.push('<a class="os-stat" href="#review"><span class="k">PRÜFUNG</span><b>' + (p.nextReviewDays === 0 ? "HEUTE" : "IN " + p.nextReviewDays + (p.nextReviewDays === 1 ? " TAG" : " TAGEN")) + '</b></a>');
       html += '<div class="os-statstrip">' + strip.join("") + '</div>';
 
       // KONTEXT-BADGE (aktives Overlay, jederzeit beendbar)
       html += contextBadge(day);
+
+      // DAS PROTOKOLL — Weiterlesen mit Fortschritt, bis das Werk durch ist.
+      // Danach verschwindet die Kachel; der Protokoll-Tab bleibt der Zugang.
+      html += protoCard("today");
 
       // Workout-Draft von heute → Resume statt Neuanfang
       var draft = MM.store.get("os_workout_draft", null);
@@ -781,8 +788,10 @@
       // Sheet-Container (My Day Changed / Eat Now / Quick Capture)
       html += '<div id="osSheet" class="os-sheet" hidden></div>';
     } else if (d.access.twelve_week && p && p.notStarted) {
+      html += protoCard("today");
       html += '<div class="card os-accent"><span class="small muted os-k">' + esc(greetTime()) + esc(name) + '</span><h1 class="os-big" style="font-size:1.5rem">Dein 12-Week System ist startklar</h1><p class="muted" style="margin:0 0 14px">Dein Programm beginnt am gewählten Startdatum. Nutze die Zeit: <a href="#baseline" style="color:var(--accent)">Baseline anlegen →</a></p><a href="kurs-programm.html" class="btn btn-primary">Programm öffnen →</a></div>';
     } else if (d.access.twelve_week) {
+      html += protoCard("today");
       html += '<div class="card os-accent"><span class="small muted os-k">' + esc(greetTime()) + esc(name) + '</span><h1 class="os-big" style="font-size:1.5rem">Dein 12-Week System ist bereit</h1><p class="muted" style="margin:0 0 14px">Empfohlener Ablauf: erst <a href="#baseline" style="color:var(--accent)">Baseline</a>, dann Programm einrichten.</p><a href="kurs-programm.html" class="btn btn-primary">Programm starten →</a></div>';
     } else if (d.hasScore) {
       // Phase 8 (§5/§14/§15): erst der persönliche Wert (Map), dann der
@@ -978,6 +987,12 @@
     var aiSt = (window.MM && MM.ai) ? MM.ai.status() : { state: "config_required" };
     html += sec("KI-Sprachschicht",
       '<p class="small muted">' + esc(aiSt.state === "enabled" ? "KI-Synthese aktiv (server-seitig, validiert). Deterministische Intelligenz bleibt maßgeblich." : (aiSt.honest || "Deterministische Intelligenz aktiv — KI-Schicht braucht Server-Konfiguration.")) + '</p>');
+    /* Pathway war nach der Erstauswahl unauffindbar (die Today-CTA
+       verschwindet) — hier ist sein dauerhafter Ort. */
+    var spw = OS.pathway();
+    html += sec("Pathway",
+      '<p class="muted" style="margin:0 0 10px">Aktuell: <b style="color:var(--text)">' + (spw && OS.PATHWAYS[spw] ? esc(OS.PATHWAYS[spw].label) : "noch nicht gewählt") + '</b> — der Pathway bestimmt Ton, Tiefe und Inhalte (Health · Performance · Enhanced). Dein Programm und Modus bleiben davon unberührt.</p>' +
+      '<a class="os-ghost" href="#pathway">Pathway ' + (spw ? "ändern" : "wählen") + ' →</a>');
     html += '<p style="margin-top:16px"><a class="os-ghost" href="#today">← Zurück zu Today</a></p>';
     return html;
   }
@@ -1260,6 +1275,14 @@
   }
 
   /* =========================== TRACK =========================== */
+  /* Antwort des Instruments nach dem Speichern — Loggen soll sich wie eine
+     Messung anfühlen, nicht wie eine Pflicht. Wird beim Verlassen der
+     Track-Ansicht geleert (render). */
+  var trackEcho = null;
+  /* Anzeige-Helfer: ISO-Zeitstempel (Score-Import) → "25.07."; Quellen-Codes
+     → lesbare Herkunft. Rohdaten bleiben unverändert gespeichert. */
+  function fmtMetricDate(d) { var s = String(d || "").slice(0, 10).split("-"); return s.length === 3 ? s[2] + "." + s[1] + "." : String(d || ""); }
+  var METRIC_SRC = { manual: "manuell", score: "aus deinem Score", quick: "Schnellerfassung", baseline: "Baseline" };
   function vTrack() {
     var lw = OS.latestMetric("weight"), lwa = OS.latestMetric("waist");
     var wt = OS.metricTrend("weight", 7);
@@ -1270,8 +1293,9 @@
       '<div class="os-grid2"><label class="os-field"><span>Gewicht heute (kg)</span><input id="tkW" type="number" inputmode="decimal" placeholder="' + (lw ? lw.value : "—") + '"></label>' +
       '<label class="os-field"><span>Taille (cm)</span><input id="tkWa" type="number" inputmode="decimal" placeholder="' + (lwa ? lwa.value : "—") + '"></label></div>' +
       '<button id="tkSave" class="btn btn-primary btn-sm">Speichern</button>' +
+      (trackEcho ? '<p class="os-track-echo">' + esc(trackEcho) + '</p>' : '') +
       (wt ? '<p class="small muted" style="margin-top:10px">7-Tage-Trend Gewicht: ' + (wt.delta > 0 ? "+" : "") + wt.delta + ' kg (rollender Ø — Einzelmessungen sind Rauschen).</p>' : '') +
-      '<div class="os-metriclist">' + OS.metricSeries("weight").slice(-7).reverse().map(function (m) { return '<div><span>' + m.date + '</span><b>' + m.value + ' ' + m.unit + '</b><i>' + m.source + '</i></div>'; }).join("") + '</div>');
+      '<div class="os-metriclist">' + OS.metricSeries("weight").slice(-7).reverse().map(function (m) { return '<div><span>' + fmtMetricDate(m.date) + '</span><b>' + m.value + ' ' + m.unit + '</b><i>' + esc(METRIC_SRC[m.source] || m.source) + '</i></div>'; }).join("") + '</div>');
 
     // §30 — Quick-Log Ernährung
     if (np) {
@@ -1289,12 +1313,22 @@
       '<label class="os-field"><span>Dauer (min)</span><input id="enMin" type="number" inputmode="numeric" placeholder="35"></label></div>' +
       '<button id="enSave" class="btn btn-primary btn-sm">Engine-Session loggen</button>');
 
-    // §89 — Recovery kurz
+    // §89 — Recovery kurz. Schlaf/Energie bekommen sichtbaren 7-Tage-Kontext,
+    // damit die Eingaben nicht im Nichts verschwinden. Der Link zum alten
+    // tracker.html entfällt: die Seite bleibt als freies Tool bestehen, aber
+    // in der App gibt es EINEN Tracker — diesen.
+    var sl7 = OS.metricSeries("sleep").slice(-7), en7 = OS.metricSeries("energy").slice(-7);
+    function avg(a) { return a.length ? Math.round(a.reduce(function (s, m) { return s + m.value; }, 0) / a.length * 10) / 10 : null; }
+    var rcLine = (sl7.length || en7.length)
+      ? '<p class="small muted" style="margin-top:10px">Letzte 7 Einträge: ' +
+        (sl7.length ? 'Ø ' + String(avg(sl7)).replace(".", ",") + ' h Schlaf' : '') +
+        (sl7.length && en7.length ? ' · ' : '') +
+        (en7.length ? 'Energie Ø ' + String(avg(en7)).replace(".", ",") + '/5' : '') + '</p>'
+      : '<p class="small muted" style="margin-top:10px">Schlaf und Energie fließen direkt in deine Engpass-Erkennung und den Coach ein.</p>';
     html += sec("Recovery (kurz)",
       '<div class="os-grid2"><label class="os-field"><span>Schlaf letzte Nacht (h)</span><input id="rcSleep" type="number" inputmode="decimal" step="0.5" placeholder="7"></label>' +
       '<label class="os-field"><span>Energie (1–5)</span><select id="rcEnergy"><option>—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label></div>' +
-      '<button id="rcSave" class="os-ghost">Speichern</button>' +
-      '<p style="margin-top:14px"><a class="os-ghost" href="tracker.html">Vollständiger Tracker (Training · Cardio · Schlaf) →</a></p>');
+      '<button id="rcSave" class="os-ghost">Speichern</button>' + rcLine);
     return html;
   }
 
@@ -1578,9 +1612,57 @@
     return { href: "ebooks/protokoll.html", owned: true };
   }
 
+  /* Lesefortschritt, den der Reader (ebooks/protokoll.html) beim Scrollen
+     ablegt. Roh aus localStorage, nicht MM.store — der Reader läuft ohne
+     OS-Kontext und schreibt denselben Schlüssel. */
+  function protoProgress() {
+    try {
+      var p = JSON.parse(localStorage.getItem("mm_protokoll_progress") || "null");
+      if (p && typeof p.pct === "number") return p;
+    } catch (e) {}
+    return null;
+  }
+
+  /* Weiterlesen-Kachel für Käufer. In TODAY nur, solange das Werk nicht
+     durchgelesen ist — danach räumt sie sich selbst weg und der Protokoll-Tab
+     bleibt der dauerhafte Zugang. In LEARN immer (dort ist sie der Kopf des
+     Tabs, nach dem Durchlesen als Nachschlage-Einstieg). */
+  function protoCard(ctx) {
+    var pl = protocolLink();
+    if (!pl.owned) return "";
+    var pr = protoProgress();
+    if (ctx === "today" && pr && pr.done) return "";
+    var pct = pr ? Math.max(0, Math.min(100, Math.round(pr.pct))) : 0;
+    var head, meta, btn;
+    if (!pr) {
+      head = "Jetzt lesen: Kapitel 1";
+      meta = "Dein Referenzwerk — 10 Kapitel, eine Reihenfolge.";
+      btn = "Protokoll lesen →";
+    } else if (pr.done) {
+      head = "Dein Nachschlagewerk";
+      meta = "Durchgelesen. Bleibt dein Referenzwerk für jede Entscheidung.";
+      btn = "Protokoll öffnen →";
+    } else {
+      head = "Weiterlesen: " + (pr.title || pct + " % gelesen");
+      meta = (pr.ch && pr.chTotal ? "Kapitel " + pr.ch + "/" + pr.chTotal + " · " : "") + pct + " % gelesen";
+      btn = "Weiterlesen →";
+    }
+    /* Ganze Karte klickbar; der Button ist ein gestylter <span> (kein
+       interaktives Element im Link), optisch gleichwertig zum
+       „Programm starten"-Button der 12-Week-Karte. */
+    return '<a class="card os-proto-cta" href="' + pl.href + '"><span class="tag">DAS PROTOKOLL</span><b>' + esc(head) + '</b>' +
+      '<span class="os-proto-bar" aria-hidden="true"><i style="width:' + pct + '%"></i></span>' +
+      '<span class="s">' + esc(meta) + '</span>' +
+      '<span class="btn btn-primary os-proto-btn">' + esc(btn) + '</span></a>';
+  }
+
   function vLearn() {
     var pw = OS.pathway();
     var html = "";
+    /* Käufer: das Protokoll ist der Kopf dieses Tabs — Weiterlesen-Karte mit
+       Fortschritt VOR allem anderen, ohne Scrollen sichtbar. */
+    var pl = protocolLink();
+    if (pl.owned) html += protoCard("learn");
     if (MM.intelligence && MM.intelligence.knowledge) {
       try {
         var ln = MM.intelligence.knowledge.learnNow();
@@ -1596,14 +1678,12 @@
           }).join(""));
       } catch (e) {}
     }
-    var pl = protocolLink();
-    html += sec("Learn · verstehe dein System",
+    html += sec((pl.owned ? "Vertiefung" : "Learn") + " · verstehe dein System",
       '<div class="os-learn-grid">' +
-      '<a class="os-learn" href="' + pl.href + '"><b>DAS PROTOKOLL</b><span>' +
-      (pl.owned
-        ? 'Dein Referenzwerk — 10 Kapitel, eine Reihenfolge. Weiterlesen, wo du aufgehört hast.'
-        : 'Das Referenzwerk — 10 Kapitel, eine Reihenfolge. Warum dein System funktioniert.') +
-      '</span></a>' +
+      (pl.owned ? "" :
+        '<a class="os-learn" href="' + pl.href + '"><b>DAS PROTOKOLL</b><span>' +
+        'Das Referenzwerk — 10 Kapitel, eine Reihenfolge. Warum dein System funktioniert.' +
+        '</span></a>') +
       '<a class="os-learn" href="ebooks.html"><b>Library</b><span>Deep Dives: Body · Engine · Recovery · Hormone · Health.</span></a>' +
       '<a class="os-learn" href="labor.html"><b>MaleMetrix Labs</b><span>Deine Biologie über die Zeit — Werte werden zu Kontext.</span></a>' +
       '<a class="os-learn" href="blutwerte.html"><b>Blood &amp; Labs (Guide)</b><span>Die Biomarker, die für Männer zählen.</span></a>' +
@@ -2148,6 +2228,7 @@
     OS.ensureCycle();   // Zyklus-Zustandsmaschine bei jedem Render konsistent halten
     if (MM.activation) { try { MM.activation.trackOnce(); } catch (e) {} }   // Funnel-Meilensteine, je genau 1×
     var v = view();
+    if (v !== "track") trackEcho = null;   // Mess-Antwort gehört nur zur Track-Ansicht
     var body = v === "plan" ? vPlan() : v === "track" ? vTrack() : v === "progress" ? vProgress() : v === "learn" ? vLearn() : v === "baseline" ? vBaseline() : v === "pathway" ? vPathway() : v === "transform" ? vTransform() : v === "workout" ? vWorkout() : v === "week" ? vWeek() : v === "settings" ? vSettings() :
       v === "coach" ? vCoach() : v === "advisor" ? vAdvisor() : v === "review" ? vReview() : v === "twin" ? vTwin() : v === "simulator" ? vSimulator() : v === "experiments" ? vExperiments() : v === "protocol" ? vProtocol() : v === "timeline" ? vTimeline() : v === "memory" ? vMemory() : v === "map" ? vMap() : v === "learned" ? vLearned() : v === "grants" ? vGrants() : vToday(snap);
     var fab = (v !== "workout" && v !== "settings" && snap.state !== "signed_out") ? '<button class="os-fab" data-fab aria-label="Schnell erfassen">+</button>' : "";
@@ -2159,6 +2240,7 @@
     if (navigated) {
       var b = host.querySelector(".os-body");
       if (b) { try { b.focus({ preventScroll: true }); } catch (e) { b.focus(); } }
+      VIEW_LABEL.learn = protocolLink().owned ? "Protokoll" : "Learn";   // Tab-Name = Ansage
       announce(VIEW_LABEL[v] || v);
     }
     bindOnce();
@@ -2295,7 +2377,22 @@
       if (t.closest("#woFinish")) { finishWorkout(t.closest("#woFinish")); return; }
       if (t.closest("#qlSave")) { var qk = parseFloat((document.getElementById("qlK") || {}).value), qp = parseFloat((document.getElementById("qlP") || {}).value); if (qk || qp) { OS.logFood({ name: "Eigener Eintrag", kcal: qk || 0, p: qp || 0, source: "quick" }); if (MM.toast) MM.toast("Geloggt."); render(); } return; }
       if (t.closest("#enSave")) { saveEngine(); return; }
-      if (t.closest("#rcSave")) { var sh = parseFloat((document.getElementById("rcSleep") || {}).value); var en = parseInt((document.getElementById("rcEnergy") || {}).value, 10); var any = false; if (sh) { OS.logMetric("sleep", sh, "h"); any = true; } if (en) { OS.logMetric("energy", en, "/5"); any = true; } if (any) { if (MM.toast) MM.toast("Recovery gespeichert."); render(); } return; }
+      /* Track-Echo-Fassung von master; sichtbarer Wortlaut folgt dem
+         Begriffskanon („Durchlauf", nicht „Zyklus"). */
+      if (t.closest("#rcSave")) {
+        var sh = parseFloat((document.getElementById("rcSleep") || {}).value); var en = parseInt((document.getElementById("rcEnergy") || {}).value, 10); var any = false;
+        if (sh) { OS.logMetric("sleep", sh, "h"); any = true; }
+        if (en) { OS.logMetric("energy", en, "/5"); any = true; }
+        if (any) {
+          var rfb = [];
+          if (sh) rfb.push(String(sh).replace(".", ",") + " h Schlaf gespeichert");
+          if (en) rfb.push("Energie " + en + "/5");
+          rfb.push("fließt in Engpass-Erkennung & Coach ein");
+          trackEcho = rfb.join(" · ");
+          render();
+        }
+        return;
+      }
       if (t.closest("#cycDone")) { OS.completeCycle(); if (MM.toast) MM.toast("Durchlauf abgeschlossen — er ist jetzt Teil deiner Historie."); render(); return; }
       var shc = t.closest("[data-sharecard]"); if (shc) { downloadShareCard(shc.getAttribute("data-sharecard")); return; }
       if (t.closest("#coachPacket")) {
@@ -2307,7 +2404,25 @@
         if (MM.toast) MM.toast("Coach-Paket exportiert — du entscheidest, wem du es gibst.");
         return;
       }
-      if (t.closest("#tkSave")) { var w = parseFloat((document.getElementById("tkW") || {}).value); var wa = parseFloat((document.getElementById("tkWa") || {}).value); var okAny = false; if (w) { OS.logMetric("weight", w, "kg"); okAny = true; } if (wa) { OS.logMetric("waist", wa, "cm"); okAny = true; } if (okAny) { if (MM.toast) MM.toast("Gespeichert."); render(); } return; }
+      if (t.closest("#tkSave")) {
+        var w = parseFloat((document.getElementById("tkW") || {}).value); var wa = parseFloat((document.getElementById("tkWa") || {}).value); var okAny = false;
+        if (w) { OS.logMetric("weight", w, "kg"); okAny = true; }
+        if (wa) { OS.logMetric("waist", wa, "cm"); okAny = true; }
+        if (okAny) {
+          // Antwort des Instruments: Wert → Trend → Einordnung. Erst dadurch
+          // fühlt sich der Eintrag wie eine Messung an, nicht wie eine Pflicht.
+          var fb = [];
+          if (w) {
+            var wt2 = OS.metricTrend("weight", 7);
+            fb.push(String(w).replace(".", ",") + " kg gespeichert" + (wt2 ? " — 7-Tage-Trend " + (wt2.delta > 0 ? "+" : "") + String(wt2.delta).replace(".", ",") + " kg" : ""));
+            try { var tj2 = MM.intelligence && MM.intelligence.foresight ? MM.intelligence.foresight.trajectory() : null; if (tj2 && tj2.status === "WITHIN") fb.push("im Erwartungsband ✓"); } catch (e) {}
+          }
+          if (wa) fb.push(String(wa).replace(".", ",") + " cm Taille gespeichert");
+          trackEcho = fb.join(" · ");
+          render();
+        }
+        return;
+      }
       if (t.closest("#icsGo")) {
         var tm = (document.getElementById("icsTime") || {}).value || "18:00"; OS.setP("calendar.trainTime", tm);
         // Week-Planner exportiert die Phase-6-Termine (nur echte Appointments);
@@ -2341,6 +2456,7 @@
         var ck = cb2.getAttribute("data-comeback"); X.ackComeback();
         if (ck === "light") { X.startOverlay({ mode: "busy", start: todayYmd(), end: todayYmd(), reason: "comeback", mods: { minutes: 30 } }); if (MM.toast) MM.toast("Sanfter Wiedereinstieg: 30-Minuten-Version heute."); }
         if (ck === "pause") { location.href = "kurs-programm.html"; return; }
+        if (ck === "restart") { location.href = "kurs-programm.html?restart=1"; return; }
         render(); return;
       }
       var wn = t.closest("[data-weeknav]"); if (wn && !wn.disabled) { weekOffset = Math.max(0, weekOffset + parseInt(wn.getAttribute("data-weeknav"), 10)); render(); return; }
