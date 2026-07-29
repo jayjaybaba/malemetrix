@@ -47,6 +47,40 @@
       .bp-appnav a:focus-visible { outline: 2px solid #00c2ff; outline-offset: -2px; }
     }
     @media print { .bp-appnav { display: none !important; } }
+
+    /* Founder-Hero: sichtbar erst mit der Freischaltung (with-appnav wird
+       in show() gesetzt). Porträt als Vollbild-Hintergrund, Text darüber. */
+    .bp-founder-hero { display: none; }
+    body.with-appnav .bp-founder-hero {
+      display: flex; align-items: flex-end; position: relative; overflow: hidden;
+      min-height: min(88vh, 820px); padding: 0 0 clamp(36px, 6vh, 64px);
+    }
+    .bp-founder-hero img {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; object-position: 50% 10%;
+    }
+    .bp-founder-hero .fh-scrim {
+      position: absolute; inset: 0;
+      background:
+        linear-gradient(180deg, rgba(7, 9, 13, 0.5) 0%, rgba(7, 9, 13, 0.28) 32%, rgba(7, 9, 13, 0.62) 62%, rgba(7, 9, 13, 0.9) 84%, #07090d 100%);
+    }
+    .bp-founder-hero .fh-inner {
+      position: relative; width: min(1100px, calc(100% - 48px)); margin: 0 auto;
+    }
+    .bp-founder-hero .fh-kick {
+      font-family: var(--font-mono, monospace); font-size: 0.66rem; letter-spacing: 0.24em;
+      color: #00c2ff; display: block; margin-bottom: 14px;
+    }
+    .bp-founder-hero .fh-title {
+      font-family: var(--font-display, inherit); font-weight: 800; color: #fff;
+      font-size: clamp(2.4rem, 7vw, 4.6rem); letter-spacing: 0.04em; line-height: 1; margin: 0 0 12px;
+    }
+    .bp-founder-hero p { color: rgba(232, 236, 242, 0.85); font-size: clamp(0.95rem, 2.6vw, 1.1rem); max-width: 46ch; margin: 0; }
+    @media (max-width: 720px) {
+      body.with-appnav .bp-founder-hero { min-height: 88vh; }
+      .bp-founder-hero img { object-position: 50% 0; }
+    }
+    @media print { .bp-founder-hero { display: none !important; } }
   </style>
 </head>
 <body class="bp-wrap bp-atmos">
@@ -65,6 +99,22 @@
     <button class="nav-toggle" id="navToggle" aria-label="Menü öffnen">☰</button>
   </div>
 </header>
+
+<!-- FOUNDER-HERO — erscheint mit der Freischaltung (body.with-appnav):
+     das Porträt des Autors als seitenfüllender Hintergrund, Titel und
+     Zeile laufen darüber. Gleiches Scrim-Muster wie der Homepage-Hero. -->
+<section class="bp-founder-hero no-print" aria-label="Das Protokoll — von Ural Bayramoglu">
+  <picture>
+    <source srcset="../img/ural-bayramoglu-hero.webp" type="image/webp">
+    <img src="../img/ural-bayramoglu-hero.jpg" alt="" loading="lazy">
+  </picture>
+  <div class="fh-scrim" aria-hidden="true"></div>
+  <div class="fh-inner">
+    <span class="fh-kick">MM / PROTOCOL · DAS REFERENZWERK</span>
+    <p class="fh-title">DAS PROTOKOLL</p>
+    <p>Zehn Kapitel, eine Reihenfolge — geschrieben und gelebt von <strong>Ural Bayramoglu</strong>.</p>
+  </div>
+</section>
 
 <div id="protoGate" class="bp-gate no-print">
   <div class="lock">🔒</div>
