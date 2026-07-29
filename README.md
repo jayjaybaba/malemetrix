@@ -118,7 +118,7 @@ Ein Online-Programm zum Selbermachen — dasselbe System wie das Coaching, aber 
 
 - **Großer kostenloser Funnel-Magnet:** Rechner + Tracker + Ebooks ziehen Besucher über Suche/Social an, ohne E-Mail-Zwang → später Conversion zu Coaching/Shop.
 - **Check & Tracker ohne Konto:** Alles in `localStorage`, DSGVO-freundlich (Gesundheitsdaten verlassen den Browser nur auf aktive Aktion).
-- **Keine erfundenen Testimonials**, klare medizinische Grenze (keine Diagnosen/TRT-Beratung) — überall verankert.
+- **Keine erfundenen Testimonials**, klare medizinische Grenze (keine Diagnosen/TRT-Beratung) — überall verankert. Wann ein Ergebnis veröffentlicht werden darf, regelt `PROOF_STANDARD.md`; erfasst wird es im Abschlussbericht des 12-Wochen-Programms (`js/case-study.js`), veröffentlicht auf `ergebnisse.html`.
 - **Bauchumfang/Blutdruck** stehen nicht mehr in der Blutwerte-Checkliste (sind keine Blutwerte) → in den Tracker verschoben.
 
 ## Spätere Upgrades

@@ -27,6 +27,31 @@ function istEmail(e: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e) && e.length <= 254;
 }
 
+/** Alle Konten seitenweise laden. listUsers kennt keinen E-Mail-Filter, und
+ *  eine einzelne Seite mit perPage=1000 wuerde ab Konto 1001 still Konten
+ *  uebersehen — ein vorhandenes Konto bekaeme dann faelschlich eine offene
+ *  Einladung statt einer Verknuepfung. Deshalb: paginieren bis zum Ende,
+ *  mit hartem Sicherheitsdeckel gegen Endlosschleifen. */
+async function alleKonten(admin: ReturnType<typeof createClient>) {
+  const konten: { id: string; email: string; created_at: string; last_sign_in_at: string | null }[] = [];
+  const PER_PAGE = 200, MAX_PAGES = 100; // Deckel: 20.000 Konten
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: PER_PAGE });
+    if (error) throw error;
+    const users = data?.users ?? [];
+    for (const u of users) {
+      konten.push({
+        id: u.id,
+        email: normEmail(u.email),
+        created_at: u.created_at,
+        last_sign_in_at: u.last_sign_in_at ?? null,
+      });
+    }
+    if (users.length < PER_PAGE) break;
+  }
+  return konten;
+}
+
 Deno.serve(async (req) => {
   // Muster wie in allen anderen Functions (edge.mjs P0.7): corsHeaders erwartet
   // den Origin-STRING, preflight liefert IMMER eine 204-Response und darf nur
@@ -76,14 +101,72 @@ Deno.serve(async (req) => {
     return json({ ok: true, grants: data ?? [] });
   }
 
+  // ---------------------------------------------------------- LIST_MEMBERS --
+  // Echte Mitgliederuebersicht: jedes registrierte Konto mit Produkten,
+  // Abo-Zustand, Rolle und Herkunft (Kauf vs. manuelle Vergabe). Nur lesend —
+  // hier wird nichts vergeben und nichts entzogen.
+  if (action === "list_members") {
+    let konten;
+    try { konten = await alleKonten(admin); } catch { return json({ error: "db_error" }, 500); }
+
+    const [entsQ, subsQ, rolesQ, grantsQ] = await Promise.all([
+      admin.from("entitlements").select("user_id,product_key,status,source,granted_at"),
+      admin.from("subscriptions").select("user_id,plan,state,current_period_end"),
+      admin.from("user_roles").select("user_id,role"),
+      admin.from("access_grants").select("user_id,product_key,status"),
+    ]);
+    if (entsQ.error || subsQ.error || rolesQ.error || grantsQ.error) {
+      return json({ error: "db_error" }, 500);
+    }
+
+    const proUser = new Map<string, {
+      entitlements: { product_key: string; status: string; source: string | null }[];
+      subscription: { plan: string; state: string; current_period_end: string | null } | null;
+      role: string | null;
+    }>();
+    const eintrag = (id: string) => {
+      let e = proUser.get(id);
+      if (!e) { e = { entitlements: [], subscription: null, role: null }; proUser.set(id, e); }
+      return e;
+    };
+    for (const e of entsQ.data ?? []) {
+      eintrag(e.user_id).entitlements.push({ product_key: e.product_key, status: e.status, source: e.source ?? null });
+    }
+    for (const s of subsQ.data ?? []) {
+      // Bei mehreren Abos zaehlt das juengste aktive; sonst das letzte.
+      const ziel = eintrag(s.user_id);
+      if (!ziel.subscription || s.state === "ACTIVE" || s.state === "TRIALING") {
+        ziel.subscription = { plan: s.plan, state: s.state, current_period_end: s.current_period_end ?? null };
+      }
+    }
+    for (const r of rolesQ.data ?? []) eintrag(r.user_id).role = r.role;
+
+    const members = konten.map((u) => {
+      const e = proUser.get(u.id);
+      return {
+        email: u.email,
+        created_at: u.created_at,
+        last_sign_in_at: u.last_sign_in_at,
+        role: e?.role ?? null,
+        entitlements: e?.entitlements ?? [],
+        subscription: e?.subscription ?? null,
+      };
+    }).sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+
+    return json({ ok: true, count: members.length, members });
+  }
+
   // ----------------------------------------------------------------- GRANT --
   if (action === "grant") {
     const email = normEmail(body.email);
     if (!istEmail(email)) return json({ error: "invalid_email" }, 400);
 
     // Existiert schon ein Konto? Dann direkt an die user_id binden.
-    const { data: liste } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    const treffer = (liste?.users ?? []).filter((u) => normEmail(u.email) === email);
+    // Paginiert ueber ALLE Konten — die fruehere Einzelseite (perPage=1000)
+    // haette ab Konto 1001 vorhandene Konten uebersehen.
+    let konten;
+    try { konten = await alleKonten(admin); } catch { return json({ error: "db_error" }, 500); }
+    const treffer = konten.filter((u) => u.email === email);
     if (treffer.length > 1) return json({ error: "ambiguous_account", count: treffer.length }, 409);
     const ziel = treffer[0] ?? null;
 
