@@ -2717,11 +2717,13 @@ body > * { position: relative; z-index: 0; }
   object-fit: cover; object-position: 74% 32%;
   opacity: 0; transition: opacity 1.2s ease;
 }
-.mm-ambient video.is-live { opacity: 1; }
+/* Gedeckelt auf 0.55: das Motiv soll als Licht/Atmosphäre lesbar sein,
+   nie als eigenständiges Foto hinter dem Text (Founder-QA). */
+.mm-ambient video.is-live { opacity: 0.55; }
 .mm-ambient .scrim {
   position: absolute; inset: 0;
   background:
-    linear-gradient(180deg, rgba(7,9,13,0.78) 0%, rgba(7,9,13,0.62) 34%, rgba(7,9,13,0.86) 72%, var(--bg-0) 100%);
+    linear-gradient(180deg, rgba(7,9,13,0.9) 0%, rgba(7,9,13,0.82) 34%, rgba(7,9,13,0.93) 72%, var(--bg-0) 100%);
 }
 .page-head > .container { position: relative; z-index: 1; }
 
