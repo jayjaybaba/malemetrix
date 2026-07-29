@@ -58,7 +58,7 @@
 
   /* Kurzmeldung an die Live-Region in mein-protokoll.html. Absichtlich
      knapp: hier gehört der Ansichtsname hin, nicht die Ansicht. */
-  var VIEW_LABEL = { today: "Today", plan: "Plan", track: "Track", progress: "Progress", learn: "Learn", baseline: "Baseline", pathway: "Pathway", transform: "Transform", workout: "Workout", week: "Wochenplan", settings: "Einstellungen", coach: "Coach", advisor: "Advisor", review: "Ergebnisprüfung", twin: "Twin", simulator: "Simulator", experiments: "Experimente", protocol: "Persönlicher Standard", timeline: "Timeline", memory: "Memory", map: "Performance Map", learned: "Gelernt", grants: "Zugänge verwalten" };
+  var VIEW_LABEL = { today: "Today", plan: "Plan", track: "Track", progress: "Progress", learn: "Learn", baseline: "Baseline", pathway: "Pathway", transform: "Transform", workout: "Workout", week: "Wochenplan", settings: "Einstellungen", coach: "Coach", advisor: "Advisor", review: "Ergebnisprüfung", twin: "Twin", simulator: "Simulator", experiments: "Experimente", protocol: "Persönlicher Standard", timeline: "Timeline", memory: "Memory", map: "Performance Map", learned: "Gelernt", grants: "Mitglieder & Zugänge" };
   function announce(msg) {
     var el = document.getElementById("mmStatus");
     if (!el) return;
@@ -993,6 +993,13 @@
     html += sec("Pathway",
       '<p class="muted" style="margin:0 0 10px">Aktuell: <b style="color:var(--text)">' + (spw && OS.PATHWAYS[spw] ? esc(OS.PATHWAYS[spw].label) : "noch nicht gewählt") + '</b> — der Pathway bestimmt Ton, Tiefe und Inhalte (Health · Performance · Enhanced). Dein Programm und Modus bleiben davon unberührt.</p>' +
       '<a class="os-ghost" href="#pathway">Pathway ' + (spw ? "ändern" : "wählen") + ' →</a>');
+    /* Owner-Einstieg zur Mitglieder-/Zugangsverwaltung. Die Sichtbarkeit ist
+       nur Bequemlichkeit — die Autorisierung erzwingt mm-admin serverseitig. */
+    if (MM.entitlements && MM.entitlements.isOwner && MM.entitlements.isOwner()) {
+      html += sec("Betreiber",
+        '<p class="muted" style="margin:0 0 10px">Nur für dich sichtbar: registrierte Konten, Produkte, Abos und manuelle Zugangsvergaben.</p>' +
+        '<a class="os-ghost" href="#grants">Mitglieder &amp; Zugänge →</a>');
+    }
     html += '<p style="margin-top:16px"><a class="os-ghost" href="#today">← Zurück zu Today</a></p>';
     return html;
   }
@@ -1536,9 +1543,16 @@
     if (!(MM.entitlements && MM.entitlements.isOwner && MM.entitlements.isOwner())) {
       return '<div class="card"><p class="muted">Dieser Bereich ist dem Konto-Inhaber vorbehalten.</p></div>';
     }
-    return sec("Zugänge verwalten",
+    return sec("Mitglieder",
+      '<p class="small muted" style="margin:0 0 12px">Alle registrierten Konten mit Produkten, Abo-Zustand und Herkunft (Kauf oder manuelle Vergabe). ' +
+      'Du selbst erscheinst mit der Rolle OWNER — dein Zugang läuft über die Rolle, nicht über ein Produkt.</p>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+      '<button id="grMembers" class="btn btn-primary btn-sm">Mitglieder laden</button></div>' +
+      '<div id="grMembersTable" style="margin-top:12px"></div>') +
+    sec("Manuell vergebene Zugänge",
       '<p class="small muted" style="margin:0 0 12px">Gib einer E-Mail-Adresse kostenlosen Zugang zu DAS PROTOKOLL — oder entziehe ihn wieder. ' +
-      'Empfänger erhalten ausschließlich das Produkt, nie Adminrechte. Existiert noch kein Konto, bleibt die Einladung offen und greift automatisch bei der Registrierung.</p>' +
+      'Empfänger erhalten ausschließlich das Produkt, nie Adminrechte. Existiert noch kein Konto, bleibt die Einladung offen und greift automatisch bei der Registrierung. ' +
+      '<b>Diese Liste zeigt nur deine manuellen Vergaben</b> — Käufer und du selbst stehen oben unter „Mitglieder“.</p>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">' +
       '<label class="small" for="grEmail" style="flex:1;min-width:200px">E-Mail-Adresse' +
       '<input id="grEmail" type="email" autocomplete="off" spellcheck="false" placeholder="name@beispiel.de" ' +
@@ -1546,9 +1560,45 @@
       '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
       '<button id="grAdd" class="btn btn-primary btn-sm">Zugang geben</button>' +
       '<button id="grDel" class="os-ghost">Zugang entziehen</button>' +
-      '<button id="grList" class="os-ghost">Liste laden</button></div>' +
+      '<button id="grList" class="os-ghost">Vergaben laden</button></div>' +
       '<p id="grMsg" class="small" role="status" aria-live="polite" style="display:none;margin-top:10px"></p>' +
       '<div id="grTable" style="margin-top:12px"></div>');
+  }
+
+  /* Mitgliederzeile: E-Mail + Rolle/Produkte/Abo kompakt. Nur echte Daten —
+     ohne Entitlement und ohne Abo steht dort ehrlich „nur Konto“. */
+  function memberRow(m) {
+    var tags = [];
+    if (m.role === "owner") tags.push("OWNER");
+    (m.entitlements || []).forEach(function (e) {
+      if (e.status !== "active") return;
+      tags.push(e.product_key + (e.source === "manual_grant" ? " (vergeben)" : e.source === "purchase" ? " (Kauf)" : ""));
+    });
+    if (m.subscription && m.subscription.state) tags.push("Abo: " + m.subscription.state);
+    var reg = (m.created_at || "").slice(0, 10);
+    var seen = m.last_sign_in_at ? " · zuletzt " + m.last_sign_in_at.slice(0, 10) : "";
+    return '<div class="os-decision" style="margin:6px 0"><b>' + esc(m.email) + '</b>' +
+      '<span class="s">' + esc(tags.length ? tags.join(" · ") : "nur Konto") +
+      ' · registriert ' + esc(reg) + esc(seen) + '</span></div>';
+  }
+
+  function membersCall() {
+    var box = document.getElementById("grMembersTable");
+    if (!box) return;
+    if (!(MM.account && MM.account.invokeFunction)) { box.innerHTML = '<p class="small muted">Kein Konto-Backend aktiv.</p>'; return; }
+    box.innerHTML = '<p class="small muted">Wird geladen…</p>';
+    MM.account.invokeFunction("mm-admin", { action: "list_members" })
+      .then(function (r) {
+        var d = r && (r.data || r);
+        if (!d || d.error || !Array.isArray(d.members)) {
+          box.innerHTML = '<p class="small muted">' + (d && d.error === "forbidden" ? "Nur der Konto-Inhaber darf das." : "Das hat nicht geklappt.") + '</p>';
+          return;
+        }
+        box.innerHTML = '<p class="small muted" style="margin:0 0 8px">' + d.members.length +
+          (d.members.length === 1 ? " Konto" : " Konten") + ' · neueste zuerst</p>' +
+          (d.members.map(memberRow).join("") || '<p class="small muted">Noch keine registrierten Konten.</p>');
+      })
+      .catch(function () { box.innerHTML = '<p class="small muted">Verbindung zum Server fehlgeschlagen.</p>'; });
   }
 
   function grantsCall(action, email) {
@@ -1584,8 +1634,9 @@
               '<span class="s">' + esc(g.status) + ' · ' + esc((g.granted_at || "").slice(0, 10)) +
               (g.user_id ? ' · Konto verknüpft' : ' · Einladung offen') + '</span></div>';
           }).join("");
-          document.getElementById("grTable").innerHTML = rows || '<p class="small muted">Noch keine Vergaben.</p>';
-          say("Liste geladen.", true);
+          document.getElementById("grTable").innerHTML = rows ||
+            '<p class="small muted">Noch keine manuellen Vergaben. Käufer und dein eigenes Konto stehen oben unter „Mitglieder“ — sie erscheinen hier nie.</p>';
+          say("Vergaben geladen.", true);
           return;
         }
         say(action === "grant"
@@ -2259,6 +2310,7 @@
         grantsCall(ga ? "grant" : gd ? "revoke" : "list", em);
         return;
       }
+      if (t.closest("#grMembers")) { membersCall(); return; }
       var cb = t.closest("#mmClaimBtn"); if (cb) { var val = (document.getElementById("mmClaim") || {}).value; var m2 = document.getElementById("mmClaimMsg"); cb.disabled = true; MM.account.claimAccessCode(val).then(function (r) { if (m2) { m2.style.display = "block"; m2.style.color = r.ok ? "var(--green,#3ddc84)" : "var(--amber,#f5a623)"; m2.textContent = r.ok ? "Zugang aktiviert." : (r.message || "Code nicht erkannt."); } cb.disabled = false; if (r.ok) { if (MM.track) MM.track("claim_access", {}); setTimeout(render, 700); } }); return; }
       // Zahlung prüfen (P0.10): server-autoritative PayPal-Recovery im Konto.
       // Löst NIE eine neue Zahlung aus — reine Verifikation bei PayPal.
