@@ -507,8 +507,8 @@ group("14 · Rückkehr-Mechanik: Termin statt Newsletter");
 (function () {
   var js = fs.readFileSync(path.join(ROOT, "js/check.js"), "utf8");
   ok(/id="scoreAgain"/.test(js), "Ergebnisseite bietet den nächsten Score an");
-  ok(/DEIN NÄCHSTER SCORE/.test(js), "eigener, klar benannter Block");
-  ok(/28 \* 86400000/.test(js), "Vorschlag liegt bei 4 Wochen");
+  ok(/DEINE ERGEBNISPRÜFUNG/.test(js), "eigener, klar benannter Block");
+  ok(/getDate\(\) \+ 28/.test(js), "Vorschlag liegt bei 4 Wochen (Kalendertage statt Millisekunden)");
   ok(/BEGIN:VCALENDAR/.test(js) && /DTSTART;VALUE=DATE:/.test(js), "echter Kalendereintrag (.ics), ganztägig");
   ok(/BEGIN:VALARM/.test(js), "mit Erinnerung, damit der Termin nicht untergeht");
   ok(!/newsletter|mailchimp|brevo\.com\/subscribe/i.test(js.split("scoreAgain")[1].slice(0, 2000)),
@@ -533,7 +533,7 @@ group("15 · Positionierung: die vier Kontexte sind auch außerhalb des Scores s
   ok(/keine Dosierungen, keine Empfehlungen zu Substanzen/.test(idx),
     "… und der Grenze, die das Ganze seriös hält");
   ok(!/misst sieben Bereiche/.test(idx), "die überholte Sieben-Bereiche-Aussage ist weg");
-  ok(/zwölf Systeme/.test(idx), "die Startseite beschreibt den tatsächlichen Score");
+  ok(/zwölf Optimierungsbereiche/.test(idx), "die Startseite beschreibt den tatsächlichen Score");
   ["Alltagsbewegung", "Herz-Kreislauf", "Datenlage", "Stoffwechsel"].forEach(function (d) {
     ok(new RegExp("<strong>" + d).test(idx), "System in der Übersicht: " + d);
   });
@@ -541,7 +541,7 @@ group("15 · Positionierung: die vier Kontexte sind auch außerhalb des Scores s
   var chk = fs.readFileSync(path.join(ROOT, "check.html"), "utf8");
   ok(/Natural, TRT & Enhanced/.test(chk), "Seitentitel trägt die Positionierung");
   ok(!/10-Minuten-Check/.test(chk), "die überholte 10-Minuten-Behauptung ist raus");
-  ok(/12 Systeme, dein primärer Engpass und deine Datenlücken/.test(chk), "Description beschreibt das echte Produkt");
+  ok(/12 Bereiche, dein primärer Engpass und deine Datenlücken/.test(chk), "Description beschreibt das echte Produkt");
 
   var faq = fs.readFileSync(path.join(ROOT, "faq.html"), "utf8");
   ok(/vier Kontexte/.test(faq), "FAQ erklärt die Kontexte");

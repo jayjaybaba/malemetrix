@@ -10,12 +10,13 @@
    · push: echter Handler — wird nur aktiv, wenn Server-Push konfiguriert ist
      (VAPID + Backend). Ohne Config passiert hier ehrlich: nichts.
    ========================================================================== */
-const VERSION = "mm-v153";
+const VERSION = "mm-v165";
 const CORE = [
   "tracker.html", "dinner.html", "index.html", "mein-protokoll.html", "labor.html",
   "css/fonts.css", "css/style.css", "css/os.css", "css/labs.css", "css/blueprint.css",
   "js/config.js", "js/analytics.js", "js/i18n.js", "js/main.js",
   "js/vault.js", "js/check-data.js", "js/score-telemetry.js", "js/account.js",
+  "js/focus.js", "js/points.js",
   "js/os/program-view.js", "js/os/os-core.js", "js/os/engines.js", "js/os/execution.js", "js/os/app.js",
   "js/os/labs.js", "js/os/labs-data.js", "js/os/labs-app.js",
   "js/os/intelligence/intelligence-core.js", "js/os/intelligence/context-builder.js",

@@ -2517,13 +2517,79 @@ body > * { position: relative; z-index: 0; }
 .mm-sys .val { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .mm-sys .row.is-primary .id { color: var(--status-active); }
 .mm-sys .row.is-primary .bar > span { background: var(--status-active); }
-.mm-sys .row.is-primary .val::after { content: " · PRIMARY"; font-size: 0.58rem; letter-spacing: 0.12em; color: var(--status-active); }
+.mm-sys .row.is-primary .val::after { content: " · ENGPASS"; font-size: 0.58rem; letter-spacing: 0.12em; color: var(--status-active); }
 .mm-sys .row.is-flag .id, .mm-sys .row.is-flag .val { color: var(--status-flag); }
 .mm-sys .row.is-flag .bar > span { background: var(--status-flag); }
 /* Score V2: mehr Domains, längere Namen — eigene Spaltenbreite statt Überlauf. */
 .mm-sys.wide .row { grid-template-columns: 104px 1fr auto; }
 .mm-sys .id { overflow-wrap: anywhere; }
 @media (max-width: 420px) { .mm-sys.wide .row { grid-template-columns: 92px 1fr auto; gap: 9px; } }
+
+/* ---- OPTIMIERUNGSBEREICHE MIT BEREICHSWERT (Paket 4) ----
+   Gleiche Sprache wie .mm-sys, nur mit Platz für Namen, Wert und Begründung.
+   Kein neues Designsystem: dieselben Tokens, dieselbe Ruhe, keine Farbampel
+   und keine Bewertungssymbole. */
+.mm-areas { display: flex; flex-direction: column; }
+.mm-area { padding: 13px 0; border-top: 1px solid var(--hairline); }
+.mm-area:first-child { border-top: 0; padding-top: 0; }
+.mm-area .hd { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.mm-area .nm { font-size: 0.95rem; color: var(--text); min-width: 0; overflow-wrap: anywhere; }
+.mm-area .val { font-family: var(--font-mono); font-size: 0.82rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mm-area .bar { height: 3px; margin-top: 8px; background: rgba(255,255,255,0.07); border-radius: 2px; overflow: hidden; }
+.mm-area .bar > span { display: block; height: 100%; background: var(--status-neutral); border-radius: 2px; }
+.mm-area.is-primary .nm { color: var(--status-active); }
+.mm-area.is-primary .val { color: var(--status-active); }
+.mm-area.is-primary .bar > span { background: var(--status-active); }
+.mm-area .marks { display: flex; flex-wrap: wrap; gap: 6px 10px; margin: 8px 0 0; }
+.mm-area .mk { font-family: var(--font-mono); font-size: 0.56rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted-2); }
+.mm-area .mk-primary { color: var(--status-active); }
+.mm-area .why { margin-top: 8px; }
+.mm-area .why > summary { cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--muted-2); padding: 6px 0; min-height: 32px; }
+.mm-area .why > summary::-webkit-details-marker { display: none; }
+.mm-area .why > summary::before { content: "+"; color: var(--accent-2); font-size: 0.8rem; line-height: 1; }
+.mm-area .why[open] > summary::before { content: "–"; }
+.mm-area .why > summary:hover, .mm-area .why > summary:focus-visible { color: var(--muted); }
+.mm-area .why ul { margin: 2px 0 0; padding: 0 0 0 14px; list-style: none; }
+.mm-area .why li { position: relative; margin: 0 0 5px; font-size: 0.85rem; color: var(--muted-2); max-width: 62ch; line-height: 1.5; }
+.mm-area .why li::before { content: ""; position: absolute; left: -14px; top: 0.62em; width: 5px; height: 1px; background: var(--line); }
+.mm-area .why li strong { color: var(--muted); font-weight: 500; }
+.mm-area .why li.gapline strong { color: var(--status-flag); }
+.mm-area .pt { margin: 8px 0 0; font-size: 0.85rem; color: var(--muted-2); }
+.mm-area .pt strong { color: var(--text); font-weight: 500; }
+@media (max-width: 420px) {
+  .mm-area .hd { flex-wrap: wrap; gap: 2px 10px; }
+  .mm-area .nm { font-size: 0.9rem; }
+}
+
+/* ---- EMPFOHLENES KAPITEL (Paket 6) ----
+   Der Score findet den Engpass, DAS PROTOKOLL erklärt ihn. Eine ruhige
+   Zeile mit Abschnitt, Herkunft und Begründung — keine zweite Hero-Zahl,
+   keine konkurrierende Karte, bestehende Tokens. */
+.mm-chap .ch-kicker {
+  display: block; font-family: var(--font-mono); font-size: 0.6rem;
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted-2); margin-bottom: 6px;
+}
+.mm-chap .ch-sec { margin: 0 0 3px; font-size: 1.02rem; color: var(--text); overflow-wrap: anywhere; }
+.mm-chap .ch-src { margin: 0 0 10px; font-size: 0.82rem; color: var(--muted-2); overflow-wrap: anywhere; }
+.mm-chap .ch-tag {
+  font-family: var(--font-mono); font-size: 0.56rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--accent-2); border: 1px solid var(--accent-line);
+  border-radius: 3px; padding: 1px 5px; white-space: nowrap;
+}
+.mm-chap .ch-why { margin: 0 0 4px; font-size: 0.86rem; color: var(--muted); max-width: 62ch; }
+.mm-chap .ch-list { margin: 0 0 12px; padding: 0 0 0 14px; list-style: none; }
+.mm-chap .ch-list li { position: relative; margin: 0 0 4px; font-size: 0.86rem; color: var(--muted-2); max-width: 62ch; line-height: 1.5; }
+.mm-chap .ch-list li::before { content: ""; position: absolute; left: -14px; top: 0.62em; width: 5px; height: 1px; background: var(--line); }
+/* Kompakte Empfehlung in der Bereichskarte — deutlich leiser als oben. */
+.mm-area .sec { margin: 8px 0 0; font-size: 0.85rem; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
+.mm-area .sec .k {
+  font-family: var(--font-mono); font-size: 0.56rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--muted-2);
+}
+.mm-area .sec a { color: var(--accent-2); text-decoration: none; overflow-wrap: anywhere; }
+.mm-area .sec a:hover, .mm-area .sec a:focus-visible { text-decoration: underline; }
 
 /* ---- OPT-IN-SCHALTER · optionale Nutzungsmessung (nach dem Ergebnis) ----
    Bewusst klein und ruhig: eine Zeile, ein Schalter, kein Erklärtext-Block. */
@@ -2742,6 +2808,27 @@ body > * { position: relative; z-index: 0; }
 .trk-focus-check:hover { border-color: var(--accent-line); }
 .trk-focus-check:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
 .trk-focus-check input { width: 20px; height: 20px; flex: 0 0 auto; accent-color: var(--accent); cursor: pointer; }
+/* ---- TAGESSTATUS AUS MESSDATEN (Paket 5) ----
+   Dieselbe Box wie die Checkbox-Zeile, nur mit Platz für Beleg und Herkunft.
+   Kein neues Designsystem, keine Ampel — die Herkunft steht als Text da. */
+.trk-focus-auto {
+  padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--card-2);
+}
+.trk-focus-auto.is-done { border-color: var(--accent-line); }
+.trk-focus-auto .ta-head { margin: 0 0 6px; font-size: .95rem; color: var(--text); }
+.trk-focus-auto .ta-state { margin: 0 0 4px; font-size: .95rem; font-weight: 600; color: var(--text); }
+.trk-focus-auto.is-done .ta-state { color: var(--accent-2); }
+.trk-focus-auto .ta-ev { margin: 0 0 4px; font-size: .88rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+/* Die Herkunftszeile trägt ganze Sätze („Automatisch aus Messdaten erkannt",
+   Konflikthinweise, zurückgenommene Bewertungen) — deshalb lesbare Größe und
+   keine Versalien. Mikrotypografie ist für Marker, nicht für Erklärungen. */
+.trk-focus-auto .ta-src {
+  margin: 0 0 10px; font-size: .82rem; line-height: 1.45;
+  color: var(--muted-2); max-width: 62ch;
+}
+.trk-focus-auto .btn { margin: 0 6px 6px 0; }
+@media (max-width: 420px) { .trk-focus-auto .btn { width: 100%; margin-right: 0; } }
 .trk-focus-drop {
   background: none; border: 0; padding: 0; cursor: pointer;
   color: var(--muted-2); text-decoration: underline; font: inherit; font-size: .85rem;

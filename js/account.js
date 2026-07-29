@@ -423,10 +423,63 @@
      gespeichert (user_id + domain unique) und mit derselben Konfliktregel wie das
      Programm hydratisiert: Cloud überschreibt nur, wenn strikt neuer UND lokal
      seit letztem Sync unverändert. Keine Business-Logik hier — nur Persistenz. */
-  var OS_DOMAINS = {};   // name -> { key }  (key = mm_-Store-Key, Wert beliebiges JSON)
-  function registerStateDomain(name, storeKey) {
-    OS_DOMAINS[name] = { key: storeKey };
+  var OS_DOMAINS = {};   // name -> { key, append }  (key = mm_-Store-Key, Wert beliebiges JSON)
+  function registerStateDomain(name, storeKey, opts) {
+    // opts.append (P0-Fix): Historien-/Ledger-Domains (Arrays mit id-Einträgen)
+    // werden beim Sync per Vereinigung gemerged statt als Blob überschrieben —
+    // sonst löscht Gerät A die auf Gerät B ergänzten Einträge (und umgekehrt).
+    OS_DOMAINS[name] = { key: storeKey, append: !!(opts && opts.append) };
     registerDomain(name, { flush: function () { return flushOsDomain(name); } });
+  }
+  /* Vereinigung zweier Append-Stände: Einträge, die nur im anderen Stand
+     existieren, werden hinten angehängt. Identität über `id` (alle intel_*-
+     Historien tragen stabile IDs), sonst über den JSON-Inhalt. Rückgabe
+     null = nichts geändert ODER kein Array (dann greift Last-write-wins).
+
+     Konfliktregel bei GLEICHER id auf beiden Seiten (deterministisch,
+     richtungsunabhängig — beide Geräte kommen zum selben Ergebnis):
+       1. Der Eintrag mit dem neueren gültigen `updated_at` gewinnt —
+          ein älterer Stand kann einen neueren nie überschreiben.
+       2. Ein Eintrag MIT gültigem `updated_at` schlägt einen ohne
+          (gestempelt = nachweislich später bearbeitet als Alt-Einträge).
+       3. Gleichstand / beide ohne Zeitstempel: deterministischer
+          Inhaltsvergleich (JSON), damit die Wahl nicht von der
+          Merge-Richtung (Flush vs. Hydration) abhängt. */
+  function entryTime(e) {
+    if (!e || typeof e !== "object") return NaN;
+    var t = e.updated_at;
+    if (typeof t === "number" && isFinite(t)) return t;
+    if (typeof t === "string") { var p = Date.parse(t); if (!isNaN(p)) return p; }
+    return NaN;
+  }
+  function pickEntry(a, b) {
+    var ta = entryTime(a), tb = entryTime(b);
+    var va = !isNaN(ta), vb = !isNaN(tb);
+    if (va && vb && ta !== tb) return ta > tb ? a : b;
+    if (va !== vb) return va ? a : b;
+    var sa = "", sb = "";
+    try { sa = JSON.stringify(a); sb = JSON.stringify(b); } catch (err) { return a; }
+    return sa >= sb ? a : b;
+  }
+  function mergeAppendStates(baseArr, otherArr) {
+    if (!Array.isArray(baseArr) || !Array.isArray(otherArr)) return null;
+    function keyOf(e) {
+      if (e && typeof e === "object" && e.id != null) return "id:" + e.id;
+      try { return "j:" + JSON.stringify(e); } catch (err) { return "j:?"; }
+    }
+    var otherByKey = {};
+    otherArr.forEach(function (e) { otherByKey[keyOf(e)] = e; });
+    var have = {}, changed = false;
+    var out = baseArr.map(function (e) {
+      var k = keyOf(e); have[k] = true;
+      var o = otherByKey[k];
+      if (o === undefined || o === e) return e;
+      var win = pickEntry(e, o);
+      if (win !== e) changed = true;
+      return win;
+    });
+    otherArr.forEach(function (e) { if (!have[keyOf(e)]) { out.push(e); changed = true; } });
+    return changed ? out : null;
   }
   function osVer(name, kind) { return S.get("os_" + kind + "_" + name, kind === "synced" ? -1 : 0) || (kind === "synced" ? -1 : 0); }
   function bumpOsVer(name) { var v = osVer(name, "ver") + 1; S.setRaw("os_ver_" + name, v); return v; }
@@ -435,9 +488,23 @@
     var d = OS_DOMAINS[name]; if (!d) return Promise.resolve({ ok: true });
     var state = S.get(d.key, null);
     if (state == null) return Promise.resolve({ ok: true, code: "empty" });
-    var ver = bumpOsVer(name);
-    return backend.upsert("os_state", { user_id: _user.id, domain: name, state: state, state_version: ver, updated_at: nowStamp() }, "user_id,domain")
-      .then(function (x) { if (x.error) return { ok: false, message: x.error.message }; S.setRaw("os_synced_" + name, ver); return { ok: true }; });
+    var pre = Promise.resolve(state);
+    if (d.append) {
+      // Append-Domains: vor dem Überschreiben den Cloud-Stand lesen und dort
+      // vorhandene, lokal fehlende Einträge übernehmen. Ohne diesen Merge
+      // würde der Blob-Upload die Historie des jeweils anderen Geräts löschen.
+      pre = backend.select("os_state", { eq: { user_id: _user.id, domain: name }, single: true }).then(function (r) {
+        var cloudState = (!r.error && r.data && r.data.state != null) ? r.data.state : null;
+        var merged = mergeAppendStates(state, cloudState);
+        if (merged) { S.setRaw(d.key, merged); state = merged; }
+        return state;
+      }).catch(function () { return state; });
+    }
+    return pre.then(function (st) {
+      var ver = bumpOsVer(name);
+      return backend.upsert("os_state", { user_id: _user.id, domain: name, state: st, state_version: ver, updated_at: nowStamp() }, "user_id,domain")
+        .then(function (x) { if (x.error) return { ok: false, message: x.error.message }; S.setRaw("os_synced_" + name, ver); return { ok: true }; });
+    });
   }
   function hydrateOsDomains() {
     if (!backend || !_user) return Promise.resolve();
@@ -446,9 +513,18 @@
       (r.data || []).forEach(function (row) {
         var d = OS_DOMAINS[row.domain]; if (!d) return;
         var cloudVer = row.state_version || 0, localVer = osVer(row.domain, "ver"), localSynced = osVer(row.domain, "synced");
-        var localHas = S.get(d.key, null) != null;
+        var localState = S.get(d.key, null);
+        var localHas = localState != null;
         if (!localHas) { S.setRaw(d.key, row.state); S.setRaw("os_ver_" + row.domain, cloudVer); S.setRaw("os_synced_" + row.domain, cloudVer); }
-        else if (cloudVer > localVer && localVer <= localSynced) { S.setRaw(d.key, row.state); S.setRaw("os_ver_" + row.domain, cloudVer); S.setRaw("os_synced_" + row.domain, cloudVer); }
+        else if (cloudVer > localVer && localVer <= localSynced) {
+          // Append-Domains: Cloud-Basis übernehmen, aber lokal vorhandene,
+          // in der Cloud fehlende Einträge NICHT verwerfen — anhängen und
+          // zum Re-Upload vormerken (P0-Fix Multi-Device-Historien).
+          var merged = d.append ? mergeAppendStates(row.state, localState) : null;
+          S.setRaw(d.key, merged || row.state);
+          S.setRaw("os_ver_" + row.domain, cloudVer); S.setRaw("os_synced_" + row.domain, cloudVer);
+          if (merged) markDirty(row.domain);
+        }
         else if (localVer > localSynced) markDirty(row.domain);
       });
       // Domains mit lokalem Stand, aber ohne Cloud-Zeile → Upload einreihen

@@ -328,15 +328,20 @@ group("11 · Kein Verweis führt in ein geschlossenes Kapitel");
      übersah deshalb C.CHAPTERS.hormones — der Link ging live und wurde erst
      beim Abgleich mit der ausgelieferten Datei auffällig. Jetzt wird der
      gesamte Quelltext nach href-Zielen durchsucht; eine neue Tabelle kann
-     sich nicht mehr daran vorbeischmuggeln. */
+     sich nicht mehr daran vorbeischmuggeln.
+
+     SEIT PAKET 6 (Owner-Entscheidung): Die Kapitelseiten SIND das zulässige
+     Ziel der Score-Empfehlung — sie nennen den Abschnitt, den der Score
+     meint, und führen von dort über den bestehenden Weg in den Volltext.
+     Der ursprüngliche Zweck dieser Prüfung bleibt: kein Score-Link darf ins
+     Leere führen. Er wird jetzt STRENGER durchgesetzt — jedes verlinkte
+     Kapitel muss existieren UND den adressierten Abschnittsanker tragen. */
   var src = read("js/check-data.js");
-  var offen = [];
-  ZU.forEach(function (z) {
-    var re = new RegExp('href: "ebooks/' + z + '\\.html"', "g");
-    var m = src.match(re);
-    if (m) offen.push(z + " (" + m.length + "x)");
-  });
-  ok(offen.length === 0, "keine Score-Verlinkung zeigt auf ein geschlossenes Kapitel" + (offen.length ? ": " + offen.join(", ") : ""));
+  var ohneVorschau = ZU.filter(function (z) { return !fs.existsSync(path.join(ROOT, "ebooks/" + z + ".html")); });
+  ok(ohneVorschau.length === 0, "jedes verlinkbare Kapitel hat seine Kapitelseite" +
+    (ohneVorschau.length ? " — fehlt: " + ohneVorschau.join(", ") : ""));
+  ok(!/href: "protokoll\.html"/.test(src.split("C.CHAPTERS")[1].split("C.DOMAIN_CHAPTER")[0]),
+    "kein Kapitel verweist mehr pauschal auf die allgemeine Protokollseite");
 
   /* Und jedes tatsächlich verlinkte Ziel muss existieren. */
   var ziele = (src.match(/href: "(?:ebooks\/)?[a-z0-9-]+\.html"/g) || [])

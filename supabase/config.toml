@@ -41,6 +41,13 @@ verify_jwt = false
 [functions.score-telemetry]
 verify_jwt = false
 
+# mm-admin: identischer ES256-Fall (P0.6) — der Handler validiert den
+# Bearer-Token selbst (admin.auth.getUser) und prüft die Owner-Rolle gegen
+# public.user_roles. Ohne diesen Eintrag lehnt die Platform-Ebene jeden
+# Browser-Aufruf mit 401 ab, BEVOR der Handler läuft.
+[functions.mm-admin]
+verify_jwt = false
+
 # send-brief wird NICHT vom Browser mit User-JWT aufgerufen, sondern vom
 # Scheduler (pg_cron/extern) mit x-scheduler-secret. Ohne verify_jwt=false
 # würde die Platform-Ebene jeden Scheduler-Call ablehnen. Der Handler lehnt

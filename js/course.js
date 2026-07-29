@@ -42,11 +42,11 @@
     "c2.progress_lead": { de: "Einmal pro Woche kurz einchecken — das System entscheidet, ob dein Plan bleibt oder sich etwas ändert. Keine Einzeltage überinterpretieren.", en: "Check in once a week — the system decides whether your plan stays or changes. Never over-read single days." },
     "c2.consistency": { de: "Consistency", en: "Consistency" }, "c2.active_days": { de: "aktive Tage", en: "active days" },
     "c2.consistency_note": { de: "Ein verpasster Tag ist kein Rückschritt. Consistency-Rate schlägt Perfektions-Streak.", en: "A missed day is no setback. Consistency rate beats perfection streaks." },
-    "c2.weekly_pulse": { de: "Weekly Pulse", en: "Weekly Pulse" }, "c2.evaluate": { de: "Auswerten", en: "Evaluate" },
+    "c2.weekly_pulse": { de: "Wochen-Ergebnisprüfung", en: "Weekly review" }, "c2.evaluate": { de: "Auswerten", en: "Evaluate" },
     "c2.redo": { de: "Check-in wiederholen", en: "Redo check-in" }, "c2.energy_week": { de: "Energie diese Woche (1–5)", en: "Energy this week (1–5)" },
     "c2.sleep_was": { de: "Schlaf war…", en: "Sleep was…" }, "c2.good": { de: "gut", en: "good" }, "c2.ok": { de: "ok", en: "ok" }, "c2.bad": { de: "schlecht", en: "poor" },
     "c2.warn_q": { de: "Ich hatte ein mögliches Warnsignal (z. B. Brustschmerz, Atemnot, Ohnmacht)", en: "I had a possible warning sign (e.g. chest pain, breathlessness, fainting)" },
-    "c2.recheck_h": { de: "Recheck-Dashboard · W0 → W4 → W8 → W12", en: "Recheck dashboard · W0 → W4 → W8 → W12" },
+    "c2.recheck_h": { de: "Ergebnisprüfungen · W0 → W4 → W8 → W12", en: "Recheck dashboard · W0 → W4 → W8 → W12" },
     "c2.recheck_note": { de: "Trag deine Kernwerte an den vier Messpunkten ein — alles lokal. Keine medizinische Bewertung.", en: "Enter your key values at the four checkpoints — all local. No medical assessment." },
     "c2.start": { de: "Start", en: "Start" }, "c2.now": { de: "Jetzt", en: "Now" },
     "c2.next_move": { de: "Next Move", en: "Next Move" }, "c2.biggest_win": { de: "Biggest Win", en: "Biggest Win" },
@@ -66,11 +66,11 @@
     "c2.paused_banner": { de: "Programm pausiert — dein Program Day steht still. Fortsetzen, wenn du wieder startest.", en: "Program paused — your Program Day is frozen. Resume when you’re back." },
     "c2.switch_mode": { de: "Modus wechseln", en: "Switch mode" },
     "c2.shift": { de: "Auf morgen verschieben", en: "Shift to tomorrow" },
-    "c2.halfway_h": { de: "Halfway Review · Woche 6", en: "Halfway review · Week 6" },
+    "c2.halfway_h": { de: "Halbzeit-Ergebnisprüfung · Woche 6", en: "Halfway review · Week 6" },
     "c2.what_improved": { de: "Was hat sich verbessert?", en: "What improved?" }, "c2.what_stuck": { de: "Was steht?", en: "What is stuck?" },
     "c2.mode_still": { de: "Passt dein Modus noch?", en: "Is your mode still right?" }, "c2.bn_still": { de: "Passt dein Engpass noch?", en: "Is your bottleneck still right?" },
     "c2.final_report": { de: "Final Transformation Report", en: "Final Transformation Report" }, "c2.current_progress": { de: "Current Progress", en: "Current Progress" },
-    "c2.reassess_h": { de: "Engpass-Reassessment", en: "Bottleneck reassessment" },
+    "c2.reassess_h": { de: "Engpass-Neubewertung", en: "Bottleneck reassessment" },
     "c2.keep_bn": { de: "Engpass beibehalten", en: "Keep bottleneck" }, "c2.update_bn": { de: "Auf {x} aktualisieren", en: "Update to {x}" }
   };
   function t(key, fb) { var e = T_DICT[key]; if (!e) return fb != null ? fb : key; return EN() ? (e.en || e.de) : e.de; }
@@ -587,7 +587,7 @@
     var html = pausedBanner() + '<h2 class="c2-sec-h">' + t("c2.progress_h") + '</h2><p class="c2-sec-lead">' + t("c2.progress_lead") + '</p>';
 
     // Reassessment (P7)
-    if (reassessDue()) { var sug = suggestBottleneck(); html += '<div class="c2-card2 c2-bottleneck"><span class="k">' + t("c2.reassess_h") + ' · ' + t("c2.week") + ' ' + week + '</span>' + (sug ? '<p>' + esc(tr(sug.why)) + '</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button type="button" class="c2-btn" data-reassess-take="' + sug.bn + '">' + t("c2.update_bn").replace("{x}", BOTTLENECKS[sug.bn].label) + '</button><button type="button" class="c2-btn ghost" data-reassess-keep="1">' + t("c2.keep_bn") + '</button></div>' : '<p class="c2-muted">' + (EN() ? "Not enough data to suggest a change — keeping your current bottleneck. Add recheck values to sharpen this." : "Zu wenig Daten für eine Änderung — dein Engpass bleibt. Trag Recheck-Werte ein, um das zu schärfen.") + '</p><button type="button" class="c2-btn ghost" data-reassess-keep="1">' + t("c2.keep_bn") + '</button>') + '</div>'; }
+    if (reassessDue()) { var sug = suggestBottleneck(); html += '<div class="c2-card2 c2-bottleneck"><span class="k">' + t("c2.reassess_h") + ' · ' + t("c2.week") + ' ' + week + '</span>' + (sug ? '<p>' + esc(tr(sug.why)) + '</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button type="button" class="c2-btn" data-reassess-take="' + sug.bn + '">' + t("c2.update_bn").replace("{x}", BOTTLENECKS[sug.bn].label) + '</button><button type="button" class="c2-btn ghost" data-reassess-keep="1">' + t("c2.keep_bn") + '</button></div>' : '<p class="c2-muted">' + (EN() ? "Not enough data to suggest a change — keeping your current bottleneck. Add recheck values to sharpen this." : "Zu wenig Daten für eine Änderung — dein Engpass bleibt. Trag Messwerte ein, um das zu schärfen.") + '</p><button type="button" class="c2-btn ghost" data-reassess-keep="1">' + t("c2.keep_bn") + '</button>') + '</div>'; }
 
     // Halfway review (P14)
     if (week >= 6) html += renderHalfway();
@@ -702,7 +702,7 @@
       if (waistDelta != null && waistDelta > 3) return { label: "RECOMP / CUT", text: { de: "Taille ist zu stark gestiegen (+" + waistDelta.toFixed(1) + " cm) — der Aufbau lief zu „schmutzig“. Nicht automatisch PERFORM: erst Körperfett kontrollieren (RECOMP/CUT).", en: "Waist rose too much (+" + waistDelta.toFixed(1) + " cm) — the build ran too “dirty”. Not automatically PERFORM: control body fat first (RECOMP/CUT)." } };
       return { label: "PERFORM", text: { de: "Sauber aufgebaut" + (whtr != null ? " (WHtR " + whtr.toFixed(2) + " unter Kontrolle)" : "") + " — jetzt Kraft UND Motor gleichzeitig für echte Leistungsfähigkeit.", en: "Built cleanly" + (whtr != null ? " (WHtR " + whtr.toFixed(2) + " under control)" : "") + " — now strength AND engine together for real capacity." } };
     }
-    return { label: EN() ? "NEW CYCLE" : "NEUER ZYKLUS", text: { de: "Starker Stand — nächster Zyklus mit deinem dann größten Engpass.", en: "Strong position — next cycle targeting your then-biggest bottleneck." } };
+    return { label: EN() ? "NEW CYCLE" : "NEUER DURCHLAUF", text: { de: "Starker Stand — nächster Durchlauf mit deinem dann größten Engpass.", en: "Strong position — next cycle targeting your then-biggest bottleneck." } };
   }
 
   /* ---------- Minimale Progressionsschicht (P12) ---------- */
@@ -820,7 +820,7 @@
           '<span class="stamp" style="color:var(--status-active,#00c2ff);border-color:rgba(0,194,255,0.35)">SYSTEM READY</span>' +
           '<div class="mm-metric-row" style="max-width:640px;margin:28px auto 0;text-align:left">' +
           '<div class="mm-metric"><span class="v" style="font-size:1.3rem">' + String(mLbl).toUpperCase() + '</span><span class="k">MODE</span></div>' +
-          '<div class="mm-metric"><span class="v" style="font-size:1.3rem">' + String(obState.bottleneck).toUpperCase() + '</span><span class="k">PRIMARY BOTTLENECK</span></div>' +
+          '<div class="mm-metric"><span class="v" style="font-size:1.3rem">' + String(obState.bottleneck).toUpperCase() + '</span><span class="k">PRIMÄRER ENGPASS</span></div>' +
           '<div class="mm-metric"><span class="v" style="font-size:1.3rem">12 WEEKS</span><span class="k">PROGRAM</span></div>' +
           '<div class="mm-metric"><span class="v" style="font-size:1.3rem">DAY 01</span><span class="k">TODAY</span></div>' +
           '</div>' +
@@ -838,10 +838,13 @@
       if (t2.hasAttribute && t2.hasAttribute("data-energy")) { setEnergyDay(clampedDay(), Number(t2.value)); var lbl = document.getElementById("c2eVal"); if (lbl) lbl.textContent = t2.value + "/5"; return; }
       if (t2.classList && t2.classList.contains("c2-rc")) { var rc = rechecks(); var cp = t2.getAttribute("data-cp"); if (!rc[cp]) rc[cp] = {}; rc[cp][t2.getAttribute("data-m")] = t2.value; S.set("course_rechecks", rc); return; }
     });
-    // P52/P53/P101 — Neustart = neuer Zyklus. Alte Rechecks dürfen NICHT die Baseline des
-    // neuen Zyklus werden. Wir archivieren den alten Zyklus und starten mit sauberer Baseline.
+    /* P52/P53/P101 — Neustart = neuer Durchlauf. Alte Rechecks dürfen NICHT
+       die Baseline des neuen Durchlaufs werden: der alte wird archiviert und
+       mit sauberer Baseline gestartet. Struktur (benannte Funktion + Deep-Link
+       aus der Comeback-Karte) von master; sichtbarer Wortlaut folgt dem
+       Begriffskanon („Durchlauf", nicht „Zyklus"). */
     function startNewCycle() {
-      if (!confirm(EN() ? "Start a new 12-week cycle? Goal, bottleneck, start date, days, daily checks AND the recheck baseline (W0–W12) are cleared for a fresh cycle. Your previous cycle is archived — it will not be mixed into the new one." : "Neuen 12-Wochen-Zyklus starten? Ziel, Engpass, Startdatum, Tage, tägliche Häkchen UND die Recheck-Baseline (W0–W12) werden für einen frischen Zyklus zurückgesetzt. Dein bisheriger Zyklus wird archiviert — er wird nicht mit dem neuen vermischt.")) return;
+      if (!confirm(EN() ? "Start a new 12-week cycle? Goal, bottleneck, start date, days, daily checks AND the recheck baseline (W0–W12) are cleared for a fresh cycle. Your previous cycle is archived — it will not be mixed into the new one." : "Neuen 12-Wochen-Durchlauf starten? Ziel, Engpass, Startdatum, Tage, tägliche Häkchen UND die Mess-Baseline (W0–W12) werden für einen frischen Durchlauf zurückgesetzt. Dein bisheriger Durchlauf wird archiviert — er wird nicht mit dem neuen vermischt.")) return;
       try {
         var rc = rechecks();
         if ((goal() || bottleneck() || Object.keys(rc).length) ) {

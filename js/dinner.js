@@ -24,11 +24,23 @@
   ];
 
   /* ---------- Storage ---------- */
+  /* Speicherzugriff läuft über die kanonische Abstraktion MM.store — genau
+     wie im übrigen Produkt. Die Schlüssel bleiben dabei UNVERÄNDERT: MM.store
+     setzt selbst das Präfix „mm_", deshalb wird es hier abgeschnitten und die
+     Daten landen weiter unter exakt demselben localStorage-Key. Keine
+     Migration, keine Umbenennung, kein neues Datenmodell — nur ein Schreibweg
+     statt zwei. Der Rohzugriff bleibt als Fallback, falls main.js fehlt. */
   var LS = {
     get: function (k, d) { try { var v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } },
     set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
-    getJSON: function (k, d) { try { return JSON.parse(LS.get(k, "null")) || d; } catch (e) { return d; } },
-    setJSON: function (k, v) { LS.set(k, JSON.stringify(v)); }
+    getJSON: function (k, d) {
+      if (window.MM && MM.store && k.indexOf("mm_") === 0) return MM.store.get(k.slice(3), d);
+      try { return JSON.parse(LS.get(k, "null")) || d; } catch (e) { return d; }
+    },
+    setJSON: function (k, v) {
+      if (window.MM && MM.store && k.indexOf("mm_") === 0) { MM.store.set(k.slice(3), v); return; }
+      LS.set(k, JSON.stringify(v));
+    }
   };
 
   function ymd(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }

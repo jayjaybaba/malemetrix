@@ -262,46 +262,342 @@
      in diesen vier Wochen zählt. Alles andere im Tracker ist freiwillig. */
   function focusHTML() {
     if (!(window.MM && MM.focus)) return "";
-    const f = MM.focus.current();
-    if (!f) return "";
-    const p = MM.focus.progress(f);
     const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    const fmtD = (str) => String(str || "").slice(8, 10) + "." + String(str || "").slice(5, 7) + "." + String(str || "").slice(0, 4);
 
-    /* Abgelaufen: Bilanz statt Checkbox — die Aufgabe ist vorbei. */
+    /* Der Optimierungspunkt zum Auftrag — kompakt: Bereich + sichtbarer
+       Status. Er wird REFERENZIERT, nicht doppelt geführt (mm_focus bleibt
+       maßgeblich); ohne points.js bleibt die Karte unverändert. */
+    const punktZu = (ref) => {
+      if (!(window.MM && MM.points && ref)) return null;
+      try {
+        const l = MM.points.list();
+        for (let i = 0; i < l.length; i++) {
+          if (l[i].source_type === "focus" && l[i].source_id === ref) return l[i];
+        }
+      } catch (e) {}
+      return null;
+    };
+    const punktLine = (pt) => pt
+      ? '<p class="small muted" style="margin:0 0 8px">Optimierungspunkt · Bereich ' + esc(pt.areaLabel || pt.area) +
+        ' · <strong>' + esc(pt.statusLabel) + '</strong>' +
+        (pt.standard && pt.standard.bestaetigt ? ' · als persönlicher Standard übernommen' : '') + '</p>' +
+        massnahmenLine(pt)
+      : "";
+
+    /* Maßnahmen zu diesem Optimierungspunkt — kompakt referenziert (Paket 7).
+       Der Tracker lädt den Stack-Katalog nicht; deshalb steht hier der
+       gespeicherte Anzeigename, während die Maßnahme fachlich über ihre
+       stabile ID im Katalog referenziert bleibt. Ohne Verknüpfung erscheint
+       nichts — keine leeren Platzhalter, keine neue Pflicht. */
+    const massnahmenLine = (pt) => {
+      if (!(window.MM && MM.points && MM.points.measuresFor && pt)) return "";
+      let ms = [];
+      try { ms = MM.points.measuresFor(pt.id).filter((m) => !m.abgeschlossen); } catch (e) { return ""; }
+      if (!ms.length) return "";
+      let out = ms.map((m) =>
+        '<p class="small muted" style="margin:0 0 4px">Maßnahme: <strong>' + esc(m.measure_label_snapshot || m.title) +
+        '</strong> · ' + esc(m.statusLabel) +
+        (m.review_date ? ' · Prüfung ' + esc(fmtD(m.review_date)) : '') +
+        (m.criterion_label ? ' · Erfolgssignal: ' + esc(m.criterion_label) : '') + '</p>').join("");
+      try {
+        const amb = MM.points.measureAmbiguity(pt.id);
+        if (amb.mehrere) out += '<p class="small" style="margin:0 0 8px;color:var(--muted-2)">' + esc(amb.text) + '</p>';
+      } catch (e) {}
+      return out;
+    };
+
+    /* Persönlicher Standard: NUR nach ausdrücklicher Bestätigung. Eine gute
+       Wirkung erzeugt eine Empfehlung — nie automatisch einen Standard. */
+    const standardBlock = (pt) => {
+      if (!pt) return "";
+      if (pt.standard && pt.standard.bestaetigt) {
+        return '<p class="small" style="margin:0 0 12px"><strong>Persönlicher Standard:</strong> ' +
+          esc(pt.standard.was) + ' — dauerhaft übernommen am ' + esc(fmtD(pt.standard.bestaetigtAm)) + '.</p>';
+      }
+      if (!(MM.points && MM.points.standardEmpfohlen(pt))) return "";
+      return '<p class="small" style="margin:0 0 8px"><strong>Dauerhaft übernehmen?</strong> ' +
+        'Die Maßnahme war ausreichend umgesetzt und hat geholfen. Deine Entscheidung:</p>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px">' +
+        '<button type="button" class="btn btn-sm btn-primary" data-fstd="adopt" data-pt="' + esc(pt.id) + '">Als persönlichen Standard übernehmen</button>' +
+        '<a class="btn btn-sm btn-ghost" href="check.html">Noch einmal testen</a>' +
+        '<button type="button" class="btn btn-sm btn-ghost" data-fstd="decline" data-pt="' + esc(pt.id) + '">Nicht dauerhaft übernehmen</button>' +
+        '</div>';
+    };
+
+    /* Buttons der Wirkungsprüfung — an beiden Orten identisch: am
+       abgelaufenen Auftrag und am bereits archivierten Vorgang.
+       `ref` adressiert genau diesen Vorgang, damit bei mehreren offenen
+       Prüfungen nie die falsche beantwortet wird. */
+    const wirkungBtns = (ref) =>
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px">' +
+      ['erkennbar|Wirkung erkennbar', 'teilweise|Teilweise', 'nicht_erkennbar|Keine erkennbare Wirkung',
+       'offen|Noch offen — später prüfen', 'nicht_geprueft|Nicht weiter prüfen'].map(function (x) {
+        const q = x.split("|");
+        return '<button type="button" class="btn btn-sm btn-ghost" data-fwirkung="' + q[0] + '"' +
+          (ref ? ' data-fref="' + esc(ref) + '"' : '') + '>' + q[1] + '</button>';
+      }).join("") +
+      '</div>';
+
+    /* HEUTIGE ERFASSUNG — je nach Automatikstufe (Paket 5).
+       A: aus Messdaten erkannt, mit sichtbarer Herkunft und Korrekturweg.
+       B: Messdaten sprechen dafür — der Nutzer bestätigt ausdrücklich.
+       C: unveränderte Ja/Nein-Erfassung.
+       Ohne MM.focus.tagStatus (Alt-Stand) bleibt es bei der Checkbox. */
+    const heuteBlock = (f) => {
+      const cb = '<label class="trk-focus-check">' +
+        '<input type="checkbox" id="focusToday"' + (MM.focus.progress(f).heuteErledigt ? " checked" : "") + '>' +
+        '<span>' + esc(f.daily) + '</span></label>';
+      if (!MM.focus.tagStatus) return cb;
+      let t = null;
+      try { t = MM.focus.tagStatus(f); } catch (e) { t = null; }
+      if (!t || t.stufe === "C") return cb;
+
+      const beleg = (mitZiel) => {
+        let s = "";
+        if (t.wert != null) s += t.wert + (t.einheit ? " " + t.einheit : "") + " erfasst";
+        else if (t.quelle) s += "Erfasst";
+        if (mitZiel && t.ziel != null) s += " · Ziel: mindestens " + t.ziel + (t.einheit ? " " + t.einheit : "");
+        if (t.quelle) s += (s ? " · " : "") + "Quelle: " + esc(t.quelle);
+        return s;
+      };
+
+      /* Ausdrücklich korrigiert oder bestätigt — der Nutzer hat entschieden. */
+      if (t.manuell && (t.herkunft === "korrigiert" || t.herkunft === "bestaetigt")) {
+        return '<div class="trk-focus-auto"><p class="ta-head">' + esc(f.daily) + '</p>' +
+          '<p class="ta-state">' + (t.umgesetzt ? "Heute umgesetzt" : "Heute nicht umgesetzt") + '</p>' +
+          '<p class="ta-src">' + (t.herkunft === "bestaetigt" ? "Manuell bestätigt" : "Manuell korrigiert") + '</p>' +
+          '<button type="button" class="btn btn-sm btn-ghost" data-fday="toggle">Ändern</button></div>';
+      }
+
+      if (t.stufe === "A") {
+        if (t.umgesetzt && t.herkunft === "auto") {
+          return '<div class="trk-focus-auto is-done"><p class="ta-head">' + esc(f.daily) + '</p>' +
+            '<p class="ta-state">Heute umgesetzt</p>' +
+            '<p class="ta-ev">' + beleg(true) + '</p>' +
+            '<p class="ta-src">Automatisch aus Messdaten erkannt</p>' +
+            '<button type="button" class="btn btn-sm btn-ghost" data-fday="toggle">Ändern</button></div>';
+        }
+        const revidiert = t.revidiert
+          ? '<p class="ta-src">Ein früher erkannter Tag gilt nach einer Korrektur deiner Messdaten nicht mehr.</p>' : "";
+        return '<div class="trk-focus-auto"><p class="ta-head">' + esc(f.daily) + '</p>' +
+          '<p class="ta-state">Heute noch offen</p>' +
+          '<p class="ta-ev">' + (t.wert != null && t.ziel != null
+            ? t.wert + (t.einheit ? " " + t.einheit : "") + " von " + t.ziel + (t.einheit ? " " + t.einheit : "") + " erreicht"
+            : "Für heute liegen noch keine passenden Messdaten vor.") + '</p>' + revidiert +
+          '<p class="ta-src">Du kannst den Tag jederzeit selbst eintragen.</p>' +
+          '<button type="button" class="btn btn-sm btn-ghost" data-fday="ja">Umgesetzt</button> ' +
+          '<button type="button" class="btn btn-sm btn-ghost" data-fday="nein">Nicht umgesetzt</button></div>';
+      }
+
+      /* Stufe B — Vorschlag. Ohne Bestätigung entsteht KEIN Häkchen.
+         Vorgeschlagen wird NUR, wenn das Kriterium auch wirklich getroffen
+         ist: ein Wert unter dem Ziel spricht nicht für die Umsetzung. */
+      const kopf = '<div class="trk-focus-auto"><p class="ta-head">' + esc(f.daily) + '</p>';
+      if (!t.treffer) {
+        return kopf + '<p class="ta-state">Heute noch offen</p>' +
+          '<p class="ta-ev">' + (t.wert != null && t.ziel != null
+            ? t.wert + (t.einheit ? " " + t.einheit : "") + " von " + t.ziel + (t.einheit ? " " + t.einheit : "") + " erfasst — das reicht als Beleg nicht"
+            : "Für heute liegen keine passenden Messdaten vor.") + '</p>' +
+          '<button type="button" class="btn btn-sm btn-ghost" data-fday="ja">Umgesetzt</button> ' +
+          '<button type="button" class="btn btn-sm btn-ghost" data-fday="nein">Nicht umgesetzt</button></div>';
+      }
+      const warum = t.konflikt ? esc(t.konflikt)
+        : t.nichtDeckend ? "Dein Auftrag zählt " + esc(t.nichtDeckend) + " — das erfassen wir nicht. Der Wert oben ist ein verwandter, kein deckungsgleicher Beleg."
+        : "Dein Auftrag enthält zusätzliche Bedingungen, die Messdaten nicht belegen können.";
+      return kopf + '<p class="ta-state">Deine Messdaten sprechen dafür, dass du den Auftrag umgesetzt hast.</p>' +
+        '<p class="ta-ev">' + beleg(false) + '</p>' +
+        '<p class="ta-src">' + warum + ' Hast du ihn vollständig umgesetzt?</p>' +
+        '<button type="button" class="btn btn-sm btn-primary" data-fday="bestaetigen">Als umgesetzt bestätigen</button> ' +
+        '<button type="button" class="btn btn-sm btn-ghost" data-fday="nein">Nicht umgesetzt</button> ' +
+        '<button type="button" class="btn btn-sm btn-ghost" data-fday="spaeter">Später entscheiden</button></div>';
+    };
+
+    /* Messdaten der laufenden Fokusphase auswerten, BEVOR die Karte gebaut
+       wird — rein lesend für Stufe B/C, schreibend nur bei Stufe A und nur
+       für Tage ohne ausdrückliche Entscheidung. */
+    try { if (MM.focus.autoSync) MM.focus.autoSync(); } catch (e) {}
+    const f = MM.focus.current();
+
+    /* Kein laufender Auftrag — aber vielleicht eine OFFENE WIRKUNGSPRÜFUNG
+       aus einem bereits archivierten Vorgang. Die darf nicht verschwinden:
+       die Umsetzung ist abgeschlossen, die Wirkung ist es nicht. */
+    if (!f) {
+      const off = MM.focus.wirkungOffen && MM.focus.wirkungOffen();
+      if (!off) return standardsHTML();
+      return '<div class="card trk-focus" id="focus" style="margin-bottom:18px;border-left:3px solid var(--accent-2)">' +
+        '<span class="card-num" style="color:var(--accent-2)">WIRKUNGSPRÜFUNG · OFFEN</span>' +
+        '<h3 style="font-size:1.05rem;margin:6px 0 4px">Umsetzung abgeschlossen — die Wirkung ist noch offen.</h3>' +
+        '<p class="small muted" style="margin:0 0 8px">' + esc(off.titel) + ' · Fokusphase ' + off.days + ' Tage bis ' + fmtD(off.letzterTag) +
+        ' · umgesetzt: ' + off.erledigt + ' von ' + off.days + ' Tagen (Ziel: ' + off.ziel + ')</p>' +
+        '<p class="small" style="margin:0 0 8px"><strong>Wirkungsprüfung ' +
+        (off.beurteilbar ? 'fällig seit ' : 'terminiert für ') + fmtD(off.faelligAm) + '.</strong> ' +
+        (off.beurteilbar ? 'Hat der Auftrag erkennbar geholfen? Deine ehrliche Einschätzung:'
+                         : 'Bis dahin bleibt die Wirkung offen — du kannst sie jederzeit hier festhalten.') + '</p>' +
+        punktLine(punktZu(off.ref)) +
+        wirkungBtns(off.ref) +
+        standardBlock(punktZu(off.ref)) +
+        '<p class="small muted" style="margin:0">Der Vorgang ist archiviert; erst dein Wirkungsergebnis — oder die bewusste Entscheidung, nicht weiter zu prüfen — schließt ihn ab.</p>' +
+        '</div>' + weitereOffeneHTML(off.ref) + standardsHTML();
+    }
+
+    const p = MM.focus.progress(f);
+
+    /* Abgelaufen: ERGEBNISPRÜFUNG statt Checkbox — getrennt in Umsetzung
+       (aus den Häkchen) und Wirkung (eigene Einschätzung, darf später
+       liegen und bleibt bis dahin ehrlich offen). Kein automatischer
+       Score-Zwang: der vollständige Score bleibt unabhängig davon. */
     if (p.abgelaufen) {
+      const u = MM.focus.umsetzung(f);
+      const w = MM.focus.wirkung(f);
+      const uText = { ausreichend: "ausreichend umgesetzt", teilweise: "teilweise umgesetzt", nicht_ausreichend: "nicht ausreichend umgesetzt" }[u.verdict];
+      let wBlock;
+      /* Ein ERGEBNIS beendet die Erfassung — eine Vertagung („offen") NICHT:
+         sonst wäre die vertagte Wirkungsprüfung an dieser Karte nicht mehr
+         nachzuholen. Offen bleibt deshalb bearbeitbar. */
+      if (w.erfasst && w.verdict !== "offen") {
+        wBlock = '<p class="small" style="margin:0 0 12px"><strong>Wirkungsprüfung:</strong> ' + esc(w.label) +
+          (w.erfasst.date ? ' · erfasst am ' + esc(fmtD(w.erfasst.date)) : '') + '</p>';
+      } else if (w.erfasst && w.verdict === "offen") {
+        wBlock = '<p class="small" style="margin:0 0 8px"><strong>Wirkungsprüfung: vertagt.</strong> ' +
+          (w.spaeterAlsUmsetzung ? 'Sinnvoll ab ' + esc(fmtD(w.faelligAm)) + '. ' : '') +
+          'Du kannst sie jederzeit hier festhalten:</p>' + wirkungBtns(MM.focus.ref ? MM.focus.ref(f) : null);
+      } else {
+        wBlock = '<p class="small" style="margin:0 0 8px"><strong>Wirkungsprüfung:</strong> ' +
+          (u.verdict === "nicht_ausreichend"
+            ? 'Bei dieser Umsetzung lässt sich die Wirkung nicht sicher beurteilen — das ist kein Scheitern, sondern eine offene Frage.'
+            : (!w.beurteilbar && w.spaeterAlsUmsetzung
+              ? 'Sinnvoll ab ' + esc(fmtD(w.faelligAm)) + ' — bis dahin gilt die Wirkung als offen.'
+              : 'Hat der Auftrag erkennbar geholfen? Deine ehrliche Einschätzung:')) + '</p>' +
+          wirkungBtns(MM.focus.ref ? MM.focus.ref(f) : null);
+      }
       return '<div class="card trk-focus" id="focus" style="margin-bottom:18px;border-left:3px solid ' +
         (p.geschafft ? "var(--accent)" : "var(--muted-2)") + '">' +
-        '<span class="card-num">DEINE AUFGABE · ABGESCHLOSSEN</span>' +
-        '<h3 style="font-size:1.05rem;margin:6px 0 4px">' + p.erledigt + ' von ' + f.target + ' Tagen' +
-        (p.geschafft ? " — geschafft." : " — nicht ganz.") + '</h3>' +
-        '<p class="small muted" style="margin:0 0 12px">' + esc(f.title) + '</p>' +
+        '<span class="card-num">DEIN AUFTRAG · ERGEBNISPRÜFUNG</span>' +
+        /* Umsetzung, Ziel und Zielstatus sind DREI Angaben — das Ziel ist
+           nie der Nenner der Umsetzung („5 von 7", nicht „5 von 5"). */
+        '<h3 style="font-size:1.05rem;margin:6px 0 4px">Umsetzung: ' + u.erledigt + ' von ' + u.tage + ' Tagen — ' + uText + '.</h3>' +
+        '<p class="small" style="margin:0 0 6px">Ziel: ' + u.ziel + ' von ' + u.tage + ' Tagen — <strong>' +
+        (u.zielErreicht ? 'erreicht' : 'nicht erreicht') + '</strong> · Umsetzungsquote ' + u.quote + ' %</p>' +
+        '<p class="small muted" style="margin:0 0 10px">' + esc(f.title) + ' · Fokusphase ' + f.days + ' Tage (' + fmtD(f.started) + '–' + fmtD(u.letzterTag) + ') · Umsetzungsprüfung ' + fmtD(u.faelligAm) +
+        (u.ohneEintrag ? ' · ' + u.ohneEintrag + (u.ohneEintrag === 1 ? ' Tag' : ' Tage') + ' ohne Häkchen (nicht erfasst oder nicht umgesetzt)' : '') +
+        /* Herkunft, KEINE zweite Quote: dieselben Tage, nur zusätzlich die
+           Angabe, wie viele davon aus Messdaten kamen. */
+        (u.ausTracking ? ' · davon ' + u.ausTracking + (u.ausTracking === 1 ? ' Tag' : ' Tage') + ' aus Tracking erkannt' : '') + '</p>' +
+        punktLine(punktZu(MM.focus.ref ? MM.focus.ref(f) : null)) +
+        wBlock +
+        standardBlock(punktZu(MM.focus.ref ? MM.focus.ref(f) : null)) +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">' +
         '<a class="btn btn-primary btn-sm" href="check.html">' +
-        (p.geschafft ? "Jetzt den zweiten Score machen" : "Score wiederholen und neu ansetzen") + '</a>' +
-        '</div>';
+        (p.geschafft ? "Optional: zweiten Score machen" : "Score wiederholen und neu ansetzen") + '</a>' +
+        '<button type="button" class="trk-focus-drop" id="focusDrop">Auftrag abschließen &amp; archivieren</button>' +
+        '</div>' +
+        '<p class="small muted" style="margin:10px 0 0">Der vollständige Score bleibt davon unabhängig — sinnvoll nach rund 4 Wochen.</p>' +
+        '</div>' + weitereOffeneHTML(MM.focus.ref ? MM.focus.ref(f) : null) + standardsHTML();
     }
 
     const kurs = p.aufKurs
       ? "Auf Kurs."
       : "Du liegst zurück — hol auf oder setz das Ziel kleiner.";
     return '<div class="card trk-focus" id="focus" style="margin-bottom:18px;border-left:3px solid var(--accent)">' +
-      '<span class="card-num" style="color:var(--accent)">DEINE EINE AUFGABE · NOCH ' + p.offen + ' TAGE</span>' +
+      '<span class="card-num" style="color:var(--accent)">DEIN AUFTRAG · NOCH ' + p.offen + (p.offen === 1 ? ' TAG' : ' TAGE') + '</span>' +
       '<h3 style="font-size:1.05rem;margin:6px 0 4px">' + esc(f.title) + '</h3>' +
+      /* Der letzte Umsetzungstag und der Prüfungstag sind NICHT derselbe Tag. */
+      '<p class="small muted" style="margin:0 0 8px">Fokusphase ' + f.days + ' Tage: ' + fmtD(f.started) + '–' + fmtD(p.letzterTag) +
+      ' · Umsetzungsprüfung am ' + fmtD(p.pruefungAm) +
+      (f.wirkungBis && f.wirkungBis > f.until ? ' · Wirkungsprüfung ab ' + fmtD(f.wirkungBis) : '') + '</p>' +
+      punktLine(punktZu(MM.focus.ref ? MM.focus.ref(f) : null)) +
       '<div class="trk-focus-bar" aria-hidden="true"><span style="width:' + p.prozent + '%"></span></div>' +
-      '<p class="small muted" style="margin:8px 0 12px">' + p.erledigt + ' von ' + f.target + ' Tagen. ' + kurs + '</p>' +
-      '<label class="trk-focus-check">' +
-      '<input type="checkbox" id="focusToday"' + (p.heuteErledigt ? " checked" : "") + '>' +
-      '<span>' + esc(f.daily) + '</span></label>' +
+      '<p class="small muted" style="margin:8px 0 12px">' + p.erledigt + ' von ' + f.days + ' Tagen umgesetzt · Ziel: ' + f.target + ' Tage. ' + kurs + '</p>' +
+      heuteBlock(f) +
       (f.arzt ? '<p class="small" style="color:var(--muted-2);margin:10px 0 0">' + esc(f.arzt) + '</p>' : '') +
-      '<p class="small" style="margin:10px 0 0"><button type="button" class="trk-focus-drop" id="focusDrop">Aufgabe beenden</button></p>' +
+      '<p class="small" style="margin:10px 0 0"><button type="button" class="trk-focus-drop" id="focusDrop">Auftrag beenden</button></p>' +
+      '</div>' + weitereOffeneHTML(MM.focus.ref ? MM.focus.ref(f) : null) + standardsHTML();
+  }
+
+  /* WEITERE offene Wirkungsprüfungen — kompakt und nur, wenn es sie gibt.
+     Wer genau eine offene Prüfung hat, sieht diese Liste nie. Kein offener
+     Vorgang darf dauerhaft unzugänglich werden (mm_focus_history bleibt die
+     maßgebliche Quelle; hier wird nur referenziert). */
+  function weitereOffeneHTML(ausser) {
+    if (!(window.MM && MM.focus && MM.focus.wirkungOffeneListe)) return "";
+    const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    const fmtD = (str) => String(str || "").slice(8, 10) + "." + String(str || "").slice(5, 7) + "." + String(str || "").slice(0, 4);
+    const rest = MM.focus.wirkungOffeneListe().filter((o) => o.ref !== ausser);
+    if (!rest.length) return "";
+    return '<div class="card trk-focus" id="focusOffen" style="margin-bottom:18px">' +
+      '<span class="card-num">WEITERE OFFENE WIRKUNGSPRÜFUNGEN · ' + rest.length + '</span>' +
+      rest.map((o) =>
+        '<div style="margin:10px 0 0;padding-top:10px;border-top:1px solid var(--line)">' +
+        '<p class="small" style="margin:0 0 4px"><strong>' + esc(o.titel) + '</strong></p>' +
+        '<p class="small muted" style="margin:0 0 6px">Umsetzung abgeschlossen: ' + o.erledigt + ' von ' + o.days +
+        ' Tagen (Ziel: ' + o.ziel + ') · Wirkungsprüfung ' + (o.beurteilbar ? 'fällig seit ' : 'ab ') + fmtD(o.faelligAm) + '</p>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+        ['erkennbar|Wirkung erkennbar', 'teilweise|Teilweise', 'nicht_erkennbar|Keine Wirkung', 'nicht_geprueft|Nicht weiter prüfen']
+          .map((x) => { const q = x.split("|");
+            return '<button type="button" class="btn btn-sm btn-ghost" data-fwirkung="' + q[0] + '" data-fref="' + esc(o.ref) + '">' + q[1] + '</button>'; })
+          .join("") +
+        '</div></div>').join("") +
       '</div>';
+  }
+
+  /* Übernommene persönliche Standards — knapp, damit sichtbar ist, was
+     dauerhaft gilt. Entsteht ausschließlich aus bestätigten Übernahmen. */
+  function standardsHTML() {
+    if (!(window.MM && MM.points && MM.points.standards)) return "";
+    const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    let st = [];
+    try { st = MM.points.standards(); } catch (e) { return ""; }
+    if (!st.length) return "";
+    return '<div class="card trk-focus" id="focusStandards" style="margin-bottom:18px">' +
+      '<span class="card-num">DEINE PERSÖNLICHEN STANDARDS · ' + st.length + '</span>' +
+      '<ul class="small" style="margin:8px 0 0;padding-left:18px">' +
+      st.map((p) => '<li style="margin:0 0 4px">' + esc(p.standard.was) + ' <span class="muted">· Bereich ' +
+        esc(p.standard.bereich) + ' · seit ' + esc(String(p.standard.bestaetigtAm).slice(8, 10) + "." +
+        String(p.standard.bestaetigtAm).slice(5, 7) + "." + String(p.standard.bestaetigtAm).slice(0, 4)) + '</span></li>').join("") +
+      '</ul></div>';
   }
 
   function bindFocus() {
     const box = document.getElementById("focusToday");
     if (box) box.addEventListener("change", () => { MM.focus.toggleDay(); render(); });
+    /* Tagesstatus aus der Messdatenbrücke (Paket 5). Jede Aktion ist eine
+       AUSDRÜCKLICHE Entscheidung des Nutzers und gewinnt damit dauerhaft
+       gegen jede spätere automatische Auswertung. „Später entscheiden"
+       schreibt bewusst nichts. */
+    document.querySelectorAll("[data-fday]").forEach((b) => b.addEventListener("click", () => {
+      if (!(window.MM && MM.focus && MM.focus.setDay)) return;
+      const a = b.getAttribute("data-fday");
+      let t = null;
+      try { t = MM.focus.tagStatus(); } catch (e) { t = null; }
+      const beleg = t ? { quelle: t.quelle, wert: t.wert, ziel: t.ziel } : null;
+      if (a === "spaeter") return;
+      if (a === "toggle") MM.focus.toggleDay();
+      else if (a === "ja") MM.focus.setDay(null, "ja", "manuell");
+      else if (a === "bestaetigen") MM.focus.setDay(null, "ja", "bestaetigt", beleg);
+      else if (a === "nein") MM.focus.setDay(null, "nein", "manuell");
+      render();
+    }));
+    /* Wirkungsprüfung: Einschätzung erfassen (erkennbar/teilweise/keine/offen). */
+    document.querySelectorAll("[data-fwirkung]").forEach((b) => b.addEventListener("click", () => {
+      MM.focus.setWirkung(b.getAttribute("data-fwirkung"), null, b.getAttribute("data-fref") || null);
+      render();
+    }));
+    /* Persönlicher Standard — ausschließlich auf ausdrückliche Bestätigung. */
+    document.querySelectorAll("[data-fstd]").forEach((b) => b.addEventListener("click", () => {
+      if (!(window.MM && MM.points)) return;
+      const id = b.getAttribute("data-pt");
+      if (b.getAttribute("data-fstd") === "adopt") {
+        MM.points.adoptStandard(id);
+        if (MM.toast) MM.toast("Als persönlicher Standard übernommen.");
+      } else {
+        MM.points.declineStandard(id);
+      }
+      render();
+    }));
     const drop = document.getElementById("focusDrop");
     if (drop) drop.addEventListener("click", () => {
-      if (confirm(T("Aufgabe beenden? Der Fortschritt bleibt in deiner Historie erhalten.",
+      if (confirm(T("Auftrag beenden? Der Fortschritt bleibt in deiner Historie erhalten.",
                     "End this task? Your progress stays in your history."))) {
         MM.focus.clear(); render();
       }

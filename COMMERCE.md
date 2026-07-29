@@ -4,7 +4,7 @@
 
 | Baustein | Status |
 |---|---|
-| Produktleiter FREE → PROTOKOLL (49 € einmalig) → COACHING (149 €/Monat) | LIVE (Positionierung auf index/protokoll/coaching) |
+| Produktleiter FREE → PROTOKOLL (99 € einmalig) → COACHING (199 €/Monat) | LIVE (Positionierung auf index/protokoll/coaching) |
 | Warenkorb + Checkout (Vorkasse) | LIVE — ohne Bank-Config wird ehrlich "Bankverbindung per E-Mail" angezeigt (nie Platzhalter-IBAN) |
 | PayPal Smart Buttons | FUNCTIONAL, REQUIRES CONFIG — `paypalClientId` steht auf `"sb"` (Sandbox, sichtbarer Testmodus-Banner). Live-Client-ID eintragen ⇒ echtes Geld |
 | Serverseitige Kauf-Verifikation + Entitlement-Vergabe (`mm-commerce`) | CODE COMPLETE, REQUIRES CONFIG (Supabase + PayPal-Secrets) |

@@ -128,7 +128,9 @@ group("4 · Der Auftrag lässt sich führen (Speicher-Logik)");
 
   let p = F.progress();
   ok(p.erledigt === 0 && p.heuteErledigt === false, "am Starttag ist nichts erledigt");
-  ok(p.offen === 28, "28 Tage Laufzeit");
+  /* Seit Paket 2 startet focusFor ohne Dauer-Angabe mit der EMPFOHLENEN
+     Fokusphase des Auftrags — die volle Laufzeit ist am Starttag offen. */
+  ok(p.offen === f.days && f.days === (C.FOCUS.sleep.dauer || 28), "volle Laufzeit am Starttag (" + f.days + " Tage, empfohlene Dauer)");
   ok(p.abgelaufen === false, "läuft noch");
 
   F.toggleDay();
@@ -225,7 +227,7 @@ group("8 · Nichts davon kostet etwas oder verlässt das Gerät");
   ok(!/fetch\(|XMLHttpRequest|sendBeacon|supabase/i.test(f), "focus.js sendet nichts nach außen");
   ok(!/e-?mail|newsletter|subscribe/i.test(f), "focus.js verlangt keine Adresse");
   const check = read("js/check.js");
-  const block = check.slice(check.indexOf("DEINE EINE AUFGABE"), check.indexOf("DEIN NÄCHSTER SCORE"));
+  const block = check.slice(check.indexOf(">EIN AUFTRAG<"), check.indexOf("DEINE ERGEBNISPRÜFUNG"));
   ok(!/protokoll\.html|49\s*€/.test(block), "der Auftrags-Block verkauft nichts — er ist der kostenlose Teil");
 })();
 

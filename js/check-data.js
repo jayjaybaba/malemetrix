@@ -1574,140 +1574,168 @@ window.MM_CHECK = {
 
      Ein Score, der nur diagnostiziert, ist ein Flyer. Damit der zweite
      Durchlauf etwas zu vergleichen hat, braucht der erste einen Auftrag:
-     GENAU EINEN, für vier Wochen, täglich mit Ja/Nein beantwortbar.
+     GENAU EINEN, für eine Fokusphase von 7, 14 oder 28 Tagen, täglich mit
+     Ja/Nein beantwortbar. `dauer` ist die empfohlene Fokusphase,
+     `wirkfrist` der früheste sinnvolle Zeitpunkt der Wirkungsprüfung
+     (Produktleitplanke, keine medizinische Wirksamkeitsfrist).
 
      Regeln, die hier bewusst gelten:
      - Eine Aufgabe pro Engpass. Nicht drei. Wer fünf Dinge anfängt, macht
        keins vier Wochen lang durch.
-     - Das Ziel ist NICHT 28 von 28. Perfektion ist die falsche Messlatte und
-       der schnellste Weg zum Abbruch nach dem ersten verpassten Tag.
+     - Das Ziel ist NIE Perfektion (d von d Tagen). Die falsche Messlatte
+       ist der schnellste Weg zum Abbruch nach dem ersten verpassten Tag.
+       `target` ist das 28-Tage-Ziel; kürzere Fokusphasen übertragen die
+       Quote proportional (siehe focusTarget).
      - Keine Diagnose, keine Dosierung, keine Präparate. Wo etwas ärztlich
        gehört, steht das als `arzt` dabei und wird auch angezeigt.
      ========================================================================== */
   FOCUS: {
     bodyComposition: {
-      title: "Vier Wochen lang deine Zahlen führen — Gewicht täglich, Taille wöchentlich.",
+      title: "Deine Zahlen führen — Gewicht täglich, Taille wöchentlich.",
       daily: "Gewicht heute notiert",
       why: "Körperkomposition verschiebt sich zu langsam, um sie zu spüren. Ohne Messreihe hältst du normale Tagesschwankung für Fortschritt — oder übersiehst echten.",
       proof: "Beim zweiten Score hast du eine Kurve statt eines Gefühls.",
-      target: 20
+      target: 20, dauer: 28, wirkfrist: 28
     },
     training: {
-      title: "Vier Wochen, drei feste Trainingstage — dieselben Tage, jede Woche.",
+      title: "Drei feste Trainingstage — dieselben Tage, jede Woche.",
       daily: "Heute Plan eingehalten (trainiert oder geplanter Ruhetag)",
       why: "Dir fehlt keine Motivation, sondern Planbarkeit. Feste Tage schlagen gute Absichten, weil sie keine Entscheidung mehr verlangen.",
-      proof: "Zwölf Einheiten in vier Wochen — und ein Verlauf, der Progression zeigt.",
-      target: 24
+      proof: "Feste Einheiten Woche für Woche — und ein Verlauf, der Progression zeigt.",
+      target: 24, dauer: 14, wirkfrist: 28
     },
     movement: {
-      title: "Vier Wochen lang mindestens 7.000 Schritte am Tag.",
+      title: "Mindestens 7.000 Schritte am Tag.",
       daily: "Heute 7.000 Schritte erreicht",
       why: "Drei Einheiten pro Woche kompensieren keine dreizehn Stunden Sitzen. Alltagsbewegung ist der größere Teil deines Verbrauchs — und der, den du steuerst.",
-      proof: "20 von 28 Tagen über 7.000.",
-      target: 20
+      proof: "Die meisten Tage über 7.000 — nachlesbar statt gefühlt.",
+      target: 20, dauer: 14, wirkfrist: 14
     },
     sleep: {
-      title: "Vier Wochen lang zur selben Zeit ins Bett — ±30 Minuten.",
+      title: "Zur selben Zeit ins Bett — ±30 Minuten.",
       daily: "Heute zur geplanten Zeit ins Bett",
       why: "Der erste Hebel ist nicht die Dauer, sondern die Regelmäßigkeit. Ein fester Zeitpunkt bringt mehr als eine gute Nacht nach vier schlechten.",
-      proof: "20 von 28 Nächten zur selben Zeit — das sieht dein Recovery-Wert.",
-      target: 20
+      proof: "Die meisten Nächte zur selben Zeit — das sieht dein Recovery-Wert.",
+      target: 20, dauer: 14, wirkfrist: 14
     },
     recovery: {
-      title: "Vier Wochen lang zehn Minuten am Tag ohne Bildschirm und ohne Aufgabe.",
+      title: "Zehn Minuten am Tag ohne Bildschirm und ohne Aufgabe.",
       daily: "Heute zehn Minuten wirklich nichts",
       why: "Du bekommst genug Reize. Was fehlt, ist die Gegenbewegung — und die passiert nicht von selbst, sie braucht einen festen Platz im Tag.",
-      proof: "20 von 28 Tagen mit einer echten Pause.",
-      target: 20
+      proof: "Fast jeden Tag eine echte Pause.",
+      target: 20, dauer: 14, wirkfrist: 14
     },
     nutrition: {
-      title: "Vier Wochen lang jeden Tag dein Proteinziel treffen.",
+      title: "Jeden Tag dein Proteinziel treffen.",
       daily: "Proteinziel heute erreicht",
       why: "Protein ist der Makronährstoff, bei dem die Menge im Alltag am häufigsten danebengeht — und der, der Muskel schützt, wenn du im Defizit bist.",
-      proof: "20 von 28 Tagen im Ziel, nachlesbar im Tracker.",
-      target: 20
+      proof: "Die meisten Tage im Ziel, nachlesbar im Tracker.",
+      target: 20, dauer: 14, wirkfrist: 14
     },
     metabolic: {
-      title: "Vier Wochen lang nach der größten Mahlzeit zehn Minuten gehen.",
+      title: "Nach der größten Mahlzeit zehn Minuten gehen.",
       daily: "Heute nach dem Essen gegangen",
       why: "Die kleinste Gewohnheit mit dem besten Verhältnis von Aufwand zu Wirkung — sie braucht weder Ausrüstung noch Umziehen noch einen freien Termin.",
-      proof: "20 von 28 Tagen. Kostet dich insgesamt gut drei Stunden.",
-      target: 20
+      proof: "Zehn Minuten am Tag — läuft nebenbei, ohne Ausrüstung und ohne Termin.",
+      target: 20, dauer: 28, wirkfrist: 28
     },
     cardiovascular: {
-      title: "Vier Wochen lang 30 Minuten Bewegung am Tag — und einmal Blutdruck in Ruhe messen.",
+      title: "30 Minuten Bewegung am Tag — und einmal Blutdruck in Ruhe messen.",
       daily: "Heute 30 Minuten in Bewegung",
       why: "Herz-Kreislauf verläuft lange ohne Symptome. Bewegung ist der Hebel, den du selbst in der Hand hast.",
-      proof: "20 von 28 Tagen — plus ein gemessener Wert statt einer Vermutung.",
+      proof: "Bewegung an fast jedem Tag — plus ein gemessener Wert statt einer Vermutung.",
       arzt: "Die Einordnung deines Blutdrucks gehört ärztlich abgeklärt, nicht in einen Selbsttest.",
-      target: 20
+      target: 20, dauer: 28, wirkfrist: 28
     },
     hormonal: {
-      title: "Vier Wochen lang höchstens ein Abend mit Alkohol pro Woche.",
+      title: "Höchstens ein Abend mit Alkohol pro Woche.",
       daily: "Heute alkoholfrei",
       why: "Libido und Erektion sind Signale des Gesamtsystems, kein isolierter Hormonwert. Alkohol und Schlaf sind die zwei Stellschrauben, die du sofort selbst hast.",
-      proof: "24 von 28 Abenden ohne — das ist die sauberste Ausgangslage für ein Arztgespräch.",
-      arzt: "Bestehen die Beschwerden nach vier sauberen Wochen weiter, gehört das ärztlich abgeklärt. MaleMetrix stellt keine Diagnose.",
-      target: 24
+      proof: "Fast alle Abende ohne — das ist die sauberste Ausgangslage für ein Arztgespräch.",
+      arzt: "Bestehen die Beschwerden nach einer sauber umgesetzten Fokusphase weiter, gehört das ärztlich abgeklärt. MaleMetrix stellt keine Diagnose.",
+      target: 24, dauer: 28, wirkfrist: 28
     },
     energy: {
-      title: "Vier Wochen lang kein Koffein mehr nach 14 Uhr.",
+      title: "Kein Koffein mehr nach 14 Uhr.",
       daily: "Heute nach 14 Uhr koffeinfrei",
       why: "Koffein hat eine Halbwertszeit von rund fünf Stunden. Der Espresso um 16 Uhr wirkt um Mitternacht noch — und du merkst es nicht am Einschlafen, sondern am Tiefschlaf.",
-      proof: "20 von 28 Tagen — der Effekt zeigt sich meist in Woche zwei.",
-      target: 20
+      proof: "Der Effekt zeigt sich meist in der zweiten Woche.",
+      target: 20, dauer: 14, wirkfrist: 14
     },
     dataQuality: {
-      title: "Vier Wochen lang jeden Tag genau einen Wert eintragen.",
+      title: "Jeden Tag genau einen Wert eintragen.",
       daily: "Heute einen Wert eingetragen",
       why: "Du steuerst gerade ohne Instrumente. Welcher Wert es ist, ist zweitrangig — dass überhaupt einer da ist, entscheidet, ob dein nächster Score etwas zu vergleichen hat.",
-      proof: "20 Datenpunkte statt keinem.",
-      target: 20
+      proof: "Eine tägliche Messreihe statt keiner.",
+      target: 20, dauer: 7, wirkfrist: 7
     },
     execution: {
-      title: "Vier Wochen lang eine einzige Sache — jeden Tag dieselbe.",
+      title: "Eine einzige Sache — jeden Tag dieselbe.",
       daily: "Die eine Sache heute getan",
-      why: "Du weißt vermutlich genug. Was scheitert, ist die Menge auf einmal. Eine Sache vier Wochen ohne Ausnahme schlägt fünf Vorsätze für zehn Tage.",
-      proof: "20 von 28 Tagen — und der Beweis, dass du es kannst.",
-      target: 20
+      why: "Du weißt vermutlich genug. Was scheitert, ist die Menge auf einmal. Eine Sache konsequent jeden Tag schlägt fünf Vorsätze für zehn Tage.",
+      proof: "Fast jeden Tag umgesetzt — und der Beweis, dass du es kannst.",
+      target: 20, dauer: 14, wirkfrist: 14
     },
     enhancedControl: {
-      title: "Vier Wochen lang täglich Blutdruck messen und notieren.",
+      title: "Täglich Blutdruck messen und notieren.",
       daily: "Heute Blutdruck gemessen und notiert",
       why: "Kontrolle heißt hier Messung, nicht Anpassung. Blutdruck verschiebt sich am schnellsten und ist am einfachsten selbst zu erfassen.",
       proof: "Eine lückenlose Messreihe für das nächste ärztliche Gespräch.",
       arzt: "MaleMetrix gibt keine Einnahme-, Dosierungs- oder Präparateempfehlung. Änderungen gehören ärztlich begleitet.",
-      target: 24
+      target: 24, dauer: 28, wirkfrist: 28
     },
     therapyControl: {
-      title: "Vier Wochen lang deine Kontrollwerte führen — und den nächsten Arzttermin fest eintragen.",
+      title: "Deine Kontrollwerte führen — und den nächsten Arzttermin fest eintragen.",
       daily: "Heute Blutdruck gemessen und notiert",
       why: "Eine laufende Therapie lebt von Kontrolle. Die Messreihe führst du selbst; sie macht das nächste Gespräch konkret.",
-      proof: "Vier Wochen Verlauf statt einer Momentaufnahme im Wartezimmer.",
+      proof: "Ein laufender Verlauf statt einer Momentaufnahme im Wartezimmer.",
       arzt: "Einordnung und jede Änderung gehören zu der Ärztin oder dem Arzt, die die Therapie verordnet haben.",
-      target: 24
+      target: 24, dauer: 28, wirkfrist: 28
     },
     recoveryStatus: {
-      title: "Vier Wochen lang Schlaf und Blutdruck führen — und einen Termin zur Verlaufskontrolle machen.",
+      title: "Schlaf und Blutdruck führen — und einen Termin zur Verlaufskontrolle machen.",
       daily: "Heute Schlaf und Blutdruck notiert",
       why: "Nach dem Absetzen zählt der Verlauf mehr als jeder Einzelwert. Was du beitragen kannst, ist eine saubere Messreihe.",
-      proof: "Vier Wochen Verlauf, die das ärztliche Gespräch tragen.",
+      proof: "Ein sauberer Verlauf, der das ärztliche Gespräch trägt.",
       arzt: "Der Verlauf gehört ärztlich begleitet. MaleMetrix stellt keine Diagnose und empfiehlt keine Präparate.",
-      target: 24
+      target: 24, dauer: 28, wirkfrist: 28
     }
+  },
+
+  /* Zulässige Fokusphasen-Dauern (Paket 2). */
+  FOCUS_DAUERN: [7, 14, 28],
+
+  /* Ziel-Regel (Toleranzprinzip, dokumentiert): das bestehende 28-Tage-Ziel
+     wird proportional auf die gewählte Dauer übertragen —
+     Ziel(d) = round(d × Ziel28 / 28), begrenzt auf 1 … d−1.
+     Beispiele: 20/28 → 5/7 und 10/14 (exakt „5 von 7 Tagen pro Woche");
+     24/28 → 6/7 und 12/14. 28-Tage-Aufträge behalten ihr bisheriges Ziel
+     unverändert; Perfektion (d von d) wird nie verlangt. */
+  focusTarget: function (days, target28) {
+    var t = Math.round(days * (target28 || 20) / 28);
+    return Math.max(1, Math.min(t, days - 1));
   },
 
   /* Aus einem Ergebnis den Auftrag ableiten. Fällt auf `execution` zurück —
      das ist die Aufgabe, die für jeden gilt, dessen Engpass wir nicht
-     genauer benennen können. */
-  focusFor: function (result) {
+     genauer benennen können.
+     `days` ist optional (7/14/28); ohne Angabe gilt die empfohlene Dauer
+     des Auftrags (f.dauer, sonst 28). Datumsrechnung über Kalendertage
+     (setDate-Semantik), nicht über Millisekunden — kein Off-by-one an
+     Zeitumstellungen. Die Wirkungsprüfung liegt nie vor dem Ende der
+     Fokusphase: wirkfrist = max(gewählte Dauer, empfohlene Wirkfrist). */
+  focusFor: function (result, days) {
     var C = window.MM_CHECK;
     var bn = (result && result.bottleneck) || {};
     var f = C.FOCUS[bn.domain] || C.FOCUS.execution;
+    var empfohlen = f.dauer || 28;
+    var d = (C.FOCUS_DAUERN.indexOf(days) >= 0) ? days : empfohlen;
+    var wf = Math.max(d, f.wirkfrist || d);
     var start = new Date();
-    var end = new Date(start.getTime() + 28 * 86400000);
-    var ymd = function (d) {
-      return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+    var end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + d);
+    var wEnd = new Date(start.getFullYear(), start.getMonth(), start.getDate() + wf);
+    var ymd = function (x) {
+      return x.getFullYear() + "-" + ("0" + (x.getMonth() + 1)).slice(-2) + "-" + ("0" + x.getDate()).slice(-2);
     };
     return {
       v: 1,
@@ -1718,8 +1746,11 @@ window.MM_CHECK = {
       why: f.why,
       proof: f.proof,
       arzt: f.arzt || "",
-      target: f.target,
-      days: 28,
+      target: d === 28 ? f.target : C.focusTarget(d, f.target),
+      days: d,
+      empfohlen: empfohlen,
+      wirkfrist: wf,
+      wirkungBis: ymd(wEnd),
       started: ymd(start),
       until: ymd(end),
       scoreAtStart: (result && result.total) || null,
@@ -2731,6 +2762,100 @@ window.MM_CHECK = {
     return wsum ? Math.round(sum / wsum) : 0;
   };
 
+  /* =========================================================================
+     BEREICHSWERT (Paket 4) — REINE DARSTELLUNGSSCHICHT, KEINE ZWEITE ENGINE.
+     Der Bereichswert ist der bereits vorhandene Domain-Score auf der
+     10er-Skala:  Bereichswert = Domain-Score / 10.
+     Er wird nirgends gespeichert, nicht gewichtet, nicht klassifiziert, nicht
+     telemetriert und ersetzt keine Engine-Funktion. Intern und persistiert
+     bleibt alles auf 0–100; der MaleMetrix-Gesamtscore bleibt /100.
+     JEDE sichtbare Bereichswert-Darstellung läuft durch diese Helfer —
+     keine zweite Division oder Formatierung irgendwo sonst.
+     ========================================================================= */
+  C.areaValueFromDomainScore = function (score) {
+    if (typeof score !== "number" || !isFinite(score)) return null;
+    /* Domain-Scores sind per Engine auf 0–100 begrenzt (siehe domainScores).
+       Ein Wert außerhalb kann nur aus beschädigten Daten stammen — dann wird
+       lieber ehrlich nichts angezeigt als eine unsinnige Zahl wie -0,5/10.
+       KEINE Skalierung, KEIN Zurechtbiegen: nur gültig / nicht gültig. */
+    if (score < 0 || score > 100) return null;
+    return score / 10;
+  };
+  /* Deutsches Zahlenformat, höchstens eine Nachkommastelle, ganze Werte ohne
+     unnötiges „,0". Keine künstliche Untergrenze — 0 bleibt 0. */
+  C.formatAreaValue = function (score) {
+    var v = C.areaValueFromDomainScore(score);
+    if (v === null) return null;
+    return (Math.round(v * 10) / 10).toFixed(1).replace(/\.0$/, "").replace(".", ",");
+  };
+  C.AREA_VALUE_EMPTY = "Noch nicht bewertet";
+  C.areaValueLabel = function (score) {
+    var s = C.formatAreaValue(score);
+    return s === null ? C.AREA_VALUE_EMPTY : s + "/10";
+  };
+  /* Vollständiger Text für Screenreader — nie nur Farbe oder Balken. */
+  C.areaValueA11y = function (name, score) {
+    var s = C.formatAreaValue(score);
+    return String(name || "") + ": " + (s === null ? C.AREA_VALUE_EMPTY : "Bereichswert " + s + " von 10");
+  };
+
+  /* Antwort-Label zu einer beantworteten Frage — liest zurück, was der Nutzer
+     gewählt hat. Keine Textgenerierung. */
+  function answerLabel(q, ans) {
+    if (ans === undefined || ans === null || ans === "") return null;
+    if (q.type === "multi") {
+      var sel = arr(ans).map(function (v) {
+        var o = (q.options || []).find(function (x) { return String(x.v) === String(v); });
+        return o ? o.label : null;
+      }).filter(Boolean);
+      if (!sel.length) return null;
+      return sel.slice(0, 3).join(", ") + (sel.length > 3 ? " …" : "");
+    }
+    if (q.type === "scale") return String(ans);
+    var opt = (q.options || []).find(function (x) { return String(x.v) === String(ans); });
+    return opt ? opt.label : null;
+  }
+
+  /* „Warum dieser Wert?" — ausschließlich aus vorhandenen deterministischen
+     Quellen: den EIGENEN Antworten des Nutzers, bewertet mit derselben
+     Engine-Funktion wie der Score selbst (kein zweiter Rechenweg), den
+     dokumentierten Kontextmodifikatoren und der bestehenden Datenlücken-Liste.
+     Keine generierten Texte, keine Ursachenbehauptung, keine Diagnose.
+     `gruende` sind die Antworten, die den Wert am stärksten gedrückt haben. */
+  C.areaReasons = function (answers, domain, gaps, limit) {
+    var a = answers || {}, antworten = [], hinweise = [];
+    if (domain) {
+      C.scoredSteps(a).forEach(function (st) {
+        if (C.domainOf(st.q) !== domain) return;
+        var r = qPoints(st.q, a[st.q.id]);
+        if (!r || !r.max) return;
+        var kosten = r.max - r.p;
+        if (kosten <= 0) return;              // trägt den Wert — erklärt ihn nicht
+        var lbl = answerLabel(st.q, a[st.q.id]);
+        if (!lbl) return;
+        antworten.push({
+          id: st.q.id,
+          frage: String(st.q.title || "").replace(/\s*\?\s*$/, ""),
+          antwort: lbl, kosten: kosten
+        });
+      });
+      antworten.sort(function (x, y) { return y.kosten - x.kosten; });
+      C.MODIFIERS.forEach(function (m) {
+        if (!m.apply || m.apply[domain] === undefined) return;
+        var hit = false;
+        try { hit = !!m.when(a); } catch (e) { hit = false; }
+        if (hit) hinweise.push({ id: m.id, text: m.why });
+      });
+    }
+    var luecke = (gaps || []).filter(function (g) { return g && g.domain === domain; })[0] || null;
+    return {
+      gruende: antworten.slice(0, limit || 3),
+      hinweise: hinweise.slice(0, 1),
+      luecke: luecke,
+      gesamt: antworten.length
+    };
+  };
+
   /* V2-Domains → die 7 historischen Bereiche (Radar, Report, Programm). */
   C.legacyScores = function (d) {
     function g(k, fb) { return (d[k] === undefined || d[k] === null) ? fb : d[k]; }
@@ -3188,50 +3313,187 @@ window.MM_CHECK = {
   /* --------------------------------------------------------- DEEP LINKS */
   /* Nicht jeder Link fuer jeden. Genau der naechste sinnvolle Weg. */
 
+  /* ===================== KAPITEL UND ABSCHNITTE (Paket 6) =================
+     EINE Zuordnung: Score-Domain → Protokoll-Kapitel → konkreter Abschnitt.
+     Kapitelnummer, Kapitelname und Datei stammen aus dem kanonischen
+     Kapitelindex (protokoll.html); die Abschnitte sind die dort tatsächlich
+     ausgewiesenen Inhalte der jeweiligen Kapitelseite.
+
+     Technischer Schlüssel ist IMMER die stabile ID (Kapitel-Key + Abschnitts-
+     Anker), nie die sichtbare deutsche Überschrift. Ein Label darf sich
+     ändern, ohne dass die Zuordnung bricht.
+
+     Die Kapitelseiten sind die Vorschauflächen des Werks: Sie nennen den
+     Abschnitt, den der Score meint, und führen von dort über den bereits
+     bestehenden Weg in den Volltext. Der Volltext-Reader bleibt unverändert
+     zugangsgeschützt — ein Abschnittsanker öffnet nichts, was ohne ihn
+     verschlossen wäre. */
   C.CHAPTERS = {
-    training:   { label: "Training",           href: "protokoll.html" },
-    body:       { label: "Körperkomposition",  href: "protokoll.html" },
-    protein:    { label: "Protein & Ernährung", href: "protokoll.html" },
-    sleep:      { label: "Schlaf",             href: "protokoll.html" },
-    sleepStack: { label: "Schlaf-Stack",       href: "protokoll.html" },
-    blood:      { label: "Blutwerte & Risiko", href: "protokoll.html" },
-    hormones:   { label: "Hormone",            href: "protokoll.html" },
-    sexual:     { label: "Sexuelle Gesundheit", href: "protokoll.html" },
-    glp1:       { label: "GLP-1",              href: "protokoll.html" },
-    stack:      { label: "Ultimate Stack",     href: "protokoll.html" },
-    habits:     { label: "Umsetzung",          href: "protokoll.html" },
-    daily:      { label: "Tägliche Bewegung",  href: "protokoll.html" }
+    fundament: {
+      nr: "01", label: "DAS FUNDAMENT", href: "ebooks/blueprint.html",
+      sections: {
+        "engpass-finden": "Wie du deinen Engpass findest",
+        "koerperkomposition": "Muskel und Fett als Stoffwechselorgane",
+        "reihenfolge": "Wo du anfängst, wenn alles gleichzeitig dran wäre"
+      }
+    },
+    training: {
+      nr: "02", label: "JEDEN TAG TRAINIEREN", href: "ebooks/taeglich-trainieren.html",
+      sections: {
+        "trainingsstruktur": "Drei Einheiten mit Progression statt sechs ohne",
+        "alltagsbewegung": "Alltagsbewegung als eigenständiger Hebel",
+        "progression": "Progression planen, statt härter zu schwitzen"
+      }
+    },
+    schlaf: {
+      nr: "03", label: "SCHLAF & REGENERATION", href: "ebooks/schlaf-energie.html",
+      sections: {
+        "schlafrhythmus": "Rhythmus schlägt Dauer",
+        "koffein-alkohol": "Koffein-Timing, Alkohol und der Tiefschlaf",
+        "schlafapnoe": "Schlafapnoe: die Anzeichen, die Männer übersehen"
+      }
+    },
+    blutwerte: {
+      nr: "04", label: "BLUTWERTE, RISIKO & LONGEVITY", href: "ebooks/blutwerte-guide.html",
+      sections: {
+        "werte-die-entscheiden": "Welche Werte eine Entscheidung verändern",
+        "apob-lpa": "ApoB und Lp(a)",
+        "hba1c-insulin": "HbA1c, Nüchterninsulin und der stille Vorlauf",
+        "blutdruck": "Blutdruck: der am meisten unterschätzte Einzelwert"
+      }
+    },
+    hormone: {
+      nr: "05", label: "HORMONE & TESTOSTERON", href: "ebooks/testosteron.html",
+      sections: {
+        "hpg-achse": "Wie die HPG-Achse funktioniert",
+        "t-werte-lesen": "Gesamt-T, freies T und SHBG richtig lesen",
+        "before-trt": "BEFORE TRT: was vorher geklärt sein muss"
+      }
+    },
+    glp1: {
+      nr: "06", label: "GLP-1 & METABOLIC MEDICINE", href: "ebooks/glp1-agonisten.html",
+      sections: { "muskelschutz": "Muskelverlust: das Hauptrisiko und wie man ihm begegnet" }
+    },
+    stack: {
+      nr: "07", label: "DER ULTIMATIVE STACK", href: "ebooks/ultimate-stack.html",
+      sections: { "health-shield": "Der Health Shield" }
+    },
+    supplemente: {
+      nr: "08", label: "SUPPLEMENTE MIT EVIDENZ", href: "ebooks/supplements.html",
+      sections: { "evidenz-liste": "Die kurze Liste mit belastbarer Evidenz" }
+    },
+    sexuell: {
+      nr: "09", label: "SEXUELLE GESUNDHEIT", href: "ebooks/sexuelle-gesundheit.html",
+      sections: { "erektion-als-marker": "Die Erektion als Frühwarnsystem für die Gefäße" }
+    },
+    injektionen: {
+      nr: "10", label: "INJEKTIONEN", href: "ebooks/11-injektionen.html",
+      sections: { "sicherheit": "Hygiene und Sicherheit" }
+    },
+    abschluss: {
+      nr: "→", label: "ABSCHLUSS · DAS SYSTEM ZUSAMMENSETZEN", href: "ebooks/gewohnheiten.html",
+      sections: { "umsetzung": "Wie aus Wissen dauerhafte Umsetzung wird" }
+    },
+    /* Vertiefung zu Kapitel 01 — sichtbar als solche gekennzeichnet, damit
+       Kanon und Bibliothek nicht verwechselt werden. */
+    proteinVertiefung: {
+      nr: "01 · VERTIEFUNG", label: "Protein ohne Kochen", href: "ebooks/protein-system.html",
+      vertiefung: true,
+      sections: {
+        "proteinmenge": "Wie viel Protein du wirklich brauchst",
+        "mahlzeitenstruktur": "Standardmahlzeiten, die immer funktionieren"
+      }
+    }
   };
 
+  /* Jede Domain der Engine erhält genau eine Zuordnung — fachlich gegen den
+     tatsächlichen Kapitelinhalt geprüft, nicht nach Wortähnlichkeit. */
   C.DOMAIN_CHAPTER = {
-    bodyComposition: "body", training: "training", movement: "daily", sleep: "sleep",
-    recovery: "sleepStack", nutrition: "protein", metabolic: "blood", cardiovascular: "blood",
-    hormonal: "hormones", energy: "sleep", dataQuality: "blood", execution: "habits",
-    enhancedControl: "blood", therapyControl: "hormones", recoveryStatus: "hormones"
+    bodyComposition: { chapter: "fundament",         section: "koerperkomposition" },
+    training:        { chapter: "training",          section: "trainingsstruktur" },
+    movement:        { chapter: "training",          section: "alltagsbewegung" },
+    sleep:           { chapter: "schlaf",            section: "schlafrhythmus" },
+    recovery:        { chapter: "schlaf",            section: "koffein-alkohol" },
+    energy:          { chapter: "schlaf",            section: "koffein-alkohol" },
+    nutrition:       { chapter: "proteinVertiefung", section: "proteinmenge" },
+    metabolic:       { chapter: "blutwerte",         section: "hba1c-insulin" },
+    cardiovascular:  { chapter: "blutwerte",         section: "blutdruck" },
+    dataQuality:     { chapter: "blutwerte",         section: "werte-die-entscheiden" },
+    hormonal:        { chapter: "hormone",           section: "t-werte-lesen" },
+    execution:       { chapter: "abschluss",         section: "umsetzung" },
+    enhancedControl: { chapter: "blutwerte",         section: "werte-die-entscheiden" },
+    therapyControl:  { chapter: "hormone",           section: "t-werte-lesen" },
+    recoveryStatus:  { chapter: "hormone",           section: "hpg-achse" }
   };
 
-  C.deepLinks = function (a, bottleneck, gaps) {
+  /* Der kanonische Auflöser — JEDE sichtbare Kapitelempfehlung läuft hier
+     durch. Liefert null, wenn keine belastbare Zuordnung existiert; dann
+     wird ehrlich nichts empfohlen statt irgendetwas verlinkt. Ein Abschnitt,
+     den es nicht (mehr) gibt, führt höchstens ins richtige Kapitel — nie zu
+     einem falschen Anker. `basis` erlaubt Unterseiten (z. B. ebooks/). */
+  C.chapterFor = function (domain, basis) {
+    var m = C.DOMAIN_CHAPTER[domain];
+    if (!m) return null;
+    var ch = C.CHAPTERS[m.chapter];
+    if (!ch || !ch.href) return null;
+    var sectionLabel = (ch.sections && ch.sections[m.section]) || null;
+    var href = (basis || "") + ch.href;
+    return {
+      domain: domain,
+      chapter: m.chapter, chapterLabel: ch.label, chapterNr: ch.nr,
+      vertiefung: !!ch.vertiefung,
+      section: sectionLabel ? m.section : null,
+      sectionLabel: sectionLabel,
+      href: href,
+      /* Nur anspringen, was es wirklich gibt. */
+      hrefSection: sectionLabel ? href + "#abschnitt-" + m.section : href,
+      quelle: ch.vertiefung ? "DAS PROTOKOLL · Kapitel " + ch.nr : "DAS PROTOKOLL · Kapitel " + ch.nr
+    };
+  };
+
+  /* Zugänglicher Linktext: nennt immer Abschnitt UND Kapitel, nie nur
+     „Öffnen". */
+  C.chapterLinkLabel = function (link) {
+    if (!link) return "";
+    return link.sectionLabel
+      ? "Abschnitt „" + link.sectionLabel + "“ in DAS PROTOKOLL öffnen"
+      : "Kapitel „" + link.chapterLabel + "“ in DAS PROTOKOLL öffnen";
+  };
+
+  C.CHAPTER_FALLBACK = "Für diesen Bereich ist aktuell noch kein direkter Protokollabschnitt hinterlegt.";
+
+  /* Nutzt dieselbe Zuordnung wie C.chapterFor — keine zweite Kapitelliste.
+     Der Engpass führt; Kontextkapitel ergänzen ihn, ohne die Priorisierung
+     der Engine zu verändern. */
+  C.deepLinks = function (a, bottleneck, gaps, basis) {
     a = a || {}; gaps = gaps || [];
     var st = C.statusOf(a);
     var out = [];
     var seen = {};
-    function push(key, why) {
+    function push(key, sectionKey, why) {
       var ch = C.CHAPTERS[key];
-      if (!ch || seen[key]) return;
+      if (!ch || !ch.href || seen[key]) return;
       seen[key] = true;
-      out.push({ key: key, label: ch.label, href: ch.href, why: why });
+      var label = (ch.sections && ch.sections[sectionKey]) || null;
+      var href = (basis || "") + ch.href;
+      out.push({
+        key: key, label: ch.label, nr: ch.nr, section: label ? sectionKey : null,
+        sectionLabel: label, href: href,
+        hrefSection: label ? href + "#abschnitt-" + sectionKey : href, why: why
+      });
     }
     /* 1) Der Engpass fuehrt */
-    if (bottleneck && C.DOMAIN_CHAPTER[bottleneck.domain]) {
-      push(C.DOMAIN_CHAPTER[bottleneck.domain], "Erklärt, warum " + bottleneck.name + " gerade dein Fortschritt bestimmt.");
+    if (bottleneck) {
+      var m = C.DOMAIN_CHAPTER[bottleneck.domain];
+      if (m) push(m.chapter, m.section, "Erklärt, warum " + bottleneck.name + " gerade dein Fortschritt bestimmt.");
     }
     /* 2) Kontextspezifisch */
     if (st === "enhanced" || st === "medical_trt" || st === "former_enhanced") {
-      push("blood", "Die wenigen Werte, die in deinem Kontext wirklich kontrolliert gehören.");
+      push("blutwerte", "werte-die-entscheiden", "Die wenigen Werte, die in deinem Kontext wirklich kontrolliert gehören.");
     }
-    if (C.sexualConcern(a)) push("sexual", "Ordnet Libido und Erektion ein, ohne daraus eine Diagnose zu machen.");
-    if (C.usesGlp1(a)) push("glp1", "Was unter GLP-1 über Muskelerhalt und Proteinzufuhr entscheidet.");
-    if (gaps.some(function (g) { return g.id === "steps" || g.id === "sitting"; })) push("daily", "Warum der Rest des Tages mehr wiegt als das Workout.");
+    if (C.sexualConcern(a)) push("sexuell", "erektion-als-marker", "Ordnet Libido und Erektion ein, ohne daraus eine Diagnose zu machen.");
+    if (C.usesGlp1(a)) push("glp1", "muskelschutz", "Was unter GLP-1 über Muskelerhalt und Proteinzufuhr entscheidet.");
+    if (gaps.some(function (g) { return g.id === "steps" || g.id === "sitting"; })) push("training", "alltagsbewegung", "Warum der Rest des Tages mehr wiegt als das Workout.");
     return out.slice(0, 3);
   };
 

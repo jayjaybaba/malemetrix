@@ -1,7 +1,7 @@
 {
-  "name": "My MaleMetrix — Personal Performance OS",
+  "name": "My MaleMetrix — dein Performance-System",
   "short_name": "MaleMetrix",
-  "description": "Dein persönliches Performance-Betriebssystem: Today, Programm, Training, Nutrition, Progress — offline-fähig, lokal-first.",
+  "description": "Dein persönliches Performance-System: Score, Programm, Training, Ernährung, Fortschritt — offline-fähig, lokal-first.",
   "lang": "de",
   "start_url": "mein-protokoll.html?source=pwa#today",
   "scope": "./",
@@ -30,7 +30,7 @@
   ],
   "shortcuts": [
     {
-      "name": "Today",
+      "name": "Heute",
       "url": "mein-protokoll.html?source=pwa#today",
       "icons": [
         {
@@ -40,7 +40,7 @@
       ]
     },
     {
-      "name": "Workout",
+      "name": "Training",
       "url": "mein-protokoll.html?source=pwa#workout",
       "icons": [
         {
@@ -50,7 +50,7 @@
       ]
     },
     {
-      "name": "Track",
+      "name": "Tracking",
       "url": "mein-protokoll.html?source=pwa#track",
       "icons": [
         {

@@ -95,7 +95,10 @@
       confidence: dec.confidence || "medium",
       review_date: dec.review_date || addDays(todayYmd(), dec.reviewInDays || 14),
       reviewInDays: dec.reviewInDays || 14,
-      status: "open", outcome: null, source: dec.source || "system", created: todayYmd()
+      status: "open", outcome: null, source: dec.source || "system", created: todayYmd(),
+      // Sync-Konfliktregel (P0): jede Mutation stempelt updated_at — der
+      // neuere Stand gewinnt beim Multi-Device-Merge (account.js pickEntry).
+      updated_at: new Date().toISOString()
     };
     var l = ledger(); l.push(entry); saveLedger(l);
     // Auch als decision-memory referenzieren (einheitliche Historie)
@@ -108,7 +111,7 @@
   function decisionsDueForReview() { var t = todayYmd(); return decisionsOpen().filter(function (d) { return d.review_date && d.review_date <= t; }); }
   function reviewDecision(id, outcome, observed) {
     var l = ledger(); var i = l.findIndex(function (d) { return d.id === id; }); if (i < 0) return false;
-    l[i].status = "reviewed"; l[i].outcome = outcome || null; l[i].reviewedAt = todayYmd(); saveLedger(l);
+    l[i].status = "reviewed"; l[i].outcome = outcome || null; l[i].reviewedAt = todayYmd(); l[i].updated_at = new Date().toISOString(); saveLedger(l);
     // Response Memory anhängen, wenn beobachtete Daten vorliegen.
     if (observed) recordResponse({ domain: l[i].domain, change: l[i].title, from: l[i].old_state, to: l[i].new_state, startDate: l[i].date, changeKind: l[i].type }, observed, { decision_id: id, note: outcome && outcome.note });
     emitIntel("DECISION_REVIEWED", { id: id });
@@ -116,7 +119,7 @@
   }
   function supersedeDecisionsInDomain(domain, exceptId) {
     var l = ledger(); var changed = false;
-    l.forEach(function (d) { if (d.domain === domain && d.status === "open" && d.id !== exceptId) { d.status = "superseded"; d.supersededAt = todayYmd(); changed = true; } });
+    l.forEach(function (d) { if (d.domain === domain && d.status === "open" && d.id !== exceptId) { d.status = "superseded"; d.supersededAt = todayYmd(); d.updated_at = new Date().toISOString(); changed = true; } });
     if (changed) saveLedger(l);
   }
   function getDecision(id) { return ledger().filter(function (d) { return d.id === id; })[0] || null; }

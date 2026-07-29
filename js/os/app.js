@@ -58,7 +58,7 @@
 
   /* Kurzmeldung an die Live-Region in mein-protokoll.html. Absichtlich
      knapp: hier gehört der Ansichtsname hin, nicht die Ansicht. */
-  var VIEW_LABEL = { today: "Today", plan: "Plan", track: "Track", progress: "Progress", learn: "Learn", baseline: "Baseline", pathway: "Pathway", transform: "Transform", workout: "Workout", week: "Wochenreview", settings: "Einstellungen", coach: "Coach", advisor: "Advisor", review: "Review", twin: "Twin", simulator: "Simulator", experiments: "Experimente", protocol: "Protokoll", timeline: "Timeline", memory: "Memory", map: "Performance Map", learned: "Gelernt", grants: "Zugänge verwalten" };
+  var VIEW_LABEL = { today: "Today", plan: "Plan", track: "Track", progress: "Progress", learn: "Learn", baseline: "Baseline", pathway: "Pathway", transform: "Transform", workout: "Workout", week: "Wochenplan", settings: "Einstellungen", coach: "Coach", advisor: "Advisor", review: "Ergebnisprüfung", twin: "Twin", simulator: "Simulator", experiments: "Experimente", protocol: "Persönlicher Standard", timeline: "Timeline", memory: "Memory", map: "Performance Map", learned: "Gelernt", grants: "Zugänge verwalten" };
   function announce(msg) {
     var el = document.getElementById("mmStatus");
     if (!el) return;
@@ -92,6 +92,418 @@
   /* ---------- Bausteine ---------- */
   function tile(label, val, sub) { return '<div class="os-tile"><div class="k">' + esc(label) + '</div><div class="v">' + esc(val) + '</div>' + (sub ? '<div class="s">' + esc(sub) + '</div>' : '') + '</div>'; }
   function sec(title, inner, cls) { return '<section class="os-sec ' + (cls || "") + '"><h2 class="os-h2">' + esc(title) + '</h2>' + inner + '</section>'; }
+
+  /* ================= MASSNAHMENPRÜFUNG (Paket 7) ========================
+     Kleine Verbindungsschicht: vorhandener Stack-Eintrag ⇄ vorhandener
+     Optimierungspunkt. Der Stack-Katalog (E.SUPPS) und mm_opt_points bleiben
+     ihre eigenen Quellen; hier wird nur referenziert und angezeigt. */
+  function fmtD(s) { var x = String(s || ""); return x.slice(8, 10) + "." + x.slice(5, 7) + "." + x.slice(0, 4); }
+  function suppById(id) { return (E.SUPPS || []).filter(function (s) { return s.id === id; })[0] || null; }
+
+  function massnahmenHTML(strat) {
+    var P = window.MM && MM.points;
+    if (!P || !P.startMeasure) return "";
+    var punkte = [], massnahmen = [];
+    try {
+      /* Ein Leser, eine Trennlinie: der ausdrückliche Typ (Paket 8). */
+      P.list().forEach(function (p) { (p.entity_type === "measure" ? massnahmen : punkte).push(p); });
+    } catch (e) { return ""; }
+    var offen = punkte.filter(function (p) { return !p.abgeschlossen; });
+    var aktiv = massnahmen.filter(function (m) { return !m.abgeschlossen; });
+    var erledigt = massnahmen.filter(function (m) { return m.abgeschlossen; });
+    /* Ohne Optimierungspunkt UND ohne Maßnahme gibt es hier nichts zu zeigen —
+       kein leerer Platzhalter, keine neue Pflicht. */
+    if (!offen.length && !massnahmen.length) return "";
+
+    var html = "";
+
+    /* 1. Laufende Maßnahmen samt Prüfungstermin. */
+    aktiv.forEach(function (m) {
+      var punkt = offen.filter(function (p) { return p.id === m.optimization_point_id; })[0]
+        || punkte.filter(function (p) { return p.id === m.optimization_point_id; })[0];
+      var faellig = m.status === "pruefung_faellig";
+      var amb = P.measureAmbiguity(m.optimization_point_id);
+      html += '<div class="os-massnahme' + (faellig ? " is-due" : "") + '">' +
+        '<div class="mn-hd"><b>' + esc(m.measure_label_snapshot || m.title) + '</b>' +
+        '<span class="mn-st">' + esc(m.statusLabel) + '</span></div>' +
+        (punkt ? '<p class="mn-pt">Optimierungspunkt: ' + esc(punkt.title) + '</p>' : '') +
+        '<p class="mn-meta">Beobachtung seit ' + esc(fmtD(m.measure_started_at)) +
+        ' · Prüfung ' + esc(fmtD(m.review_date)) +
+        (m.criterion_label ? ' · Erfolgssignal: ' + esc(m.criterion_label) : '') + '</p>' +
+        (m.baseline_snapshot ? '<p class="mn-meta">Ausgangswert: ' + esc(m.baseline_snapshot.label) + '</p>' : '') +
+        (m.measure_warning ? '<p class="mn-warn">' + esc(m.measure_warning) + '</p>' : '') +
+        (amb.mehrere ? '<p class="mn-warn">' + esc(amb.text) + '</p>' : '') +
+        (faellig ? ergebnisFormHTML(m) :
+          '<p class="mn-note">Der Zeitraum strukturiert deine Prüfung. Er garantiert keinen bestimmten Wirkungseintritt.</p>' +
+          '<button class="os-ghost" data-mnics="' + esc(m.id) + '">Prüfungstermin in den Kalender</button>') +
+        '</div>';
+    });
+
+    /* 2. Empfehlung zur dauerhaften Übernahme — nur nach echtem Ergebnis. */
+    erledigt.forEach(function (m) {
+      if (m.standard && m.standard.bestaetigt) return;
+      if (!P.standardEmpfohlen(m)) return;
+      html += '<div class="os-massnahme"><div class="mn-hd"><b>' + esc(m.measure_label_snapshot || m.title) + '</b>' +
+        '<span class="mn-st">' + esc(m.statusLabel) + '</span></div>' +
+        '<p class="mn-meta">Ausreichend umgesetzt, Wirkung nachvollziehbar, alltagstauglich. Deine Entscheidung:</p>' +
+        '<button class="btn btn-primary btn-sm" data-mnstd="' + esc(m.id) + '">Als persönlichen Standard übernehmen</button> ' +
+        '<button class="os-ghost" data-mnnostd="' + esc(m.id) + '">Nicht dauerhaft übernehmen</button></div>';
+    });
+
+    /* 3. Abgeschlossene Prüfungen — lesbare Historie, eingefroren. */
+    var hist = erledigt.filter(function (m) { return m.measure_decision || m.result_summary; });
+    if (hist.length) {
+      html += '<div class="os-mnhist"><span class="tag">ABGESCHLOSSENE PRÜFUNGEN</span>' +
+        hist.slice(-6).map(function (m) {
+          return '<p><b>' + esc(m.measure_label_snapshot || m.title) + '</b> · ' +
+            esc(fmtD(m.measure_started_at)) + '–' + esc(fmtD(m.review_date)) +
+            (m.criterion_label ? ' · ' + esc(m.criterion_label) : '') +
+            (m.result_summary ? ' · Wirkung: ' + esc((P.WIRKUNG_LABEL || {})[m.result_summary] || m.result_summary) : '') +
+            (m.measure_decision ? ' · Entscheidung: ' + esc(m.measure_decision.replace(/_/g, " ")) : '') +
+            (m.standard && m.standard.bestaetigt ? ' · als persönlicher Standard übernommen' : '') + '</p>';
+        }).join("") + '</div>';
+    }
+
+    /* 4. Start einer neuen Maßnahme — nur aus einer ausdrücklichen Handlung. */
+    if (offen.length) {
+      var kandidaten = ((strat && strat.items) || []).filter(function (s) {
+        return !aktiv.some(function (m) { return m.measure_source === "stack" && m.measure_id === s.id; });
+      });
+      if (kandidaten.length) {
+        html += '<div class="os-mnstart"><span class="tag">MASSNAHME TESTEN</span>' +
+          '<p class="muted small" style="margin:6px 0 10px">Verbinde einen Eintrag deines Stacks bewusst mit einem Optimierungspunkt. Erst der Start erzeugt eine Prüfung — eine Empfehlung allein tut nichts.</p>' +
+          '<div class="mn-form">' +
+          '<label>Maßnahme<select id="mnSupp">' + kandidaten.map(function (s) {
+            return '<option value="' + esc(s.id) + '">' + esc(s.name) + '</option>';
+          }).join("") + '</select></label>' +
+          '<label>Optimierungspunkt<select id="mnPoint">' + offen.map(function (p) {
+            return '<option value="' + esc(p.id) + '">' + esc(p.title) + '</option>';
+          }).join("") + '</select></label>' +
+          '<label>Beobachtungszeitraum<select id="mnDays">' +
+          (P.OBS_DAYS || [7, 14, 28]).map(function (d) {
+            return '<option value="' + d + '"' + (d === 14 ? " selected" : "") + '>' + d + " Tage" + '</option>';
+          }).join("") + '</select></label>' +
+          '<label>Worauf achtest du?<input id="mnCrit" type="text" maxlength="80" placeholder="z. B. Morgenenergie"></label>' +
+          '</div>' +
+          '<p class="mn-note">Der Zeitraum strukturiert deine Prüfung. Er garantiert keinen bestimmten Wirkungseintritt.</p>' +
+          '<button class="btn btn-primary btn-sm" id="mnStart">Beobachtungszeitraum starten</button></div>';
+      }
+    }
+    return html ? sec("Maßnahmen prüfen", html) : "";
+  }
+
+  /* Umsetzung, Wirkung und Alltagstauglichkeit werden GETRENNT erfasst —
+     aus guter Umsetzung folgt nie automatisch eine Wirkung. */
+  function ergebnisFormHTML(m) {
+    var opt = function (v, l) { return '<option value="' + v + '">' + l + '</option>'; };
+    return '<div class="mn-form mn-review">' +
+      '<label>Umsetzung<select data-mnf="umsetzung" data-id="' + esc(m.id) + '">' +
+      opt("regelmaessig", "regelmäßig umgesetzt") + opt("teilweise", "teilweise umgesetzt") + opt("kaum", "kaum umgesetzt") + '</select></label>' +
+      '<label>Wirkung<select data-mnf="wirkung" data-id="' + esc(m.id) + '">' +
+      opt("erkennbar", "erkennbar") + opt("teilweise", "teilweise") + opt("nicht_erkennbar", "keine erkennbare Veränderung") +
+      opt("unklar", "Datenlage unzureichend") + opt("offen", "noch nicht beurteilbar") + '</select></label>' +
+      '<label>Alltagstauglichkeit<select data-mnf="alltag" data-id="' + esc(m.id) + '">' +
+      opt("gut", "gut verträglich und machbar") + opt("maessig", "mäßig praktikabel") +
+      opt("nicht_vertragen", "nicht gut vertragen") + opt("unklar", "unklar") + '</select></label>' +
+      '<label>Entscheidung<select data-mnf="decision" data-id="' + esc(m.id) + '">' +
+      opt("beibehalten", "beibehalten") + opt("weiter_beobachten", "noch einmal beobachten") +
+      opt("anpassen", "anpassen") + opt("pausiert", "pausieren") + opt("beendet", "beenden") +
+      opt("nicht_weiter_geprueft", "nicht weiter prüfen") + opt("weitere_abklaerung", "weitere Abklärung") + '</select></label>' +
+      '</div><button class="btn btn-primary btn-sm" data-mnsave="' + esc(m.id) + '">Ergebnis speichern</button>';
+  }
+  /* ==================== ALLTAGSTEST (Paket 8) ==========================
+     Abschluss- und Transferphase des bestehenden 12-Wochen-Durchlaufs.
+     Geprüft wird nur, ob bereits bewusst übernommene persönliche Standards
+     im normalen Alltag tragen — kein zweiter Score, keine neue Wirkung,
+     keine Bewertung der Person. */
+  var ET_TAG = {
+    normal: "Normalform", minimal: "Minimalform",
+    nein: "Heute nicht umgesetzt", unklar: "Nicht beurteilbar"
+  };
+  var ET_VERDICT = {
+    alltagstauglich: "Alltagstauglich",
+    teilweise_stabil: "Teilweise stabil",
+    nicht_stabil: "Noch nicht stabil",
+    nicht_beurteilbar: "Noch nicht beurteilbar"
+  };
+  var ET_VERDICT_TEXT = {
+    alltagstauglich: "Der Standard hat an den meisten Tagen getragen — in Normal- oder Minimalform.",
+    teilweise_stabil: "Der Standard gelang an mehreren Tagen, aber nicht durchgehend.",
+    nicht_stabil: "In dieser Form war der Standard im Alltag selten umsetzbar. Das sagt etwas über die Form, nicht über dich.",
+    nicht_beurteilbar: "Für eine faire Einordnung liegen zu wenige Tage vor."
+  };
+  var ET_HIND = {
+    zeit: "Zeit", planung: "Planung", muedigkeit: "Müdigkeit",
+    sozial: "soziale Situation", unterwegs: "unterwegs", vergessen: "vergessen",
+    nicht_praktikabel: "nicht praktikabel", vertraeglichkeit: "Beschwerden oder Verträglichkeit",
+    anderer: "anderer Grund"
+  };
+  var ET_ENTSCH = {
+    beibehalten: "Standard unverändert beibehalten",
+    minimalform_ergaenzen: "Minimalform dauerhaft ergänzen",
+    vereinfachen: "Standard vereinfachen",
+    erneut_testen: "erneut im Alltag testen",
+    pausieren: "vorerst pausieren",
+    nicht_behalten: "nicht dauerhaft beibehalten",
+    weitere_abklaerung: "weitere Abklärung"
+  };
+
+  /* Messdatenunterstützung — AUSSCHLIESSLICH lesend über die vorhandene
+     Auswertung aus Paket 5. Sie schlägt vor und benennt ihre Herkunft; sie
+     entscheidet nie und überschreibt nie eine manuelle Angabe. */
+  function etSignal(t, s, tag) {
+    if (!(window.MM && MM.focus && MM.focus.evaluateDay && s && s.area)) return null;
+    try {
+      /* `until` ist in der Auswertung aus Paket 5 exklusiv — daher der Tag
+         NACH dem letzten Alltagstest-Tag. */
+      var ev = MM.focus.evaluateDay({ domain: s.area, started: t.started_at, until: addDay(t.until, 1) }, tag);
+      if (!ev || ev.stufe === "C" || !ev.quelle) return null;
+      return ev;
+    } catch (e) { return null; }
+  }
+  function addDay(s, n) {
+    var q = String(s || "").split("-");
+    var d = new Date(+q[0], (+q[1] || 1) - 1, (+q[2] || 1) + n);
+    return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+  }
+
+  /* --- HEUTE: die tägliche Erfassung, eingebettet in die bestehende Fläche. */
+  function alltagstestHeute() {
+    if (!(OS.everydayTest)) return "";
+    var t = OS.everydayTest();
+    if (!t || t.completed_at) return "";
+    var heute = todayYmd();
+    var tage = OS.everydayDayList(t);
+    if (tage.indexOf(heute) < 0) {
+      /* Zeitraum vorbei: hier wird nichts mehr erfasst, nur verwiesen. */
+      return OS.everydayDue(t)
+        ? '<a class="card os-row-cta" href="#progress"><span class="tag">ALLTAGSTEST</span><b>Die sieben Tage sind vorbei — Ergebnisprüfung öffnen →</b></a>'
+        : "";
+    }
+    var nr = tage.indexOf(heute) + 1;
+    var inner = t.standards.map(function (s) {
+      var gesetzt = (t.days && t.days[heute] && t.days[heute][s.point_id]) || "";
+      var ev = etSignal(t, s, heute);
+      var hinweis = "";
+      if (ev) {
+        hinweis = '<p class="et-src">' + esc(ev.treffer
+          ? "Deine Daten sprechen heute dafür" + (ev.wert != null && ev.ziel ? " (" + ev.wert + "/" + ev.ziel + " " + (ev.einheit || "") + ")" : "")
+          : "Deine Daten zeigen dafür heute noch nichts") +
+          ' · Quelle: ' + esc(ev.quelle) + '. Du entscheidest.</p>';
+      }
+      return '<div class="et-std"><b>' + esc(s.label) + '</b>' +
+        (s.minimal ? '<span class="et-min">Minimalform: ' + esc(s.minimal) + '</span>' : '') +
+        '<div class="et-btns">' +
+        ["normal", "minimal", "nein", "unklar"].map(function (k) {
+          if (k === "minimal" && !s.minimal) return "";
+          return '<button class="et-b' + (gesetzt === k ? " on" : "") + '" data-etday="' + esc(k) +
+            '" data-etpt="' + esc(s.point_id) + '"' + (gesetzt === k ? ' aria-pressed="true"' : ' aria-pressed="false"') + '>' +
+            esc(ET_TAG[k]) + '</button>';
+        }).join("") + '</div>' + hinweis + '</div>';
+    }).join("");
+    return '<div class="card os-alltagstest"><span class="tag">ALLTAGSTEST · TAG ' + nr + ' VON ' + OS.ET_TAGE + '</span>' +
+      '<p class="muted small" style="margin:6px 0 12px">Trägt dein Standard auch heute? Minimalform zählt voll — sie ist kein Scheitern, sondern Alltagstauglichkeit.</p>' +
+      inner + '</div>';
+  }
+
+  /* --- ABSCHLUSSBEREICH: vorbereiten · laufen · prüfen · entscheiden. */
+  function alltagstestBlock() {
+    if (!(OS.everydayTest && MM.points && MM.points.standards)) return "";
+    var t = OS.everydayTest();
+
+    /* 1. Noch kein Alltagstest — Voraussetzungen und Vorbereitung. */
+    if (!t) return alltagstestStart();
+
+    /* 2. Abgeschlossen — eingefrorenes Ergebnis + offene Standardentscheidungen. */
+    if (t.completed_at) return alltagstestErgebnis(t, true);
+
+    /* 3. Prüfung fällig. */
+    if (OS.everydayDue(t)) return alltagstestPruefung(t);
+
+    /* 4. Läuft. */
+    var tage = OS.everydayDayList(t);
+    var nr = Math.max(1, tage.indexOf(todayYmd()) + 1);
+    return sec("Alltagstest",
+      '<div class="os-etbox"><p class="muted small" style="margin:0 0 10px">Läuft seit ' + esc(fmtD(t.started_at)) +
+      ' · letzter Tag ' + esc(fmtD(t.until)) + ' · Ergebnisprüfung ' + esc(fmtD(t.review_date)) + '</p>' +
+      (tage.indexOf(todayYmd()) >= 0 ? '<p class="small">Tag ' + nr + ' von ' + OS.ET_TAGE + ' — die Tageserfassung steht auf <a href="#today">Heute</a>.</p>' : '') +
+      t.standards.map(function (s) {
+        var z = OS.everydayTally(s.point_id, t);
+        return '<div class="et-row"><b>' + esc(s.label) + '</b><span>' +
+          'Normalform ' + z.normal + ' · Minimalform ' + z.minimal + ' · nicht umgesetzt ' + z.nein +
+          (z.unklar ? ' · nicht beurteilbar ' + z.unklar : '') + '</span></div>';
+      }).join("") +
+      '<p class="small muted" style="margin-top:10px">Die sieben Tage sind ein Prüfzeitraum für die Alltagstauglichkeit — keine Wirkfrist und keine zusätzliche Programmwoche.</p>' +
+      '<button class="os-ghost" id="etIcs">Ergebnisprüfung in den Kalender</button></div>');
+  }
+
+  function alltagstestStart() {
+    var kand = OS.everydayCandidates();
+    if (!kand.length) {
+      return sec("Alltagstest",
+        '<div class="os-etbox"><p>Für den Alltagstest brauchst du mindestens einen Standard, den du bereits umgesetzt, geprüft und bewusst übernommen hast.</p>' +
+        '<p class="small muted">Ein Optimierungspunkt, eine laufende Maßnahme oder eine noch offene Wirkung reichen dafür nicht.</p></div>');
+    }
+    var vor = OS.everydayPreselect();
+    var start = todayYmd();
+    return sec("Alltagstest",
+      '<div class="os-etbox" id="etStartBox">' +
+      '<p class="muted small" style="margin:0 0 12px">Prüfe sieben Tage lang, ob deine Standards auch an normalen Alltagstagen tragen — Arbeitstage, Wochenende, Termine, Zeitdruck. Kein zusätzliches Programm, keine künstliche Belastung.</p>' +
+      '<p class="small" style="margin:0 0 8px"><b>Wähle ein bis ' + OS.ET_MAX_STANDARDS + ' Standards.</b></p>' +
+      kand.map(function (s) {
+        var an = vor.indexOf(s.point_id) >= 0;
+        return '<div class="et-pick"><label><input type="checkbox" class="etSel" value="' + esc(s.point_id) + '"' + (an ? " checked" : "") + '> <b>' + esc(s.label) + '</b>' +
+          '<span class="muted small"> · Bereich ' + esc(s.bereich) + '</span></label>' +
+          (s.minimal
+            ? '<p class="et-min">Minimalform: ' + esc(s.minimal) + '</p>'
+            : '<label class="et-minin">Minimalform für belastete Tage (optional)<input type="text" maxlength="80" class="etMin" data-etpt="' + esc(s.point_id) + '" placeholder="z. B. zwei kurze Einheiten"></label>') +
+          '</div>';
+      }).join("") +
+      '<p class="small muted" style="margin:10px 0 4px">Zeitraum: ' + esc(fmtD(start)) + '–' + esc(fmtD(addDay(start, OS.ET_TAGE - 1))) +
+      ' · Ergebnisprüfung ' + esc(fmtD(addDay(start, OS.ET_TAGE))) + '</p>' +
+      '<p class="small muted" style="margin:0 0 12px">Die Vorauswahl startet nichts. Erst deine Bestätigung startet den Alltagstest.</p>' +
+      '<button class="btn btn-primary btn-sm" id="etStart">Alltagstest starten</button></div>');
+  }
+
+  function alltagstestPruefung(t) {
+    var inner = t.standards.map(function (s) {
+      var v = OS.everydayVerdict(s.point_id, t);
+      var z = v.tally;
+      var hind = (t.obstacles || {})[s.point_id] || "";
+      var ent = (t.decisions || {})[s.point_id] || "";
+      return '<div class="et-res"><b>' + esc(s.label) + '</b>' +
+        '<p class="et-meta">Bereich ' + esc(s.bereich) + ' · ' + esc(fmtD(t.started_at)) + '–' + esc(fmtD(t.until)) + '</p>' +
+        '<p class="et-tally">Normalform ' + z.normal + ' · Minimalform ' + z.minimal +
+        ' · nicht umgesetzt ' + z.nein + ' · nicht beurteilbar ' + (z.unklar + z.offen) + '</p>' +
+        '<p class="et-verdict">' + esc(ET_VERDICT[v.key]) + ' — ' + esc(ET_VERDICT_TEXT[v.key]) + '</p>' +
+        '<label class="et-sel">Hindernis (optional)<select data-ethind="' + esc(s.point_id) + '">' +
+        '<option value="">— keins angegeben —</option>' +
+        OS.ET_HINDERNISSE.map(function (h) {
+          return '<option value="' + h + '"' + (hind === h ? " selected" : "") + '>' + esc(ET_HIND[h]) + '</option>';
+        }).join("") + '</select></label>' +
+        '<label class="et-sel">Deine Entscheidung<select data-etdec="' + esc(s.point_id) + '">' +
+        '<option value="">— bitte wählen —</option>' +
+        OS.ET_ENTSCHEIDUNGEN.map(function (e2) {
+          return '<option value="' + e2 + '"' + (ent === e2 ? " selected" : "") + '>' + esc(ET_ENTSCH[e2]) + '</option>';
+        }).join("") + '</select></label></div>';
+    }).join("");
+    return sec("Alltagstest · Ergebnisprüfung",
+      '<div class="os-etbox">' + inner +
+      '<p class="small muted" style="margin:10px 0">Die Einordnung beschreibt, wie gut der Standard in dieser Form in deinen Alltag passt. Sie bewertet weder dich noch die Wirkung.</p>' +
+      '<button class="btn btn-primary btn-sm" id="etDone">Ergebnisprüfung abschließen</button></div>');
+  }
+
+  /* Eingefrorenes Ergebnis. Spätere Tracker- oder Katalogänderungen berühren
+     es nicht mehr — gezeigt wird ausschließlich das gespeicherte Ergebnis. */
+  function alltagstestErgebnis(t, mitAktionen) {
+    var P = MM.points;
+    var inner = t.standards.map(function (s) {
+      var r = (t.results || {})[s.point_id] || { tally: { normal: 0, minimal: 0, nein: 0, unklar: 0, offen: 0 }, verdict: "nicht_beurteilbar", hindernis: "" };
+      var z = r.tally || {};
+      var ent = (t.decisions || {})[s.point_id] || "";
+      var punkt = null;
+      try { punkt = P && P.get ? P.get(s.point_id) : null; } catch (e) {}
+      var offeneAktion = "";
+      if (mitAktionen && punkt && punkt.standard && punkt.standard.bestaetigt) {
+        /* Änderungen am Standard geschehen NUR nach ausdrücklicher
+           Bestätigung — die Entscheidung allein ändert nichts. */
+        if (ent === "minimalform_ergaenzen" && s.minimal && punkt.standard.minimal !== s.minimal) {
+          offeneAktion = '<div class="et-act"><p class="small">Minimalform „' + esc(s.minimal) + '" dauerhaft in deinen Standard aufnehmen?</p>' +
+            '<button class="btn btn-primary btn-sm" data-etmin="' + esc(s.point_id) + '">Minimalform dauerhaft ergänzen</button></div>';
+        } else if (ent === "nicht_behalten" && punkt.standard.aktiv !== false) {
+          offeneAktion = '<div class="et-act"><p class="small">Diesen Standard nicht dauerhaft beibehalten? Er bleibt in deiner Historie und in allen früheren Prüfungen erhalten.</p>' +
+            '<button class="os-ghost" data-etretire="' + esc(s.point_id) + '">Nicht dauerhaft beibehalten — bestätigen</button></div>';
+        }
+      }
+      return '<div class="et-res"><b>' + esc(s.label) + '</b>' +
+        '<p class="et-meta">Bereich ' + esc(s.bereich) + ' · ' + esc(fmtD(t.started_at)) + '–' + esc(fmtD(t.until)) + '</p>' +
+        '<p class="et-tally">Normalform ' + (z.normal || 0) + ' · Minimalform ' + (z.minimal || 0) +
+        ' · nicht umgesetzt ' + (z.nein || 0) + ' · nicht beurteilbar ' + ((z.unklar || 0) + (z.offen || 0)) + '</p>' +
+        (r.hindernis ? '<p class="et-meta">Häufigstes Hindernis: ' + esc(ET_HIND[r.hindernis] || r.hindernis) + '</p>' : '') +
+        '<p class="et-verdict">' + esc(ET_VERDICT[r.verdict] || r.verdict) + '</p>' +
+        (ent ? '<p class="et-meta">Entscheidung: ' + esc(ET_ENTSCH[ent] || ent) + '</p>' : '') +
+        (punkt && punkt.standard && punkt.standard.aktiv === false ? '<p class="et-meta">Nicht mehr als aktiver Standard geführt — die Historie bleibt erhalten.</p>' : '') +
+        offeneAktion + '</div>';
+    }).join("");
+    return sec("Alltagstest · Ergebnis",
+      '<div class="os-etbox"><p class="muted small" style="margin:0 0 10px">Abgeschlossen am ' + esc(fmtD(t.completed_at)) + ' — dieses Ergebnis bleibt unverändert.</p>' +
+      inner + '</div>');
+  }
+
+  /* --- 12-WOCHEN-ABSCHLUSS: nur vorhandene Daten, keine zweite Bewertung. */
+  function abschlussUebersicht(p, d) {
+    var P = window.MM && MM.points;
+    var punkte = [], massnahmen = [], stds = [];
+    try {
+      if (P && P.points) { punkte = P.points(); massnahmen = P.measures(); stds = P.standards(); }
+    } catch (e) {}
+    var auftraege = [];
+    try { auftraege = (MM.focus && MM.focus.history) ? MM.focus.history() : []; } catch (e) {}
+    var t = OS.everydayTest ? OS.everydayTest() : null;
+
+    var zeilen = [];
+    var start = MM.store.get("c2_start", "");
+    if (start) zeilen.push(["Programmbeginn", fmtD(start)]);
+    if (p && (p.week >= 12 || p.over)) zeilen.push(["Aktueller Stand", "Woche " + (p.week || 12) + " von 12"]);
+    var b = OS.baseline() || {};
+    if (b.score && d && d.hasScore && d.score != null) zeilen.push(["Score", b.score + " → " + d.score]);
+    else if (d && d.hasScore && d.score != null) zeilen.push(["Score", String(d.score)]);
+    if (d && (d.bottleneckName || d.bottleneck)) zeilen.push(["Ausgangsengpass", d.bottleneckName || d.bottleneck]);
+    var bearbeitet = punkte.filter(function (x) { return x.status !== "erkannt"; }).length;
+    if (punkte.length) zeilen.push(["Optimierungspunkte", bearbeitet + " von " + punkte.length + " bearbeitet"]);
+    var fertigeAuftraege = auftraege.filter(function (a) { return a && a.started; }).length;
+    if (fertigeAuftraege) zeilen.push(["Abgeschlossene Aufträge", String(fertigeAuftraege)]);
+    var geprueft = massnahmen.filter(function (m) { return m.measure_decision; }).length;
+    if (massnahmen.length) zeilen.push(["Geprüfte Maßnahmen", geprueft + " von " + massnahmen.length]);
+    if (stds.length) zeilen.push(["Persönliche Standards", String(stds.length)]);
+    if (t && t.completed_at) {
+      var kurz = t.standards.map(function (s) {
+        var r = (t.results || {})[s.point_id];
+        return s.label + ": " + (ET_VERDICT[r && r.verdict] || "—");
+      }).join(" · ");
+      zeilen.push(["Alltagstest", kurz]);
+    }
+
+    /* Offene Prüfungen verschwinden nie — der Abschluss beendet sie nicht. */
+    var offeneW = [];
+    try { offeneW = (MM.focus && MM.focus.wirkungOffeneListe) ? (MM.focus.wirkungOffeneListe() || []) : []; } catch (e) {}
+    var offeneM = massnahmen.filter(function (m) { return !m.abgeschlossen; });
+    var offen = "";
+    if (offeneW.length || offeneM.length) {
+      offen = '<div class="os-etopen"><span class="tag">OFFENE PRÜFUNGEN</span>' +
+        offeneW.map(function (w) {
+          return '<p>Wirkungsprüfung: ' + esc(w.title || w.domain || "Auftrag") +
+            (w.wirkungBis ? ' · fällig ' + esc(fmtD(w.wirkungBis)) : '') + '</p>';
+        }).join("") +
+        offeneM.map(function (m) {
+          return '<p>Maßnahmenprüfung: ' + esc(m.measure_label_snapshot || m.title) + ' · ' + esc(m.statusLabel) +
+            (m.review_date ? ' · Prüfung ' + esc(fmtD(m.review_date)) : '') + '</p>';
+        }).join("") +
+        '<p class="small muted">Diese Vorgänge bleiben offen. Der Programmabschluss beendet und bewertet sie nicht.</p></div>';
+    }
+
+    if (!zeilen.length && !offen) return "";
+    return '<div class="os-etsum"><span class="tag">DURCHLAUF IM ÜBERBLICK</span>' +
+      zeilen.map(function (z) { return '<div class="et-row"><b>' + esc(z[0]) + '</b><span>' + esc(z[1]) + '</span></div>'; }).join("") +
+      '<p class="small muted" style="margin-top:8px">Zusammengestellt aus deinen vorhandenen Einträgen. Was ein einzelner Schritt bewirkt hat, lässt sich daraus nicht ableiten.</p>' +
+      offen + '</div>' + naechsteEntscheidung();
+  }
+
+  /* Genau EINE nächste Hauptentscheidung — nichts davon läuft automatisch. */
+  function naechsteEntscheidung() {
+    return '<div class="os-etnext"><span class="tag">DEINE NÄCHSTE ENTSCHEIDUNG</span>' +
+      '<p class="small muted" style="margin:6px 0 10px">Eine Sache. Du entscheidest, nichts startet von selbst.</p>' +
+      '<label class="et-sel"><span class="vh">Nächste Entscheidung</span><select id="etNext">' +
+      '<option value="">— bitte wählen —</option>' +
+      '<option value="standards">Persönliche Standards weiterführen</option>' +
+      '<option value="punkt">Einen offenen Optimierungspunkt bearbeiten</option>' +
+      '<option value="wirkung">Eine offene Wirkung prüfen</option>' +
+      '<option value="neu">Einen neuen 12-Wochen-Durchlauf vorbereiten</option>' +
+      '<option value="stabil">Zunächst stabilisieren</option>' +
+      '<option value="abklaerung">Weitere Abklärung</option>' +
+      '</select></label><p class="small muted" id="etNextOut" style="margin:8px 0 0"></p></div>';
+  }
+
   function realityCheck(goalTxt, timeTxt, realTxt) {
     return '<div class="os-reality"><span class="tag">REALITY CHECK</span><div class="row"><span>Ziel</span><b>' + esc(goalTxt) + '</b></div><div class="row"><span>Zeit</span><b>' + esc(timeTxt) + '</b></div><div class="verdict">' + esc(realTxt) + '</div></div>';
   }
@@ -157,7 +569,7 @@
     if (nba.why && nba.why.length) html += '<div class="nba-why"><span class="k">WARUM HEUTE</span>' + nba.why.map(function (w) { return '<p>' + esc(w) + '</p>'; }).join("") + '</div>';
     if (a.type === "repair") html += '<button class="btn btn-primary btn-sm" data-repair="' + esc(String(a.repairPd)) + '">Optionen ansehen →</button>';
     else if (a.deepLink === "#workout") html += '<a class="btn btn-primary btn-sm" href="#workout">Session starten →</a>';
-    else if (a.type === "decision_review") html += '<button class="btn btn-primary btn-sm" data-decreview="' + esc(a.decisionId) + '">Review öffnen →</button>';
+    else if (a.type === "decision_review") html += '<button class="btn btn-primary btn-sm" data-decreview="' + esc(a.decisionId) + '">Ergebnisprüfung öffnen →</button>';
     else if (a.deepLink && a.deepLink.indexOf(".html") >= 0) html += '<a class="btn btn-primary btn-sm" href="' + a.deepLink + '">Öffnen →</a>';
     else html += '<button class="btn btn-primary btn-sm" data-osdone="' + esc(a.id) + '">Erledigt ✓</button>';
     if (nba.secondary && nba.secondary.length) {
@@ -253,7 +665,7 @@
       if (d.bottleneckName || d.bottleneck) strip.push('<span class="os-stat"><span class="k">ENGPASS</span><b>' + esc((d.bottleneckName || BN[d.bottleneck] || d.bottleneck).toUpperCase()) + '</b></span>');
       if (OS.pathway()) strip.push('<a class="os-stat" href="#pathway"><span class="k">PATHWAY</span><b>' + esc(OS.PATHWAYS[OS.pathway()].label) + '</b></a>');
       strip.push('<span class="os-stat"><span class="k">PROGRAMM</span><b>TAG ' + p.day + '<i>/84</i></b></span>');
-      if (p.nextReviewDays != null) strip.push('<a class="os-stat" href="#review"><span class="k">CHECK-IN</span><b>' + (p.nextReviewDays === 0 ? "HEUTE" : "IN " + p.nextReviewDays + (p.nextReviewDays === 1 ? " TAG" : " TAGEN")) + '</b></a>');
+      if (p.nextReviewDays != null) strip.push('<a class="os-stat" href="#review"><span class="k">PRÜFUNG</span><b>' + (p.nextReviewDays === 0 ? "HEUTE" : "IN " + p.nextReviewDays + (p.nextReviewDays === 1 ? " TAG" : " TAGEN")) + '</b></a>');
       html += '<div class="os-statstrip">' + strip.join("") + '</div>';
 
       // KONTEXT-BADGE (aktives Overlay, jederzeit beendbar)
@@ -288,7 +700,7 @@
       // INTELLIGENCE-VORSCHLAG (§21/§22) — bestätigen oder ablehnen, nie still.
       if (day.proposal) {
         var pr = day.proposal;
-        html += '<div class="intel-decision intel-tone-watch os-proposal"><div class="hd"><span class="verdict">' + (pr.type === "check" ? "CHECK FIRST" : "VORSCHLAG") + '</span>' + (day.bottleneck ? '<span class="bn">Limiter: ' + esc((MM.intelligence ? MM.intelligence.LABELS.BN[day.bottleneck.domain] : day.bottleneck.domain) || day.bottleneck.domain) + ' · ' + day.bottleneck.confidencePct + '%</span>' : '') + '</div>' +
+        html += '<div class="intel-decision intel-tone-watch os-proposal"><div class="hd"><span class="verdict">' + (pr.type === "check" ? "CHECK FIRST" : "VORSCHLAG") + '</span>' + (day.bottleneck ? '<span class="bn">Engpass: ' + esc((MM.intelligence ? MM.intelligence.LABELS.BN[day.bottleneck.domain] : day.bottleneck.domain) || day.bottleneck.domain) + ' · ' + day.bottleneck.confidencePct + '%</span>' : '') + '</div>' +
           '<b class="ttl">' + esc(pr.title) + '</b><p class="rsn">' + esc(pr.reason) + '</p>' +
           (pr.evidence.length ? '<div class="ev"><span>BASIEREND AUF</span>' + pr.evidence.map(function (e2) { return '<i>' + esc(e2) + '</i>'; }).join("") + '</div>' : '') +
           // Falsifizierbarkeit (§68): erwartetes Signal + Reassess-Kriterium sichtbar.
@@ -298,6 +710,10 @@
           (pr.type === "change" ? '<button class="btn btn-primary btn-sm" data-propapply>Übernehmen ✓</button>' : (pr.deepLink ? '<a class="btn btn-primary btn-sm" href="' + esc(pr.deepLink) + '">Ansehen →</a>' : '')) +
           '<button class="os-ghost" data-propdismiss="' + esc(pr.key) + '">Nicht jetzt</button></div></div>';
       }
+
+      // ALLTAGSTEST (Paket 8) — tägliche Erfassung auf der bestehenden
+      // Heute-Fläche. Keine eigene Seite, keine neue Navigation.
+      html += alltagstestHeute();
 
       // WAITING FOR DATA (§30/§31) — Entscheidung wartet bewusst. KEEP PLAN.
       if (day.waiting) {
@@ -343,7 +759,7 @@
 
       // ENTSCHEIDUNGS-REVIEWS fällig (Closed-Loop-Ledger)
       X.dueDecisions().forEach(function (dec) {
-        html += '<div class="os-decision"><span class="tag">REVIEW FÄLLIG</span><b>' + esc(dec.what) + '</b><span class="s">Entschieden am ' + esc(fmtDateShort(dec.date)) + (dec.why ? ' — ' + esc(dec.why) : '') + '</span>' +
+        html += '<div class="os-decision"><span class="tag">ERGEBNISPRÜFUNG FÄLLIG</span><b>' + esc(dec.what) + '</b><span class="s">Entschieden am ' + esc(fmtDateShort(dec.date)) + (dec.why ? ' — ' + esc(dec.why) : '') + '</span>' +
           '<div class="ctl"><button class="os-chip" data-decclose="' + esc(dec.id) + '" data-outcome="kept">Behalten</button><button class="os-chip" data-decclose="' + esc(dec.id) + '" data-outcome="adjusted">Angepasst</button><button class="os-chip" data-decclose="' + esc(dec.id) + '" data-outcome="reverted">Zurückgenommen</button></div></div>';
       });
 
@@ -390,7 +806,7 @@
         '<a href="protokoll.html" class="btn btn-primary btn-sm" data-track="upgrade_view">Dein System aufbauen →</a></div>';
     } else {
       html += '<div class="card os-accent os-start"><h1 class="os-big" style="font-size:1.5rem">Dein System startet hier</h1><ol class="os-steps">' +
-        '<li><b>Score machen</b><span>Baseline deiner 12 Systeme — findet deinen Engpass.</span></li>' +
+        '<li><b>Score machen</b><span>Baseline deiner 12 Bereiche — findet deinen Engpass.</span></li>' +
         '<li><b>Pathway wählen</b><span>Health · Performance · Enhanced.</span></li>' +
         '<li><b>Baseline anlegen</b><span>Gewicht, Taille, Fotos, Kraftwerte.</span></li>' +
         '<li><b>Plan bauen</b><span>Programm, Nutrition, Training, Stack.</span></li></ol>' +
@@ -441,7 +857,7 @@
     if (!md) {
       return '<div class="os-head"><span class="eyebrow" style="margin:0">Performance Map</span></div>' +
         '<div class="card os-accent"><h1 class="os-big" style="font-size:1.4rem">Deine Map entsteht aus deinem Score.</h1>' +
-        '<p class="muted" style="margin:0 0 14px">Rund 7 Minuten, 12 Systeme, sofortige Auswertung — daraus baut MaleMetrix deine persönliche Karte: Engpass, Richtung, erster Schritt.</p>' +
+        '<p class="muted" style="margin:0 0 14px">Rund 7 Minuten, 12 Bereiche, sofortige Auswertung — daraus baut MaleMetrix deine persönliche Karte: Engpass, Richtung, erster Schritt.</p>' +
         '<a href="check.html" class="btn btn-primary">MaleMetrix Score starten →</a></div>';
     }
     var d = MM.account.getDashboardState();
@@ -452,11 +868,11 @@
     html += '<div class="mm-map-node"><span class="mm-map-k">DU · HEUTE</span>' +
       '<div class="mm-map-you">' + (md.total != null ? '<div class="mm-map-score"><b>' + md.total + '</b><span>/100</span></div>' : '') +
       '<div><b>' + esc(md.archetype || "Dein Ausgangspunkt") + '</b>' +
-      (md.weakest.length ? '<span class="s">Schwächste Systeme: ' + md.weakest.map(function (w) { return esc(w.name || w.key); }).join(" · ") + '</span>' : '') +
+      (md.weakest.length ? '<span class="s">Schwächste Bereiche: ' + md.weakest.map(function (w) { return esc(w.name || w.key); }).join(" · ") + '</span>' : '') +
       '</div></div></div>';
     html += '<div class="mm-map-spine" aria-hidden="true"></div>';
     // LIMITER
-    html += '<div class="mm-map-node warn"><span class="mm-map-k">PRIMÄRER LIMITER</span><b class="mm-map-big">' + esc(md.bottleneck || "—") + '</b>' +
+    html += '<div class="mm-map-node warn"><span class="mm-map-k">PRIMÄRER ENGPASS</span><b class="mm-map-big">' + esc(md.bottleneck || "—") + '</b>' +
       (md.bottleneckDyn ? '<span class="s">Dynamisch bestätigt: ' + esc(md.bottleneckDyn.domain) + ' · Konfidenz ' + md.bottleneckDyn.confidencePct + ' %</span>' : '<span class="s">Aus deinem Score — wird mit laufenden Daten dynamisch nachgeführt.</span>') + '</div>';
     html += '<div class="mm-map-spine" aria-hidden="true"></div>';
     // 12 WOCHEN
@@ -512,7 +928,7 @@
         return '<div class="os-outcome"><div class="hd"><b>' + esc(o.what) + '</b><span class="ver ver-' + esc(o.verdict.cls) + '">' + esc(o.verdict.label) + '</span></div>' +
           '<span class="s">' + esc(fmtDateShort(o.date)) + (o.from != null && o.to != null ? ' · ' + esc(o.from) + ' → ' + esc(o.to) : '') +
           (o.observed && o.observed.weightDelta != null ? ' · gemessen: Gewicht ' + (o.observed.weightDelta > 0 ? '+' : '') + o.observed.weightDelta + ' kg' : '') + '</span></div>';
-      }).join("") + '<p class="small muted" style="margin-top:10px">Jede Anpassung bekommt ein Review gegen echte Daten — das ist deine persönliche Evidenz, kein generisches Coaching.</p>');
+      }).join("") + '<p class="small muted" style="margin-top:10px">Jede Anpassung bekommt eine Ergebnisprüfung gegen echte Daten — das ist deine persönliche Evidenz, kein generisches Coaching.</p>');
     }
     return html;
   }
@@ -528,7 +944,7 @@
       var cls = "os-wday" + (dd.isToday ? " today" : "") + (dd.past ? " past" : "") + (dd.type === "strength" || dd.makeup ? " train" : "");
       var status = dd.past ? (dd.type === "strength" ? (dd.trainDone ? '<span class="ok">✓</span>' : '<span class="miss">verpasst</span>') : (dd.done ? '<span class="ok">✓</span>' : '')) : "";
       return '<div class="' + cls + '"><span class="wd">' + esc(dd.wd) + '</span><span class="dt">' + esc(fmtDateShort(dd.date)) + '</span><b>' + esc(dd.label) + '</b>' +
-        (dd.review ? '<span class="mk">REVIEW</span>' : '') + (dd.measure ? '<span class="mk">MESSEN</span>' : '') +
+        (dd.review ? '<span class="mk">PRÜFUNG</span>' : '') + (dd.measure ? '<span class="mk">MESSEN</span>' : '') +
         (dd.overlay ? '<span class="mk ov">' + esc((X.OVERLAYS[dd.overlay] || {}).label || dd.overlay) + '</span>' : '') + status + '</div>';
     }).join("") + '</div>';
     var missed = X.missedThisWeek().filter(function (m) { return !m.handled; });
@@ -536,7 +952,7 @@
     if (missed.length && weekOffset === 0) {
       repair = '<div class="os-decision"><span class="tag">WOCHE REPARIEREN</span><b>' + missed.length + ' Einheit' + (missed.length > 1 ? 'en' : '') + ' offen</b><span class="s">Die Vergangenheit bleibt, wie sie war — aber die Woche ist noch zu retten.</span><div class="ctl"><button class="os-chip" data-repair="' + missed[0].pd + '">Optionen ansehen</button></div></div>';
     }
-    var ics = '<div class="card"><span class="tag">KALENDER-EXPORT</span><p class="muted" style="margin:8px 0 12px">Nur echte Termine: Trainingstage, Nachhol-Sessions, Review, Messtag. Apple/Google-kompatibel (.ics). Kein Zwei-Wege-Sync — ehrlich gesagt.</p><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="icsTime" type="time" value="' + esc(OS.getP("calendar.trainTime", "18:00")) + '" style="padding:8px;border:1px solid var(--line);border-radius:8px;background:rgba(127,127,127,0.06);color:var(--text)"><button id="icsGo" class="os-ghost">Nächste 14 Tage als .ics</button></div></div>';
+    var ics = '<div class="card"><span class="tag">KALENDER-EXPORT</span><p class="muted" style="margin:8px 0 12px">Nur echte Termine: Trainingstage, Nachhol-Sessions, Ergebnisprüfung, Messtag. Apple/Google-kompatibel (.ics). Kein Zwei-Wege-Sync — ehrlich gesagt.</p><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="icsTime" type="time" value="' + esc(OS.getP("calendar.trainTime", "18:00")) + '" style="padding:8px;border:1px solid var(--line);border-radius:8px;background:rgba(127,127,127,0.06);color:var(--text)"><button id="icsGo" class="os-ghost">Nächste 14 Tage als .ics</button></div></div>';
     return sec("Week Planner", head + grid + '<p class="small muted" style="margin-top:8px">TRAIN = Kraft · ENGINE = Cardio · RECOVER/RESET = geplante Erholung (zählt als Erfolg).</p>') + repair + ics + '<div id="osSheet" class="os-sheet" hidden></div>';
   }
 
@@ -598,7 +1014,7 @@
     var cyc = OS.currentCycle();
     function inp(id, label, val, ph) { return '<label class="os-field"><span>' + esc(label) + '</span><input id="' + id + '" type="number" inputmode="decimal" value="' + (val != null ? esc(val) : "") + '" placeholder="' + (ph || "—") + '"></label>'; }
     return sec("Baseline · dokumentiere deinen Start",
-      '<p class="small muted" style="margin:0 0 4px">Zyklus <span class="os-mono">' + esc(cyc.id.slice(-6)) + '</span> · Status ' + esc(cyc.status === "draft" ? "DRAFT (Programm noch nicht gestartet)" : cyc.status.toUpperCase()) + '</p>' +
+      '<p class="small muted" style="margin:0 0 4px">Programm-Durchlauf <span class="os-mono">' + esc(cyc.id.slice(-6)) + '</span> · Status ' + esc(cyc.status === "draft" ? "DRAFT (Programm noch nicht gestartet)" : cyc.status.toUpperCase()) + '</p>' +
       '<p class="muted">Du wirst nicht mehr genau wissen, wie du heute aussahst. Miss den Start — Woche 0 · 4 · 8 · 12 vergleichen sich später von selbst.</p>' +
       '<div class="os-grid2">' +
       inp("blW", "Gewicht (kg)", b.weight || (lw && lw.value) || null) + inp("blWa", "Taille (cm)", b.waist || (lwa && lwa.value) || null) +
@@ -625,7 +1041,7 @@
         (r.enhanced && r.enhancedMarkers ? '<div class="os-enhmarkers"><span class="tag">ENHANCED-KONTEXT</span>' + [["Physique-Potenzial", r.enhancedMarkers.potential], ["Komplexität", r.enhancedMarkers.complexity], ["Monitoring", r.enhancedMarkers.monitoring], ["Reversibilität", r.enhancedMarkers.reversibility], ["Gesundheitskosten", r.enhancedMarkers.healthCost]].map(function (m) { return '<div class="row"><span>' + esc(m[0]) + '</span><b>' + esc(m[1]) + '</b></div>'; }).join("") + '</div>' : '') +
         '<div class="os-roadmap">' + r.phases.map(function (p, i) { return '<div class="os-phase"><span class="n">' + (i + 1) + '</span><div><b>' + esc(p.name) + '</b><span class="w">' + p.weeks + ' Wochen</span><p>' + esc(p.why) + '</p>' + (p.monitoring ? '<p class="small" style="color:var(--amber,#f5a623)">' + esc(p.monitoring) + '</p>' : '') + '</div></div>'; }).join("") + '</div>' +
         '<p class="small muted">Erwartbarer Muskelaufbau (' + r.months + ' Mon.): konservativ ' + r.gainRange.cons + ' kg · wahrscheinlich ' + r.gainRange.likely + ' kg · aggressiv ' + r.gainRange.aggr + ' kg. Spannen, keine Garantien.</p>' +
-        '<p style="margin-top:10px"><a class="btn btn-primary btn-sm" href="kurs-programm.html">Aktuellen 12-Wochen-Zyklus ' + (d.program && d.program.active ? "fortsetzen" : "starten") + ' →</a> <button class="os-ghost" id="txReset">Neu planen</button></p>');
+        '<p style="margin-top:10px"><a class="btn btn-primary btn-sm" href="kurs-programm.html">Aktuelles 12-Wochen-Programm ' + (d.program && d.program.active ? "fortsetzen" : "starten") + ' →</a> <button class="os-ghost" id="txReset">Neu planen</button></p>');
       if (r.enhanced) html += '<a class="card os-row-cta" href="coaching.html#enhanced"><span class="tag">SUPPORT</span><b>Enhanced Performance Support — 1:1 Begleitung mit Monitoring-Rhythmus</b></a>';
       else if ((t.input.targetWeightKg - t.input.weightKg) > 8) html += '<a class="card os-row-cta" href="coaching.html#muscle"><span class="tag">COACHING</span><b>Maximum Muscle — 1:1 Begleitung für ambitionierte Aufbauziele</b></a>';
       html += nobody("Aufbau und sichtbar schlanker werden passieren nicht in derselben Woche — sondern in derselben Roadmap. Wer beides gleichzeitig in 12 Wochen will, bekommt meist keins von beidem.");
@@ -757,6 +1173,12 @@
       '<div class="os-schedule">' + [["morning", "MORGENS"], ["with_food", "ZUM ESSEN"], ["pre_training", "PRE-TRAINING"], ["evening", "ABENDS"]].map(function (sl) { var arr = strat.schedule[sl[0]]; return arr.length ? '<div><span>' + sl[1] + '</span><b>' + arr.map(esc).join(" · ") + '</b></div>' : ''; }).join("") + '</div>' +
       '<button class="btn btn-primary btn-sm" id="stSave">Als meine Stack-Routine übernehmen</button>');
 
+    /* --- MASSNAHMENPRÜFUNG (Paket 7) ---
+       Verbindet einen vorhandenen Stack-Eintrag bewusst mit einem
+       bestehenden Optimierungspunkt. Nichts hier aktiviert etwas von selbst:
+       Erst der ausdrückliche Start erzeugt eine Verknüpfung. */
+    html += massnahmenHTML(strat);
+
     html += '<div class="card"><span class="tag">KALENDER</span><p class="muted" style="margin:8px 0 12px">Deine Woche als echte Tagestypen (Strength-Session X · Engine · Recover) in deinen Kalender — als ICS-Datei. Kein Zwei-Wege-Sync, ehrlich gesagt.</p><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="icsTime" type="time" value="' + esc(OS.getP("calendar.trainTime", "18:00")) + '" style="padding:8px;border:1px solid var(--line);border-radius:8px;background:rgba(127,127,127,0.06);color:var(--text)"><button id="icsGo" class="os-ghost">Nächste 7 Tage als .ics laden</button></div></div>';
     return html;
   }
@@ -782,7 +1204,7 @@
     });
     var hist = MM.store.get("os_adjust_history", []) || [];
     var histHtml = hist.length ? '<p class="small muted" style="margin-top:8px">Letzte Anpassung: ' + esc(hist[hist.length - 1].date) + ' · ' + hist[hist.length - 1].oldKcal + ' → ' + hist[hist.length - 1].newKcal + ' kcal (' + esc(hist[hist.length - 1].reason) + ')</p>' : '';
-    return '<div class="os-review"><span class="tag">WOCHEN-REVIEW · NUTRITION</span>' +
+    return '<div class="os-review"><span class="tag">ERGEBNISPRÜFUNG · NUTRITION</span>' +
       '<div class="rows"><div class="row"><span>Protein-Ziel</span><b>' + adh.proteinDays + ' / ' + Math.max(adh.daysLogged, 7) + ' Tage' + (adh.daysLogged < 7 ? ' (nur ' + adh.daysLogged + ' geloggt)' : '') + '</b></div>' +
       '<div class="row"><span>Energie-Korridor</span><b>' + adh.energyDays + ' / ' + Math.max(adh.daysLogged, 7) + ' Tage</b></div>' +
       '<div class="row"><span>Gewichtstrend</span><b>' + (wt ? ((wt.delta > 0 ? "+" : "") + wt.delta + " kg / Woche") : "INSUFFICIENT DATA") + '</b></div></div>' +
@@ -952,6 +1374,11 @@
         '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-dark btn-sm" data-sharecard="45">Card 4:5 (Feed) ↓</button><button class="btn btn-dark btn-sm" data-sharecard="916">Card 9:16 (Story) ↓</button></div></div>';
     }
 
+    /* ALLTAGSTEST (Paket 8) — Transferphase im BESTEHENDEN Abschlussfenster:
+       nach der Umsetzungsphase, vor dem endgültigen Programmabschluss. Keine
+       dreizehnte Woche, keine Verschiebung bestehender Programmtermine. */
+    if (p.active && (p.week >= 12 || p.over)) html += alltagstestBlock();
+
     // §66/§67 — W12: Transformation Report + Next Cycle
     if (p.active && (p.week >= 12 || p.over)) {
       var rec = E.nextCycleRecommendation({ mode: d.mode, waistNow: waN ? waN.value : null, weightDelta: (w0 && wN) ? wN.value - w0.value : null, waistDelta: (wa0 && waN) ? waN.value - wa0.value : null, strengthPct: trend ? trend.pct : null, executionPct: p.consistency });
@@ -962,17 +1389,51 @@
         '<div class="rrow"><span>EXECUTION</span><b>' + (p.consistency != null ? p.consistency + " % Consistency" : "—") + '</b></div>' +
         '<div class="rrow"><span>NEXT MOVE</span><b>' + esc(MODE[rec.mode] || rec.mode) + (rec.repeatFoundation ? " (Fundament wiederholen)" : "") + '</b></div>' +
         '<p class="small" style="margin-top:8px">' + rec.why.map(esc).join(" ") + '</p>' +
-        '<p class="small muted">Abschließen &amp; archivieren macht diesen Zyklus unveränderlich und öffnet den nächsten.</p>' +
-        '<button class="btn btn-primary btn-sm" id="cycDone">Zyklus abschließen →</button></div>');
+        '<p class="small muted">Abschließen &amp; archivieren macht diesen Durchlauf unveränderlich und öffnet den nächsten.</p>' +
+        '<button class="btn btn-primary btn-sm" id="cycDone">Durchlauf abschließen →</button></div>' +
+        /* Konsolidierte Übersicht aus vorhandenen Daten — keine zweite
+           Gesamtbewertung, keine Erfolgspunktzahl, keine Kausalitätsaussage. */
+        abschlussUebersicht(p, d));
     }
 
+    /* OPTIMIERUNGSPUNKTE (Paket 3) — kompakt in der bestehenden Ansicht,
+       read-only. Die Wahrheit steht in der jeweiligen Quelle (mm_focus,
+       intel_experiments, intel_decisions); hier wird nur referenziert. */
+    html += optPointsSection();
+
     var arch = MM.store.get("c2_archive", []) || [];
-    var hist = arch.map(function (a, i) { return '<div class="os-cycle"><b>Zyklus ' + (i + 1) + '</b><span>' + esc((MODE[a.goal] || a.goal || "—")) + '</span><i>abgeschlossen ' + esc(a.ended || "") + '</i></div>'; }).join("");
-    if (p.active) hist += '<div class="os-cycle on"><b>Zyklus ' + (arch.length + 1) + '</b><span>' + esc(MODE[d.mode] || "") + '</span><i>aktiv · Woche ' + p.week + '</i></div>';
-    if (hist) html += sec("Zyklus-Historie", '<div class="os-cycles">' + hist + '</div><p class="small muted">Historische Zyklen sind unveränderlich — sie sind deine Geschichte, nicht dein Arbeitsstand.</p>');
-    if (MM.intelligence) html += '<a class="card os-row-cta" href="#timeline"><span class="tag">TIMELINE</span><b>Deine ganze Historie — Entscheidungen · Labs · Reviews</b></a>';
+    var hist = arch.map(function (a, i) { return '<div class="os-cycle"><b>Durchlauf ' + (i + 1) + '</b><span>' + esc((MODE[a.goal] || a.goal || "—")) + '</span><i>abgeschlossen ' + esc(a.ended || "") + '</i></div>'; }).join("");
+    if (p.active) hist += '<div class="os-cycle on"><b>Durchlauf ' + (arch.length + 1) + '</b><span>' + esc(MODE[d.mode] || "") + '</span><i>aktiv · Woche ' + p.week + '</i></div>';
+    if (hist) html += sec("Programm-Historie", '<div class="os-cycles">' + hist + '</div><p class="small muted">Historische Durchläufe sind unveränderlich — sie sind deine Geschichte, nicht dein Arbeitsstand.</p>');
+    if (MM.intelligence) html += '<a class="card os-row-cta" href="#timeline"><span class="tag">TIMELINE</span><b>Deine ganze Historie — Entscheidungen · Labs · Ergebnisprüfungen</b></a>';
     return html;
   }
+  /* Kompakte Punkt-Übersicht: Bereich · Status · nächste Prüfung · Ergebnis.
+     Keine neue Seite, keine Statusauswahl — der Status folgt den Handlungen. */
+  function optPointsSection() {
+    if (!(MM.points && MM.points.list)) return "";
+    var pts = [];
+    /* Nur Optimierungspunkte. Maßnahmen liegen in derselben kanonischen Liste
+       und wurden hier vorher mitgerendert — sie haben aber ihren eigenen
+       Block („Maßnahmen prüfen") und sind kein Optimierungspunkt (Paket 8). */
+    try { pts = MM.points.points ? MM.points.points() : MM.points.list().filter(function (p) { return !p.istMassnahme; }); } catch (e) { return ""; }
+    if (!pts.length) return "";
+    var offen = pts.filter(function (p) { return !p.abgeschlossen; });
+    var fertig = pts.filter(function (p) { return p.abgeschlossen; }).slice(-3);
+    function row(p) {
+      var naechste = p.status === "wirkung_offen" ? p.effect_review_date : p.review_date;
+      return '<div class="os-cmp-row"><span>' + esc(p.areaLabel || p.area || "—") + '</span>' +
+        '<b>' + esc(p.title) + '</b><i>·</i><b class="now">' + esc(p.statusLabel) + '</b>' +
+        (naechste && !p.abgeschlossen ? '<span class="small muted"> · Prüfung ' + esc(naechste) + '</span>' : '') +
+        (p.standard && p.standard.bestaetigt ? '<span class="small muted"> · persönlicher Standard</span>' : '') +
+        '</div>';
+    }
+    var inner = (offen.length ? offen.map(row).join("") : '<p class="small muted">Kein aktiver Optimierungspunkt.</p>') +
+      (fertig.length ? '<p class="small muted" style="margin-top:10px">Zuletzt abgeschlossen: ' +
+        fertig.map(function (p) { return esc(p.title) + (p.standard && p.standard.bestaetigt ? " (Standard)" : ""); }).join(" · ") + '</p>' : '');
+    return sec("Optimierungspunkte", inner);
+  }
+
   function loadPhotoCompare() {
     // Checkpoint-Karte nur zeigen, wenn die fälligen Fotos WIRKLICH fehlen (§8).
     var cp = document.getElementById("osCpCard");
@@ -1226,7 +1687,7 @@
       '<a class="os-learn" href="ebooks.html"><b>Library</b><span>Deep Dives: Body · Engine · Recovery · Hormone · Health.</span></a>' +
       '<a class="os-learn" href="labor.html"><b>MaleMetrix Labs</b><span>Deine Biologie über die Zeit — Werte werden zu Kontext.</span></a>' +
       '<a class="os-learn" href="blutwerte.html"><b>Blood &amp; Labs (Guide)</b><span>Die Biomarker, die für Männer zählen.</span></a>' +
-      (MM.intelligence ? '<a class="os-learn" href="#protocol"><b>MY PROTOCOL</b><span>Dein Betriebshandbuch — dynamisch aus deinem echten Plan.</span></a>' : '') +
+      (MM.intelligence ? '<a class="os-learn" href="#protocol"><b>PERSÖNLICHER STANDARD</b><span>Dein Betriebshandbuch — dynamisch aus deinem echten Plan.</span></a>' : '') +
       '</div>');
     if (pw === "enhanced") {
       var F = E.ENHANCED_FRAMEWORK;
@@ -1273,7 +1734,7 @@
     var p = dec.primary || dec;
     var type = p.type || "keep";
     var html = '<div class="intel-decision intel-tone-' + (DEC_TONE[type] || "neutral") + '">' +
-      '<div class="hd"><span class="verdict">' + esc(DEC_LABEL[type] || type.toUpperCase()) + '</span>' + (dec.bottleneck ? '<span class="bn">Limiter: ' + esc((INTEL().LABELS.BN[dec.bottleneck.domain] || dec.bottleneck.domain)) + ' · ' + dec.bottleneck.confidencePct + '%</span>' : '') + '</div>' +
+      '<div class="hd"><span class="verdict">' + esc(DEC_LABEL[type] || type.toUpperCase()) + '</span>' + (dec.bottleneck ? '<span class="bn">Engpass: ' + esc((INTEL().LABELS.BN[dec.bottleneck.domain] || dec.bottleneck.domain)) + ' · ' + dec.bottleneck.confidencePct + '%</span>' : '') + '</div>' +
       '<b class="ttl">' + esc(p.title) + '</b>' +
       '<p class="rsn">' + esc(p.reason) + '</p>';
     if (p.evidence && p.evidence.length) html += '<div class="ev"><span>BASIEREND AUF</span>' + p.evidence.map(function (e) { return '<i>' + esc(e) + '</i>'; }).join("") + '</div>';
@@ -1363,11 +1824,11 @@
 
     // Module grid
     html += '<section class="os-sec"><h2 class="os-h2">Intelligence-Module</h2><div class="intel-grid">' +
-      module("#review", "WEEKLY REVIEW", "Wochen-Synthese + Verdict", I.review.reviewDue(ctx) ? "fällig" : "") +
+      module("#review", "ERGEBNISPRÜFUNG", "Wochen-Synthese + Verdict", I.review.reviewDue(ctx) ? "fällig" : "") +
       module("#twin", "DIGITAL TWIN", "Dein Modell über die Zeit", depth.pct + "% Reife") +
       module("#simulator", "WHAT IF?", "Szenarien vergleichen", "") +
       module("#experiments", "EXPERIMENTE", "Kontrolliert optimieren", (I.experiments.active().length ? "1 aktiv" : "")) +
-      module("#protocol", "MY PROTOCOL", "Dein Betriebshandbuch", "") +
+      module("#protocol", "PERSÖNLICHER STANDARD", "Dein Betriebshandbuch", "") +
       module("#timeline", "TIMELINE", "Deine Historie", "") +
       module("#learned", "GELERNT", "Was MaleMetrix über dich weiß — mit Evidenz-Klasse", (MM.activation ? MM.activation.depth().level : "")) +
       module("#map", "PERFORMANCE MAP", "Dein System auf einen Blick", "") +
@@ -1473,12 +1934,12 @@
 
   /* =========================== WEEKLY REVIEW =========================== */
   function vReview() {
-    if (!INTEL() || !INTEL().review) return '<div class="card"><p class="muted">Review lädt…</p></div>';
+    if (!INTEL() || !INTEL().review) return '<div class="card"><p class="muted">Ergebnisprüfung lädt…</p></div>';
     var I = INTEL(); var ctx = I.buildContext();
     var rev = I.review.generate(ctx);
     var eva = I.review.expectedVsActual(ctx);
     var html = '<div class="intel-back"><a href="#coach">← Coach</a></div>';
-    html += '<section class="os-sec"><span class="tag">WEEKLY INTELLIGENCE REVIEW</span>' +
+    html += '<section class="os-sec"><span class="tag">WÖCHENTLICHE ERGEBNISPRÜFUNG</span>' +
       '<h1 class="os-big" style="font-size:1.6rem">Woche ' + (rev.week || "—") + '</h1>' +
       '<div class="intel-revconf">' + confDot(rev.confidence.level) + '<span>' + esc(rev.confidence.level.toUpperCase()) + ' CONFIDENCE · ' + esc(rev.confidence.factors.join(" · ")) + '</span></div></section>';
     // P13/P5.2 — DECISION FIRST: die Wochenentscheidung ist das größte
@@ -1502,11 +1963,11 @@
     // Primary focus + do not change
     html += '<div class="intel-focus"><div class="fbox"><span class="os-k">PRIMÄRER FOKUS</span><b>' + esc(rev.primaryFocus) + '</b></div>' +
       (rev.doNotChange.length ? '<div class="fbox"><span class="os-k">NICHT ÄNDERN</span><b>' + rev.doNotChange.map(esc).join(" · ") + '</b></div>' : '') +
-      '<div class="fbox"><span class="os-k">NÄCHSTER REVIEW</span><b>in ' + rev.reviewInDays + ' Tagen</b></div></div>';
+      '<div class="fbox"><span class="os-k">NÄCHSTE ERGEBNISPRÜFUNG</span><b>in ' + rev.reviewInDays + ' Tagen</b></div></div>';
     // History
     html += '<div class="card"><span class="os-k">Trajektorie · erwartet vs. tatsächlich</span>' + svgTrajectory(ctx) + '</div>';
     var hist = I.review.reviews().filter(function (r) { return r.week !== rev.week; });
-    if (hist.length) html += '<section class="os-sec"><h2 class="os-h2">Frühere Reviews</h2><div class="intel-revhist">' + hist.slice(-6).reverse().map(function (r) { return '<div class="rh"><b>W' + r.week + '</b><span>' + esc(r.verdict) + '</span><i>' + esc(r.primaryFocus) + '</i></div>'; }).join("") + '</div><p class="small muted">Historische Reviews sind unveränderlich — sie ändern sich nicht mit neuen Daten.</p></section>';
+    if (hist.length) html += '<section class="os-sec"><h2 class="os-h2">Frühere Ergebnisprüfungen</h2><div class="intel-revhist">' + hist.slice(-6).reverse().map(function (r) { return '<div class="rh"><b>W' + r.week + '</b><span>' + esc(r.verdict) + '</span><i>' + esc(r.primaryFocus) + '</i></div>'; }).join("") + '</div><p class="small muted">Historische Ergebnisprüfungen sind unveränderlich — sie ändern sich nicht mit neuen Daten.</p></section>';
     return html;
   }
 
@@ -1603,7 +2064,7 @@
     var I = INTEL(); var ctx = I.buildContext();
     var p = I.protocol.current(ctx);
     var html = '<div class="intel-back"><a href="#coach">← Coach</a></div>';
-    html += '<section class="os-sec"><span class="tag">MY PROTOCOL · v' + p.version + '</span><h1 class="os-big" style="font-size:1.5rem">Dein Betriebshandbuch.</h1>' +
+    html += '<section class="os-sec"><span class="tag">PERSÖNLICHER STANDARD · v' + p.version + '</span><h1 class="os-big" style="font-size:1.5rem">Dein Betriebshandbuch.</h1>' +
       '<p class="muted" style="margin:0 0 6px">Dynamisch aus deinem echten Plan — nicht das allgemeine Protokoll, sondern deins.</p></section>';
     if (p.changedFrom && p.changedFrom.length) html += '<div class="intel-protochange"><span class="tag">GEÄNDERT SEIT v' + (p.version - 1) + '</span>' + p.changedFrom.map(function (c) { return '<p>' + esc(c.label) + ': <s>' + esc(c.from) + '</s> → <b>' + esc(c.to) + '</b></p>'; }).join("") + '</div>';
     html += '<div class="intel-proto">' + p.sections.map(function (s) { return '<div class="intel-psec"><span class="os-k">' + esc(s.label) + '</span><b>' + esc(s.value) + '</b>' + (s.detail ? '<i>' + esc(s.detail) + '</i>' : '') + '</div>'; }).join("") + '</div>';
@@ -1857,6 +2318,48 @@
       var ctx = t.closest("[data-ctx]"); if (ctx) { OS.setContextMode(ctx.getAttribute("data-ctx")); render(); return; }
       var rsc = t.closest("[data-resched]"); if (rsc) { var pr = rsc.getAttribute("data-resched").split(":"); if (OS.applyReschedule(parseInt(pr[0], 10), parseInt(pr[1], 10))) { if (MM.toast) MM.toast("Krafttag verschoben — Kalender/Plan aktualisiert."); } render(); return; }
       var ph = t.closest(".os-photo"); if (ph && !t.closest("input")) { var fi = ph.querySelector("input[type=file]"); if (fi) fi.click(); return; }
+      /* --- Maßnahmenprüfung (Paket 7): jede Aktion ist eine ausdrückliche
+         Handlung des Nutzers. Nichts davon läuft automatisch. --- */
+      if (t.closest("#mnStart")) { startMassnahme(); return; }
+      var mnSave = t.closest("[data-mnsave]"); if (mnSave) { saveMassnahmenErgebnis(mnSave.getAttribute("data-mnsave")); return; }
+      var mnStd = t.closest("[data-mnstd]"); if (mnStd) {
+        MM.points.adoptStandard(mnStd.getAttribute("data-mnstd"));
+        if (MM.toast) MM.toast("Als persönlicher Standard übernommen.");
+        render(); return;
+      }
+      var mnNo = t.closest("[data-mnnostd]"); if (mnNo) { MM.points.declineStandard(mnNo.getAttribute("data-mnnostd")); render(); return; }
+      var mnIcs = t.closest("[data-mnics]"); if (mnIcs) { massnahmeIcs(mnIcs.getAttribute("data-mnics")); return; }
+      /* --- Alltagstest (Paket 8): jeder Schritt ist eine ausdrückliche
+         Handlung. Kein Start, keine Entscheidung und keine Änderung an einem
+         persönlichen Standard geschieht automatisch. --- */
+      var etD = t.closest("[data-etday]");
+      if (etD) {
+        OS.setEverydayDay(etD.getAttribute("data-etpt"), etD.getAttribute("data-etday"));
+        render(); return;
+      }
+      if (t.closest("#etStart")) { startAlltagstest(); return; }
+      if (t.closest("#etDone")) {
+        var fertig = OS.completeEverydayTest();
+        if (!fertig) { if (MM.toast) MM.toast("Bitte für jeden Standard eine Entscheidung wählen."); return; }
+        if (MM.toast) MM.toast("Ergebnisprüfung abgeschlossen.");
+        render(); return;
+      }
+      if (t.closest("#etIcs")) { alltagstestIcs(); return; }
+      var etMin = t.closest("[data-etmin]");
+      if (etMin) {
+        var pidM = etMin.getAttribute("data-etmin");
+        var tt = OS.everydayTest() || { standards: [] };
+        var sM = (tt.standards || []).filter(function (x) { return x.point_id === pidM; })[0];
+        if (sM && MM.points.refineStandard) MM.points.refineStandard(pidM, { minimal: sM.minimal });
+        if (MM.toast) MM.toast("Minimalform dauerhaft ergänzt.");
+        render(); return;
+      }
+      var etRet = t.closest("[data-etretire]");
+      if (etRet) {
+        if (MM.points.retireStandard) MM.points.retireStandard(etRet.getAttribute("data-etretire"), "alltagstest");
+        if (MM.toast) MM.toast("Nicht mehr als aktiver Standard geführt — die Historie bleibt.");
+        render(); return;
+      }
       if (t.closest("#blSave")) { saveBaselineFromForm(); return; }
       if (t.closest("#txGo")) { runTransform(); return; }
       if (t.closest("#txReset")) { MM.store.remove("os_transformation"); render(); return; }
@@ -1874,6 +2377,8 @@
       if (t.closest("#woFinish")) { finishWorkout(t.closest("#woFinish")); return; }
       if (t.closest("#qlSave")) { var qk = parseFloat((document.getElementById("qlK") || {}).value), qp = parseFloat((document.getElementById("qlP") || {}).value); if (qk || qp) { OS.logFood({ name: "Eigener Eintrag", kcal: qk || 0, p: qp || 0, source: "quick" }); if (MM.toast) MM.toast("Geloggt."); render(); } return; }
       if (t.closest("#enSave")) { saveEngine(); return; }
+      /* Track-Echo-Fassung von master; sichtbarer Wortlaut folgt dem
+         Begriffskanon („Durchlauf", nicht „Zyklus"). */
       if (t.closest("#rcSave")) {
         var sh = parseFloat((document.getElementById("rcSleep") || {}).value); var en = parseInt((document.getElementById("rcEnergy") || {}).value, 10); var any = false;
         if (sh) { OS.logMetric("sleep", sh, "h"); any = true; }
@@ -1888,7 +2393,7 @@
         }
         return;
       }
-      if (t.closest("#cycDone")) { OS.completeCycle(); if (MM.toast) MM.toast("Zyklus abgeschlossen — er ist jetzt Teil deiner Historie."); render(); return; }
+      if (t.closest("#cycDone")) { OS.completeCycle(); if (MM.toast) MM.toast("Durchlauf abgeschlossen — er ist jetzt Teil deiner Historie."); render(); return; }
       var shc = t.closest("[data-sharecard]"); if (shc) { downloadShareCard(shc.getAttribute("data-sharecard")); return; }
       if (t.closest("#coachPacket")) {
         var pk = buildCoachPacket();
@@ -2006,6 +2511,14 @@
         OS.savePhoto(week, angle, fi.files[0]).then(function () { var st = document.getElementById("ph_" + angle); if (st) st.textContent = "✓ gespeichert (W" + week + ")"; });
         return;
       }
+      /* ---- Alltagstest (Paket 8): Hindernis und Entscheidung erfassen. Beides
+         wird gespeichert, aber nichts davon verändert einen persönlichen
+         Standard — dafür braucht es die ausdrückliche Bestätigung. ---- */
+      var eh = e.target.closest("[data-ethind]");
+      if (eh) { OS.setEverydayObstacle(eh.getAttribute("data-ethind"), e.target.value); return; }
+      var ed = e.target.closest("[data-etdec]");
+      if (ed) { if (e.target.value) OS.setEverydayDecision(ed.getAttribute("data-etdec"), e.target.value); return; }
+      if (e.target.id === "etNext") { zeigeNaechsteEntscheidung(e.target.value); return; }
       /* ---- Phase 6 Settings: sofort persistieren, kein Save-Button nötig ---- */
       var id = e.target.id;
       if (id === "rmEnabled") { X.setReminderPrefs({ enabled: e.target.checked }); render(); return; }
@@ -2126,6 +2639,147 @@
     if (lims.length) OS.setP("health.limitations", lims);
     render();
   }
+  /* Start einer Maßnahme: alles Nötige, nichts darüber hinaus. */
+  function startMassnahme() {
+    var P = MM.points; if (!P || !P.startMeasure) return;
+    var sid = (document.getElementById("mnSupp") || {}).value;
+    var pid = (document.getElementById("mnPoint") || {}).value;
+    var days = parseInt((document.getElementById("mnDays") || {}).value, 10) || 14;
+    var crit = ((document.getElementById("mnCrit") || {}).value || "").trim().slice(0, 80);
+    if (!sid || !pid) return;
+    var s = suppById(sid);
+    if (!s) { if (MM.toast) MM.toast("Diese Maßnahme ist nicht mehr im Katalog."); render(); return; }
+    /* Bestehende Warn- und Monitoringhinweise werden übernommen, nie
+       abgeschwächt — sie führen zu „Weitere Abklärung" statt zu einem Start
+       ohne Hinweis. Medikation ist ein ärztlicher Vorbehalt. */
+    var medikation = false;
+    try { medikation = !!OS.getP("health.medication", false); } catch (e) {}
+    var m = P.startMeasure({
+      optimization_point_id: pid,
+      measure_source: "stack", measure_id: s.id, measure_label: s.name,
+      observation_days: days,
+      criterion_label: crit, criterion_source: crit ? "manuell" : "",
+      warning: s.monitor || "",
+      arztVorbehalt: medikation
+    });
+    if (!m) { if (MM.toast) MM.toast("Start nicht möglich."); return; }
+    if (MM.toast) MM.toast(crit ? "Beobachtung gestartet — Prüfung am " + fmtD(m.review_date) + "."
+      : "Beobachtung gestartet. Bei der Prüfung beurteilst du Wirkung und Alltagstauglichkeit manuell.");
+    render();
+  }
+
+  function saveMassnahmenErgebnis(id) {
+    var P = MM.points; if (!P || !P.setMeasureResult) return;
+    var val = function (f) {
+      var el = document.querySelector('[data-mnf="' + f + '"][data-id="' + id + '"]');
+      return el ? el.value : "";
+    };
+    P.setMeasureResult(id, { umsetzung: val("umsetzung"), wirkung: val("wirkung"), alltag: val("alltag"), decision: val("decision") });
+    if (MM.toast) MM.toast("Ergebnis gespeichert.");
+    render();
+  }
+
+  /* Ein einzelner Prüfungstermin als ICS — dieselbe Form wie die bestehenden
+     Kalenderausgaben, ganztägig und mit lokalem Kalendertag. */
+  function massnahmeIcs(id) {
+    var P = MM.points; var m = P && P.get ? P.get(id) : null;
+    if (!m || !m.review_date) return;
+    var punkt = P.get(m.optimization_point_id);
+    var plus1 = function (s) {
+      var q = String(s).split("-");
+      var d = new Date(+q[0], (+q[1] || 1) - 1, (+q[2] || 1) + 1);
+      return d.getFullYear() + ("0" + (d.getMonth() + 1)).slice(-2) + ("0" + d.getDate()).slice(-2);
+    };
+    var flat = function (s) { return String(s).replace(/-/g, ""); };
+    var esc2 = function (s) { return String(s || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n"); };
+    var desc = "Optimierungspunkt: " + (punkt ? punkt.title : "—") +
+      " | Start: " + m.measure_started_at +
+      (m.criterion_label ? " | Erfolgssignal: " + m.criterion_label : "") +
+      " | Umsetzung und Wirkung werden getrennt geprueft. Der Zeitraum garantiert keinen Wirkungseintritt.";
+    var ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//MaleMetrix//Massnahme//DE",
+      "BEGIN:VEVENT",
+      /* Stabile UID aus der Referenz: derselbe Termin erzeugt bei einem
+         erneuten Export keinen zweiten Kalendereintrag. */
+      "UID:mm-mn-" + m.id + "-" + flat(m.review_date) + "@malemetrix",
+      "DTSTART;VALUE=DATE:" + flat(m.review_date),
+      "DTEND;VALUE=DATE:" + plus1(m.review_date),
+      "SUMMARY:" + esc2("Maßnahmenprüfung: " + (m.measure_label_snapshot || m.title)),
+      "DESCRIPTION:" + esc2(desc),
+      "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+    try {
+      var url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
+      var a = document.createElement("a");
+      a.href = url; a.download = "malemetrix-massnahmenpruefung.ics";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    } catch (e) {}
+  }
+
+  /* Start des Alltagstests — ausschließlich aus der ausdrücklichen
+     Bestätigung. Die Vorauswahl im Formular startet nichts. */
+  function startAlltagstest() {
+    var box = document.getElementById("etStartBox"); if (!box) return;
+    var ids = Array.prototype.slice.call(box.querySelectorAll(".etSel"))
+      .filter(function (c) { return c.checked; }).map(function (c) { return c.value; });
+    if (!ids.length) { if (MM.toast) MM.toast("Wähle mindestens einen persönlichen Standard."); return; }
+    if (ids.length > OS.ET_MAX_STANDARDS) {
+      if (MM.toast) MM.toast("Höchstens " + OS.ET_MAX_STANDARDS + " Standards gleichzeitig — sonst wird das Ergebnis nicht mehr deutbar.");
+      return;
+    }
+    /* Eine optionale Minimalform wird VOR dem Start festgelegt, nie danach. */
+    var minima = {};
+    Array.prototype.slice.call(box.querySelectorAll(".etMin")).forEach(function (i) {
+      if (i.value && i.value.trim()) minima[i.getAttribute("data-etpt")] = i.value.trim();
+    });
+    var t = OS.startEverydayTest(ids, minima);
+    if (!t) { if (MM.toast) MM.toast("Alltagstest konnte nicht gestartet werden."); return; }
+    if (MM.toast) MM.toast("Alltagstest gestartet — Ergebnisprüfung am " + fmtD(t.review_date) + ".");
+    render();
+  }
+
+  /* Ein einzelner Prüfungstermin, gleiche Form wie die übrigen Kalenderausgaben. */
+  function alltagstestIcs() {
+    var t = OS.everydayTest ? OS.everydayTest() : null;
+    if (!t || !t.review_date) return;
+    var plus1 = function (s) { return addDay(s, 1).replace(/-/g, ""); };
+    var flat = function (s) { return String(s).replace(/-/g, ""); };
+    var esc2 = function (s) { return String(s || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n"); };
+    var desc = "Standards: " + t.standards.map(function (s) { return s.label; }).join(" | ") +
+      " | Zeitraum: " + t.started_at + " bis " + t.until +
+      " | Geprueft wird die Alltagstauglichkeit, nicht Perfektion.";
+    var ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//MaleMetrix//Alltagstest//DE",
+      "BEGIN:VEVENT",
+      /* Stabile UID — ein erneuter Export erzeugt keinen zweiten Termin. */
+      "UID:mm-et-" + flat(t.started_at) + "-" + flat(t.review_date) + "@malemetrix",
+      "DTSTART;VALUE=DATE:" + flat(t.review_date),
+      "DTEND;VALUE=DATE:" + plus1(t.review_date),
+      "SUMMARY:" + esc2("Ergebnisprüfung: Alltagstest"),
+      "DESCRIPTION:" + esc2(desc),
+      "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+    try {
+      var url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
+      var a = document.createElement("a");
+      a.href = url; a.download = "malemetrix-alltagstest.ics";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    } catch (e) {}
+  }
+
+  /* Die nächste Hauptentscheidung wird benannt, nie ausgeführt: kein neuer
+     Durchlauf, kein Auftrag und keine Maßnahme startet von hier aus. */
+  function zeigeNaechsteEntscheidung(wahl) {
+    var out = document.getElementById("etNextOut"); if (!out) return;
+    var texte = {
+      standards: "Deine persönlichen Standards bleiben, wie sie sind. Du findest sie im Tracker.",
+      punkt: "Öffne deine Optimierungspunkte und wähle den, den du als Nächstes bearbeitest.",
+      wirkung: "Deine offenen Wirkungsprüfungen stehen im Tracker bereit, sobald du sie beurteilen kannst.",
+      neu: "Einen neuen Durchlauf startest du bewusst im Programm — hier passiert das nicht automatisch.",
+      stabil: "Nichts ändern ist eine vollwertige Entscheidung. Halte, was trägt.",
+      abklaerung: "Sprich die offenen Punkte ärztlich ab, bevor du weitergehst."
+    };
+    out.textContent = texte[wahl] || "";
+  }
+
   function saveStack() {
     var d = MM.account.getDashboardState();
     var st = MM.store.get("os_stack", {}) || {};

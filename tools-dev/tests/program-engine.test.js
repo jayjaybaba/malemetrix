@@ -116,7 +116,7 @@ group("P13/P5.2 · Review-UX: DECISION zuerst, dann WHY/CHANGES/NEXT");
   var rv = app.split("function vReview")[1].split("function vTwin")[0];
   ok(/DECISION FIRST/.test(rv) && /WEEK .*DECISION/.test(rv.replace(/\n/g, " ")), "Wochenentscheidung ist erstes, groesstes Element (mm-metric)");
   ok(rv.indexOf("DECISION") < rv.indexOf("Verdict"), "DECISION kommt VOR den Detail-Sektionen");
-  ok(/NICHT ÄNDERN/.test(rv) && /NÄCHSTER REVIEW/.test(rv), "WHAT CHANGES/NO CHANGE + NEXT WEEK vorhanden");
+  ok(/NICHT ÄNDERN/.test(rv) && /NÄCHSTE ERGEBNISPRÜFUNG/.test(rv), "WHAT CHANGES/NO CHANGE + NEXT WEEK vorhanden");
   ok(/is-watch|is-flag/.test(rv), "Statusfarbe folgt der Entscheidung (Token, keine Deko)");
 })();
 

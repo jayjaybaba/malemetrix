@@ -104,7 +104,7 @@ Ohne Erklärung vorab. Nutzer laut denken lassen.
 4. „Starte den Score. Sag mir laut, wenn dich eine Frage nervt oder unklar ist."
 5. „Du hast dein Ergebnis. Was ist dein größter Engpass — und was sollst du zuerst tun?"
 6. „Schau die Performance Map an. Was hat MaleMetrix über dich gelernt?"
-7. „Was glaubst du, bekommst du für 49 €?"
+7. „Was glaubst du, bekommst du für 99 €?"
 8. „Warum würdest du morgen wieder aufmachen?"
 9. „Was hier vertraust du **nicht**? Was fehlt dir an Vertrauen?"
 10. „Warum das statt einfach ChatGPT oder einer Tracking-App?"
@@ -122,7 +122,7 @@ Die zehn wahrscheinlichen Weggeh-Gründe (§41) — jeweils das Gegen-Signal:
 - „Generisch" → Skript 5/6 falsch → Personalisierung sichtbarer machen.
 - „Kein Grund zurückzukommen" → kein D1/D7-Return → Loop sichtbarer machen.
 - „Vertraue nicht" → Skript 9 → Trust/Privacy prominenter.
-- „Warum zahlen" → kein `checkout_started` → 49 €-Wert vor Paywall zeigen.
+- „Warum zahlen" → kein `checkout_started` → 99 €-Wert vor Paywall zeigen.
 
 ## 9 — Erfolgs-Schwelle für „skalieren"
 

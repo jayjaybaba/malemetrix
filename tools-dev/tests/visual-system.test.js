@@ -40,7 +40,7 @@ ok(/@media \(max-width: 560px\)/.test(strip), "Mobile: eigene 2-Spalten-Hierarch
 
 group("Diagnostic System Language · BODY/ENGINE/RECOVERY/…");
 ok(/\.mm-sys .row\.is-primary/.test(vs2) || /\.mm-sys \.row\.is-primary/.test(vs2), "Primary Bottleneck hat EINE klare Hervorhebung");
-ok(/PRIMARY/.test(vs2), "PRIMARY-Markierung in Mono-Mikrotypo");
+ok(/ENGPASS/.test(vs2), "Engpass-Markierung in Mono-Mikrotypo (Begriffskanon, kein englischer Marker)");
 ok(/is-flag/.test(vs2), "Medical-Flag-Zustand nutzt Rot (Status, nicht Deko)");
 
 group("Premium Access Moment · Kauf = Upgrade");
@@ -61,14 +61,15 @@ ok(/LOCKED · /.test(vs2), "Locked-State spricht Mono-Systemsprache");
 group("Score Result · diagnostische Systemliste statt Balken-Stapel");
 var check = read("js/check.js");
 ok(/mm-sys/.test(check) && /is-primary/.test(check), "Ergebnisseite nutzt .mm-sys mit Primary-Bottleneck-Highlight");
-ok(/MM \/ SYSTEMS/.test(check), "Mono-Systemheader auf der Ergebnisseite");
-ok((check.match(/is-primary/g) || []).length >= 1 && /k === bKey/.test(check), "genau der Engpass wird als PRIMARY markiert (datengetrieben)");
+ok(/MM \/ BEREICHE/.test(check), "Mono-Bereichsheader auf der Ergebnisseite");
+ok((check.match(/is-primary/g) || []).length >= 1 && /k === bKey/.test(check), "genau der Engpass wird hervorgehoben (datengetrieben)");
+ok(/\.mm-area\b/.test(vs2) && /\.mm-areas\b/.test(vs2), "Bereichskarten nutzen dieselben Tokens wie .mm-sys (kein zweites Designsystem)");
 
 group("P13/A2 · SYSTEM-READY-Moment nach Programm-Setup");
 var course = read("js/course.js");
 ok(/SYSTEM READY/.test(course), "SYSTEM-READY-Screen existiert nach dem Setup");
 ok(/START DAY 1/.test(course), "genau EIN CTA: START DAY 1");
-ok(/PRIMARY BOTTLENECK/.test(course) && /DAY 01/.test(course), "zeigt Mode/Bottleneck/12 Weeks/Day 01 aus ECHTEN Setup-Werten");
+ok(/PRIMÄRER ENGPASS/.test(course) && /DAY 01/.test(course), "zeigt Mode/Engpass/12 Weeks/Day 01 aus ECHTEN Setup-Werten");
 ok(/program_initialized/.test(course) && /day1_started/.test(course), "Funnel-Events program_initialized + day1_started (keine Gesundheitsdaten)");
 ok(/mm-access/.test(course) && /mm-metric/.test(course), "nutzt VS2-Systemklassen, kein eigenes Design");
 

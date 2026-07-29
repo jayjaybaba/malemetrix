@@ -187,6 +187,195 @@
   function currentCycle() { return ensureCycle(); }
   function completeCycle() { var c = ensureCycle(); if (c.status === "active") { c.status = "completed"; c.ended = todayYmd(); S.set("os_cycle", c); emit("CYCLE_COMPLETED", { cycle: c.id }); } return c; }
 
+  /* ==================== ALLTAGSTEST (Paket 8) ==========================
+     Transferprüfung am Ende des bestehenden 12-Wochen-Durchlaufs. EINE Frage:
+     Bleiben bereits bewusst übernommene persönliche Standards auch an
+     normalen, unperfekten Alltagstagen umsetzbar?
+
+     Kein zweiter Score, kein neuer Auftrag, keine neue Fokusphase, keine
+     Maßnahmenprüfung, kein weiteres Tracking-System und keine medizinische
+     Belastungsprüfung. Die sieben Tage sind ein organisatorischer Prüfzeitraum
+     innerhalb des vorhandenen Abschlussfensters — keine Wirkfrist und keine
+     dreizehnte Woche: c2_start und die Programmdauer bleiben unberührt.
+
+     SPEICHER: additiv am bestehenden Programmzustand (os_cycle). Kein neuer
+     globaler Key, keine neue Tabelle, keine Migration. Gespeichert werden
+     ausschließlich Referenzen auf Standards, der Zeitraum, die täglichen
+     Entscheidungen, das Ergebnis und die Abschlussentscheidung — nie eine
+     Kopie des Standards und nie eine Kopie von Messdaten. Maßgeblich bleibt
+     der persönliche Standard in mm_opt_points. */
+  var ET_TAGE = 7;                       // organisatorischer Prüfzeitraum
+  var ET_MAX_STANDARDS = 3;              // damit die Prüfung deutbar bleibt
+  var ET_TAGESWERTE = { normal: 1, minimal: 1, nein: 1, unklar: 1 };
+  var ET_HINDERNISSE = ["zeit", "planung", "muedigkeit", "sozial", "unterwegs",
+                        "vergessen", "nicht_praktikabel", "vertraeglichkeit", "anderer"];
+  var ET_ENTSCHEIDUNGEN = ["beibehalten", "minimalform_ergaenzen", "vereinfachen",
+                           "erneut_testen", "pausieren", "nicht_behalten", "weitere_abklaerung"];
+  /* „Beschwerden oder Verträglichkeit" ist ein Sicherheitshinweis — er
+     verhindert die Einordnung „alltagstauglich", ohne etwas zu diagnostizieren. */
+  var ET_SICHERHEIT = { vertraeglichkeit: 1 };
+
+  function etAddDays(s, n) {
+    var q = String(s || "").split("-");
+    var d = new Date(+q[0], (+q[1] || 1) - 1, (+q[2] || 1) + n);   // lokale Kalendertage
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function everydayTest() {
+    var c = ensureCycle();
+    var t = c && c.everyday;
+    return (t && typeof t === "object" && t.started_at) ? t : null;
+  }
+  function etSave(t) {
+    var c = ensureCycle();
+    c.everyday = Object.assign({}, t, { updated_at: new Date().toISOString() });
+    S.set("os_cycle", c);
+    return c.everyday;
+  }
+  /* Auswählbar sind ausschließlich ausdrücklich bestätigte persönliche
+     Standards. Ein Optimierungspunkt, eine laufende oder ungeprüfte Maßnahme,
+     eine offene Wirkung oder ein Score-Engpass genügen nie. */
+  function everydayCandidates() {
+    var out = [];
+    try {
+      if (!(MM.points && MM.points.standards)) return out;
+      MM.points.standards().forEach(function (p) {
+        if (!p.standard || !p.standard.bestaetigt) return;
+        if (p.status === "pausiert" || p.status === "weitere_abklaerung") return;
+        out.push({
+          point_id: p.id,
+          label: p.standard.was || p.title,
+          bereich: p.standard.bereich || p.areaLabel || p.area || "",
+          area: p.area || "",
+          /* Vorhandene Minimalform wird VERWENDET, nicht kopiert oder erfunden. */
+          minimal: p.standard.minimal || "",
+          seit: p.standard.bestaetigtAm || ""
+        });
+      });
+    } catch (e) {}
+    return out;
+  }
+  /* Vorauswahl: die zuletzt übernommenen Standards. Sie startet nichts — sie
+     füllt nur das Formular vor und muss bestätigt werden. */
+  function everydayPreselect() {
+    return everydayCandidates().sort(function (a, b) {
+      return String(b.seit).localeCompare(String(a.seit));
+    }).slice(0, ET_MAX_STANDARDS).map(function (s) { return s.point_id; });
+  }
+  /* START — ausschließlich aus einer ausdrücklichen Bestätigung. */
+  function startEverydayTest(ids, minima) {
+    var kandidaten = everydayCandidates();
+    var gewaehlt = [];
+    (Array.isArray(ids) ? ids : []).forEach(function (id) {
+      var k = kandidaten.filter(function (x) { return x.point_id === id; })[0];
+      if (k && !gewaehlt.some(function (g) { return g.point_id === id; })) gewaehlt.push(k);
+    });
+    if (!gewaehlt.length || gewaehlt.length > ET_MAX_STANDARDS) return null;
+    /* Ein Alltagstest je Durchlauf. Weder ein laufender noch ein bereits
+       abgeschlossener darf überschrieben werden — sonst ginge ein
+       eingefrorenes Ergebnis verloren. Ein erneuter Test gehört in den
+       nächsten Durchlauf, der ohnehin einen eigenen Zyklus bekommt. */
+    if (everydayTest()) return null;
+    var start = todayYmd();
+    return etSave({
+      started_at: start,
+      until: etAddDays(start, ET_TAGE - 1),                 // letzter Alltagstest-Tag
+      review_date: etAddDays(start, ET_TAGE),               // Ergebnisprüfung am Folgetag
+      standards: gewaehlt.map(function (g) {
+        var vor = (minima || {})[g.point_id];
+        return {
+          point_id: g.point_id,
+          /* Referenz bleibt maßgeblich; der Anzeigename ist nur ein
+             Lesbarkeits-Snapshot für die eingefrorene Historie. */
+          label: g.label, bereich: g.bereich, area: g.area,
+          /* Vorher festgelegte Rückfalloption — überschreibt den Standard NICHT. */
+          minimal: g.minimal || String(vor || "").trim().slice(0, 80),
+          minimal_quelle: g.minimal ? "standard" : (vor ? "vorher_festgelegt" : "")
+        };
+      }),
+      days: {}, obstacles: {}, decisions: {}, completed_at: null
+    });
+  }
+  function everydayDayList(t) {
+    t = t || everydayTest(); if (!t) return [];
+    var out = [];
+    for (var i = 0; i < ET_TAGE; i++) out.push(etAddDays(t.started_at, i));
+    return out;
+  }
+  /* Ein Tageswert je Standard. Zukünftige Tage werden nie bewertet, Tage
+     außerhalb des Zeitraums ebenfalls nicht. Wiederholtes Setzen ist
+     idempotent — ein Reload erzeugt keinen zweiten Eintrag. */
+  function setEverydayDay(pointId, wert, datum) {
+    var t = everydayTest(); if (!t || t.completed_at) return null;
+    if (!ET_TAGESWERTE[wert]) return null;
+    if (!t.standards.some(function (s) { return s.point_id === pointId; })) return null;
+    var tag = datum || todayYmd();
+    if (everydayDayList(t).indexOf(tag) < 0) return null;
+    if (tag > todayYmd()) return null;
+    var days = Object.assign({}, t.days || {});
+    days[tag] = Object.assign({}, days[tag] || {});
+    days[tag][pointId] = wert;
+    return etSave(Object.assign({}, t, { days: days }));
+  }
+  function setEverydayObstacle(pointId, grund) {
+    var t = everydayTest(); if (!t || t.completed_at) return null;
+    if (grund && ET_HINDERNISSE.indexOf(grund) < 0) return null;
+    var o = Object.assign({}, t.obstacles || {});
+    if (grund) o[pointId] = grund; else delete o[pointId];
+    return etSave(Object.assign({}, t, { obstacles: o }));
+  }
+  /* Bilanz je Standard — vier getrennte Zählungen, keine Erfolgsquote.
+     Fehlende Tage gelten weder als umgesetzt noch als nicht umgesetzt. */
+  function everydayTally(pointId, t) {
+    t = t || everydayTest(); if (!t) return null;
+    var z = { normal: 0, minimal: 0, nein: 0, unklar: 0, offen: 0 };
+    var heute = todayYmd();
+    everydayDayList(t).forEach(function (tag) {
+      if (tag > heute) return;                              // Zukunft zählt nie
+      var v = (t.days && t.days[tag] && t.days[tag][pointId]) || null;
+      if (v && z[v] !== undefined) z[v]++; else z.offen++;
+    });
+    z.umgesetzt = z.normal + z.minimal;
+    z.beurteilbar = z.normal + z.minimal + z.nein;
+    return z;
+  }
+  /* Einordnung — bewusst grob und transparent. Sie bewertet die Tragfähigkeit
+     des Standards im Alltag, nie den Nutzer. Eine sinnvoll genutzte
+     Minimalform zählt voll als Umsetzung. */
+  function everydayVerdict(pointId, t) {
+    t = t || everydayTest(); if (!t) return null;
+    var z = everydayTally(pointId, t); if (!z) return null;
+    var hind = (t.obstacles || {})[pointId] || "";
+    if (z.beurteilbar < 4) return { key: "nicht_beurteilbar", tally: z, hindernis: hind };
+    if (z.umgesetzt >= 5 && !ET_SICHERHEIT[hind]) return { key: "alltagstauglich", tally: z, hindernis: hind };
+    if (z.umgesetzt >= 3) return { key: "teilweise_stabil", tally: z, hindernis: hind };
+    return { key: "nicht_stabil", tally: z, hindernis: hind };
+  }
+  function everydayDue(t) {
+    t = t || everydayTest();
+    return !!(t && !t.completed_at && todayYmd() >= t.review_date);
+  }
+  /* Die Entscheidung je Standard wird ausschließlich gesetzt, nie abgeleitet. */
+  function setEverydayDecision(pointId, entscheidung) {
+    var t = everydayTest(); if (!t || t.completed_at) return null;
+    if (ET_ENTSCHEIDUNGEN.indexOf(entscheidung) < 0) return null;
+    if (!t.standards.some(function (s) { return s.point_id === pointId; })) return null;
+    var d = Object.assign({}, t.decisions || {});
+    d[pointId] = entscheidung;
+    return etSave(Object.assign({}, t, { decisions: d }));
+  }
+  /* ABSCHLUSS — friert die Bilanz ein. Ab hier verändern spätere Messwerte,
+     Tracker-Einträge oder Katalogänderungen das Ergebnis nicht mehr. */
+  function completeEverydayTest() {
+    var t = everydayTest(); if (!t || t.completed_at) return null;
+    if (!t.standards.every(function (s) { return (t.decisions || {})[s.point_id]; })) return null;
+    var res = {};
+    t.standards.forEach(function (s) {
+      var v = everydayVerdict(s.point_id, t);
+      res[s.point_id] = { tally: v.tally, verdict: v.key, hindernis: v.hindernis };
+    });
+    return etSave(Object.assign({}, t, { results: res, completed_at: todayYmd() }));
+  }
+
   // §6 — Idempotente Legacy-Migration: Baselines unter "pre" oder Startdatum
   // werden dem aktuellen Zyklus zugeordnet. Nie destruktiv, nie doppelt:
   // vorhandene cycle_id-Baseline gewinnt immer; Legacy-Keys bleiben als Quelle
@@ -594,6 +783,14 @@
     logMetric: logMetric, metricSeries: metricSeries, latestMetric: latestMetric, firstMetric: firstMetric, metricTrend: metricTrend,
     baseline: baseline, baselines: baselines, saveBaseline: saveBaseline, baselineKey: baselineKey,
     cycleId: cycleId, currentCycle: currentCycle, completeCycle: completeCycle, cycleHistory: cycleHistory, ensureCycle: ensureCycle,
+    /* Alltagstest (Paket 8) — Transferprüfung im bestehenden Abschlussfenster. */
+    everydayTest: everydayTest, everydayCandidates: everydayCandidates, everydayPreselect: everydayPreselect,
+    startEverydayTest: startEverydayTest, everydayDayList: everydayDayList,
+    setEverydayDay: setEverydayDay, setEverydayObstacle: setEverydayObstacle,
+    everydayTally: everydayTally, everydayVerdict: everydayVerdict, everydayDue: everydayDue,
+    setEverydayDecision: setEverydayDecision, completeEverydayTest: completeEverydayTest,
+    ET_TAGE: ET_TAGE, ET_MAX_STANDARDS: ET_MAX_STANDARDS,
+    ET_HINDERNISSE: ET_HINDERNISSE, ET_ENTSCHEIDUNGEN: ET_ENTSCHEIDUNGEN,
     savePhoto: savePhoto, getPhoto: getPhoto, hasPhotos: hasPhotos, photoStatus: photoStatus, checkpointOf: checkpointOf,
     todayActions: todayActions, completeAction: completeAction, actionDone: actionDone,
     completeProgramDay: completeProgramDay, completeEngineDay: completeEngineDay, isProgramDayDone: isProgramDayDone,
@@ -626,7 +823,9 @@
     oslabpanels: "lab_panels", oslabresults: "lab_results", oslabnotes: "lab_notes",  // Phase 4 (registriert in labs.js)
     // Phase 6 — Execution-Layer (registriert in execution.js)
     osoverlays: "os_overlays", osreschedules: "os_reschedules", osdecisions: "os_decisions",
-    osdaylog: "os_daylog", osreminderprefs: "os_reminder_prefs"
+    osdaylog: "os_daylog", osreminderprefs: "os_reminder_prefs",
+    // Paket 3 — Optimierungspunkte (registriert in js/points.js)
+    optpoints: "opt_points"
   };
   var LOCAL_ONLY = {
     os_events: "abgeleitetes, gekapptes Ereignis-Log (rekonstruierbar)",

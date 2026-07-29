@@ -66,7 +66,7 @@ entschieden — also geraten.
   `ios/` (981 Zeilen Swift), wurde aber nie kompiliert — dafür braucht es
   einen Mac. Der Weg ohne Mac wäre ein Apple-Kurzbefehl mit lokalem Import;
   noch nicht gebaut, wartet auf Entscheidung.
-- Coaching-Preis unverändert 149 €.
+- Coaching-Preis: aktuell 199 €/Monat (Stand Juli 2026).
 
 ---
 
@@ -426,7 +426,7 @@ mehr als Deploy-Weg behandelt.
 # DO NOT REGRESS
 
 - Commerce: PAYPAL VERIFIED → ORDER → ENTITLEMENT → AUDIT best effort
-  (fulfillment.mjs). Claim-Schutz payment_already_claimed. Exakt 4900/EUR.
+  (fulfillment.mjs). Claim-Schutz payment_already_claimed. Exakt 9900/EUR (Protokoll 99 €).
 - ES256-Auth-Muster (_shared/edge.mjs), verify_jwt=false + Handler-Auth.
 - Keine echte Zahlung, keine Account-Löschung, keine Secrets, keine
   Health-Daten in Analytics, AI ersetzt nie deterministische Entscheidungen.
