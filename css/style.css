@@ -2754,20 +2754,18 @@ body > * { position: relative; z-index: 0; }
 .mm-founder-wide img { display: block; width: 100%; height: clamp(380px, 62vh, 680px); object-fit: cover; object-position: 50% 12%; }
 .mm-founder-wide figcaption { font-size: 0.82rem; color: var(--muted-2); margin-top: 12px; text-align: center; }
 @media (max-width: 900px) {
-  /* Gesicht und kompletter Text passen mobil nicht beide in einen
-     Viewport. Lösung: das Porträt füllt den ersten Bildschirm, das
-     Gesicht bleibt oben FREI sichtbar (padding-top schiebt den Text auf
-     ~44vh), der Text läuft über Schultern/Brust und das Bild blendet
-     nach unten in die Seite aus. */
-  .co-hero { min-height: 0; align-items: flex-end; padding-top: 44vh; padding-bottom: 40px; }
+  /* Wie der Homepage-Hero auf Mobil: das Porträt ist der durchgehende
+     HINTERGRUND des gesamten Kopfes, der Text läuft darüber — Lesbarkeit
+     sichert der kräftige vertikale Scrim (Gesicht bleibt oben als Motiv
+     erkennbar, unten Übergang in die Seite). */
+  .co-hero { min-height: 92vh; align-items: flex-end; padding-bottom: 40px; }
   .co-hero-media img {
-    left: 0; right: auto; top: 0; width: 100%; height: min(92vh, 760px); min-width: 0;
+    left: 0; right: auto; top: 0; width: 100%; height: 100%; min-width: 0;
     object-position: 50% 0;
-    -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent 98%);
-    mask-image: linear-gradient(180deg, #000 55%, transparent 98%);
+    mask-image: none; -webkit-mask-image: none;
   }
   .co-hero-media .scrim {
-    background: linear-gradient(180deg, rgba(7, 9, 13, 0.45) 0%, rgba(7, 9, 13, 0.15) 18%, rgba(7, 9, 13, 0.5) 42%, rgba(7, 9, 13, 0.82) 60%, var(--bg-0) 90%);
+    background: linear-gradient(180deg, rgba(7, 9, 13, 0.42) 0%, rgba(7, 9, 13, 0.6) 30%, rgba(7, 9, 13, 0.8) 55%, rgba(7, 9, 13, 0.92) 78%, var(--bg-0) 100%);
   }
 }
 @media (prefers-reduced-motion: reduce) { .mm-ambient video { transition: none; } }
