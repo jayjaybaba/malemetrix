@@ -174,7 +174,16 @@
 /* ---------- FIGUR + BILDUNTERSCHRIFT ---------- */
 .bp-figure { margin: 24px 0; border: 1px solid rgba(255,255,255,.1); border-radius: 16px; overflow: hidden; }
 .bp-figure img { display: block; width: 100%; height: auto; }
+/* Hochformat-Grafiken (900×1599) dürfen den Viewport nicht füllen: Höhe
+   deckeln, zentriert auf dunklem Grund — der Lesefluss bleibt erhalten. */
+.bp-figure img[width="900"] { width: auto; max-width: 100%; max-height: min(68vh, 560px); margin: 0 auto; background: #0a0d12; }
+.bp-figure:has(img[width="900"]) { background: #0a0d12; }
 .bp-figcap { padding: 12px 16px; font-size: .82rem; color: #93a3b2; background: rgba(255,255,255,.02); }
+
+/* ---------- PULL-QUOTE ---------- */
+.bp-pull { margin: 30px 0; padding: 4px 0 4px 22px; border-left: 3px solid #00c2ff; }
+.bp-pull p { margin: 0; font-family: var(--font-display, inherit); font-size: 1.22rem; line-height: 1.45; font-weight: 600; color: #eef2f7; letter-spacing: -0.01em; }
+@media (min-width: 700px) { .bp-pull p { font-size: 1.38rem; } }
 
 /* ---------- QUELLEN-SEKTION ---------- */
 .bp-sources ol { padding-left: 20px; }
