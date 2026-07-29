@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Produktvorschau — was du bekommst, bevor du kaufst | MaleMetrix</title>
+  <meta name="description" content="Die echte Programmlogik vor dem Kauf: Ausgangslage → Engpass → Modus → 12-Wochen-Plan, eine komplette Beispielwoche, ein konkreter Tagesplan und die Entscheidungsregeln des Wochenabschlusses.">
+  <link rel="stylesheet" href="css/fonts.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/course2.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2307090d'/%3E%3Cpath d='M8.5 8.5l5.5 5.5M8.5 23.5l5.5-5.5' stroke='%23eef2f7' stroke-width='3.4' stroke-linecap='round' fill='none'/%3E%3Cpath d='M23.5 8.5l-5.5 5.5M23.5 23.5l-5.5-5.5' stroke='%2300c2ff' stroke-width='3.4' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+  <link rel="canonical" href="https://www.malemetrix.com/vorschau.html">
+  <meta name="theme-color" content="#07090d">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="MaleMetrix">
+  <meta property="og:locale" content="de_DE">
+  <meta property="og:title" content="Produktvorschau — was du bekommst, bevor du kaufst">
+  <meta property="og:description" content="Echte Programmlogik statt Marketing-Mockup: Engpass, Modus, komplette Beispielwoche, konkreter Tagesplan.">
+  <meta property="og:url" content="https://www.malemetrix.com/vorschau.html">
+  <meta property="og:image" content="https://www.malemetrix.com/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <style>
+    .pv-stage{background:var(--c2-bg,#080b12);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:22px}
+    @media(max-width:640px){.pv-stage{padding:14px;border-radius:12px}}
+    .pv-phases{display:grid;gap:8px;margin-top:8px}
+    .pv-phase{display:grid;grid-template-columns:74px 1fr;gap:4px 12px;align-items:baseline;border:1px solid var(--c2-line,rgba(255,255,255,.08));border-radius:10px;padding:10px 14px}
+    .pv-phase.cur{border-color:var(--c2-cyan,#22d3ee);background:rgba(34,211,238,.06)}
+    .pv-phase .wk{grid-row:1/3;font-family:var(--c2-mono,monospace);font-size:.72rem;color:var(--c2-blue2,#60a5fa)}
+    .pv-phase b{color:#fff}
+    .pv-phase span:last-child{color:var(--c2-mut,#7c8798);font-size:.88rem}
+    .pv-week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+    .pv-day{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px;border:1px solid var(--c2-line,rgba(255,255,255,.08));border-radius:10px;background:transparent;color:var(--c2-ink2,#aeb9c9);cursor:pointer;font:inherit}
+    .pv-day:hover{border-color:var(--c2-line2,rgba(255,255,255,.15))}
+    .pv-day.sel{border-color:var(--c2-cyan,#22d3ee);background:rgba(34,211,238,.08);color:#fff}
+    .pv-day .wd{font-family:var(--c2-mono,monospace);font-size:.62rem;letter-spacing:.08em;color:var(--c2-mut,#7c8798)}
+    .pv-day .ic{font-size:1.1rem}
+    .pv-day .lb{font-family:var(--c2-mono,monospace);font-size:.55rem;letter-spacing:.06em}
+    @media(max-width:560px){.pv-week{grid-template-columns:repeat(4,1fr)}.pv-day .lb{font-size:.5rem}}
+    .pv-rules{display:grid;gap:8px}
+    .pv-rule{border:1px solid var(--c2-line,rgba(255,255,255,.08));border-left:3px solid var(--c2-blue2,#60a5fa);border-radius:10px;padding:10px 14px}
+    .pv-rule b{display:block;font-family:var(--c2-mono,monospace);font-size:.68rem;letter-spacing:.1em;color:var(--c2-blue2,#60a5fa);margin-bottom:3px}
+    .pv-rule p{margin:0;color:var(--c2-ink2,#aeb9c9);font-size:.92rem}
+    .pv-limits{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+    .pv-limits li{border:1px solid var(--line);border-radius:10px;padding:12px 16px;color:var(--muted)}
+    .pv-limits li b{color:var(--text);display:block;margin-bottom:2px}
+    /* a{color:inherit;text-decoration:none} gilt global — Prosa-Links müssen
+       hier explizit als Link erkennbar sein. */
+    .pv-limits a,.container-narrow p a{color:inherit;text-decoration:underline}
+    .container-narrow p a.btn{text-decoration:none}
+  </style>
+</head>
+<body>
+<header class="site-header" id="siteHeader">
+  <div class="container header-inner">
+    <a href="index.html" class="logo" aria-label="MaleMetrix Startseite"><span class="logo-word">MALEMETRI</span><svg class="logo-x" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path d="M22 22 42 42 M22 78 42 58" stroke="#eef2f7" stroke-width="12" stroke-linecap="round" fill="none"/><path d="M78 22 58 42 M78 78 58 58" stroke="#00c2ff" stroke-width="12" stroke-linecap="round" fill="none"/></svg></a>
+    <nav class="main-nav" id="mainNav">
+      <a href="check.html" data-i18n="nav.check">Score</a>
+      <a href="protokoll.html" data-i18n="nav.protocol">Das Protokoll</a>
+      <a href="coaching.html" data-i18n="nav.coaching">1:1 Coaching</a>
+      <div class="nav-more">
+        <button class="nav-more-toggle" data-i18n="nav.about">Über</button>
+        <div class="nav-more-menu">
+          <a href="ueber.html" data-i18n="nav.aboutMM">Über MaleMetrix</a>
+          <a href="vorschau.html">Produktvorschau</a>
+          <a href="ergebnisse.html">Ergebnisse</a>
+          <a href="faq.html" data-i18n="nav.faq">FAQ</a>
+          <a href="kontakt.html" data-i18n="nav.contact">Kontakt</a>
+        </div>
+      </div>
+      <a href="mein-protokoll.html" class="nav-my" data-i18n="nav.mymm">My MaleMetrix</a>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-btn lang-btn" aria-label="Sprache wechseln / Switch language" title="DE / EN">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"/></svg>
+        <span class="lang-code">EN</span>
+      </button>
+      <button class="cart-btn" id="cartBtn" aria-label="Warenkorb öffnen">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span class="cart-count empty" id="cartCount">0</span>
+      </button>
+      <button class="nav-toggle" id="navToggle" aria-label="Menü öffnen">☰</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="page-head">
+    <div class="container-narrow">
+      <span class="eyebrow">Produktvorschau</span>
+      <h1>Was du morgen damit machst — bevor du bezahlst.</h1>
+      <p class="lead">Unten läuft die <strong>echte Programmlogik</strong>, nicht ein nachgebauter Screenshot. Dieselben Regeln, dieselben Tagesinhalte, dieselbe Mustergenerierung wie im gekauften Programm. Wähle ein Profil und sieh, wie aus einer Ausgangslage ein konkreter Dienstagvormittag wird.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container-narrow">
+      <div class="pv-stage c2">
+        <div id="pvRoot"></div>
+      </div>
+      <p class="small muted" style="margin-top:14px">Die drei Profile sind <strong>Demo-Profile, keine echten Teilnehmer</strong>. Dokumentierte Durchläufe echter Männer stehen — sobald es sie gibt — unter <a href="ergebnisse.html">Ergebnisse &amp; Fallstudien</a>, gemessen an einem vorher festgelegten Standard.</p>
+    </div>
+  </section>
+
+  <section class="section section-alt">
+    <div class="container-narrow">
+      <div class="section-head">
+        <span class="eyebrow">Der erste Schritt ist kostenlos</span>
+        <h2 class="h-section">Den Score musst du nicht kaufen.</h2>
+        <p class="lead">Die Ausgangslage oben erhebt der MaleMetrix Score — und der ist frei zugänglich, ohne Konto und ohne E-Mail-Zwang. Du kannst deinen eigenen Engpass ermitteln, bevor du irgendetwas ausgibst, und danach entscheiden, ob dir die Umsetzungsschicht das Geld wert ist.</p>
+      </div>
+      <p><a class="btn btn-primary" href="check.html">Score starten — kostenlos</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container-narrow">
+      <div class="section-head">
+        <span class="eyebrow">Nach zwölf Wochen</span>
+        <h2 class="h-section">Was am Ende herauskommt.</h2>
+        <p class="lead">Kein „Herzlichen Glückwunsch“-Bildschirm, sondern ein Abschlussbericht aus deinen eigenen Werten: Start gegen Ende für Taille, Gewicht, Kraft, Schlaf und Score, deine Umsetzungsquote über 84 Tage — und eine begründete Entscheidung für die nächsten zwölf Wochen (weiter, wechseln oder beenden).</p>
+      </div>
+      <div class="card" style="border-left:3px solid var(--accent)">
+        <span class="card-num">BEISPIEL-AUSGABE · DEMO-WERTE</span>
+        <p style="margin-top:10px;font-family:var(--font-mono,monospace);font-size:.9rem;line-height:1.7">
+          38 Jahre, 3 Trainingseinheiten/Woche: −7,0 cm Taille, −5,0 kg Gewicht,<br>
+          Kraft gehalten, 82 % Umsetzung<br>
+          <span class="muted">Nächster Zug: RECOMP — WHtR 0,54 im Zielbereich, Kraft steht.</span>
+        </p>
+        <p class="small muted" style="margin-top:12px">Genau dieses Format erzeugt der Abschlussbericht — und daraus wird auf Wunsch ein Fallstudien-Entwurf, inklusive der Pflichtfrage, was <em>nicht</em> funktioniert hat. Nichts davon verlässt dein Gerät ohne deine ausdrückliche Freigabe.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-alt">
+    <div class="container-narrow">
+      <div class="section-head">
+        <span class="eyebrow">Grenzen der Vorschau</span>
+        <h2 class="h-section">Was hier bewusst nicht steht.</h2>
+        <p class="lead">Eine Vorschau, die alles zeigt, ist keine Vorschau mehr. Damit du weißt, wo die Linie liegt:</p>
+      </div>
+      <ul class="pv-limits">
+        <li><b>Die zehn Protokoll-Kapitel</b>Das inhaltliche Referenzwerk — Training, Ernährung, Schlaf, Blutwerte, Stoffwechsel — bleibt hinter dem Kauf. Eine echte Leseprobe aus Kapitel 01 steht auf der <a href="protokoll.html">Protokoll-Seite</a>.</li>
+        <li><b>Die Wochenkapitel des Programms</b>Der begleitende Text zu jeder der zwölf Wochen ist verschlüsselt ausgeliefert und wird hier nicht geladen. Die <em>Struktur</em> siehst du oben vollständig.</li>
+        <li><b>Deine eigenen Zahlen</b>Die Vorschau rechnet mit Demo-Profilen. Deine echte Ausgangslage entsteht erst durch den Score — der kostet nichts.</li>
+        <li><b>Ergebnisse anderer Teilnehmer</b>Die gibt es erst, wenn echte Durchläufe abgeschlossen und freigegeben sind. Der aktuelle Stand steht ungeschönt auf <a href="ergebnisse.html">Ergebnisse &amp; Fallstudien</a>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container-narrow">
+      <div class="section-head center">
+        <h2 class="h-section">Jetzt weißt du, was du kaufst.</h2>
+        <p class="lead">DAS PROTOKOLL enthält das Referenzwerk und das interaktive 12-Wochen-System, das du oben gesehen hast. 30 Tage Rückgaberecht.</p>
+      </div>
+      <p style="text-align:center"><a class="btn btn-primary" href="protokoll.html">DAS PROTOKOLL ansehen</a> <a class="btn btn-ghost" href="check.html">Erst den Score machen</a></p>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="index.html" class="logo" aria-label="MaleMetrix Startseite"><span class="logo-word">MALEMETRI</span><svg class="logo-x" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path d="M22 22 42 42 M22 78 42 58" stroke="#eef2f7" stroke-width="12" stroke-linecap="round" fill="none"/><path d="M78 22 58 42 M78 78 58 58" stroke="#00c2ff" stroke-width="12" stroke-linecap="round" fill="none"/></svg></a>
+        <p data-i18n="foot.brand">Das Performance-System für Männer. Körper. Kraft. Energie. Blutwerte. Umsetzung.</p>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="foot.system">System</h4>
+        <ul>
+          <li><a href="check.html" data-i18n="foot.score">MaleMetrix Score</a></li>
+          <li><a href="coaching.html" data-i18n="foot.coaching">1:1 Coaching</a></li>
+          <li><a href="protokoll.html" data-i18n="foot.course">DAS PROTOKOLL (inkl. Programm)</a></li>
+          <li><a href="blutwerte.html" data-i18n="foot.blood">Blutwerte verstehen</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="foot.freecol">Kostenlos</h4>
+        <ul>
+          <li><a href="tools.html" data-i18n="foot.tools">Kostenlose Rechner</a></li>
+          <li><a href="tracker.html" data-i18n="foot.tracker">Training-Tracker</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="foot.info">Info</h4>
+        <ul>
+          <li><a href="ueber.html" data-i18n="foot.about">Über MaleMetrix</a></li>
+          <li><a href="vorschau.html">Produktvorschau</a></li>
+          <li><a href="ergebnisse.html">Ergebnisse</a></li>
+          <li><a href="faq.html" data-i18n="foot.faq">FAQ</a></li>
+          <li><a href="kontakt.html" data-i18n="foot.contact">Kontakt</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="foot.legal">Rechtliches</h4>
+        <ul>
+          <li><a href="impressum.html" data-i18n="foot.imprint">Impressum</a></li>
+          <li><a href="datenschutz.html" data-i18n="foot.privacy">Datenschutz</a></li>
+          <li><a href="agb.html" data-i18n="foot.terms">AGB &amp; Widerruf</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-disclaimer" data-i18n="foot.disclaimer">
+      MaleMetrix bietet Coaching, Lifestyle-Analyse und strukturierte Orientierung zu Training, Ernährung, Schlaf, Körperkomposition und allgemeinen Gesundheitsmarkern. MaleMetrix stellt keine medizinischen Diagnosen, ersetzt keine ärztliche Beratung und gibt keine Therapie- oder Medikamentenempfehlungen. Bei gesundheitlichen Beschwerden, auffälligen Laborwerten oder medizinischen Fragen wende dich bitte an einen Arzt.
+    </div>
+    <div class="footer-bottom">
+      <span>© <span data-year></span> MaleMetrix. <span data-i18n="foot.rights">Alle Rechte vorbehalten.</span></span>
+      <span data-i18n="foot.tagline">Made for Männer, die mehr wollen.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/analytics.js"></script>
+<script src="js/shop-data.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/main.js"></script>
+<script src="js/program-framework.js"></script>
+<script src="js/vorschau.js"></script>
+</body>
+</html>
