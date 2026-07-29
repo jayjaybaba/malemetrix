@@ -80,7 +80,10 @@ group("Navigation · Kernziele existieren, keine Dublette");
   var idx = read("index.html");
   var navBlock = (idx.match(/<nav class="main-nav"[\s\S]*?<\/nav>/) || [""])[0];
   var hrefs = (navBlock.match(/href="([^"]+)"/g) || []).map(function (h) { return h.slice(6, -1); });
-  ["check.html", "ebooks.html", "coaching.html", "mein-protokoll.html"].forEach(function (dest) {
+  // ebooks.html ist bewusst KEIN Nav-Kernziel mehr (Founder-Entscheidung:
+  // 'Kapitelübersicht' raus aus dem Menü) — die Seite bleibt über die App
+  // (Protokoll-Tab · Vertiefung) und den Reader-Header erreichbar.
+  ["check.html", "protokoll.html", "coaching.html", "mein-protokoll.html"].forEach(function (dest) {
     ok(hrefs.indexOf(dest) >= 0, "Nav enthält " + dest);
   });
   // Alle Nav-Ziele existieren als Datei (interne .html-Links)
