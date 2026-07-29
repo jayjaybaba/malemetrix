@@ -668,7 +668,12 @@
       (cards ? '<div class="c2-report-grid">' + cards + '</div>' : '<p class="c2-muted" style="margin-top:10px">' + (EN() ? "No recheck values yet. Enter your W0 start values above." : "Noch keine Recheck-Werte. Trag oben deine Start-Werte (W0) ein.") + '</p>') +
       (biggest ? '<div style="margin-top:12px"><span class="k">' + t("c2.biggest_win") + '</span><h3 style="margin:2px 0">' + esc(biggest) + '</h3></div>' : "") +
       '<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--c2-line)"><span class="k">' + t("c2.next_move") + '</span><h3 style="margin:2px 0 4px">' + esc(nm.label) + '</h3><p>' + esc(tr(nm.text)) + '</p></div></div>';
-    return final ? (phaseBar() + '<h2 class="c2-sec-h">' + (EN() ? "Program complete 🎯" : "Programm abgeschlossen 🎯") + '</h2>' + body) : body;
+    /* Der Abschlussbericht ist der einzige Moment, an dem eine Fallstudie
+       überhaupt belastbar ist: 12 Wochen gelaufen, Werte eingetragen,
+       Adhärenz bekannt. Vorher wird nicht danach gefragt. */
+    var csCard = "";
+    if (final) { try { csCard = (MM.caseStudy && MM.caseStudy.renderCard) ? MM.caseStudy.renderCard() : ""; } catch (e) { csCard = ""; } }
+    return final ? (phaseBar() + '<h2 class="c2-sec-h">' + (EN() ? "Program complete 🎯" : "Programm abgeschlossen 🎯") + '</h2>' + body + csCard) : body;
   }
 
   function computeNextMove(g) {
@@ -787,6 +792,7 @@
     if (mount._c2bound) return; mount._c2bound = true;
     mount.addEventListener("click", function (e) {
       var t2 = e.target;
+      try { if (MM.caseStudy && MM.caseStudy.handleClick(t2)) return; } catch (err) {}
       var nav = t2.closest("[data-view]"); if (nav) { setView(nav.getAttribute("data-view")); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
       var chk = t2.closest("[data-check]"); if (chk) { var k = chk.getAttribute("data-check"); var pd = clampedDay(); var cur = dailyForDay(pd)[k]; setDailyDay(pd, k, !cur); chk.classList.toggle("done", !cur); chk.setAttribute("aria-pressed", String(!cur)); return; }
       if (t2.closest("[data-startnow]")) { S.set("c2_start", todayYmd()); MM.toast(EN() ? "Started today." : "Heute gestartet."); render(); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
@@ -833,8 +839,12 @@
       var pr = t2.closest("[data-pulse-run]"); if (pr) { runPulse(Number(pr.getAttribute("data-pulse-run"))); return; }
       var prd = t2.closest("[data-pulse-redo]"); if (prd) { var pp = pulses(); delete pp[prd.getAttribute("data-pulse-redo")]; S.set("c2_pulse", pp); render(); return; }
     });
+    mount.addEventListener("change", function (e) {
+      try { if (MM.caseStudy && MM.caseStudy.handleInput(e.target)) return; } catch (err) {}
+    });
     mount.addEventListener("input", function (e) {
       var t2 = e.target;
+      try { if (MM.caseStudy && MM.caseStudy.handleInput(t2)) return; } catch (err) {}
       if (t2.hasAttribute && t2.hasAttribute("data-energy")) { setEnergyDay(clampedDay(), Number(t2.value)); var lbl = document.getElementById("c2eVal"); if (lbl) lbl.textContent = t2.value + "/5"; return; }
       if (t2.classList && t2.classList.contains("c2-rc")) { var rc = rechecks(); var cp = t2.getAttribute("data-cp"); if (!rc[cp]) rc[cp] = {}; rc[cp][t2.getAttribute("data-m")] = t2.value; S.set("course_rechecks", rc); return; }
     });
