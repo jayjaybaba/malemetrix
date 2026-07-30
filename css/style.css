@@ -2941,7 +2941,9 @@ body > * { position: relative; z-index: 0; }
   .co-hero { min-height: 92vh; align-items: flex-end; padding-bottom: 40px; }
   .co-hero-media img {
     left: 0; right: auto; top: 0; width: 100%; height: 100%; min-width: 0;
-    object-position: 50% 0;
+    /* Ausschnitt nach links gezogen: die Person steht dadurch in der rechten
+       Bildhälfte, die Kopfzeile beginnt auf dunklem Studiohintergrund. */
+    object-position: 26% 0;
     mask-image: none; -webkit-mask-image: none;
   }
   /* Das Gesicht liegt im oberen Drittel und bleibt frei: bis 34 % nur ein
@@ -2949,10 +2951,31 @@ body > * { position: relative; z-index: 0; }
      beginnt erst unterhalb dieser Kante, damit keine Zeile durch die Augen
      läuft. */
   .co-hero-media .scrim {
-    background: linear-gradient(180deg, rgba(7, 9, 13, 0.3) 0%, rgba(7, 9, 13, 0.34) 34%, rgba(7, 9, 13, 0.82) 50%, rgba(7, 9, 13, 0.94) 70%, var(--bg-0) 100%);
+    background:
+      /* Zusätzlich links leicht abdunkeln: trägt die Kopfzeile, ohne das
+         Porträt rechts anzufassen. */
+      linear-gradient(90deg, rgba(7, 9, 13, 0.5) 0%, rgba(7, 9, 13, 0.22) 40%, transparent 68%),
+      linear-gradient(180deg, rgba(7, 9, 13, 0.3) 0%, rgba(7, 9, 13, 0.34) 34%, rgba(7, 9, 13, 0.82) 50%, rgba(7, 9, 13, 0.94) 70%, var(--bg-0) 100%);
   }
   .co-hero-copy { max-width: none; }
   .co-hero-copy .lead { margin-top: 14px; }
+  /* Ab etwa iPhone-14-Höhe reicht der Platz, das Porträt ÜBER der Textgruppe
+     enden zu lassen — dann kreuzt keine Zeile mehr das Gesicht. Auf kürzeren
+     Displays gibt es diesen Platz nicht; dort füllt das Bild wie bisher den
+     Kopf und der Text liegt auf dem kräftigen Scrim. */
+  @media (min-height: 800px) {
+    .co-hero-media img { height: 56vh; }
+  }
+  /* Sehr kurze Displays (iPhone SE): Abstände straffen, damit der Aufruf
+     ohne Scrollen sichtbar bleibt. */
+  @media (max-height: 640px) {
+    .co-hero { padding-bottom: 24px; }
+    .co-hero-copy .lead { margin-top: 10px; }
+    .co-facts { margin-top: 10px; }
+    .co-hero .hero-ctas { margin-top: 14px; }
+    .co-compare { margin-top: 12px; }
+    .co-signature { margin-top: 10px; }
+  }
   .co-facts { margin-top: 14px; font-size: 0.72rem; }
   .co-hero .hero-ctas { margin-top: 18px; }
   /* Hauptbutton etwas niedriger — er soll führen, nicht dominieren. */
