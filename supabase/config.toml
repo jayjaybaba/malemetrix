@@ -41,11 +41,22 @@ verify_jwt = false
 [functions.score-telemetry]
 verify_jwt = false
 
+# site-telemetry: identischer Fall wie score-telemetry — anonyme Besucher haben
+# keinen Token. Schutz über Origin-Allowlist, Allowlist-Validierung ohne
+# Freitextfeld, Idempotenz über event_id und RLS ohne Policy auf site_events.
+[functions.site-telemetry]
+verify_jwt = false
+
 # mm-admin: identischer ES256-Fall (P0.6) — der Handler validiert den
 # Bearer-Token selbst (admin.auth.getUser) und prüft die Owner-Rolle gegen
 # public.user_roles. Ohne diesen Eintrag lehnt die Platform-Ebene jeden
 # Browser-Aufruf mit 401 ab, BEVOR der Handler läuft.
 [functions.mm-admin]
+verify_jwt = false
+
+# mm-usage: gleicher ES256-Fall wie mm-admin — der Handler prüft den
+# Bearer-Token selbst und verlangt die Owner-Rolle. Nur lesend (Nutzungsbericht).
+[functions.mm-usage]
 verify_jwt = false
 
 # send-brief wird NICHT vom Browser mit User-JWT aufgerufen, sondern vom

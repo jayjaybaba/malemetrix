@@ -255,6 +255,11 @@
   font-family: var(--font-mono, monospace); font-size: 0.78rem; letter-spacing: 0.06em;
   color: var(--text, #e8ecf2);
 }
+/* Nutzungsbericht (Owner): Balken direkt in der Metrik-Liste — Größenverhältnis
+   auf einen Blick, ohne eigenes Diagramm-System. */
+.os-usebar { display: block; width: 100%; min-width: 60px; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.07); overflow: hidden; }
+.os-usebar i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent, #2e7cf6), var(--accent-2, #00c2ff)); }
+.os-metriclist > div > b { flex: 1; }
 .os-metriclist { margin-top: 12px; }
 .os-metriclist > div { display: flex; gap: 12px; border-bottom: 1px solid var(--line); padding: 6px 0; font-size: 0.84rem; }
 .os-metriclist span { color: var(--muted-2); }
