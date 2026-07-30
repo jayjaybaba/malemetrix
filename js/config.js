@@ -255,6 +255,50 @@ window.MM_CONFIG = {
     plausibleSrc: "https://plausible.io/js/script.tagged-events.js"
   },
 
+  // --- Englische Fassung: dynamische Übersetzung, keine Seiten-Klone --------
+  //
+  // Klickt ein Besucher oben auf EN, wird die GANZE Seite übersetzt — auch
+  // alles, was JavaScript erzeugt (Score, My MaleMetrix, Tracker, Rechner).
+  // Es gibt keine englischen Kopien der Seiten und kein handgepflegtes
+  // Wörterbuch: beides würde beim ersten Textwechsel auseinanderdriften.
+  //
+  // So läuft es:
+  //   1. js/i18n.js sammelt die deutschen Sätze der Seite.
+  //   2. Bekannte Sätze werden sofort ersetzt (lokaler Cache im Browser bzw.
+  //      Glossar js/i18n-en.js für Marken- und Fachbegriffe).
+  //   3. Der Rest geht gebündelt an die Edge Function mm-translate. Die
+  //      antwortet aus ihrem Server-Cache (Tabelle public.translations) oder
+  //      übersetzt einmal und merkt sich das Ergebnis für ALLE Besucher.
+  //
+  // WAS DAS FÜR DICH BEDEUTET: Du änderst deutschen Text — fertig. Der
+  // geänderte Satz hat einen neuen Schlüssel und wird beim nächsten
+  // englischen Besuch automatisch neu übersetzt. Nichts nachzupflegen.
+  //
+  // EINRICHTUNG (einmalig, in Supabase → Edge Functions → Secrets):
+  //   DEEPL_API_KEY = der Schlüssel von deepl.com/pro-api (Free-Tarif:
+  //   500.000 Zeichen/Monat, reicht für diese Seite mehrfach). Alternativ
+  //   GOOGLE_TRANSLATE_API_KEY. Der Schlüssel gehört AUSSCHLIESSLICH dorthin,
+  //   niemals in diese Datei.
+  //   Optional: TRANSLATE_BUDGET_CHARS (Standard 400000) begrenzt, wie viele
+  //   Zeichen pro Monat NEU übersetzt werden. Ist das Budget erreicht, liefert
+  //   die Function nur noch Cache-Treffer — der schlimmste Fall ist "Englisch
+  //   wird diesen Monat nicht mehr ergänzt", nie eine Rechnung.
+  //
+  // Ohne Schlüssel bleibt die Seite auf Deutsch stehen (bis auf Navigation,
+  // Footer und das Glossar). Das ist Absicht: unübersetzt ist unschön,
+  // halbleere Seiten wären schlimmer.
+  //
+  // BEWUSST NICHT ÜBERSETZT:
+  //   · AGB, Datenschutz, Impressum — die deutsche Fassung ist die
+  //     verbindliche. Englische Besucher sehen dort einen Hinweis darauf.
+  //   · Der Premium-Reader (/ebooks/) — das ist das gekaufte Produkt und
+  //     verdient eine geprüfte Übersetzung, keine maschinelle.
+  //
+  // PRÜFEN (Browser-Konsole, auf Englisch geschaltet):
+  //   MM.i18n.status()          → Zustand: bekannt / wartend / Dienst
+  //   MM.i18n.untranslated()    → Sätze ohne Übersetzung, häufigste zuerst
+  //   MM.i18n.clearCache()      → lokalen Cache verwerfen (nach Textänderung)
+
   // --- Premium-Zugänge (Protokoll, Programm, Ultimate Stack) ----------------
   // Die Zugangscodes stehen bewusst NICHT mehr hier (diese Datei ist öffentlich
   // lesbar). Die Premium-Inhalte liegen AES-verschlüsselt in den jeweiligen

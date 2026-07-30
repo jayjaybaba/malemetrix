@@ -1625,6 +1625,10 @@
      einzelne Besucher-Zeilen verlassen die Datenbank nie. */
   var usageDays = 7;
   var usageData = null;
+  /* Verbrauch der dynamischen Übersetzung (public.translation_report).
+     Steht bewusst neben der Nutzung: es ist die einzige Stelle, an der laufend
+     Fremdkosten entstehen können — die will man sehen, nicht suchen. */
+  var transData = null;
   /* Technische Ereignisnamen → Klartext. Unbekannte Namen bleiben stehen
      (ehrlicher als eine falsche Beschriftung) — der Kauf-Trichter zuerst. */
   var USAGE_LABEL = {
@@ -1703,6 +1707,26 @@
     html += liste("Geräte", r.geraete, "sitzungen", "—");
     html += '<p class="small muted" style="margin-top:14px">Anonym gemessen: Zufalls-ID pro Sitzung, keine IP, keine Cookies. ' +
       'Von der Herkunft wird nur der Host gespeichert, nie die Suchanfrage.</p>';
+
+    /* Englische Fassung: die einzige Stelle mit laufenden Fremdkosten. Der
+       Server-Cache sorgt dafür, dass jeder Satz genau einmal zählt — deshalb
+       fällt der Verbrauch nach den ersten Besuchen praktisch auf null. */
+    if (transData) {
+      var monat = Number(transData.zeichen_monat || 0);
+      var frei = 500000;                       // DeepL-Free-Kontingent pro Monat
+      var quote = Math.min(100, Math.round(monat / frei * 100));
+      html += sec("Englische Fassung · Übersetzung",
+        '<div class="os-metriclist">' +
+        '<div><span>Übersetzte Sätze (gesamt)</span><b></b><i>' + (Number(transData.saetze) || 0) + '</i></div>' +
+        '<div><span>Zeichen diesen Monat</span>' +
+        '<b><span class="os-usebar" aria-hidden="true"><i style="width:' + quote + '%"></i></span></b>' +
+        '<i>' + monat.toLocaleString("de-DE") + '</i></div>' +
+        '</div>' +
+        '<p class="small muted" style="margin-top:10px">' + quote + ' % des kostenlosen Monatskontingents (' +
+        frei.toLocaleString("de-DE") + ' Zeichen). Jeder Satz wird genau einmal übersetzt und dann für alle ' +
+        'Besucher gespeichert — der Verbrauch fällt nach den ersten englischen Aufrufen fast auf null. ' +
+        'Änderst du einen deutschen Text, wird nur dieser Satz neu übersetzt.</p>');
+    }
     html += '<p style="margin-top:12px"><a class="os-ghost" href="#settings">← Zurück zu den Einstellungen</a></p>';
     return html;
   }
@@ -1716,6 +1740,13 @@
         render();
       })
       .catch(function () { usageData = { error: "Verbindung zum Server fehlgeschlagen." }; render(); });
+    /* Übersetzungs-Verbrauch daneben: separater, unabhängiger Aufruf. Fällt er
+       aus, fehlt nur diese Zeile — der Nutzungsbericht bleibt vollständig. */
+    if (MM.account.rpc) {
+      MM.account.rpc("translation_report").then(function (r) {
+        if (r && r.data && !r.error) { transData = r.data; render(); }
+      }).catch(function () {});
+    }
   }
 
   function grantsCall(action, email) {
