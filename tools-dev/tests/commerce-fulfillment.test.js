@@ -243,6 +243,95 @@ const OWN_ORDER = {
     ok(!db.calls.some((c) => c.startsWith("upsertEntitlement")), "kein Entitlement im Race-Verlierer-Pfad");
   }
 
+  // ==========================================================================
+  // ANBIETER-FÄHIGKEIT (Stripe neben PayPal)
+  // Derselbe Kern bedient beide Anbieter. Entscheidend ist, dass der Anbieter
+  // WIRKLICH durchgereicht wird: die Idempotenz hängt an (provider,
+  // provider_ref). Würde eine Stripe-Zahlung als "paypal" gebucht, könnten
+  // sich Referenzen zweier Anbieter gegenseitig blockieren oder — schlimmer —
+  // eine fremde Zahlung als bereits verarbeitet gelten.
+  // ==========================================================================
+  group("Anbieter-fähiger Kern: provider wird durchgereicht");
+  function makeSpyDb(opts = {}) {
+    const db = makeDb(opts);
+    db.orderRows = [];
+    db.entRows = [];
+    db.eventRows = [];
+    db.lookups = [];
+    const oi = db.insertOrder, ue = db.upsertEntitlement, le = db.logEvent, fo = db.findOrderByProviderRef;
+    db.insertOrder = async (row) => { db.orderRows.push(row); return await oi(row); };
+    db.upsertEntitlement = async (row) => { db.entRows.push(row); return await ue(row); };
+    db.logEvent = async (row) => { db.eventRows.push(row); return await le(row); };
+    db.findOrderByProviderRef = async (p, ref) => { db.lookups.push(p + ":" + ref); return await fo(p, ref); };
+    return db;
+  }
+  {
+    // Ohne Angabe bleibt es bei PayPal — Rückwärtskompatibilität des Kerns.
+    const db = makeSpyDb();
+    const r = await fulfillVerifiedCapture({ ...BASE, capture: CAP_OK }, db);
+    ok(r.status === 200 && r.body.ok === true, "ohne provider: Erfolg (Standard PayPal)");
+    ok(db.orderRows[0].provider === "paypal", "ohne provider: Order-Zeile trägt provider paypal");
+    ok(db.orderRows[0].order_no === "PP-CAP-123", "ohne provider: Bestellnummer-Präfix PP-");
+    ok(db.lookups[0] === "paypal:CAP-123", "ohne provider: Lookup gegen paypal");
+  }
+  {
+    const db = makeSpyDb();
+    const r = await fulfillVerifiedCapture({ ...BASE, provider: "stripe", capture: { id: "pi_777", status: "COMPLETED", amountCents: 9900, currency: "EUR" } }, db);
+    ok(r.status === 200 && r.body.ok === true, "provider stripe: Erfolg");
+    ok(db.lookups[0] === "stripe:pi_777", "provider stripe: Lookup gegen stripe, nicht paypal");
+    ok(db.orderRows[0].provider === "stripe", "provider stripe: Order-Zeile trägt provider stripe");
+    ok(db.orderRows[0].provider_ref === "pi_777", "provider stripe: PaymentIntent ist die Zahlungsreferenz");
+    ok(db.orderRows[0].pay_method === "stripe", "provider stripe: pay_method stripe");
+    ok(db.orderRows[0].order_no === "ST-pi_777", "provider stripe: Bestellnummer-Präfix ST-");
+    ok(db.entRows.length === 2 && db.entRows.every((e) => e.source === "stripe"),
+      "provider stripe: beide Entitlements mit source stripe");
+    ok(db.eventRows.length && db.eventRows[0].provider === "stripe", "provider stripe: Audit-Zeile trägt stripe");
+  }
+  {
+    // Unbekannter Anbieter darf NIE bis an die Datenbank kommen.
+    const db = makeSpyDb();
+    const r = await fulfillVerifiedCapture({ ...BASE, provider: "sofortkasse", capture: CAP_OK }, db);
+    ok(r.status === 400 && r.body.error === "unknown_provider", "unbekannter Anbieter → 400 unknown_provider");
+    ok(db.calls.length === 0, "unbekannter Anbieter: kein einziger DB-Aufruf");
+  }
+  {
+    // Gleiche Referenz bei zwei Anbietern ist keine Kollision: der UNIQUE-Index
+    // ist zusammengesetzt. Eine PayPal-Order darf eine Stripe-Zahlung mit
+    // gleicher Referenz nicht als Replay durchgehen lassen.
+    const db = makeSpyDb({ orders: [{ ...OWN_ORDER, provider: "paypal", provider_ref: "pi_777" }] });
+    const r = await fulfillVerifiedCapture({ ...BASE, provider: "stripe", capture: { id: "pi_777", status: "COMPLETED", amountCents: 9900, currency: "EUR" } }, db);
+    ok(r.status === 200 && r.body.ok === true && !r.body.replay,
+      "gleiche Referenz bei anderem Anbieter → echte neue Bestellung, kein Replay");
+    ok(db.orderRows.length === 1 && db.orderRows[0].provider === "stripe", "dabei wird die Stripe-Order tatsächlich geschrieben");
+  }
+  {
+    // Stripe-Replay: zweiter Aufruf mit derselben Session/PaymentIntent vergibt
+    // keinen zweiten Zugang (Käufer lädt die Rückkehr-Seite neu).
+    const db = makeSpyDb();
+    const first = { ...BASE, provider: "stripe", capture: { id: "pi_888", status: "COMPLETED", amountCents: 9900, currency: "EUR" } };
+    await fulfillVerifiedCapture(first, db);
+    const before = db.orderRows.length;
+    const r2 = await fulfillVerifiedCapture(first, db);
+    ok(r2.status === 200 && r2.body.replay === true, "Stripe-Replay → ok mit replay:true");
+    ok(db.orderRows.length === before, "Stripe-Replay schreibt keine zweite Bestellung");
+  }
+  {
+    // Fremd-Claim auch auf dem Stripe-Weg: eine Zahlung gehört genau einem Konto.
+    const db = makeSpyDb({ orders: [{ ...OWN_ORDER, provider: "stripe", provider_ref: "pi_999", user_id: "user-x" }] });
+    const r = await fulfillVerifiedCapture({ ...BASE, provider: "stripe", capture: { id: "pi_999", status: "COMPLETED", amountCents: 9900, currency: "EUR" } }, db);
+    ok(r.status === 409 && r.body.error === "payment_already_claimed", "Stripe: fremde Zahlung → 409 payment_already_claimed");
+    ok(!db.calls.some((c) => c.startsWith("upsertEntitlement")), "Stripe: kein Entitlement für fremde Zahlung");
+  }
+  {
+    // Die Prüfungen des Kerns gelten anbieterunabhängig.
+    const db = makeSpyDb();
+    const r = await fulfillVerifiedCapture({ ...BASE, provider: "stripe", capture: { id: "pi_bad", status: "COMPLETED", amountCents: 100, currency: "EUR" } }, db);
+    ok(r.status === 409 && r.body.error === "amount_mismatch", "Stripe: falscher Betrag → 409 amount_mismatch");
+    const db2 = makeSpyDb();
+    const r2 = await fulfillVerifiedCapture({ ...BASE, provider: "stripe", capture: { id: "pi_usd", status: "COMPLETED", amountCents: 9900, currency: "USD" } }, db2);
+    ok(r2.status === 409 && r2.body.error === "currency_mismatch", "Stripe: falsche Währung → 409 currency_mismatch");
+  }
+
   console.log("\n==============================");
   console.log("PASS: " + PASS + "  FAIL: " + FAIL);
   process.exit(FAIL ? 1 : 0);

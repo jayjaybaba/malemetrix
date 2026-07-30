@@ -77,8 +77,8 @@ window.MM_CONFIG = {
   //    aktivieren. Apple Pay ist für gehostete Bezahlseiten standardmäßig an.
   // 3. Dashboard → Zahlungslinks → "Neu" → Produkt "DAS PROTOKOLL", Preis
   //    99 €, einmalig. Danach unter "Nach der Zahlung" → "Weiterleitung zu
-  //    einer Seite" eintragen:
-  //      https://www.malemetrix.com/checkout.html?bezahlt=stripe
+  //    einer Seite" GENAU DAS eintragen (mit Platzhalter, siehe unten):
+  //      https://www.malemetrix.com/checkout.html?bezahlt=stripe&session_id={CHECKOUT_SESSION_ID}
   // 4. Die entstandene URL (beginnt mit https://buy.stripe.com/) hier unten
   //    bei "protokoll" einsetzen. Fertig — die Zahlart erscheint sofort.
   //
@@ -97,11 +97,29 @@ window.MM_CONFIG = {
   // Der Wächter G9 in tools-dev/tests/security-guards.test.js bricht den
   // Build, falls doch einmal einer hineingerät.
   //
-  // WICHTIG zur Auslieferung: PayPal schaltet den Zugang automatisch frei,
-  // weil die Zahlung serverseitig geprüft wird. Für Stripe existiert diese
-  // Prüfung noch nicht — dort schaltest du den Zugang nach der Zahlung
-  // einmal manuell frei (My MaleMetrix → Zugänge verwalten). Der Checkout
-  // sagt dem Käufer das ehrlich an. Details in COMMERCE.md.
+  // AUTOMATISCHE FREISCHALTUNG (Stripe) — zwei Voraussetzungen:
+  //
+  // a) Die Rückleitung am Zahlungslink MUSS den Platzhalter tragen:
+  //      ...checkout.html?bezahlt=stripe&session_id={CHECKOUT_SESSION_ID}
+  //    Stripe ersetzt ihn beim Weiterleiten durch die echte Session-ID. Nur
+  //    damit kann der Server die Zahlung nachprüfen. Fehlt der Platzhalter,
+  //    bleibt es beim ehrlichen Hinweis auf manuelle Freischaltung — es wird
+  //    NIE ein Zugang ohne geprüfte Zahlung vergeben.
+  //
+  // b) In Supabase muss das Secret STRIPE_SECRET_KEY gesetzt sein (Dashboard →
+  //    Edge Functions → Secrets; Wert = sk_live_… aus Stripe → Entwickler →
+  //    API-Schlüssel). Der Schlüssel gehört AUSSCHLIESSLICH dorthin, niemals
+  //    in diese Datei und niemals ins Repository. Fehlt er, antwortet die
+  //    Function mit provider_not_configured und der Checkout fällt auf den
+  //    manuellen Hinweis zurück.
+  //
+  // Wie es dann läuft: Der Käufer kommt von Stripe zurück, der Browser ruft
+  // mm-commerce mit action "verify_stripe" auf, die Function fragt die
+  // Checkout-Session direkt bei Stripe ab und verlangt status "complete" plus
+  // payment_status "paid". Der PaymentIntent dient als Zahlungsreferenz —
+  // dadurch bleibt jede Wiederholung idempotent (kein Doppelzugang). Erst
+  // danach entstehen Bestellung und Entitlement, genau wie bei PayPal.
+  // Details in COMMERCE.md.
   stripeLinks: {
     // Zahlungslink plink_1TxUWXDjofqc7MMzNA1IEKoE · DAS PROTOKOLL ·
     // 99,00 EUR · Rückleitung auf checkout.html?bezahlt=stripe.

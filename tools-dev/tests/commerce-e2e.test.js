@@ -240,6 +240,70 @@ group("Warenkorb · keine Geister-Artikel aus entfernten Produkten");
   ok(/if \(!t\.count\)/.test(read("js/checkout.js")), "Checkout zeigt bei leerem Warenkorb den Leer-Zustand");
 })();
 
+/* ===== 15) Stripe: automatische Freischaltung, aber nie ohne Zahlungsbeweis ==
+   Die Rückleitung von Stripe ist öffentlich aufrufbar. Der Zugang darf
+   AUSSCHLIESSLICH nach serverseitiger Abfrage der Checkout-Session entstehen —
+   und die Idempotenz muss am PaymentIntent hängen, nicht an der Session. */
+group("Stripe · serverseitige Verifikation + automatische Freischaltung");
+(function () {
+  // -- Server --
+  ok(/action === "verify_stripe"/.test(edgeIndex), "Server kennt die Aktion verify_stripe");
+  ok(/Deno\.env\.get\("STRIPE_SECRET_KEY"\)/.test(edgeIndex), "Server nutzt STRIPE_SECRET_KEY aus der Umgebung");
+  ok(!/\b(sk|rk)_(live|test)_[A-Za-z0-9]{10}/.test(edgeIndex + checkout + read("js/config.js")),
+     "kein Stripe-Geheimschlüssel in Function, Client oder Config (der Schlüssel lebt nur als Supabase-Secret)");
+  ok(/api\.stripe\.com\/v1\/checkout\/sessions\//.test(edgeIndex), "Zahlung wird DIREKT bei Stripe abgefragt");
+  ok(/session\.status !== "complete" \|\| session\.payment_status !== "paid"/.test(edgeIndex),
+     "Freischaltung nur bei status=complete UND payment_status=paid");
+  ok(/\/\^cs_\[A-Za-z0-9_\]\{10,200\}\$\/\.test\(sid\)/.test(edgeIndex),
+     "Session-ID wird vor dem Netzaufruf gegen ein festes Format geprüft (kein Freitext)");
+  ok(/session\.payment_intent[\s\S]{0,120}session\.id/.test(edgeIndex),
+     "provider_ref ist der PaymentIntent (stabile Geld-Identität, Fallback Session-ID)");
+  ok(/fulfillVerifiedCapture\(\{\s*provider: "stripe"/.test(edgeIndex),
+     "Stripe läuft durch denselben Fulfillment-Kern wie PayPal");
+  // Adaptive Pricing ist am Live-Zahlungslink aktiv: ein Auslandskauf kommt in
+  // Fremdwährung zurück. Ohne Rückrechnung auf EUR würde die exakte
+  // Betragsprüfung eine korrekt bezahlte Bestellung ablehnen.
+  ok(/session\.currency_conversion/.test(edgeIndex) && /conv\.source_currency/.test(edgeIndex),
+     "Adaptive Pricing: Betrag/Währung werden auf die Ursprungswährung zurückgerechnet");
+  ok(/amountCents: paidCents/.test(edgeIndex) && /currency: paidCurrency/.test(edgeIndex),
+     "der Kern bekommt den zurückgerechneten Betrag, nicht den Fremdwährungsbetrag");
+  ok(/fulfillVerifiedCapture\(\{\s*provider: "paypal"/.test(edgeIndex),
+     "PayPal benennt seinen Anbieter explizit (keine stille Vorgabe an der Aufrufstelle)");
+  ok(/PROVIDERS\s*=\s*new Set\(\["paypal", "stripe"\]\)/.test(fulfillment) && /unknown_provider/.test(fulfillment),
+     "Kern hat eine Anbieter-Allowlist und lehnt Unbekanntes ab");
+  // Produkt-/Preisvalidierung läuft auch auf dem Stripe-Weg VOR dem Netzaufruf.
+  var stripeBlock = (edgeIndex.match(/action === "verify_stripe"[\s\S]*?return json\(resultS\.body, resultS\.status\);/) || [""])[0];
+  ok(/validateProducts\(idsS, PRODUCTS\)/.test(stripeBlock), "Stripe-Zweig validiert die Produktliste server-autoritativ");
+  ok(/fetch\("https:\/\/api\.stripe\.com/.test(stripeBlock) && stripeBlock.indexOf("validateProducts") < stripeBlock.indexOf("fetch(\"https://api.stripe.com"),
+     "Produktvalidierung passiert VOR dem Stripe-Roundtrip");
+  // Ein Stripe-only-Setup darf nicht an fehlenden PayPal-Secrets scheitern.
+  ok(edgeIndex.indexOf('if (!PP_ID || !PP_SECRET)') > edgeIndex.indexOf('action === "verify_stripe"'),
+     "PayPal-Secrets werden erst im PayPal-Zweig verlangt (Stripe-only bleibt betriebsfähig)");
+
+  // -- Client --
+  ok(/action:\s*"verify_stripe"/.test(checkout), "Checkout ruft verify_stripe auf");
+  ok(/session_id=\(cs_/.test(checkout), "Checkout liest die session_id aus der Rückleitung");
+  ok(/if \(!sid\) \{ renderStripeManual\(pending\); return; \}/.test(checkout),
+     "ohne session_id: ehrlicher Hinweis auf manuelle Freischaltung, KEINE Erfolgsmeldung");
+  ok(/productIds: order\.productIds \|\| \[\]/.test(checkout),
+     "vor der Weiterleitung werden die Produkt-IDs gesichert (Warenkorb wird danach geleert)");
+  var successFn = (checkout.match(/function renderStripeSuccess\([\s\S]*?\n  \}/) || [""])[0];
+  ok(/ACCESS GRANTED/.test(successFn) && /mm-access-choice/.test(successFn),
+     "Erfolgsansicht zeigt ACCESS GRANTED und die zwei Einstiegs-Buttons");
+  ok(/ents\.indexOf\("protocol"\) >= 0/.test(successFn),
+     "die zwei Buttons erscheinen nur, wenn der Server das Protokoll-Entitlement bestätigt hat");
+  // Die Erfolgsansicht darf ausschließlich aus dem verifizierten Serverpfad kommen.
+  ok(/if \(fnOk\(r\)\) \{[\s\S]{0,200}renderStripeSuccess/.test(checkout),
+     "renderStripeSuccess wird nur nach fnOk(r) aufgerufen (Server hat bestätigt)");
+  ok(/renderStripeIssue\("network", sid, pending\)/.test(checkout),
+     "Netzfehler führen in die Prüf-Ansicht, nicht in einen Erfolg");
+  ok(/NICHT erneut bezahlen/.test((checkout.match(/const STRIPE_MSG[\s\S]*?\n  \};/) || [""])[0]),
+     "Fehlermeldungen warnen ausdrücklich vor einer zweiten Zahlung");
+  // Der Zahlungslink muss den Platzhalter dokumentiert bekommen.
+  ok(/session_id=\{CHECKOUT_SESSION_ID\}/.test(read("js/config.js")),
+     "config.js dokumentiert die Rückleitung mit {CHECKOUT_SESSION_ID}");
+})();
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 process.exit(failed ? 1 : 0);

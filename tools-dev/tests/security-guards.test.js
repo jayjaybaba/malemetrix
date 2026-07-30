@@ -271,12 +271,25 @@ group("G9 · Apple Pay wird nur versprochen, wenn es auch funktioniert");
   ok(/list\.length !== 1 \|\| list\[0\]\.qty !== 1/.test(co),
     "ein Produktlink gilt nur fuer genau dieses eine Produkt — sonst zahlte der Kaeufer einen anderen Betrag");
 
-  /* Die Rueckleitung von Stripe ist kein Zahlungsnachweis. Wuerde sie Zugang
-     vergeben, koennte jeder die URL selbst aufrufen. */
+  /* Die Rueckleitung von Stripe ist kein Zahlungsnachweis — jeder koennte die
+     URL selbst aufrufen. Seit der automatischen Freischaltung DARF die
+     Rueckkehr Zugang vergeben, aber ausschliesslich nach serverseitiger
+     Pruefung der Checkout-Session. Der Wachhund prueft daher nicht mehr
+     "kein Zugang", sondern die Kette: URL -> Serververifikation -> Erfolg. */
   var rueck = (co.match(/function renderStripeReturn\(\)[\s\S]*?\n  }/) || [""])[0];
   ok(rueck.length > 0, "es gibt eine eigene Behandlung der Rueckkehr");
-  ok(!/serverGrant|ACCESS GRANTED|renderSuccess|vault|Zugangscode/i.test(rueck),
-    "die Rueckkehr vergibt keinen Zugang und zeigt keinen Code");
+  ok(!/ACCESS GRANTED|vault|Zugangscode/i.test(rueck),
+    "die Rueckkehr selbst zeigt weder Zugangsstempel noch Code");
+  ok(/runStripeVerify\(sid, pending\)/.test(rueck) && /if \(!sid\)/.test(rueck),
+    "die Rueckkehr fuehrt in die Serververifikation, sonst in den ehrlichen Hinweis");
+  /* Die Erfolgsansicht darf nur aus dem verifizierten Serverpfad heraus
+     erreichbar sein (fnOk == data.ok der Edge Function). */
+  var verify = (co.match(/function runStripeVerify\([\s\S]*?\n  }\n/) || [""])[0];
+  ok(/action:\s*"verify_stripe"/.test(verify) && /if \(fnOk\(r\)\)[\s\S]{0,200}renderStripeSuccess/.test(verify),
+    "renderStripeSuccess haengt am fnOk der Edge-Function-Antwort");
+  ok(co.split("renderStripeSuccess(").length === 3,
+    "renderStripeSuccess hat genau EINE Aufrufstelle (Definition + verifizierter Pfad)");
+  ok(!/renderStripeSuccess/.test(rueck), "die Rueckkehr ruft die Erfolgsansicht nicht direkt auf");
 
   /* Ein Stripe-Geheimschluessel darf niemals im Frontend liegen. Das gilt
      fuer den Vollzugriff (sk_) genauso wie fuer eingeschraenkte Schluessel
