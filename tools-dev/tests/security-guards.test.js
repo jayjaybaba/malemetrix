@@ -280,7 +280,7 @@ group("G9 · Apple Pay wird nur versprochen, wenn es auch funktioniert");
   ok(rueck.length > 0, "es gibt eine eigene Behandlung der Rueckkehr");
   ok(!/ACCESS GRANTED|vault|Zugangscode/i.test(rueck),
     "die Rueckkehr selbst zeigt weder Zugangsstempel noch Code");
-  ok(/runStripeVerify\(sid, pending\)/.test(rueck) && /if \(!sid\)/.test(rueck),
+  ok(/runStripeVerify\(sid,/.test(rueck) && /if \(!sid\) \{ renderStripeManual/.test(rueck),
     "die Rueckkehr fuehrt in die Serververifikation, sonst in den ehrlichen Hinweis");
   /* Die Erfolgsansicht darf nur aus dem verifizierten Serverpfad heraus
      erreichbar sein (fnOk == data.ok der Edge Function). */

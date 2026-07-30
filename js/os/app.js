@@ -621,6 +621,23 @@
     html += '<div class="os-head"><span class="eyebrow" style="margin:0">My MaleMetrix</span><span style="display:flex;gap:8px"><a class="os-ghost" href="#settings" aria-label="Einstellungen">⚙</a>' +
       (snap.state === "signed_in" ? '<button id="mmOut" class="os-ghost">Abmelden</button>' : '') + '</span></div>';
 
+    /* Offene Stripe-Zahlung: der Kunde hat bezahlt, aber die Freischaltung
+       fehlt noch — meist weil er sich erst nach der Zahlung angemeldet hat
+       (der Magic Link führt hierher, nicht zurück in die Kasse). Das ist der
+       teuerste denkbare Zustand, deshalb steht der Weg zurück ganz oben.
+       Der Checkout nimmt die Prüfung mit der gemerkten Sitzung wieder auf. */
+    if (snap.state === "signed_in" && !protocolLink().owned) {
+      var sp = null;
+      try { sp = JSON.parse(localStorage.getItem("mm_stripe_pending") || "null"); } catch (e) { sp = null; }
+      var frisch = sp && sp.sessionId && (!sp.at || (Date.now() - sp.at) < 48 * 3600 * 1000);
+      if (frisch) {
+        html += '<div class="card os-accent"><p style="font-weight:600;margin:0 0 6px">Zahlung noch nicht freigeschaltet</p>' +
+          '<p class="small" style="margin:0 0 12px;color:var(--muted)">Deine Stripe-Zahlung' + (sp.no ? " (" + esc(sp.no) + ")" : "") +
+          ' ist eingegangen, der Zugang ist aber noch nicht deinem Konto zugeordnet. Ein Tipp genügt — bitte NICHT erneut bezahlen.</p>' +
+          '<a class="btn btn-primary btn-sm" href="checkout.html?bezahlt=stripe">Jetzt prüfen und freischalten →</a></div>';
+      }
+    }
+
     if (snap.state === "signed_in") {
       var inv = MM.account.localInventory(); var ms = MM.account.migrationStatus();
       if ((inv.score || inv.program) && ms.state !== "complete") {
