@@ -315,10 +315,16 @@ group("G9 · Apple Pay wird nur versprochen, wenn es auch funktioniert");
   });
   ok(repoLeck.length === 0, "kein Stripe-Geheimschluessel irgendwo im Repo (gefunden: " + (repoLeck.join(", ") || "nichts") + ")");
 
-  /* Auslieferung: der Kaeufer muss erfahren, dass der Zugang bei diesem Weg
-     nicht sofort kommt. Sonst ist es ein Versprechen, das brechen wird. */
-  ok(/Zugang schalten wir nach Zahlungseingang frei/.test(co),
-    "die verzoegerte Freischaltung wird im Checkout angesagt");
+  /* Auslieferung: seit der automatischen Freischaltung (live geprueft) darf
+     der Checkout den Zugang direkt nach der Zahlung versprechen. Das
+     Versprechen ist aber nur zulaessig, solange der ehrliche Rueckfall
+     existiert: ohne session_id oder ohne Server-Secret sagt
+     renderStripeManual die manuelle Freischaltung an, statt zu behaupten,
+     der Zugang sei schon da. */
+  ok(/Zugang wird direkt nach der Zahlung freigeschaltet/.test(co),
+    "der Checkout sagt die sofortige Freischaltung an");
+  ok(/function renderStripeManual/.test(co) && /Zahlungseingangs frei/.test(co),
+    "der ehrliche Rueckfall auf manuelle Freischaltung existiert weiterhin");
 
   /* .well-known wird von GitHub Pages nur mit .nojekyll ausgeliefert. */
   ok(fs.existsSync(path.join(ROOT, ".nojekyll")),

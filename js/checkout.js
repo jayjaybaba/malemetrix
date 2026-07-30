@@ -112,15 +112,16 @@
       desc: (applePay
         ? "Mit Face ID oder Touch ID bezahlen — ohne Formular, ohne Kartennummer. Karte, Google Pay und Klarna stehen auf derselben Seite zur Wahl."
         : "Sichere Bezahlseite von Stripe. Auf dem iPhone steht dort zusätzlich Apple Pay bereit.") +
-        " Deinen Zugang schalten wir nach Zahlungseingang frei — meist innerhalb weniger Stunden."
+        " Dein Zugang wird direkt nach der Zahlung freigeschaltet."
     };
     /* Auf einem Apple-Pay-fähigen Gerät steht Apple Pay vorn: dort ist es
        der Weg mit den wenigsten Abbrüchen. Überall sonst steht PayPal vorn,
        weil der Zugang dort ohne Seitenwechsel entsteht — der Käufer bleibt
-       die ganze Zeit hier. Stripe schaltet inzwischen ebenfalls automatisch
-       frei (Prüfung bei der Rückkehr, siehe renderStripeReturn), braucht
-       dafür aber die Rückleitung mit session_id und das Server-Secret; bis
-       das steht, sagt die Beschreibung unten ehrlich die Wartezeit an. */
+       die ganze Zeit hier. Beide Wege schalten automatisch frei; bei Stripe
+       geschieht das bei der Rückkehr (siehe renderStripeReturn, live geprüft
+       Juli 2026). Sollte die Prüfung einmal nicht möglich sein — fehlende
+       session_id oder Server-Secret —, sagt renderStripeManual die manuelle
+       Freischaltung ehrlich an, statt ein Versprechen zu brechen. */
     if (applePay) payOptions.push(stripeOption);
     if (CFG.paypalClientId) {
       payOptions.push({ id: "paypal_smart", name: "PayPal / Kreditkarte", desc: "Sicher mit PayPal, Kredit- oder Debitkarte zahlen — ohne die Seite zu verlassen. Zugang sofort nach der Zahlung." });

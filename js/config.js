@@ -107,11 +107,14 @@ window.MM_CONFIG = {
   //    NIE ein Zugang ohne geprüfte Zahlung vergeben.
   //
   // b) In Supabase muss das Secret STRIPE_SECRET_KEY gesetzt sein (Dashboard →
-  //    Edge Functions → Secrets; Wert = sk_live_… aus Stripe → Entwickler →
-  //    API-Schlüssel). Der Schlüssel gehört AUSSCHLIESSLICH dorthin, niemals
-  //    in diese Datei und niemals ins Repository. Fehlt er, antwortet die
-  //    Function mit provider_not_configured und der Checkout fällt auf den
-  //    manuellen Hinweis zurück.
+  //    Edge Functions → Secrets). GESETZT am 30.07.2026 als eingeschränkter
+  //    Schlüssel (rk_live_…) mit genau einer Berechtigung: Checkout-Sitzungen
+  //    lesen. Mehr braucht die Freischaltung nicht — und selbst wenn dieser
+  //    Schlüssel abfließt, kann damit niemand Geld bewegen. Der Schlüssel
+  //    gehört AUSSCHLIESSLICH nach Supabase, niemals in diese Datei und
+  //    niemals ins Repository. Fehlt er, antwortet die Function mit
+  //    provider_not_configured und der Checkout fällt auf den manuellen
+  //    Hinweis zurück.
   //
   // Wie es dann läuft: Der Käufer kommt von Stripe zurück, der Browser ruft
   // mm-commerce mit action "verify_stripe" auf, die Function fragt die
