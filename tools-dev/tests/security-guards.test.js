@@ -194,6 +194,28 @@ group("G8 · Manuelle Zugangsvergabe gibt nur Produkte, nie Rollen");
   ok(/ambiguous_account/.test(fn), "mehrdeutige Konten werden nicht blind bedient");
 })();
 
+/* ----------------------------------------------------------------- G8a */
+group("G8a · Mitgliederliste: nur lesend, vollstaendig, nur fuer den Owner");
+(function () {
+  var fn = read("supabase/functions/mm-admin/index.ts");
+  ok(/action === "list_members"/.test(fn), "list_members existiert");
+  /* Die Uebersicht darf NIE schreiben — sie ist reine Anzeige. */
+  var block = fn.split('action === "list_members"')[1].split('action === "grant"')[0];
+  ok(!/\.(insert|upsert|update|delete)\(/.test(block), "list_members ist strikt lesend");
+  /* Kontosuche paginiert ueber ALLE Konten — die Einzelseite perPage:1000
+     hat ab Konto 1001 vorhandene Konten uebersehen (stille Falsch-Einladung). */
+  ok(/async function alleKonten/.test(fn), "gemeinsame paginierte Kontoladung existiert");
+  ok(!/listUsers\(\{ page: 1, perPage: 1000 \}\)/.test(fn), "keine Einzelseiten-Abfrage mit 1000er-Deckel mehr");
+  ok(/MAX_PAGES/.test(fn) && /users\.length < PER_PAGE\) break/.test(fn),
+    "die Paginierung hat Abbruch UND harten Deckel gegen Endlosschleifen");
+  /* UI: Sichtbarkeit ist Bequemlichkeit, Autorisierung liegt beim Server. */
+  var app = read("js/os/app.js");
+  ok(/list_members/.test(app) && /grMembers/.test(app), "die App bindet die Mitgliederliste an");
+  ok(/isOwner\(\)\)\s*\{\s*html \+= sec\("Betreiber"/.test(app.replace(/\n/g, " ").replace(/\s+/g, " ")) ||
+     /isOwner && MM\.entitlements\.isOwner\(\)/.test(app),
+    "der Einstellungs-Einstieg erscheint nur fuer den Owner");
+})();
+
 /* ----------------------------------------------------------------- G8b */
 group("G8b · mm-admin: verify_jwt=false ist durch Handler-Auth vollstaendig gedeckt");
 (function () {
@@ -249,12 +271,25 @@ group("G9 · Apple Pay wird nur versprochen, wenn es auch funktioniert");
   ok(/list\.length !== 1 \|\| list\[0\]\.qty !== 1/.test(co),
     "ein Produktlink gilt nur fuer genau dieses eine Produkt — sonst zahlte der Kaeufer einen anderen Betrag");
 
-  /* Die Rueckleitung von Stripe ist kein Zahlungsnachweis. Wuerde sie Zugang
-     vergeben, koennte jeder die URL selbst aufrufen. */
+  /* Die Rueckleitung von Stripe ist kein Zahlungsnachweis — jeder koennte die
+     URL selbst aufrufen. Seit der automatischen Freischaltung DARF die
+     Rueckkehr Zugang vergeben, aber ausschliesslich nach serverseitiger
+     Pruefung der Checkout-Session. Der Wachhund prueft daher nicht mehr
+     "kein Zugang", sondern die Kette: URL -> Serververifikation -> Erfolg. */
   var rueck = (co.match(/function renderStripeReturn\(\)[\s\S]*?\n  }/) || [""])[0];
   ok(rueck.length > 0, "es gibt eine eigene Behandlung der Rueckkehr");
-  ok(!/serverGrant|ACCESS GRANTED|renderSuccess|vault|Zugangscode/i.test(rueck),
-    "die Rueckkehr vergibt keinen Zugang und zeigt keinen Code");
+  ok(!/ACCESS GRANTED|vault|Zugangscode/i.test(rueck),
+    "die Rueckkehr selbst zeigt weder Zugangsstempel noch Code");
+  ok(/runStripeVerify\(sid,/.test(rueck) && /if \(!sid\) \{ renderStripeManual/.test(rueck),
+    "die Rueckkehr fuehrt in die Serververifikation, sonst in den ehrlichen Hinweis");
+  /* Die Erfolgsansicht darf nur aus dem verifizierten Serverpfad heraus
+     erreichbar sein (fnOk == data.ok der Edge Function). */
+  var verify = (co.match(/function runStripeVerify\([\s\S]*?\n  }\n/) || [""])[0];
+  ok(/action:\s*"verify_stripe"/.test(verify) && /if \(fnOk\(r\)\)[\s\S]{0,200}renderStripeSuccess/.test(verify),
+    "renderStripeSuccess haengt am fnOk der Edge-Function-Antwort");
+  ok(co.split("renderStripeSuccess(").length === 3,
+    "renderStripeSuccess hat genau EINE Aufrufstelle (Definition + verifizierter Pfad)");
+  ok(!/renderStripeSuccess/.test(rueck), "die Rueckkehr ruft die Erfolgsansicht nicht direkt auf");
 
   /* Ein Stripe-Geheimschluessel darf niemals im Frontend liegen. Das gilt
      fuer den Vollzugriff (sk_) genauso wie fuer eingeschraenkte Schluessel
@@ -280,10 +315,16 @@ group("G9 · Apple Pay wird nur versprochen, wenn es auch funktioniert");
   });
   ok(repoLeck.length === 0, "kein Stripe-Geheimschluessel irgendwo im Repo (gefunden: " + (repoLeck.join(", ") || "nichts") + ")");
 
-  /* Auslieferung: der Kaeufer muss erfahren, dass der Zugang bei diesem Weg
-     nicht sofort kommt. Sonst ist es ein Versprechen, das brechen wird. */
-  ok(/Zugang schalten wir nach Zahlungseingang frei/.test(co),
-    "die verzoegerte Freischaltung wird im Checkout angesagt");
+  /* Auslieferung: seit der automatischen Freischaltung (live geprueft) darf
+     der Checkout den Zugang direkt nach der Zahlung versprechen. Das
+     Versprechen ist aber nur zulaessig, solange der ehrliche Rueckfall
+     existiert: ohne session_id oder ohne Server-Secret sagt
+     renderStripeManual die manuelle Freischaltung an, statt zu behaupten,
+     der Zugang sei schon da. */
+  ok(/Zugang wird direkt nach der Zahlung freigeschaltet/.test(co),
+    "der Checkout sagt die sofortige Freischaltung an");
+  ok(/function renderStripeManual/.test(co) && /Zahlungseingangs frei/.test(co),
+    "der ehrliche Rueckfall auf manuelle Freischaltung existiert weiterhin");
 
   /* .well-known wird von GitHub Pages nur mit .nojekyll ausgeliefert. */
   ok(fs.existsSync(path.join(ROOT, ".nojekyll")),
@@ -323,6 +364,98 @@ group("G10 · Der dokumentierte Kauf-Trichter wird wirklich gemessen");
     "kein Anbieter vorbelegt, hinter dem kein Konto steht");
   ok(/Abschnitt 7|Reichweitenmessung/.test(read("datenschutz.html")),
     "die Datenschutzerklaerung deckt die Reichweitenmessung ab");
+})();
+
+/* ------------------------------------------------------------------ G11 */
+group("G11 · Bezahltes Werk: rueckverfolgbar statt scheinbar unkopierbar");
+(function () {
+  var r = read("ebooks/protokoll.html");
+
+  /* Screenshots kann eine Website nicht verhindern -- das macht das
+     Betriebssystem. Was wirkt, ist Zurueckverfolgbarkeit: jedes Exemplar
+     traegt sichtbar, wem es gehoert. Diese Pruefungen sichern genau das,
+     und sie sichern, dass der Schutz die zahlenden Leser nicht behindert. */
+  ok(/function wasserzeichen/.test(r), "der Reader legt ein Wasserzeichen an");
+  ok(/MM\.account\.getCurrentUser/.test((r.match(/function wasserzeichen[\s\S]*?\n  \}/) || [""])[0]),
+    "das Wasserzeichen nennt das Konto des Lesers (macht einen Leak zuordenbar)");
+  ok(/wer = "Lizenz "/.test(r), "ohne Konto steht dort ein Datum -- nie ein leeres Wasserzeichen");
+  ok(/pointer-events: none/.test(r), "das Wasserzeichen blockiert die Bedienung nicht");
+  ok(/position: fixed; inset: 0/.test(r), "es liegt fest am Bildschirm, ist also auf jedem Screenshot mit drauf");
+  ok(/\.bp-protected, \.bp-protected \* \{[\s\S]{0,160}user-select: none/.test(r),
+    "der Werktext ist nicht markierbar (kein bequemes Kopieren ganzer Kapitel)");
+  ok(/\.bp-protected input, \.bp-protected textarea[\s\S]{0,120}user-select: text/.test(r),
+    "Eingabefelder bleiben benutzbar -- der Schutz darf die Bedienung nicht kaputt machen");
+  ok(/@media print \{\s*\.bp-protected \{ display: none !important; \}/.test(r),
+    "Drucken und PDF-Export liefern das Werk nicht aus");
+  ok(/bp-print-note/.test(r) && /nicht drucken oder als PDF speichern/.test(r),
+    "beim Drucken steht ein erklaerender Hinweis statt einer leeren Seite");
+  /* Kein falsches Versprechen im Produkt: nirgends darf behauptet werden,
+     Screenshots seien unmoeglich. */
+  ok(!/screenshots? (sind |ist )?(nicht|un)m(oe|ö)glich/i.test(r),
+    "es wird nirgends behauptet, Screenshots seien unmoeglich");
+
+  /* Der Autor muss an seine eigenen Texte kommen -- kopieren, drucken, saubere
+     Screenshots. Entscheidend: Die Ausnahme haengt an der SERVER-Rolle, nicht
+     an localStorage. Sonst waere der Schutz mit einer Zeile im Browser
+     ausgehebelt und damit keiner. */
+  var aus = (r.match(/function autorAusnahme[\s\S]*?\n  \}/) || [""])[0];
+  ok(aus.length > 0, "es gibt eine Ausnahme fuer das Betreiber-Konto");
+  ok(/MM\.account\.role\(\) === "owner"/.test(aus),
+    "die Ausnahme prueft die Rolle (kommt aus public.user_roles, an die Nutzer-ID gebunden)");
+  ok(/MM\.account\.loadRole/.test(aus), "die Rolle wird beim Server nachgeladen, nicht geraten");
+  ok(!/localStorage|mm_role|sessionStorage/.test(aus),
+    "die Ausnahme liest NICHTS aus dem Browser-Speicher (waere sonst faelschbar)");
+  /* Reihenfolge: erst schuetzen, dann ausnehmen. Ein langsamer Server darf nie
+     dazu fuehren, dass das Werk kurz ungeschuetzt in der Seite steht. */
+  var showFn = (r.match(/function show\(html\)[\s\S]*?autorAusnahme\(\);/) || [""])[0];
+  ok(showFn.indexOf('classList.add("bp-protected")') < showFn.indexOf("autorAusnahme()"),
+    "geschuetzt wird SOFORT, die Ausnahme kommt danach");
+})();
+
+/* ------------------------------------------------------------------ G12 */
+group("G12 · Textschutz auf der Website, ohne Selbstschaden");
+(function () {
+  var m = read("js/main.js");
+  var css = read("css/style.css");
+  var schutz = (m.match(/function textschutz[\s\S]*?\n  \}/) || [""])[0];
+
+  ok(schutz.length > 0 && /classList\.add\("mm-guard"\)/.test(schutz),
+    "die Seiten bekommen den Schutz-Marker");
+  ok(/\.mm-guard, \.mm-guard \* \{[\s\S]{0,140}user-select: none/.test(css),
+    "CSS sperrt das Markieren");
+  /* CSS allein genuegt nicht: "Alles markieren" umgeht user-select in
+     mehreren Browsern. Das Kopier-Ereignis MUSS zusaetzlich abgefangen werden. */
+  ok(/\["copy", "cut"\]/.test(schutz) && /e\.preventDefault\(\)/.test(schutz),
+    "Kopieren und Ausschneiden werden zusaetzlich als Ereignis geblockt");
+
+  /* Die Ausnahmen sind der Unterschied zwischen Schutz und Selbstschaden. */
+  ok(/GUARD_AUS = \["agb\.html", "datenschutz\.html", "impressum\.html"\]/.test(m),
+    "Rechtsseiten sind ausgenommen (Verbraucher muessen die AGB speichern koennen)");
+  ok(/312i BGB/.test(m), "der Grund fuer die Rechts-Ausnahme steht im Code");
+  ["input", "textarea", "\\.mono", "\\.order-success", "mailto:"].forEach(function (sel) {
+    ok(new RegExp(sel).test(css.slice(css.indexOf(".mm-guard input"))),
+      "kopierbar bleibt: " + sel.replace(/\\\\/g, ""));
+  });
+  ok(/\.mm-guard \.mono[\s\S]{0,400}user-select: text/.test(css),
+    "IBAN, Bestellnummern und Betraege (.mono) bleiben kopierbar");
+
+  /* Rechtsklick nur auf geschuetztem Text unterdruecken -- ein Verbot auf der
+     ganzen Seite nimmt dem Besucher auch "Link in neuem Tab oeffnen". */
+  ok(/closest\("a\[href\], img, video"\)/.test(schutz),
+    "Rechtsklick auf Links, Bilder und Videos bleibt erlaubt");
+
+  /* Autor-Ausnahme: Server-Rolle, nie localStorage. */
+  ok(/MM\.account\.role\(\) === "owner"/.test(schutz) && /loadRole/.test(schutz),
+    "der Autor wird ueber die Server-Rolle erkannt");
+  ok(!/localStorage/.test(schutz), "die Autor-Ausnahme liest nichts aus dem Browser-Speicher");
+  ok(/versuche <= 25/.test(schutz),
+    "auf das spaeter geladene Konto-Modul wird gewartet (main.js laeuft davor)");
+  ok(schutz.indexOf('classList.add("mm-guard")') < schutz.indexOf('MM.account.role'),
+    "geschuetzt wird zuerst, die Ausnahme danach");
+
+  /* Ehrlichkeit: nirgends behaupten, der Text sei nicht auslesbar. */
+  ok(/absoluter schutz ist im web unm(oe|ö)glich/i.test(m) || /Absoluter Schutz ist im Web/.test(m),
+    "die Grenze des Schutzes ist im Code benannt, nicht beschoenigt");
 })();
 
 console.log("\n==============================");

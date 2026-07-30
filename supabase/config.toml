@@ -41,6 +41,12 @@ verify_jwt = false
 [functions.score-telemetry]
 verify_jwt = false
 
+# site-telemetry: identischer Fall wie score-telemetry — anonyme Besucher haben
+# keinen Token. Schutz über Origin-Allowlist, Allowlist-Validierung ohne
+# Freitextfeld, Idempotenz über event_id und RLS ohne Policy auf site_events.
+[functions.site-telemetry]
+verify_jwt = false
+
 # mm-admin: identischer ES256-Fall (P0.6) — der Handler validiert den
 # Bearer-Token selbst (admin.auth.getUser) und prüft die Owner-Rolle gegen
 # public.user_roles. Ohne diesen Eintrag lehnt die Platform-Ebene jeden
@@ -48,9 +54,22 @@ verify_jwt = false
 [functions.mm-admin]
 verify_jwt = false
 
+# mm-usage: gleicher ES256-Fall wie mm-admin — der Handler prüft den
+# Bearer-Token selbst und verlangt die Owner-Rolle. Nur lesend (Nutzungsbericht).
+[functions.mm-usage]
+verify_jwt = false
+
 # send-brief wird NICHT vom Browser mit User-JWT aufgerufen, sondern vom
 # Scheduler (pg_cron/extern) mit x-scheduler-secret. Ohne verify_jwt=false
 # würde die Platform-Ebene jeden Scheduler-Call ablehnen. Der Handler lehnt
 # alles ohne korrektes SCHEDULER_SECRET mit 403 ab.
 [functions.send-brief]
+verify_jwt = false
+
+# mm-translate: bewusst ÖFFENTLICH — anonyme Besucher haben keinen Token, und
+# ein Login-Zwang nur zum Lesen der englischen Fassung wäre absurd. Schutz über
+# Origin-Allowlist, harte Größengrenzen pro Anfrage, Monats- und Stundenbudget
+# sowie den Server-Cache (jeder Satz kostet genau einmal). RLS ohne Policy auf
+# public.translations: Clients kommen an die Tabelle nicht heran.
+[functions.mm-translate]
 verify_jwt = false

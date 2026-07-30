@@ -34,6 +34,11 @@ export const PRODUCTS = {
   "protokoll": { priceCents: 9900, currency: "EUR", entitlements: ["protocol", "twelve_week"] },
 };
 
+// Erlaubte Zahlungsanbieter. Der Wert landet in orders.provider,
+// entitlements.source und commerce_events.provider — deshalb Allowlist statt
+// Freitext: ein manipulierter Aufruf darf keine Fantasie-Herkunft schreiben.
+export const PROVIDERS = new Set(["paypal", "stripe"]);
+
 export function validateProducts(productIds, catalog = PRODUCTS) {
   if (!Array.isArray(productIds)) return { ok: false, status: 400, error: "bad_request" };
   const ids = [...new Set(productIds.filter((p) => typeof p === "string" && p))];
@@ -93,6 +98,11 @@ function claimConflict(order, userId, v) {
 export async function fulfillVerifiedCapture(input, db, catalog = PRODUCTS) {
   const { userId, email, orderNo, items, capture, productIds } = input || {};
   if (!userId) return res(401, { error: "auth_missing" });
+  // Anbieter bestimmt Idempotenz-Raum und Herkunft. Default "paypal" hält
+  // bestehende Aufrufer unverändert lauffähig.
+  const provider = (input && input.provider) || "paypal";
+  if (!PROVIDERS.has(provider)) return res(400, { error: "unknown_provider" });
+  const refPrefix = provider === "stripe" ? "ST-" : "PP-";
 
   // 1) Server-autoritative Produkt-/Preis-/Währungsprüfung (P0.2)
   const v = validateProducts(productIds, catalog);
@@ -110,7 +120,7 @@ export async function fulfillVerifiedCapture(input, db, catalog = PRODUCTS) {
 
   // 2) ORDER ZUERST — autoritative Transaktions-Idempotenz + Claim-Schutz
   let replay = false;
-  const existing = await db.findOrderByProviderRef("paypal", providerRef);
+  const existing = await db.findOrderByProviderRef(provider, providerRef);
   if (existing.error) return res(500, { error: "order_lookup_failed" });
   if (existing.data) {
     const conflict = claimConflict(existing.data, userId, v);
@@ -119,15 +129,15 @@ export async function fulfillVerifiedCapture(input, db, catalog = PRODUCTS) {
   } else {
     const ins = await db.insertOrder({
       user_id: userId,
-      order_no: orderNo || ("PP-" + providerRef),
+      order_no: orderNo || (refPrefix + providerRef),
       email: email || null,
       items: Array.isArray(items) ? items : [],
       product_keys: v.keys,
       total_cents: capture.amountCents,
       currency: v.currency,
-      pay_method: "paypal",
+      pay_method: provider,
       status: "paid",
-      provider: "paypal",
+      provider: provider,
       provider_ref: providerRef,
       paid_at: new Date().toISOString(),
     });
@@ -136,7 +146,7 @@ export async function fulfillVerifiedCapture(input, db, catalog = PRODUCTS) {
         // Race: paralleler Aufruf hat die Order zuerst geschrieben. Der UNIQUE-
         // Index orders(provider, provider_ref) ist die Wahrheit — nachlesen
         // und dieselben Claim-Regeln anwenden wie beim normalen Replay.
-        const again = await db.findOrderByProviderRef("paypal", providerRef);
+        const again = await db.findOrderByProviderRef(provider, providerRef);
         if (again.error || !again.data) return res(500, { error: "order_write_failed" });
         const conflict = claimConflict(again.data, userId, v);
         if (conflict) return conflict;
@@ -152,7 +162,7 @@ export async function fulfillVerifiedCapture(input, db, catalog = PRODUCTS) {
   // kommt NACH der Order, damit ein Retry/Replay sich selbst heilen kann.
   for (const key of v.keys) {
     const ue = await db.upsertEntitlement({
-      user_id: userId, product_key: key, status: "active", source: "paypal",
+      user_id: userId, product_key: key, status: "active", source: provider,
     });
     if (ue.error) return res(500, { error: "entitlement_write_failed" });
   }
@@ -163,7 +173,7 @@ export async function fulfillVerifiedCapture(input, db, catalog = PRODUCTS) {
   let auditLogged = true;
   try {
     const ev = await db.logEvent({
-      provider: "paypal", event_id: providerRef,
+      provider: provider, event_id: providerRef,
       event_type: "capture.completed", order_no: orderNo || null,
     });
     if (ev && ev.error && !isUniqueViolation(ev.error)) auditLogged = false;

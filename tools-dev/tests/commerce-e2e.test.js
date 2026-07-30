@@ -217,6 +217,154 @@ group("resolve-product-access · autoritative Auth + user-scoped Entitlement");
   ok(!/JSON\.stringify\(\{[^}]*material[^}]*\}[\s\S]*console/.test(rpa) && /Never log the material|material/.test(rpa), "Schlüsselmaterial wird nicht geloggt");
 })();
 
+/* ===== 14) Warenkorb: entfernte Produkte dürfen nicht als Geister zählen =====
+   Founder-Befund (Live, Juli 2026): Das Abzeichen zeigte "1", die Liste war
+   leer, Summe 0,00 € — im Browser lag noch das entfernte 1-€-Testprodukt.
+   Der Warenkorb MUSS beim Lesen bereinigen. */
+group("Warenkorb · keine Geister-Artikel aus entfernten Produkten");
+(function () {
+  var main = read("js/main.js");
+  var itemsFn = (main.match(/items\(\)\s*\{[\s\S]*?\n    \},/) || [""])[0];
+  ok(/katalog|MM_PRODUCTS/.test(itemsFn), "items() prüft den Produktkatalog");
+  ok(/katalog\.some\(p => p\.id === i\.id\)/.test(itemsFn), "Einträge ohne existierendes Produkt werden verworfen");
+  ok(/if \(!Array\.isArray\(katalog\) \|\| !katalog\.length\) return raw;/.test(itemsFn),
+     "ohne geladenen Katalog wird NICHT gefiltert (kein Datenverlust auf Seiten ohne shop-data.js)");
+  ok(/qty > 0/.test(itemsFn), "kaputte Mengen (0, negativ, NaN) fliegen raus");
+  ok(/MM\.store\.set\("cart", clean\)/.test(itemsFn), "der bereinigte Stand wird persistiert");
+  ok(/JSON\.stringify\(clean\) !== JSON\.stringify\(raw\)/.test(itemsFn),
+     "geschrieben wird nur bei echter Änderung (keine Schreib-Schleife)");
+  // Der Zähler des Abzeichens speist sich aus derselben, bereinigten Quelle.
+  ok(/count: items\.reduce/.test(main) && /const items = MM\.cart\.items\(\);/.test(main),
+     "totals().count zählt dieselbe bereinigte Liste (Abzeichen == Inhalt)");
+  // Checkout darf keinen 0-€-Auftrag anbieten.
+  ok(/if \(!t\.count\)/.test(read("js/checkout.js")), "Checkout zeigt bei leerem Warenkorb den Leer-Zustand");
+})();
+
+/* ===== 15) Stripe: automatische Freischaltung, aber nie ohne Zahlungsbeweis ==
+   Die Rückleitung von Stripe ist öffentlich aufrufbar. Der Zugang darf
+   AUSSCHLIESSLICH nach serverseitiger Abfrage der Checkout-Session entstehen —
+   und die Idempotenz muss am PaymentIntent hängen, nicht an der Session. */
+group("Stripe · serverseitige Verifikation + automatische Freischaltung");
+(function () {
+  // -- Server --
+  ok(/action === "verify_stripe"/.test(edgeIndex), "Server kennt die Aktion verify_stripe");
+  ok(/Deno\.env\.get\("STRIPE_SECRET_KEY"\)/.test(edgeIndex), "Server nutzt STRIPE_SECRET_KEY aus der Umgebung");
+  ok(!/\b(sk|rk)_(live|test)_[A-Za-z0-9]{10}/.test(edgeIndex + checkout + read("js/config.js")),
+     "kein Stripe-Geheimschlüssel in Function, Client oder Config (der Schlüssel lebt nur als Supabase-Secret)");
+  ok(/api\.stripe\.com\/v1\/checkout\/sessions\//.test(edgeIndex), "Zahlung wird DIREKT bei Stripe abgefragt");
+  ok(/session\.status !== "complete" \|\| session\.payment_status !== "paid"/.test(edgeIndex),
+     "Freischaltung nur bei status=complete UND payment_status=paid");
+  ok(/\/\^cs_\[A-Za-z0-9_\]\{10,200\}\$\/\.test\(sid\)/.test(edgeIndex),
+     "Session-ID wird vor dem Netzaufruf gegen ein festes Format geprüft (kein Freitext)");
+  ok(/session\.payment_intent[\s\S]{0,120}session\.id/.test(edgeIndex),
+     "provider_ref ist der PaymentIntent (stabile Geld-Identität, Fallback Session-ID)");
+  ok(/fulfillVerifiedCapture\(\{\s*provider: "stripe"/.test(edgeIndex),
+     "Stripe läuft durch denselben Fulfillment-Kern wie PayPal");
+  // Adaptive Pricing ist am Live-Zahlungslink aktiv: ein Auslandskauf kommt in
+  // Fremdwährung zurück. Ohne Rückrechnung auf EUR würde die exakte
+  // Betragsprüfung eine korrekt bezahlte Bestellung ablehnen.
+  ok(/session\.currency_conversion/.test(edgeIndex) && /conv\.source_currency/.test(edgeIndex),
+     "Adaptive Pricing: Betrag/Währung werden auf die Ursprungswährung zurückgerechnet");
+  ok(/amountCents: paidCents/.test(edgeIndex) && /currency: paidCurrency/.test(edgeIndex),
+     "der Kern bekommt den zurückgerechneten Betrag, nicht den Fremdwährungsbetrag");
+  ok(/fulfillVerifiedCapture\(\{\s*provider: "paypal"/.test(edgeIndex),
+     "PayPal benennt seinen Anbieter explizit (keine stille Vorgabe an der Aufrufstelle)");
+  ok(/PROVIDERS\s*=\s*new Set\(\["paypal", "stripe"\]\)/.test(fulfillment) && /unknown_provider/.test(fulfillment),
+     "Kern hat eine Anbieter-Allowlist und lehnt Unbekanntes ab");
+  // Produkt-/Preisvalidierung läuft auch auf dem Stripe-Weg VOR dem Netzaufruf.
+  var stripeBlock = (edgeIndex.match(/action === "verify_stripe"[\s\S]*?return json\(resultS\.body, resultS\.status\);/) || [""])[0];
+  ok(/validateProducts\(idsS, PRODUCTS\)/.test(stripeBlock), "Stripe-Zweig validiert die Produktliste server-autoritativ");
+  ok(/fetch\("https:\/\/api\.stripe\.com/.test(stripeBlock) && stripeBlock.indexOf("validateProducts") < stripeBlock.indexOf("fetch(\"https://api.stripe.com"),
+     "Produktvalidierung passiert VOR dem Stripe-Roundtrip");
+  // Ein Stripe-only-Setup darf nicht an fehlenden PayPal-Secrets scheitern.
+  ok(edgeIndex.indexOf('if (!PP_ID || !PP_SECRET)') > edgeIndex.indexOf('action === "verify_stripe"'),
+     "PayPal-Secrets werden erst im PayPal-Zweig verlangt (Stripe-only bleibt betriebsfähig)");
+
+  // -- Client --
+  ok(/action:\s*"verify_stripe"/.test(checkout), "Checkout ruft verify_stripe auf");
+  ok(/session_id=\(cs_/.test(checkout), "Checkout liest die session_id aus der Rückleitung");
+  ok(/if \(!sid\) \{ renderStripeManual\(pending\); return; \}/.test(checkout),
+     "ohne session_id: ehrlicher Hinweis auf manuelle Freischaltung, KEINE Erfolgsmeldung");
+  ok(/productIds: order\.productIds \|\| \[\]/.test(checkout),
+     "vor der Weiterleitung werden die Produkt-IDs gesichert (Warenkorb wird danach geleert)");
+  var successFn = (checkout.match(/function renderStripeSuccess\([\s\S]*?\n  \}/) || [""])[0];
+  ok(/ACCESS GRANTED/.test(successFn) && /mm-access-choice/.test(successFn),
+     "Erfolgsansicht zeigt ACCESS GRANTED und die zwei Einstiegs-Buttons");
+  ok(/ents\.indexOf\("protocol"\) >= 0/.test(successFn),
+     "die zwei Buttons erscheinen nur, wenn der Server das Protokoll-Entitlement bestätigt hat");
+  // Die Erfolgsansicht darf ausschließlich aus dem verifizierten Serverpfad kommen.
+  ok(/if \(fnOk\(r\)\) \{[\s\S]{0,200}renderStripeSuccess/.test(checkout),
+     "renderStripeSuccess wird nur nach fnOk(r) aufgerufen (Server hat bestätigt)");
+  ok(/renderStripeIssue\("network", sid, pending\)/.test(checkout),
+     "Netzfehler führen in die Prüf-Ansicht, nicht in einen Erfolg");
+  ok(/NICHT erneut bezahlen/.test((checkout.match(/const STRIPE_MSG[\s\S]*?\n  \};/) || [""])[0]),
+     "Fehlermeldungen warnen ausdrücklich vor einer zweiten Zahlung");
+  // Der Zahlungslink muss den Platzhalter dokumentiert bekommen.
+  ok(/session_id=\{CHECKOUT_SESSION_ID\}/.test(read("js/config.js")),
+     "config.js dokumentiert die Rückleitung mit {CHECKOUT_SESSION_ID}");
+})();
+
+/* ===== 16) Konto im Checkout: der bezahlte Zugang lebt im Konto ============
+   Der Zugang wird serverseitig an die Nutzer-ID gebunden. Ein Käufer, der das
+   erst NACH der Zahlung erfährt, steht mit bezahlter Ware vor einer
+   Login-Aufforderung. Deshalb muss es vorher stehen — und der Weg zurück muss
+   von jeder Stelle aus funktionieren, an der der Käufer landen kann. */
+group("Konto im Checkout · Ansage vorher, Rückweg von überall");
+(function () {
+  // -- Ansage vor dem Bezahlen --
+  ok(/id="coAccount"/.test(checkout) && /function renderAccountBlock/.test(checkout),
+     "der Checkout hat einen eigenen Konto-Block");
+  var accFn = (checkout.match(/function renderAccountBlock[\s\S]*?\n  \}/) || [""])[0];
+  ok(/if \(!snap \|\| !snap\.configured\)/.test(accFn),
+     "ohne Cloud-Konfiguration verspricht der Block nichts (bleibt leer)");
+  ok(/items\(\)\.some\(i => i\.p\.digital\)/.test(accFn),
+     "der Block erscheint nur, wenn überhaupt etwas freizuschalten ist");
+  ok(/diesem Konto zugeordnet/.test(accFn) && /auf allen deinen Geräten/.test(accFn),
+     "angemeldet: sagt zu, wohin der Zugang geht");
+  ok(/zuerst bezahlen<\/strong>/.test(accFn),
+     "abgemeldet: nennt ausdrücklich, dass man auch zuerst bezahlen kann");
+  ok(/MM\.account\.signIn\(v\)/.test(checkout), "die Anmeldung läuft über MM.account.signIn (Magic Link)");
+  ok(!/type="password"/i.test(checkout), "kein Passwortfeld im Checkout (die Anmeldung ist passwortlos)");
+  // Die Anmeldung darf den Kauf NICHT blockieren: keine Prüfung auf Login in
+  // validateForm oder in goToStripe.
+  var validate = (checkout.match(/function validateForm\(\)[\s\S]*?\n  \}/) || [""])[0];
+  ok(!/getCurrentUser|signed_in/.test(validate), "validateForm erzwingt keine Anmeldung (kein Kaufabbruch)");
+  var toStripe = (checkout.match(/async function goToStripe\(\)[\s\S]*?\n  \}/) || [""])[0];
+  ok(!/getCurrentUser|signed_in/.test(toStripe), "goToStripe erzwingt keine Anmeldung");
+
+  // -- Nach dem Login automatisch weiterprüfen --
+  ok(/let stripeWaiting = null/.test(checkout) && /stripeWaiting = \{ sid: sid, pending: pending \}/.test(checkout),
+     "die offene Prüfung wird gemerkt");
+  ok(/function onAuthMaybeChanged/.test(checkout) && /MM\.account\.onChange\(onAuthMaybeChanged\)/.test(checkout),
+     "ein Auth-Wächter hängt an MM.account.onChange (deckt auch andere Tabs ab)");
+  var watch = (checkout.match(/function onAuthMaybeChanged[\s\S]*?\n  \}/) || [""])[0];
+  ok(/user && stripeWaiting && !stripeRunning/.test(watch),
+     "nach Anmeldung wird die Prüfung wiederholt — und nie doppelt gleichzeitig");
+  ok(/visibilitychange[\s\S]{0,80}onAuthMaybeChanged/.test(checkout),
+     "Sichtbarkeitswechsel als Absicherung (entladener Tab auf iOS)");
+  ok(/loginNoetig \? loginFormHtml\(\)/.test(checkout) && /function loginFormHtml/.test(checkout),
+     "die Prüf-Ansicht enthält das Anmeldeformular selbst (kein Umweg über eine andere Seite)");
+
+  // -- Rückweg von überall --
+  ok(/sessionId: sid/.test(checkout), "die Stripe-Sitzung wird gemerkt, nicht nur aus der URL gelesen");
+  ok(/stripeSessionIdFromUrl\(\) \|\| \(pending && typeof pending\.sessionId === "string"/.test(checkout),
+     "die Prüfung findet die Sitzung auch ohne Rückkehr-URL");
+  ok(/STRIPE_PENDING_TTL_MS = 48 \* 3600 \* 1000/.test(checkout) && /function stripePending\(\)/.test(checkout),
+     "der Pending-State verfällt nach 48 Stunden (kein Zombie-Zustand)");
+  ok(/stripeWiederaufnahme && !MM\.cart\.totals\(\)\.count/.test(checkout),
+     "bei leerem Warenkorb wird die offene Zahlung von selbst wieder aufgenommen");
+  ok(/Offene Zahlung/.test(checkout) && /Jetzt prüfen und freischalten/.test(checkout),
+     "liegen neue Artikel im Korb, gibt es stattdessen einen Hinweis mit Rückweg");
+  // -- Und in My MaleMetrix, wo der Magic Link landet --
+  var app = read("js/os/app.js");
+  ok(/mm_stripe_pending/.test(app) && /Zahlung noch nicht freigeschaltet/.test(app),
+     "My MaleMetrix zeigt eine offene Stripe-Zahlung an (dort landet der Login-Link)");
+  ok(/snap\.state === "signed_in" && !protocolLink\(\)\.owned/.test(app),
+     "der Hinweis erscheint nur, wenn der Zugang wirklich fehlt");
+  ok(/48 \* 3600 \* 1000/.test(app), "auch dort verfällt der Hinweis nach 48 Stunden");
+  ok(/href="checkout\.html\?bezahlt=stripe"/.test(app), "der Hinweis führt in die Prüfung zurück");
+})();
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 process.exit(failed ? 1 : 0);

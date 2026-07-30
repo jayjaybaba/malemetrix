@@ -150,7 +150,38 @@
   /* ---------- Warenkorb (geteilt über alle Seiten) ---------- */
 
   MM.cart = {
-    items() { return MM.store.get("cart", []); },
+    /* Der Warenkorb lebt im Browser des Besuchers und überlebt Katalog-
+       Änderungen. Wird ein Produkt entfernt (z. B. das 1-€-Testprodukt nach
+       dem PayPal-Live-Test), blieb der Eintrag liegen: Das Abzeichen zählte
+       ihn, die Liste konnte ihn nicht anzeigen und die Summe blieb 0,00 € —
+       ein Warenkorb, der voll aussah und leer war.
+       Deshalb wird hier bei JEDEM Lesen bereinigt: unbekannte Produkte,
+       kaputte Mengen und Fremdformate fliegen raus.
+       WICHTIG: Ohne geladenen Katalog wird NICHT gefiltert — sonst würde eine
+       Seite ohne shop-data.js einen gültigen Warenkorb leeren. */
+    items() {
+      const raw = MM.store.get("cart", []);
+      if (!Array.isArray(raw)) return [];
+      const katalog = window.MM_PRODUCTS;
+      if (!Array.isArray(katalog) || !katalog.length) return raw;
+
+      const clean = [];
+      raw.forEach(i => {
+        if (!i || typeof i.id !== "string") return;
+        if (!katalog.some(p => p.id === i.id)) return;                 // Produkt existiert nicht mehr
+        const qty = Math.floor(Number(i.qty));
+        if (!(qty > 0)) return;                                        // 0, negativ, NaN
+        const vorhanden = clean.find(c => c.id === i.id);              // Dubletten zusammenführen
+        if (vorhanden) vorhanden.qty = Math.min(99, vorhanden.qty + qty);
+        else clean.push({ id: i.id, qty: Math.min(99, qty) });
+      });
+
+      // Nur schreiben, wenn sich wirklich etwas geändert hat. Der Schreibvorgang
+      // löst kein Re-Render aus, das hier wieder hereinlaufen könnte — beim
+      // zweiten Lesen ist die Liste bereits sauber.
+      if (JSON.stringify(clean) !== JSON.stringify(raw)) MM.store.set("cart", clean);
+      return clean;
+    },
 
     save(items) {
       MM.store.set("cart", items);
@@ -363,7 +394,113 @@
     });
   }
 
+  /* =======================================================================
+     TEXTSCHUTZ
+     -----------------------------------------------------------------------
+     Die Inhalte dieser Seite sind das Produkt. Markieren und Kopieren wird
+     deshalb unterbunden — CSS allein genügt dafür nicht: "Alles markieren"
+     (Strg+A) umgeht user-select in mehreren Browsern. Deshalb wird zusätzlich
+     das Kopier-Ereignis selbst abgefangen.
+
+     GRENZE, ehrlich benannt: Wer den Text wirklich will, holt ihn über
+     "Seite anzeigen", den Reader-Modus oder einen Screenshot mit
+     Texterkennung. Absoluter Schutz ist im Web unmöglich — jeder Text, den
+     ein Browser darstellen kann, ist auslesbar. Das hier hält
+     Gelegenheits-Kopierer und Copy-Paste-Blogs ab, nicht einen Entschlossenen.
+
+     AUSGENOMMEN, und zwar aus je einem konkreten Grund:
+       · Rechtsseiten (AGB, Datenschutz, Impressum) — Verbraucher müssen die
+         Vertragsbedingungen speichern können (§ 312i BGB, Textform). Diese
+         Seiten zu sperren wäre ein Rechtsfehler, kein Schutz.
+       · Eingabefelder, IBAN, Bestellnummern, Beträge, Kontakt-Links — siehe
+         die Freigabeliste in css/style.css. Wer seine IBAN nicht kopieren
+         kann, überweist nicht.
+       · Das Betreiber-Konto: der Autor muss an seine eigenen Texte kommen.
+         Geprüft wird die Rolle beim Server, nie localStorage — sonst wäre der
+         Schutz mit einer Zeile im Browser ausgehebelt.
+     ======================================================================= */
+  const GUARD_AUS = ["agb.html", "datenschutz.html", "impressum.html"];
+  const GUARD_FREI = "input, textarea, select, [contenteditable], .mono, code, kbd, pre," +
+    " .summary-line, .order-success, .mm-copyable, a[href^='mailto:'], a[href^='tel:']";
+
+  function textschutz() {
+    const datei = (location.pathname.split("/").pop() || "index.html") || "index.html";
+    if (GUARD_AUS.indexOf(datei) >= 0) return;
+    // Der Premium-Reader schützt sich selbst (mit Wasserzeichen) — dort nicht
+    // doppelt eingreifen.
+    if (location.pathname.indexOf("/ebooks/") !== -1) return;
+
+    document.body.classList.add("mm-guard");
+
+    const freigegeben = (el) => {
+      try { return !!(el && el.closest && el.closest(GUARD_FREI)); } catch (e) { return false; }
+    };
+    // Kopieren/Ausschneiden nur aus den freigegebenen Bereichen.
+    ["copy", "cut"].forEach((typ) => {
+      document.addEventListener(typ, (e) => {
+        if (document.body.classList.contains("mm-guard-off")) return;
+        if (freigegeben(e.target)) return;
+        const sel = window.getSelection && window.getSelection();
+        if (sel && sel.anchorNode && freigegeben(sel.anchorNode.parentElement || sel.anchorNode)) return;
+        e.preventDefault();
+      });
+    });
+    /* Kontextmenü nur auf geschütztem Text unterdrücken. Ein Rechtsklick-Verbot
+       auf der GANZEN Seite nimmt dem Besucher auch "Link in neuem Tab öffnen"
+       und "Bild speichern" — das ärgert, ohne zu schützen. */
+    document.addEventListener("contextmenu", (e) => {
+      if (document.body.classList.contains("mm-guard-off")) return;
+      if (freigegeben(e.target)) return;
+      if (e.target && e.target.closest && e.target.closest("a[href], img, video")) return;
+      e.preventDefault();
+    });
+    // Bilder nicht per Ziehen herausschleppen.
+    document.addEventListener("dragstart", (e) => {
+      if (document.body.classList.contains("mm-guard-off")) return;
+      if (e.target && e.target.tagName === "IMG") e.preventDefault();
+    });
+
+    /* Autor-Ausnahme: kommt NACH dem Schutz, damit eine langsame Antwort nie
+       ein offenes Fenster hinterlässt.
+
+       ACHTUNG, im Test gestolpert: main.js wird VOR account.js geladen. Zum
+       Zeitpunkt von init() gibt es MM.account also noch nicht — ein einfaches
+       "if (!MM.account) return" lässt die Ausnahme für immer aus, und der
+       Autor sitzt vor seinem eigenen gesperrten Text. Deshalb kurz warten,
+       statt einmal zu prüfen und aufzugeben.
+
+       REICHWEITE, damit niemand sie sucht: account.js wird nur auf den Seiten
+       mit Konto-Bezug geladen (check, checkout, mein-protokoll, labor,
+       kurs-programm und der Reader). Nur dort kann die Rolle überhaupt
+       geprüft werden. Auf den reinen Marketing-Seiten gilt der Schutz für
+       alle — auch für den Autor. Das ist kein Verlust: diese Texte stehen im
+       Repository, wo er sie ohnehin bearbeitet. Die Alternative wäre, das
+       Konto-Modul samt SDK auf jede Seite zu laden — teuer für jeden
+       Besucher, nur damit einer kopieren kann. */
+    const frei = () => {
+      try {
+        if (MM.account.role && MM.account.role() === "owner") {
+          document.body.classList.remove("mm-guard");
+          document.body.classList.add("mm-guard-off");
+        }
+      } catch (e) {}
+    };
+    let versuche = 0;
+    (function wartenAufKonto() {
+      if (window.MM && MM.account && MM.account.loadRole) {
+        if (MM.account.role && MM.account.role() === "owner") { frei(); return; }
+        const p = MM.account.whenReady ? MM.account.whenReady() : Promise.resolve();
+        Promise.resolve(p).then(() => MM.account.loadRole()).then(frei).catch(() => {});
+        return;
+      }
+      // Höchstens ~5 Sekunden. Ohne Konto-Modul bleibt der Schutz einfach an —
+      // das ist die richtige Vorgabe, nicht ein Fehler.
+      if (++versuche <= 25) setTimeout(wartenAufKonto, 200);
+    })();
+  }
+
   function init() {
+    textschutz();
     // Header-Scroll-Effekt
     const header = document.getElementById("siteHeader");
     if (header) {
@@ -383,6 +520,24 @@
         const open = nav.classList.toggle("open");
         toggle.textContent = open ? "✕" : "☰";
       });
+    }
+
+    /* Sprachwahl im mobilen Menü (Founder-Review): der Header trägt mobil nur
+       noch Warenkorb und Menü-Button, der EN-Knopf dort ist per CSS versteckt.
+       Diese Zeile ersetzt ihn — mit derselben .lang-code-Klasse, die
+       MM.i18n.setLang() bereits überall aktualisiert. Am Desktop blendet CSS
+       die Zeile aus; der Header-Knopf bleibt dort unverändert. */
+    if (nav && !nav.querySelector(".nav-lang")) {
+      const lb = document.createElement("button");
+      lb.type = "button";
+      lb.className = "nav-lang";
+      lb.setAttribute("data-no-i18n", "");
+      const ziel = (window.MM && MM.i18n && MM.i18n.lang === "en") ? "DE" : "EN";
+      lb.innerHTML = '<span>Sprache / Language</span><span class="lang-code">' + ziel + '</span>';
+      lb.addEventListener("click", () => { if (window.MM && MM.i18n) MM.i18n.toggle(); });
+      /* Vor den CTA-Button im Menü, hinter die normalen Links. */
+      const cta = nav.querySelector(".btn");
+      nav.insertBefore(lb, cta || null);
     }
 
     setupChrome();

@@ -112,11 +112,16 @@
       desc: (applePay
         ? "Mit Face ID oder Touch ID bezahlen — ohne Formular, ohne Kartennummer. Karte, Google Pay und Klarna stehen auf derselben Seite zur Wahl."
         : "Sichere Bezahlseite von Stripe. Auf dem iPhone steht dort zusätzlich Apple Pay bereit.") +
-        " Deinen Zugang schalten wir nach Zahlungseingang frei — meist innerhalb weniger Stunden."
+        " Dein Zugang wird direkt nach der Zahlung freigeschaltet."
     };
     /* Auf einem Apple-Pay-fähigen Gerät steht Apple Pay vorn: dort ist es
        der Weg mit den wenigsten Abbrüchen. Überall sonst steht PayPal vorn,
-       weil nur dieser Weg den Zugang automatisch und sofort freischaltet. */
+       weil der Zugang dort ohne Seitenwechsel entsteht — der Käufer bleibt
+       die ganze Zeit hier. Beide Wege schalten automatisch frei; bei Stripe
+       geschieht das bei der Rückkehr (siehe renderStripeReturn, live geprüft
+       Juli 2026). Sollte die Prüfung einmal nicht möglich sein — fehlende
+       session_id oder Server-Secret —, sagt renderStripeManual die manuelle
+       Freischaltung ehrlich an, statt ein Versprechen zu brechen. */
     if (applePay) payOptions.push(stripeOption);
     if (CFG.paypalClientId) {
       payOptions.push({ id: "paypal_smart", name: "PayPal / Kreditkarte", desc: "Sicher mit PayPal, Kredit- oder Debitkarte zahlen — ohne die Seite zu verlassen. Zugang sofort nach der Zahlung." });
@@ -132,6 +137,7 @@
     });
 
     document.getElementById("checkoutForm").innerHTML =
+      '<div id="coAccount"></div>' +
       '<h2 class="h-card" style="margin-bottom:20px">Kontakt</h2>' +
       '<div class="form-row">' +
       '<div class="field"><label for="coFirst">Vorname *</label><input type="text" id="coFirst" autocomplete="given-name" required></div>' +
@@ -178,6 +184,95 @@
 
     renderPayAction();
     renderSummary();
+    renderAccountBlock();
+  }
+
+  /* =======================================================================
+     KONTO IM CHECKOUT
+     -----------------------------------------------------------------------
+     Der bezahlte Zugang lebt im Konto — er wird serverseitig an die
+     Nutzer-ID gebunden, damit er auf allen Geräten gilt und niemand ihn
+     durch localStorage-Basteln erzeugen kann. Genau deshalb MUSS der
+     Käufer das vor dem Bezahlen wissen: sonst zahlt er, kommt zurück und
+     versteht nicht, warum er sich erst anmelden soll.
+
+     Die Anmeldung ist ein Magic Link (kein Passwort). Sie wird hier
+     ANGEBOTEN, aber NICHT erzwungen: Wer mitten im Kauf ins Postfach
+     wechseln muss, bricht ab. Beide Reihenfolgen funktionieren, und beide
+     werden ehrlich benannt — erst anmelden, oder erst zahlen und danach
+     anmelden (die Zahlung wird dann nachträglich geprüft, siehe
+     runStripeVerify / runRecovery).
+     ======================================================================= */
+  function accountSnapshot() {
+    try { return (window.MM && MM.account && MM.account.snapshot) ? MM.account.snapshot() : null; }
+    catch (e) { return null; }
+  }
+
+  function renderAccountBlock() {
+    const box = document.getElementById("coAccount");
+    if (!box) return;
+    const snap = accountSnapshot();
+    // Ohne Cloud-Konfiguration gibt es keine Konten — dann auch kein
+    // Versprechen darüber. Der Block bleibt still.
+    if (!snap || !snap.configured) { box.innerHTML = ""; return; }
+    // Nur relevant, wenn überhaupt etwas freigeschaltet werden muss.
+    if (!items().some(i => i.p.digital)) { box.innerHTML = ""; return; }
+
+    if (snap.state === "signed_in" && snap.user) {
+      const mail = snap.user.email || "";
+      box.innerHTML =
+        '<div class="co-acc co-acc-on">' +
+        '<p class="co-acc-title">✓ Angemeldet' + (mail ? ' als <strong>' + esc(mail) + '</strong>' : '') + '</p>' +
+        '<p class="co-acc-text">Dein Zugang wird direkt nach der Zahlung diesem Konto zugeordnet — und gilt dann auf allen deinen Geräten.</p>' +
+        '</div>';
+      // Bestell-E-Mail vorbelegen: dieselbe Adresse ist fast immer richtig,
+      // und sie muss zum Konto passen, damit Rückfragen zusammenpassen.
+      const em = document.getElementById("coEmail");
+      if (em && !em.value && mail) em.value = mail;
+      return;
+    }
+
+    box.innerHTML =
+      '<div class="co-acc">' +
+      '<p class="co-acc-title">Dein Zugang läuft über ein Konto</p>' +
+      '<p class="co-acc-text">DAS PROTOKOLL wird deinem MaleMetrix-Konto zugeordnet, damit du es auf jedem Gerät öffnen kannst. Melde dich am besten jetzt an — dann ist der Zugang unmittelbar nach der Zahlung da.</p>' +
+      '<div class="co-acc-row">' +
+      '<input type="email" id="coLoginMail" placeholder="deine@email.de" autocomplete="email" aria-label="E-Mail für den Login-Link">' +
+      '<button type="button" class="btn btn-dark btn-sm" id="coLoginGo">Login-Link senden</button>' +
+      '</div>' +
+      '<p class="co-acc-msg" id="coLoginMsg" hidden></p>' +
+      '<p class="co-acc-fine">Kein Passwort nötig — du bekommst einen Link per E-Mail. Diese Seite kannst du offen lassen; sobald du angemeldet bist, geht es hier weiter. Du kannst auch <strong>zuerst bezahlen</strong> und dich danach anmelden: die Zahlung wird dann nachträglich geprüft, es geht nichts verloren.</p>' +
+      '</div>';
+
+    const mailIn = document.getElementById("coLoginMail");
+    const btn = document.getElementById("coLoginGo");
+    const msg = document.getElementById("coLoginMsg");
+    // Was oben im Bestellformular schon steht, muss man nicht zweimal tippen.
+    const orderMail = (document.getElementById("coEmail") || {}).value || "";
+    if (mailIn && orderMail) mailIn.value = orderMail;
+    if (!btn || !mailIn) return;
+    btn.addEventListener("click", () => {
+      const v = (mailIn.value || "").trim();
+      if (!/.+@.+\..+/.test(v)) { mailIn.focus(); showAccMsg(msg, "Bitte eine gültige E-Mail-Adresse eintragen.", false); return; }
+      btn.disabled = true; btn.textContent = "Sende…";
+      MM.account.signIn(v).then((res) => {
+        btn.disabled = false; btn.textContent = "Login-Link senden";
+        showAccMsg(msg, res && res.ok
+          ? "Link ist unterwegs — öffne ihn in deinem Postfach. Diese Seite bleibt offen."
+          : ((res && res.message) || "Der Link konnte nicht gesendet werden."), !!(res && res.ok));
+        if (res && res.ok && MM.track) MM.track("checkout_login_started", {});
+      }).catch(() => {
+        btn.disabled = false; btn.textContent = "Login-Link senden";
+        showAccMsg(msg, "Der Link konnte nicht gesendet werden. Du kannst auch zuerst bezahlen.", false);
+      });
+    });
+  }
+
+  function showAccMsg(el, text, good) {
+    if (!el) return;
+    el.hidden = false;
+    el.textContent = text;
+    el.style.color = good ? "var(--green,#3ddc84)" : "var(--amber,#f5a623)";
   }
 
   function selectedMethod() {
@@ -234,8 +329,10 @@
     const orders = MM.store.get("orders", []);
     orders.push(order);
     MM.store.set("orders", orders);
-    /* Damit die Rückkehr von Stripe die Bestellung wiederfindet. */
-    MM.store.set("stripe_pending", { no: order.no, at: Date.now() });
+    /* Damit die Rückkehr von Stripe die Bestellung wiederfindet. productIds
+       müssen mit: der Warenkorb wird bei der Rückkehr geleert, aber der Server
+       braucht die Produktliste, um Betrag und Freischaltung zu prüfen. */
+    MM.store.set("stripe_pending", { no: order.no, at: Date.now(), productIds: order.productIds || [], email: order.email || "" });
     if (MM.track) MM.track("checkout_stripe_redirect", { value: order.total });
 
     /* Die Benachrichtigung darf den Kaufweg nicht blockieren. Antwortet der
@@ -270,16 +367,225 @@
       "&client_reference_id=" + encodeURIComponent(order.no);
   }
 
-  /* Rückkehr von der Bezahlseite. Stripe leitet mit ?bezahlt=stripe zurück.
-     Diese Rückleitung ist KEIN Zahlungsnachweis — sie sagt nur, dass der
-     Käufer den Vorgang durchlaufen hat. Deshalb wird hier kein Zugang
-     vergeben und auch keine Zahlung behauptet. */
+  /* Rückkehr von der Bezahlseite. Stripe leitet mit
+     ?bezahlt=stripe&session_id=cs_… zurück.
+
+     Die Rückleitung selbst ist KEIN Zahlungsnachweis — jeder könnte die URL
+     aufrufen. Beweis ist ausschließlich die Checkout-Session, die der Server
+     direkt bei Stripe abfragt (action: verify_stripe). Erst wenn Stripe dort
+     "complete/paid" meldet, vergibt der Server das Entitlement. Fehlt die
+     session_id (Zahlungslink noch ohne Platzhalter konfiguriert), bleibt es
+     beim ehrlichen Hinweis auf manuelle Freischaltung — nie eine
+     Erfolgsmeldung ohne Deckung. */
+  function stripeSessionIdFromUrl() {
+    const m = /[?&]session_id=(cs_[A-Za-z0-9_]{10,200})(?:&|$)/.exec(window.location.search);
+    return m ? m[1] : "";
+  }
+
+  /* Fällt der Pending-State weg (anderes Gerät, Speicher geleert), lässt sich
+     die Produktliste rekonstruieren, solange genau EIN Zahlungslink
+     konfiguriert ist. Ein Fehlgriff wäre unschädlich: der Server vergleicht
+     den bei Stripe bezahlten Betrag exakt mit dem Produktpreis und lehnt
+     Abweichungen mit amount_mismatch ab. */
+  function stripeProductIds(pending) {
+    const fromPending = (pending && Array.isArray(pending.productIds)) ? pending.productIds.filter(x => typeof x === "string" && x) : [];
+    if (fromPending.length) return fromPending;
+    const keys = Object.keys(CFG.stripeLinks || {});
+    return keys.length === 1 ? [keys[0]] : [];
+  }
+
+  /* Der Pending-State darf nicht ewig gelten: ein Monate alter Eintrag würde
+     sonst irgendwann eine längst erledigte Zahlung erneut prüfen wollen. */
+  const STRIPE_PENDING_TTL_MS = 48 * 3600 * 1000;
+  function stripePending() {
+    const p = MM.store.get("stripe_pending", null);
+    if (!p || typeof p !== "object") return null;
+    if (p.at && (Date.now() - p.at) > STRIPE_PENDING_TTL_MS) { MM.store.set("stripe_pending", null); return null; }
+    return p;
+  }
+
   function renderStripeReturn() {
-    const pending = MM.store.get("stripe_pending", null);
-    const nr = pending && pending.no ? pending.no : null;
-    MM.store.set("stripe_pending", null);
+    const pending = stripePending();
     MM.cart.clear();
     if (MM.track) MM.track("checkout_stripe_returned", {});
+    /* Die session_id steht normalerweise in der Rückleitung. Sie wird beim
+       ersten Mal zusätzlich gemerkt — damit die Prüfung auch später noch
+       möglich ist, wenn der Käufer diesen Tab längst geschlossen hat und
+       über einen Hinweis in My MaleMetrix zurückkommt. */
+    const sid = stripeSessionIdFromUrl() || (pending && typeof pending.sessionId === "string" ? pending.sessionId : "");
+    if (!sid) { renderStripeManual(pending); return; }
+    if (pending && pending.sessionId !== sid) MM.store.set("stripe_pending", Object.assign({}, pending, { sessionId: sid }));
+    else if (!pending) MM.store.set("stripe_pending", { at: Date.now(), sessionId: sid, productIds: stripeProductIds(null) });
+    runStripeVerify(sid, stripePending() || pending);
+  }
+
+  /* Zwischenzustand: der Server fragt Stripe. Nie "bezahlt" behaupten,
+     solange die Antwort fehlt. */
+  function renderStripeChecking() {
+    wrap.innerHTML =
+      '<div class="order-success">' +
+      '<div class="success-icon" style="background:var(--accent-soft);color:var(--accent-2)">…</div>' +
+      '<h1 class="h-section" style="margin-bottom:10px">Zahlung wird bestätigt …</h1>' +
+      '<p class="muted">Wir prüfen deine Zahlung direkt bei Stripe und schalten deinen Zugang frei. Bitte NICHT erneut bezahlen und das Fenster kurz offen lassen.</p></div>';
+  }
+
+  /* Merkt sich die offene Prüfung, damit der Auth-Wächter (siehe unten) sie
+     nach einer Anmeldung von selbst wiederholen kann. */
+  let stripeWaiting = null;
+  let stripeRunning = false;
+
+  function runStripeVerify(sid, pending) {
+    stripeWaiting = { sid: sid, pending: pending };
+    renderStripeChecking();
+    const ids = stripeProductIds(pending);
+    const call = () => MM.account.invokeFunction("mm-commerce", {
+      action: "verify_stripe",
+      sessionId: sid,
+      orderNo: (pending && pending.no) || null,
+      productIds: ids,
+      items: []
+    }).then((r) => {
+      stripeRunning = false;
+      if (fnOk(r)) {
+        stripeWaiting = null;
+        MM.store.set("stripe_pending", null);
+        MM.account.loadAccountState().then(() => {});
+        renderStripeSuccess(pending, fnData(r));
+      } else {
+        renderStripeIssue(fnCode(r), sid, pending);
+      }
+    }).catch(() => { stripeRunning = false; renderStripeIssue("network", sid, pending); });
+
+    const signedIn = window.MM && MM.account && MM.account.getCurrentUser && MM.account.getCurrentUser();
+    if (signedIn) { stripeRunning = true; call(); return; }
+    /* account.js lädt asynchron — erst die Sitzung abwarten, dann urteilen. */
+    if (window.MM && MM.account && MM.account.whenReady) {
+      MM.account.whenReady().then(() => {
+        if (MM.account.getCurrentUser && MM.account.getCurrentUser()) { stripeRunning = true; call(); }
+        else renderStripeIssue("not_signed_in", sid, pending);
+      }).catch(() => renderStripeIssue("not_signed_in", sid, pending));
+    } else {
+      renderStripeIssue("not_signed_in", sid, pending);
+    }
+  }
+
+  function renderStripeSuccess(pending, data) {
+    const ents = (data && data.entitlements) || [];
+    const nr = (pending && pending.no) ? pending.no : ((data && data.order_no) || null);
+    if (MM.track) MM.track("order_completed", { value: data && data.amount_cents ? (data.amount_cents / 100) : "stripe", paid: true, method: "Stripe" });
+    if (MM.track && ents.indexOf("protocol") >= 0) MM.track("protokoll_unlocked", {});
+    wrap.innerHTML =
+      '<div class="order-success">' +
+      '<div class="success-icon">✓</div>' +
+      (nr ? '<span class="eyebrow" style="justify-content:center">Bestellung ' + esc(nr) + '</span>' : '') +
+      '<h1 class="h-section" style="margin-bottom:14px">Zahlung bestätigt — Zugang ist frei.</h1>' +
+      '<div class="card" style="text-align:left;margin:0 auto 16px;max-width:560px;border-color:var(--accent-line)">' +
+      '<span class="card-num" style="color:var(--green)">✓ ZAHLUNG ERHALTEN</span>' +
+      '<p class="muted" style="margin-top:6px">Deine Zahlung ist bei Stripe verifiziert' +
+      (data && data.amount_cents ? " (" + MM.eur(data.amount_cents / 100) + ")" : "") +
+      (data && data.replay ? " — war bereits verarbeitet, kein doppelter Zugriff vergeben" : "") + '.</p></div>' +
+      '<div class="mm-access" style="padding-top:8px">' +
+      '<span class="stamp">ACCESS GRANTED</span>' +
+      '<div class="grant">' + (ents.indexOf("protocol") >= 0 ? '<b>DAS PROTOKOLL</b>' : '') + (ents.indexOf("twelve_week") >= 0 ? '<b>12-WEEK SYSTEM</b>' : '') + '</div>' +
+      '<p class="assigned">ASSIGNED TO YOUR ACCOUNT · ALLE GERÄTE</p></div>' +
+      (ents.indexOf("protocol") >= 0
+        ? '<div class="mm-access-choice"><a class="btn btn-primary" href="ebooks/protokoll.html" data-track="postbuy_read_protokoll">Das Protokoll lesen →</a>' +
+          '<a class="btn btn-dark" href="mein-protokoll.html" data-track="postbuy_start_program">12-Wochen-Programm starten →</a></div>'
+        : '<a href="mein-protokoll.html" class="btn btn-primary">Jetzt starten →</a>') +
+      '<p class="small" style="color:var(--muted-2);margin-top:22px">Die Rechnung kommt per E-Mail von Stripe.</p>' +
+      '</div>';
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  /* Fehlermeldungen für den Stripe-Weg. Die gemeinsamen Codes aus VERIFY_MSG
+     nennen PayPal namentlich — hier stehen deshalb die anbieter-richtigen
+     Texte, alles Übrige fällt auf VERIFY_MSG zurück. */
+  const STRIPE_MSG = {
+    order_not_found: "Zu dieser Bezahl-Sitzung findet Stripe keine Zahlung. Bitte melde dich bei uns — NICHT erneut bezahlen.",
+    not_captured: "Stripe hat die Zahlung noch nicht als abgeschlossen gemeldet. Bitte in einer Minute erneut prüfen — NICHT erneut bezahlen.",
+    capture_incomplete: "Stripe hat die Zahlung noch nicht als abgeschlossen gemeldet. Bitte in einer Minute erneut prüfen — NICHT erneut bezahlen.",
+    capture_not_found: "Zu dieser Bezahl-Sitzung findet Stripe keine Zahlung. Bitte melde dich bei uns — NICHT erneut bezahlen.",
+    amount_mismatch: "Der bei Stripe bezahlte Betrag passt nicht zur Bestellung. Bitte melde dich bei uns — NICHT erneut bezahlen.",
+    currency_mismatch: "Die Währung der Stripe-Zahlung passt nicht zur Bestellung (EUR erwartet). Bitte melde dich — NICHT erneut bezahlen.",
+    stripe_auth_failed: "Server-Konfigurationsproblem bei der Zahlungsprüfung. Deine Zahlung ist sicher — wir schalten von Hand frei, bitte melde dich.",
+    stripe_lookup_failed: "Stripe war bei der Prüfung kurz nicht erreichbar. Bitte in einigen Minuten erneut prüfen — NICHT erneut bezahlen.",
+    provider_not_configured: "Die automatische Prüfung ist serverseitig noch nicht aktiv. Deine Zahlung ist eingegangen — wir schalten den Zugang von Hand frei.",
+    no_entitled_products: "Wir konnten deine Bestellung im Browser nicht mehr zuordnen. Deine Zahlung ist sicher — melde dich kurz, wir schalten von Hand frei.",
+    unknown_product: "Wir konnten deine Bestellung im Browser nicht mehr zuordnen. Deine Zahlung ist sicher — melde dich kurz, wir schalten von Hand frei.",
+    bad_request: "Die Bezahl-Referenz aus der Rückleitung war unvollständig. Deine Zahlung ist sicher — melde dich kurz, wir schalten von Hand frei.",
+    unknown_provider: "Interner Fehler bei der Zahlungsprüfung. Deine Zahlung ist sicher — melde dich kurz, wir schalten von Hand frei."
+  };
+
+  function renderStripeIssue(errCode, sid, pending) {
+    const loginNoetig = ["not_signed_in", "unauthorized", "no_cloud", "auth_missing", "auth_invalid_token", "auth_validation_failed"].indexOf(errCode) >= 0;
+    const hint = STRIPE_MSG[errCode] || VERIFY_MSG[errCode] ||
+      "Deine Zahlung ist bei Stripe eingegangen. Die automatische Freischaltung hat gerade nicht geklappt — bitte NICHT erneut bezahlen, prüfe es einfach noch einmal.";
+    wrap.innerHTML =
+      '<div class="order-success">' +
+      '<div class="success-icon" style="background:rgba(245,166,35,.12);color:#f5a623">!</div>' +
+      '<h1 class="h-section" style="margin-bottom:14px">Zahlung eingegangen — Freischaltung noch offen.</h1>' +
+      '<p class="muted" style="max-width:56ch;margin:0 auto 10px">' + hint + '</p>' +
+      ((pending && pending.no) ? '<p class="small" style="color:var(--muted-2);margin-bottom:6px">Deine Bestellnummer: <strong style="color:var(--text)">' + esc(pending.no) + '</strong></p>' : '') +
+      (errCode && !loginNoetig ? '<p class="small" style="color:var(--muted-2);margin-bottom:18px">Technischer Status: ' + String(errCode).replace(/[<>]/g, "") + '</p>' : '<div style="margin-bottom:18px"></div>') +
+      /* Fehlt nur die Anmeldung, gehört sie HIERHER. Den Käufer erst auf eine
+         andere Seite zu schicken und dann zurück, ist der Moment, in dem
+         Menschen aufgeben — mit bezahlter, aber nicht freigeschalteter Ware.
+         Nach dem Klick auf den Link läuft die Prüfung von selbst weiter
+         (siehe Auth-Wächter unten), ohne zweites Antippen. */
+      (loginNoetig ? loginFormHtml() : '') +
+      '<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">' +
+      '<button class="btn ' + (loginNoetig ? 'btn-dark' : 'btn-primary') + '" id="retryStripe">Zahlung erneut prüfen</button>' +
+      (loginNoetig ? '' : '<a class="btn btn-dark" href="kontakt.html">Frage zur Bestellung</a>') +
+      '</div>' +
+      '<p class="small" style="color:var(--muted-2);margin-top:22px">Der Prüf-Button löst KEINE neue Zahlung aus — er fragt nur den Status deiner bestehenden Stripe-Zahlung ab.</p>' +
+      '</div>';
+    const btn = document.getElementById("retryStripe");
+    if (btn) btn.addEventListener("click", () => runStripeVerify(sid, pending));
+    if (loginNoetig) wireLoginForm(pending);
+  }
+
+  /* Anmeldeformular für die Prüf-Ansicht (Magic Link, kein Passwort). */
+  function loginFormHtml() {
+    return '<div class="co-acc" style="max-width:520px;margin:0 auto 18px;text-align:left">' +
+      '<p class="co-acc-title">Anmelden — dann ist der Zugang da</p>' +
+      '<p class="co-acc-text">Wir schicken dir einen Link per E-Mail, kein Passwort nötig. <strong>Lass diese Seite offen:</strong> sobald du angemeldet bist, prüfen wir deine Zahlung automatisch weiter und schalten frei.</p>' +
+      '<div class="co-acc-row">' +
+      '<input type="email" id="coLoginMail" placeholder="deine@email.de" autocomplete="email" aria-label="E-Mail für den Login-Link">' +
+      '<button type="button" class="btn btn-primary btn-sm" id="coLoginGo">Login-Link senden</button>' +
+      '</div>' +
+      '<p class="co-acc-msg" id="coLoginMsg" hidden></p>' +
+      '<p class="co-acc-fine">Nutze am besten die E-Mail-Adresse, mit der du bezahlt hast.</p>' +
+      '</div>';
+  }
+
+  function wireLoginForm(pending) {
+    const mailIn = document.getElementById("coLoginMail");
+    const btn = document.getElementById("coLoginGo");
+    const msg = document.getElementById("coLoginMsg");
+    if (!mailIn || !btn) return;
+    if (pending && pending.email) mailIn.value = pending.email;
+    btn.addEventListener("click", () => {
+      const v = (mailIn.value || "").trim();
+      if (!/.+@.+\..+/.test(v)) { mailIn.focus(); showAccMsg(msg, "Bitte eine gültige E-Mail-Adresse eintragen.", false); return; }
+      btn.disabled = true; btn.textContent = "Sende…";
+      MM.account.signIn(v).then((res) => {
+        btn.disabled = false; btn.textContent = "Login-Link senden";
+        showAccMsg(msg, res && res.ok
+          ? "Link ist unterwegs. Öffne ihn — danach geht es hier automatisch weiter."
+          : ((res && res.message) || "Der Link konnte nicht gesendet werden."), !!(res && res.ok));
+        if (res && res.ok && MM.track) MM.track("checkout_login_started", {});
+      }).catch(() => {
+        btn.disabled = false; btn.textContent = "Login-Link senden";
+        showAccMsg(msg, "Der Link konnte nicht gesendet werden. Bitte in einer Minute erneut versuchen — NICHT erneut bezahlen.", false);
+      });
+    });
+  }
+
+  /* Ohne session_id in der Rückleitung ist keine Prüfung möglich — dann bleibt
+     es beim ehrlichen Hinweis auf die manuelle Freischaltung. */
+  function renderStripeManual(pending) {
+    const nr = pending && pending.no ? pending.no : null;
+    MM.store.set("stripe_pending", null);
     wrap.innerHTML = '<div class="order-success"><div class="success-icon">✅</div>' +
       '<h1 class="h-section" style="margin-bottom:14px">Danke — deine Zahlung ist bei Stripe eingegangen.</h1>' +
       (nr ? '<p class="muted" style="margin-bottom:10px">Deine Bestellnummer: <strong style="color:var(--text)">' + esc(nr) + '</strong></p>' : '') +
@@ -721,14 +1027,68 @@
     call();
   }
 
+  /* =======================================================================
+     AUTH-WÄCHTER
+     -----------------------------------------------------------------------
+     Zwei Aufgaben, eine Quelle: MM.account meldet jede Änderung der
+     Anmeldung (auch aus einem ANDEREN Tab — der Magic Link öffnet sich im
+     Postfach, nicht hier).
+
+       1. Steht eine bezahlte, aber noch nicht geprüfte Zahlung offen, wird
+          die Prüfung sofort selbst wiederholt. Kein zweites Antippen.
+       2. Der Konto-Block im Formular zeigt danach den echten Zustand.
+
+     Zusätzlich wird beim Zurückkehren auf den Tab geprüft: BroadcastChannel
+     deckt fast alle Fälle ab, aber ein iPhone, das den Tab entladen hat,
+     eben nicht. Der Sichtbarkeitswechsel ist die günstige Absicherung.
+     ======================================================================= */
+  function onAuthMaybeChanged() {
+    const user = window.MM && MM.account && MM.account.getCurrentUser && MM.account.getCurrentUser();
+    if (user && stripeWaiting && !stripeRunning) {
+      const w = stripeWaiting;
+      if (MM.track) MM.track("checkout_verify_after_login", {});
+      runStripeVerify(w.sid, w.pending);
+      return;
+    }
+    // Nur neu zeichnen, wenn das Formular sichtbar ist (nicht mitten in einer
+    // Erfolgs- oder Prüf-Ansicht).
+    if (document.getElementById("coAccount")) renderAccountBlock();
+  }
+  try {
+    if (window.MM && MM.account) {
+      if (MM.account.onChange) MM.account.onChange(onAuthMaybeChanged);
+      if (MM.account.whenReady) MM.account.whenReady().then(onAuthMaybeChanged).catch(() => {});
+    }
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) onAuthMaybeChanged(); });
+  } catch (e) { /* Ohne Konto-Modul bleibt der Checkout voll funktionsfähig */ }
+
   /* ---------- Boot: ausstehende Zahlung hat Vorrang vor neuem Checkout ---- */
   const bootPending = getPending();
   const zurueckVonStripe = /[?&]bezahlt=stripe(&|$)/.test(window.location.search);
+  /* Eine bezahlte Stripe-Sitzung ohne Freischaltung ist die teuerste offene
+     Baustelle, die es hier gibt: Der Kunde hat gezahlt. Deshalb wird sie
+     wieder aufgenommen, sobald der Warenkorb leer ist — der Käufer muss die
+     Rückkehr-URL nicht aufbewahren. Liegen neue Artikel im Korb, will er
+     offensichtlich etwas anderes tun; dann bekommt er nur einen Hinweis. */
+  const offeneStripeZahlung = stripePending();
+  const stripeWiederaufnahme = !!(offeneStripeZahlung && offeneStripeZahlung.sessionId);
   if (zurueckVonStripe) {
     renderStripeReturn();
   } else if (bootPending && (bootPending.paypalOrderId || bootPending.captureId)) {
     runRecovery(bootPending);
+  } else if (stripeWiederaufnahme && !MM.cart.totals().count) {
+    renderStripeReturn();
   } else {
     renderForm();
+    if (stripeWiederaufnahme) {
+      const hinweis = document.createElement("div");
+      hinweis.className = "alert alert-warn";
+      hinweis.style.margin = "0 0 18px";
+      hinweis.innerHTML = '<span class="alert-icon">!</span><div><strong>Offene Zahlung</strong> — deine Stripe-Zahlung' +
+        (offeneStripeZahlung.no ? ' (' + esc(offeneStripeZahlung.no) + ')' : '') +
+        ' ist noch nicht freigeschaltet. <a href="checkout.html?bezahlt=stripe" style="text-decoration:underline">Jetzt prüfen und freischalten →</a></div>';
+      const form = document.getElementById("checkoutForm");
+      if (form && form.parentNode) form.parentNode.insertBefore(hinweis, form);
+    }
   }
 })();

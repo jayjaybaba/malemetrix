@@ -80,7 +80,10 @@ group("Navigation · Kernziele existieren, keine Dublette");
   var idx = read("index.html");
   var navBlock = (idx.match(/<nav class="main-nav"[\s\S]*?<\/nav>/) || [""])[0];
   var hrefs = (navBlock.match(/href="([^"]+)"/g) || []).map(function (h) { return h.slice(6, -1); });
-  ["check.html", "ebooks.html", "coaching.html", "mein-protokoll.html"].forEach(function (dest) {
+  // ebooks.html ist bewusst KEIN Nav-Kernziel mehr (Founder-Entscheidung:
+  // 'Kapitelübersicht' raus aus dem Menü) — die Seite bleibt über die App
+  // (Protokoll-Tab · Vertiefung) und den Reader-Header erreichbar.
+  ["check.html", "protokoll.html", "coaching.html", "mein-protokoll.html"].forEach(function (dest) {
     ok(hrefs.indexOf(dest) >= 0, "Nav enthält " + dest);
   });
   // Alle Nav-Ziele existieren als Datei (interne .html-Links)
@@ -91,6 +94,33 @@ group("Navigation · Kernziele existieren, keine Dublette");
   var seen = {}, dup = false;
   hrefs.forEach(function (h) { if (seen[h]) dup = true; seen[h] = 1; });
   ok(!dup, "keine doppelten Nav-Ziele");
+
+  /* Der Sammelpunkt heißt "Mehr" und trägt die drei kostenlosen Tracker.
+     Vorher hieß er "Über" und enthielt nur Info-Seiten — die Tracker waren
+     ausschließlich im Footer verlinkt und damit praktisch unauffindbar.
+     Geprüft wird auf ALLEN Seiten mit dieser Navigation: eine neue Seite mit
+     altem Nav-Block würde den Besucher sonst in eine andere Website werfen. */
+  var seiten = fs.readdirSync(ROOT).filter(function (f) {
+    return /\.html$/.test(f) && read(f).indexOf('class="nav-more-toggle"') !== -1;
+  });
+  ok(seiten.length >= 25, "die Sammel-Navigation ist flächendeckend vorhanden (" + seiten.length + " Seiten)");
+  var fehlt = [];
+  seiten.forEach(function (f) {
+    var h = read(f);
+    var mehr = /<button class="nav-more-toggle" data-i18n="nav\.more">Mehr<\/button>/.test(h);
+    var trk = ["tracker.html", "dinner.html", "labor.html", "tools.html"].every(function (d) {
+      return h.indexOf('<a href="' + d + '"') !== -1;
+    });
+    if (!mehr || !trk) fehlt.push(f + (mehr ? "" : " [Titel]") + (trk ? "" : " [Tracker]"));
+  });
+  ok(fehlt.length === 0, "jede Seite trägt \"Mehr\" + die drei Tracker + die Rechner (fehlt: " + (fehlt.join(", ") || "nichts") + ")");
+  // Die Übersetzungen müssen zu den neuen Schlüsseln existieren, sonst stünde
+  // in der EN-Ansicht der deutsche Text.
+  var i18n = read("js/i18n.js");
+  ["nav.more", "nav.freeGroup", "nav.trackerGym", "nav.trackerFood", "nav.trackerLabs", "nav.calc", "nav.aboutGroup"].forEach(function (k) {
+    ok(new RegExp('"' + k.replace(".", "\\.") + '":').test(i18n), "i18n-Schlüssel vorhanden: " + k);
+  });
+  ok(/"nav\.more":\s*\{ de: "Mehr", en: "More" \}/.test(i18n), "nav.more ist DE \"Mehr\" / EN \"More\"");
 })();
 
 /* ===== 7) First-Session-Pfad erreichbar (Onboarding-Einstieg) ===== */

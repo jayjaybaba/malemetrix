@@ -19,13 +19,24 @@
     "nav.mycourse":{ de: "My MaleMetrix", en: "My MaleMetrix" },
     "nav.mymm":    { de: "My MaleMetrix", en: "My MaleMetrix" },
     "nav.shop":    { de: "Shop", en: "Shop" },
-    "nav.more":    { de: "Wissen", en: "Knowledge" },
+    /* Der Sammelpunkt hieß "Über" und enthielt nur Info-Seiten. Die drei
+       kostenlosen Tracker waren dagegen nur im Footer verlinkt — also
+       praktisch unauffindbar. Beides liegt jetzt hier zusammen, und der
+       Punkt heißt entsprechend "Mehr". */
+    "nav.more":    { de: "Mehr", en: "More" },
     "nav.ebooks":  { de: "Library", en: "Library" },
     "nav.library": { de: "Kapitelübersicht", en: "Chapter index" },
     "nav.protocol": { de: "Das Protokoll", en: "The Protocol" },
     "nav.magazine":{ de: "Magazin", en: "Magazine" },
     "nav.blood":   { de: "Blutwerte", en: "Blood Values" },
-    "nav.about":   { de: "Über", en: "About" },
+    /* Gruppe heisst "Kostenlos", nicht "Tracker": die Rechner gehoeren dazu,
+       sind aber keine Tracker. */
+    "nav.freeGroup":    { de: "Kostenlos", en: "Free" },
+    "nav.calc":         { de: "Rechner & Werkzeuge", en: "Calculators & tools" },
+    "nav.trackerGym":   { de: "Training & Schlaf", en: "Training & sleep" },
+    "nav.trackerFood":  { de: "Kalorien & Protein", en: "Calories & protein" },
+    "nav.trackerLabs":  { de: "Blutwerte im Verlauf", en: "Blood over time" },
+    "nav.aboutGroup":   { de: "MaleMetrix", en: "MaleMetrix" },
     "nav.aboutMM": { de: "Über MaleMetrix", en: "About MaleMetrix" },
     "nav.faq":     { de: "FAQ", en: "FAQ" },
     "nav.contact": { de: "Kontakt", en: "Contact" },
@@ -62,7 +73,7 @@
     "foot.tagline": { de: "Made for Männer, die mehr wollen.", en: "Made for men who want more." },
 
     /* ---------- Buttons / wiederkehrend ---------- */
-    "cta.startCheck": { de: "Kostenlosen MaleMetrix Score starten", en: "Start the free MaleMetrix Score" },
+    "cta.startCheck": { de: "Meinen kostenlosen Score starten", en: "Start my free score" },
     "cta.viewCoaching": { de: "1:1 Coaching ansehen", en: "View 1:1 coaching" },
     "common.free": { de: "Kostenlos", en: "Free" },
     "common.addCart": { de: "In den Warenkorb", en: "Add to cart" },
@@ -91,12 +102,15 @@
 
     /* ---------- Homepage (aktuell verdrahtet, Stand P9.8) ---------- */
     "home.badge": { de: "Männergesundheit als System — nicht nach Bauchgefühl", en: "Men’s health as a system — not guesswork" },
-    "home.h1": { de: "Bau den Körper.<br><span class=\"text-grad\">Schütz das System.</span>",
-                 en: "Build the body.<br><span class=\"text-grad\">Protect the system.</span>" },
-    "home.lead": { de: "Training, Ernährung, Schlaf und Hormone für Männer mit Job und Familie — Messwerte statt Bauchgefühl. MaleMetrix findet zuerst deinen größten Engpass, bevor du Zeit, Geld oder Energie in die falschen Dinge steckst.",
-                   en: "Training, nutrition, sleep and hormones for men with a job and a family — measurements, not guesswork. MaleMetrix first finds your biggest bottleneck, before you pour time, money or energy into the wrong things." },
-    "home.trustline": { de: "~7 Minuten · kostenlos · sofortige Auswertung · kein E-Mail-Zwang", en: "~7 minutes · free · instant results · no email required" },
-    "home.howLink": { de: "So funktioniert MaleMetrix ↓", en: "How MaleMetrix works ↓" },
+    /* Hero-Neufassung (Founder, Juli 2026): aktivere Verben ("Bau DEINEN
+       Körper", "STEUERE dein System"), kürzerer Nutzen-Text ohne "Hormone"
+       und "Bauchgefühl", CTA in Ich-Form. br-m bricht nur mobil. */
+    "home.h1": { de: "Bau deinen Körper.<br><span class=\"text-grad\">Steuere dein <br class=\"br-m\">System.</span>",
+                 en: "Build your body.<br><span class=\"text-grad\">Steer your <br class=\"br-m\">system.</span>" },
+    "home.lead": { de: "Finde zuerst den Engpass, der deinen Fortschritt wirklich bremst. MaleMetrix verbindet Training, Ernährung, Schlaf und Gesundheitsdaten zu einer klaren Priorität.",
+                   en: "First find the bottleneck that is really holding you back. MaleMetrix turns training, nutrition, sleep and health data into one clear priority." },
+    "home.trustline": { de: "7 Minuten · Ergebnis sofort · ohne Anmeldung", en: "7 minutes · instant result · no sign-up" },
+    "home.howLink": { de: "So funktioniert der Score ↓", en: "How the score works ↓" },
 
     /* Sektions-Kicker + Überschriften */
     "home.s.problem.k": { de: "Das eigentliche Problem", en: "The real problem" },
@@ -254,6 +268,462 @@
     return String(s).replace(/\{n\}/g, fmtNum(n));
   }
 
+  /* =========================================================================
+     VOLLTEXT-ÜBERSETZER — ein Dienst statt englischer Seiten-Klone
+     -------------------------------------------------------------------------
+     Der Schlüssel-Ansatz oben (data-i18n) deckt die Hülle ab: Navigation,
+     Footer, wiederkehrende Bausteine. Er kann aber nichts übersetzen, was
+     JavaScript erzeugt — und das ist der größte Teil dieser Seite (Score,
+     My MaleMetrix, Tracker, Rechner, Programm).
+
+     UND ER SKALIERT NICHT MIT DER REALITÄT: Die deutschen Texte ändern sich
+     laufend. Jede Änderung müsste in einem zweiten, handgepflegten Wörterbuch
+     nachgezogen werden — ab der ersten vergessenen Zeile stimmt die englische
+     Fassung nicht mehr. Genau derselbe Grund, aus dem es keine englischen
+     Seiten-Klone gibt: zwei Wahrheiten driften immer auseinander.
+
+     Deshalb übersetzt hier ein DIENST zur Laufzeit:
+
+       1. Ein Durchlauf sammelt alle deutschen Textknoten der Seite.
+       2. Bekannte Sätze werden sofort ersetzt (aus dem lokalen Cache oder dem
+          kleinen Glossar für Marken- und Fachbegriffe).
+       3. Der Rest geht gebündelt an die Edge Function mm-translate. Die
+          antwortet aus ihrem Server-Cache — oder übersetzt einmal und merkt
+          sich das Ergebnis für ALLE künftigen Besucher.
+       4. Ein MutationObserver wiederholt das für alles, was danach
+          nachgerendert wird (App, Score, Tracker).
+
+     Was daraus folgt:
+       · Text ändern reicht. Der geänderte Satz hat einen neuen Schlüssel und
+         wird automatisch neu übersetzt — es gibt nichts nachzupflegen.
+       · Kein Seiten-Klon, keine zweite Wahrheit, kein Drift.
+       · Fehlt eine Übersetzung (kein Schlüssel konfiguriert, Budget erreicht,
+         Anbieter offline), bleibt der Satz DEUTSCH stehen. Nie eine leere
+         Stelle, nie ein Platzhalter.
+       · Jeder Satz kostet genau einmal — der Server-Cache gilt für alle.
+
+     Grenzen, bewusst so:
+       · Rechtstexte werden NICHT übersetzt (legalNotice erklärt das im
+         Klartext): die deutsche Fassung ist die verbindliche.
+       · Der Premium-Reader (/ebooks/) bleibt außen vor — das ist das gekaufte
+         Produkt und verdient eine geprüfte Übersetzung, keine maschinelle.
+       · Nutzereingaben werden nie verschickt: gesendet wird nur Text, der aus
+         der Seite selbst stammt (Formularfelder und ihre Werte nie).
+       · Suchmaschinen sehen weiter die deutsche Fassung. Englischer
+         Google-Traffic bräuchte eigene URLs — das wären wieder Klone.
+     ========================================================================= */
+  const PHRASES = {};             // normalisierter deutscher Text → englisch
+  let phrasesState = "none";      // none | loading | ready | failed
+  const UNTRANSLATED = {};        // Diagnose: was (noch) keine Übersetzung hat
+  const SKIP_TAGS = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, TEXTAREA: 1, CODE: 1, PRE: 1, KBD: 1, SAMP: 1 };
+  const ATTRS = ["placeholder", "title", "aria-label", "alt"];
+  /* Rechtsseiten bleiben deutsch — die deutsche Fassung ist die verbindliche. */
+  const LEGAL_PAGES = ["agb.html", "datenschutz.html", "impressum.html"];
+  const CACHE_KEY = "mm_i18n_en_v1";
+  const CACHE_MAX_CHARS = 180000;  // ~180 KB localStorage-Anteil, dann Neuaufbau
+
+  /* Der Laufzeit-Übersetzer braucht einen echten Browser: TreeWalker,
+     MutationObserver, location. Die Schlüssel-Engine oben läuft auch in der
+     Node-Testumgebung (tools-dev/tests/i18n.test.js) mit einem Minimal-DOM —
+     dort bleibt der Übersetzer still, statt am fehlenden location zu scheitern. */
+  const HAS_DOM = (function () {
+    try {
+      return typeof document !== "undefined" &&
+        typeof document.createTreeWalker === "function" &&
+        typeof document.createElement === "function" &&
+        typeof location !== "undefined" && typeof location.pathname === "string";
+    } catch (e) { return false; }
+  })();
+
+  function normText(s) { return String(s == null ? "" : s).replace(/\s+/g, " ").trim(); }
+  function hatBuchstaben(s) { return /[A-Za-zÄÖÜäöüß]/.test(s); }
+  function seitenDatei() {
+    try { return String(location.pathname || "").split("/").pop() || ""; } catch (e) { return ""; }
+  }
+  function istRechtsseite() { return LEGAL_PAGES.indexOf(seitenDatei()) >= 0; }
+  function istPremiumReader() {
+    try { return String(location.pathname || "").indexOf("/ebooks/") !== -1; } catch (e) { return false; }
+  }
+
+  /* ---------- Lokaler Cache: wiederkehrende Besucher fragen gar nicht ---------- */
+  function cacheLaden() {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (!raw) return;
+      if (raw.length > CACHE_MAX_CHARS) { localStorage.removeItem(CACHE_KEY); return; }
+      const o = JSON.parse(raw);
+      if (o && typeof o === "object") Object.assign(PHRASES, o);
+    } catch (e) { /* Speicher blockiert — dann eben ohne */ }
+  }
+  let cacheTimer = null;
+  function cacheMerken() {
+    if (cacheTimer) return;
+    cacheTimer = setTimeout(() => {
+      cacheTimer = null;
+      try {
+        const s = JSON.stringify(PHRASES);
+        if (s.length <= CACHE_MAX_CHARS) localStorage.setItem(CACHE_KEY, s);
+      } catch (e) { /* voll/blockiert */ }
+    }, 1200);
+  }
+
+  /* Das Glossar (js/i18n-en.js) trägt Marken- und Fachbegriffe, die eine
+     Maschine falsch übersetzen würde ("Engpass" ist hier nicht "bottleneck im
+     Rohr"), plus alles, was unverändert bleiben MUSS. Es ist klein, absichtlich
+     handgepflegt und gewinnt immer gegen die maschinelle Übersetzung.
+     Geladen wird es nur für englische Besucher. */
+  function loadPhrases(cb) {
+    if (!HAS_DOM) { phrasesState = "failed"; cb(); return; }
+    if (phrasesState === "ready" || phrasesState === "failed") { cb(); return; }
+    if (phrasesState === "loading") { document.addEventListener("mm:phrases", function h() { document.removeEventListener("mm:phrases", h); cb(); }); return; }
+    phrasesState = "loading";
+    cacheLaden();
+    const tief = istPremiumReader() || location.pathname.indexOf("/blog/") !== -1;
+    const s = document.createElement("script");
+    s.src = (tief ? "../" : "") + "js/i18n-en.js";
+    const fertig = (ok) => {
+      if (ok && window.MM_I18N_EN) Object.assign(PHRASES, window.MM_I18N_EN);
+      phrasesState = "ready";     // auch ohne Glossar arbeitsfähig: Dienst + Cache
+      document.dispatchEvent(new CustomEvent("mm:phrases"));
+      cb();
+    };
+    s.onload = () => fertig(true);
+    s.onerror = () => fertig(false);
+    document.head.appendChild(s);
+  }
+
+  /* =========================================================================
+     ANFRAGE-WARTESCHLANGE an mm-translate
+     Gebündelt (nicht ein Aufruf pro Satz), entdoppelt, und mit einer Merkliste:
+     zu jedem offenen Satz stehen die Knoten, die auf ihn warten. Kommt die
+     Übersetzung, werden genau diese Knoten gepatcht — kein erneutes Durchlaufen
+     der ganzen Seite.
+     ========================================================================= */
+  const WARTEND = new Map();      // deutscher Satz → { nodes:Set, attrs:Set }
+  const ANGEFRAGT = new Set();    // gerade gefragt: nie zwei Anfragen für denselben Satz
+  const VERSUCHE = new Map();     // Satz → Anzahl Versuche (deckelt Nachfragen)
+  let sendeTimer = null;
+  let laufend = 0;
+  let dienstAus = false;          // kein Schlüssel / Budget erreicht → nicht weiter fragen
+
+  function dienstUrl() {
+    const base = (window.MM_CONFIG || {}).supabaseUrl || "";
+    return base ? String(base).replace(/\/+$/, "") + "/functions/v1/mm-translate" : "";
+  }
+
+  /* =========================================================================
+     ÜBERSETZUNG IM BROWSER (ohne Server, ohne Limit, ohne Kosten)
+     -------------------------------------------------------------------------
+     Neuere Chrome-Versionen bringen ein Übersetzungsmodell MIT — die
+     Translator-API arbeitet auf dem Gerät. Wo es das gibt, ist das die beste
+     Option, die es überhaupt gibt: unbegrenzt, sofort, kostenlos, und kein
+     einziger Satz verlässt den Browser.
+
+     Deshalb die Reihenfolge: Cache → Gerät → Server. Der Server (und damit
+     dessen Tageslimit) wird nur noch für Browser gebraucht, die das nicht
+     können — heute Safari und Firefox.
+
+     WICHTIG, und bewusst so: Ergebnisse vom Gerät werden NICHT an den Server
+     geschickt. Der Endpunkt ist öffentlich und anonym; würde er Übersetzungen
+     von Clients annehmen, könnte jeder beliebigen Text in den gemeinsamen
+     Cache schreiben und damit die Seite für alle Besucher verändern. Ein
+     gefüllter Cache ist das nicht wert. Gerät-Übersetzungen bleiben lokal
+     (localStorage) — für diesen Besucher dauerhaft, für andere unsichtbar. */
+  let geraetUeb = null;          // erzeugte Translator-Instanz
+  let geraetState = "unknown";   // unknown | none | pending | ready
+  let geraetLaeuft = false;
+
+  function geraetApi() {
+    try {
+      if (typeof Translator !== "undefined" && Translator && typeof Translator.create === "function") return Translator;
+      if (self.ai && self.ai.translator && typeof self.ai.translator.create === "function") return self.ai.translator;
+    } catch (e) {}
+    return null;
+  }
+
+  function geraetVorbereiten() {
+    if (geraetState !== "unknown") return;
+    const api = geraetApi();
+    if (!api) { geraetState = "none"; return; }
+    geraetState = "pending";
+    const opts = { sourceLanguage: "de", targetLanguage: "en" };
+    /* create() darf laut Spezifikation einen Modell-Download auslösen und
+       verlangt dafür unter Umständen eine Nutzeraktion. Der Klick auf EN IST
+       eine — deshalb wird hier genau in diesem Moment erzeugt. Schlägt es
+       fehl, ist das kein Fehler, sondern der Normalfall in anderen Browsern. */
+    let p;
+    try { p = api.create(opts); } catch (e) { geraetState = "none"; return; }
+    Promise.resolve(p).then((t) => {
+      if (t && typeof t.translate === "function") { geraetUeb = t; geraetState = "ready"; geraetArbeiten(); }
+      else geraetState = "none";
+    }).catch(() => { geraetState = "none"; planeSenden(); });
+  }
+
+  /* Arbeitet die Warteschlange auf dem Gerät ab — in kleinen Schritten, damit
+     die Seite dabei flüssig bleibt. */
+  function geraetArbeiten() {
+    if (geraetState !== "ready" || geraetLaeuft || lang !== "en") return;
+    const offen = [];
+    WARTEND.forEach((_v, k) => { if (PHRASES[k] == null) offen.push(k); });
+    if (!offen.length) return;
+    geraetLaeuft = true;
+    const paket = offen.slice(0, 20);
+    Promise.all(paket.map((k) => {
+      return Promise.resolve(geraetUeb.translate(k)).then((en) => {
+        const t = normText(en || "");
+        if (!t || t === k) return;
+        PHRASES[k] = t;
+        patche(k, t);
+      }).catch(() => {});
+    })).then(() => {
+      geraetLaeuft = false;
+      cacheMerken();
+      if (WARTEND.size) {
+        // Nächstes Paket, aber erst im nächsten Frame — nie die Seite blockieren.
+        setTimeout(geraetArbeiten, 30);
+      }
+    }).catch(() => { geraetLaeuft = false; });
+  }
+
+  function merken(satz, node, attr) {
+    let e = WARTEND.get(satz);
+    if (!e) { e = { nodes: new Set(), attrs: new Set() }; WARTEND.set(satz, e); }
+    if (attr) e.attrs.add({ el: node, attr: attr });
+    else e.nodes.add(node);
+    planeSenden();
+  }
+
+  function planeSenden() {
+    // Erst das Gerät fragen: unbegrenzt, sofort, ohne Server.
+    geraetVorbereiten();
+    if (geraetState === "ready") { geraetArbeiten(); return; }
+    if (geraetState === "pending") return;         // Modell wird gerade bereitgestellt
+    if (dienstAus || sendeTimer || !dienstUrl()) return;
+    // 250 ms Sammelzeit: genug, damit ein ganzer Seitenaufbau in EINE Anfrage
+    // passt, kurz genug, dass es sich sofort anfühlt.
+    sendeTimer = setTimeout(senden, 250);
+  }
+
+  function senden() {
+    sendeTimer = null;
+    /* Erst aufräumen: Was inzwischen bekannt ist, wird sofort erledigt — die
+       Übersetzung kann aus einer früheren Antwort oder aus dem lokalen Cache
+       stammen, während dieser Knoten noch in der Warteschlange stand. Ohne
+       diesen Schritt bleiben erledigte Einträge liegen und halten Knoten fest. */
+    Array.from(WARTEND.keys()).forEach((k) => { if (PHRASES[k] != null) patche(k, PHRASES[k]); });
+    if (dienstAus || laufend >= 2) { if (WARTEND.size) planeSenden(); return; }
+    const offen = [];
+    WARTEND.forEach((_v, k) => { if (!ANGEFRAGT.has(k)) offen.push(k); });
+    if (!offen.length) return;
+    const paket = offen.slice(0, 48);
+    paket.forEach((k) => ANGEFRAGT.add(k));
+    laufend++;
+    fetch(dienstUrl(), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ texts: paket })
+    }).then((r) => r.ok ? r.json() : null).then((j) => {
+      laufend--;
+      if (!j || !j.map) { if (j && (j.error === "provider_not_configured" || j.throttled)) dienstAus = true; return; }
+      if (j.error === "provider_not_configured" || j.throttled) dienstAus = true;
+      const neu = Object.keys(j.map);
+      neu.forEach((de) => {
+        const en = j.map[de];
+        if (!en || en === de) return;
+        PHRASES[de] = en;
+        patche(de, en);
+      });
+      if (neu.length) cacheMerken();
+
+      /* Der kostenlose Anbieter übersetzt pro Aufruf nur eine begrenzte Menge —
+         der Rest der Anfrage kommt unübersetzt zurück. Diese Sätze müssen
+         wieder freigegeben werden, sonst bliebe die halbe Seite für den Rest
+         des Besuchs deutsch, obwohl sie beim nächsten Anlauf dran wäre.
+         Zwei Versuche pro Satz, dann Ruhe. */
+      let offenGeblieben = 0;
+      paket.forEach((k) => {
+        if (PHRASES[k] != null) return;                    // erledigt
+        const n = (VERSUCHE.get(k) || 0) + 1;
+        VERSUCHE.set(k, n);
+        if (n < 2 && WARTEND.has(k)) { ANGEFRAGT.delete(k); offenGeblieben++; }
+      });
+      /* Kam KEIN einziger neuer Satz zurück, ist das Tageslimit erschöpft oder
+         der Anbieter stumm. Dann für diesen Besuch aufhören statt im Kreis zu
+         fragen — beim nächsten Aufruf der Seite geht es weiter. */
+      if (!neu.length && paket.length) dienstAus = true;
+      if (WARTEND.size && (offenGeblieben || !dienstAus)) planeSenden();
+    }).catch(() => {
+      laufend--;
+      // Netzfehler: nicht endlos nachbohren. Beim nächsten Seitenaufruf neu.
+      dienstAus = true;
+    });
+  }
+
+  /* Genau die wartenden Knoten ersetzen. */
+  function patche(satz, en) {
+    const e = WARTEND.get(satz);
+    if (!e) return;
+    WARTEND.delete(satz);
+    e.nodes.forEach((n) => {
+      if (!n || n.nodeType !== 3 || n.__mmDe != null) return;
+      if (normText(n.nodeValue) !== satz) return;      // inzwischen neu gerendert
+      const raw = n.nodeValue;
+      const pre = (raw.match(/^\s*/) || [""])[0];
+      const post = (raw.match(/\s*$/) || [""])[0];
+      n.__mmDe = raw;
+      n.nodeValue = pre + en + post;
+    });
+    e.attrs.forEach((a) => {
+      const el = a.el;
+      if (!el || el.nodeType !== 1) return;
+      if (el.__mmDeAttrs && el.__mmDeAttrs[a.attr] != null) return;   // schon übersetzt
+      if (normText(el.getAttribute(a.attr)) !== satz) return;
+      if (!el.__mmDeAttrs) el.__mmDeAttrs = {};
+      el.__mmDeAttrs[a.attr] = el.getAttribute(a.attr);
+      el.setAttribute(a.attr, en);
+    });
+  }
+
+  function textNodeWalker(root) {
+    return document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: function (n) {
+        if (!n.nodeValue || !hatBuchstaben(n.nodeValue)) return NodeFilter.FILTER_REJECT;
+        for (let p = n.parentNode; p && p.nodeType === 1; p = p.parentNode) {
+          if (SKIP_TAGS[p.tagName]) return NodeFilter.FILTER_REJECT;
+          if (p.hasAttribute("data-no-i18n")) return NodeFilter.FILTER_REJECT;
+          // Schlüssel-Übersetzung hat Vorrang; hier nicht doppelt anfassen.
+          if (p.hasAttribute("data-i18n") || p.hasAttribute("data-i18n-html")) return NodeFilter.FILTER_REJECT;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+  }
+
+  function translateNode(n) {
+    if (n.__mmDe != null) return;                 // schon übersetzt (verhindert Schleifen)
+    const raw = n.nodeValue;
+    const key = normText(raw);
+    if (key.length < 2 || !hatBuchstaben(key)) return;
+    const en = PHRASES[key];
+    if (en == null) {
+      // Unbekannt: zur Übersetzung anmelden und den deutschen Text so lange
+      // stehen lassen. Kein Flackern, kein Platzhalter.
+      UNTRANSLATED[key] = (UNTRANSLATED[key] || 0) + 1;
+      merken(key, n, null);
+      return;
+    }
+    if (en === key) return;
+    // Umgebende Leerzeichen erhalten — sonst kleben Wörter aneinander.
+    const pre = (raw.match(/^\s*/) || [""])[0];
+    const post = (raw.match(/\s*$/) || [""])[0];
+    n.__mmDe = raw;
+    n.nodeValue = pre + en + post;
+  }
+
+  function translateAttrs(el) {
+    if (!el || el.nodeType !== 1 || el.hasAttribute("data-no-i18n")) return;
+    if (el.hasAttribute("data-i18n-attr")) return;     // Schlüssel-Weg hat Vorrang
+    ATTRS.forEach((a) => {
+      if (!el.hasAttribute(a)) return;
+      /* SCHON ÜBERSETZT → NIE WIEDER ANFASSEN.
+         Ohne diese Zeile entsteht eine Endlosschleife: setAttribute löst eine
+         Attribut-Mutation aus, der Observer ruft translateAttrs erneut, findet
+         den (jetzt englischen) Wert nicht im Wörterbuch, schickt ihn zur
+         Übersetzung, schreibt das Ergebnis — und das nächste Mal wieder.
+         Live beobachtet: aus "Schließen" wurde in Sekunden
+         "[EN] [EN] [EN] … Schließen", bei jedem Durchlauf eine Anfrage mehr.
+         Für Textknoten leistet __mmDe dasselbe. */
+      if (el.__mmDeAttrs && el.__mmDeAttrs[a] != null) return;
+      const key = normText(el.getAttribute(a));
+      if (key.length < 2 || !hatBuchstaben(key)) return;
+      const en = PHRASES[key];
+      if (en == null) { UNTRANSLATED[key] = (UNTRANSLATED[key] || 0) + 1; merken(key, el, a); return; }
+      if (en === key) return;
+      if (!el.__mmDeAttrs) el.__mmDeAttrs = {};
+      el.__mmDeAttrs[a] = el.getAttribute(a);
+      el.setAttribute(a, en);
+    });
+  }
+
+  function translateTree(root) {
+    if (lang !== "en" || phrasesState !== "ready" || !root) return;
+    if (istRechtsseite() || istPremiumReader()) return;
+    if (root.nodeType === 3) { translateNode(root); return; }
+    const w = textNodeWalker(root);
+    const liste = [];
+    while (w.nextNode()) liste.push(w.currentNode);
+    liste.forEach(translateNode);
+    if (root.nodeType === 1) translateAttrs(root);
+    if (root.querySelectorAll) {
+      root.querySelectorAll("[placeholder],[title],[aria-label],[alt]").forEach(translateAttrs);
+    }
+  }
+
+  /* Zurück auf Deutsch ohne Neuladen: jeder übersetzte Knoten trägt sein
+     Original bei sich. Ein Reload wäre einfacher, würde aber getippte
+     Formulareingaben verwerfen — im Checkout wäre das teuer. */
+  function restoreGerman() {
+    if (!HAS_DOM) return;
+    const w = document.createTreeWalker(document.body || document.documentElement, NodeFilter.SHOW_TEXT, null);
+    const liste = [];
+    while (w.nextNode()) liste.push(w.currentNode);
+    liste.forEach((n) => { if (n.__mmDe != null) { n.nodeValue = n.__mmDe; n.__mmDe = null; } });
+    (document.querySelectorAll("[placeholder],[title],[aria-label],[alt]") || []).forEach((el) => {
+      if (!el.__mmDeAttrs) return;
+      Object.keys(el.__mmDeAttrs).forEach((a) => el.setAttribute(a, el.__mmDeAttrs[a]));
+      el.__mmDeAttrs = null;
+    });
+    const box = document.getElementById("mmLegalDe");
+    if (box && box.parentNode) box.parentNode.removeChild(box);
+  }
+
+  let observer = null;
+  function startObserver() {
+    if (observer || !window.MutationObserver) return;
+    observer = new MutationObserver((muts) => {
+      if (lang !== "en" || phrasesState !== "ready") return;
+      muts.forEach((m) => {
+        if (m.type === "characterData") { translateNode(m.target); return; }
+        if (m.type === "attributes" && m.target) { translateAttrs(m.target); return; }
+        m.addedNodes.forEach((n) => {
+          if (n.nodeType === 3) translateNode(n);
+          else if (n.nodeType === 1) translateTree(n);
+        });
+      });
+    });
+    observer.observe(document.documentElement, {
+      childList: true, subtree: true, characterData: true,
+      attributes: true, attributeFilter: ATTRS
+    });
+  }
+
+  /* Rechtsseiten: ehrlicher Hinweis statt halber Übersetzung. */
+  function legalNotice() {
+    if (lang !== "en" || !istRechtsseite() || document.getElementById("mmLegalDe")) return;
+    const box = document.createElement("div");
+    box.id = "mmLegalDe";
+    box.className = "alert alert-info";
+    box.style.margin = "0 0 22px";
+    box.setAttribute("data-no-i18n", "");
+    box.innerHTML = '<span class="alert-icon">§</span><div>This page is available in German only. ' +
+      'The German text is the legally binding version — a translation could change its meaning. ' +
+      'If anything is unclear, <a href="kontakt.html" style="text-decoration:underline">write to us</a> and we will explain it in English.</div>';
+    const ziel = document.querySelector("main .container") || document.querySelector("main");
+    if (ziel) ziel.insertBefore(box, ziel.firstChild);
+  }
+
+  /* Englisch aktivieren: Wörterbuch holen, alles übersetzen, dann beobachten. */
+  function runEnglish() {
+    if (!HAS_DOM) return;
+    loadPhrases(() => {
+      if (lang !== "en") return;                  // zwischenzeitlich zurückgeschaltet
+      translateTree(document.body || document.documentElement);
+      legalNotice();
+      startObserver();
+      document.dispatchEvent(new CustomEvent("mm:translated", { detail: { missing: Object.keys(UNTRANSLATED).length } }));
+    });
+  }
+
   function apply(root) {
     root = root || document;
     root.querySelectorAll("[data-i18n]").forEach(el => {
@@ -275,9 +745,15 @@
   }
 
   function setLang(l) {
+    const vorher = lang;
     lang = norm(l) || "de";
     try { localStorage.setItem("mm_lang", lang); } catch (e) {}   // manuelle Wahl gewinnt künftig
+    // Zurück auf Deutsch: erst die Volltext-Übersetzung zurückrollen, dann
+    // die Schlüssel neu anwenden — sonst würde apply() über englische Knoten
+    // schreiben, deren Original danach verloren wäre.
+    if (vorher === "en" && lang !== "en") restoreGerman();
     apply();
+    if (lang === "en") runEnglish();
     document.dispatchEvent(new CustomEvent("mm:langchange", { detail: { lang } }));
     const codeEls = document.querySelectorAll(".lang-code");
     codeEls.forEach(el => el.textContent = (lang === "de" ? "EN" : "DE"));
@@ -297,16 +773,53 @@
     get lang() { return lang; },
     /** Fehlende Keys, die zur Laufzeit angefragt wurden (QA/Diagnose). */
     missing() { return Object.assign({}, MISSING); },
+    /** Sätze, die im EN-Modus kein Wörterbuch-Eintrag haben — nach Häufigkeit.
+        So wächst das Wörterbuch aus dem echten Seiteninhalt, statt aus Raten:
+        Seite auf Englisch öffnen, dann in der Konsole MM.i18n.untranslated() */
+    untranslated() {
+      return Object.keys(UNTRANSLATED)
+        .sort((a, b) => UNTRANSLATED[b] - UNTRANSLATED[a] || a.localeCompare(b))
+        .map((k) => ({ text: k, n: UNTRANSLATED[k] }));
+    },
+    /** Zahl der bekannten Übersetzungen (Glossar + Cache + Dienst-Antworten). */
+    phraseCount() { return Object.keys(PHRASES).length; },
+    /** Zustand des Übersetzungsdienstes — für QA und die Betreiber-Ansicht. */
+    status() {
+      return {
+        lang: lang,
+        bekannt: Object.keys(PHRASES).length,
+        wartend: WARTEND.size,
+        angefragt: ANGEFRAGT.size,
+        /* geraet: "ready" = dieser Browser übersetzt selbst, unbegrenzt und
+           ohne Server. "none" = Server-Weg (Tageslimit). */
+        geraet: geraetState,
+        dienst: dienstAus ? "aus" : (dienstUrl() ? "an" : "nicht konfiguriert")
+      };
+    },
+    /** Lokalen Übersetzungs-Cache verwerfen (nach Textänderungen zum Testen). */
+    clearCache() {
+      try { localStorage.removeItem(CACHE_KEY); } catch (e) {}
+      return true;
+    },
+    /** Übersetzt einen nachträglich eingefügten Bereich (normalerweise
+        übernimmt das der MutationObserver von selbst). */
+    translateTree,
     toggle() { setLang(lang === "de" ? "en" : "de"); },
     dict: DICT,
     /** Registriert zusätzliche Übersetzungen (für Seiten-spezifische Strings). */
     extend(obj) { Object.assign(DICT, obj); apply(); }
   };
 
-  // Früh anwenden (vor DOMContentLoaded-Inhalt, der schon da ist)
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => apply());
-  } else {
+  /* Beim Laden: Schlüssel anwenden und — falls Englisch gewählt ist — die
+     Volltext-Übersetzung starten. Das Wörterbuch lädt parallel zum restlichen
+     Seitenaufbau; deutsche Besucher laden es nie. */
+  function boot() {
     apply();
+    if (lang === "en") runEnglish();
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
   }
 })();

@@ -27,7 +27,7 @@
   function todayYmd() { var d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
 
   /* ---------- Routing ---------- */
-  var VIEWS = ["today", "plan", "track", "progress", "learn", "baseline", "pathway", "transform", "workout", "week", "settings", "coach", "advisor", "review", "twin", "simulator", "experiments", "protocol", "timeline", "memory", "map", "learned", "grants"];
+  var VIEWS = ["today", "plan", "track", "progress", "learn", "baseline", "pathway", "transform", "workout", "week", "settings", "coach", "advisor", "review", "twin", "simulator", "experiments", "protocol", "timeline", "memory", "map", "learned", "grants", "usage"];
   function view() { var h = (location.hash || "#today").slice(1).split("?")[0]; return VIEWS.indexOf(h) >= 0 ? h : "today"; }
   function hashParam(name) { var q = (location.hash || "").split("?")[1] || ""; var m = q.split("&").filter(function (kv) { return kv.split("=")[0] === name; })[0]; return m ? decodeURIComponent(m.split("=")[1] || "") : ""; }
   window.addEventListener("hashchange", function () { render(true); window.scrollTo(0, 0); });
@@ -58,7 +58,7 @@
 
   /* Kurzmeldung an die Live-Region in mein-protokoll.html. Absichtlich
      knapp: hier gehört der Ansichtsname hin, nicht die Ansicht. */
-  var VIEW_LABEL = { today: "Today", plan: "Plan", track: "Track", progress: "Progress", learn: "Learn", baseline: "Baseline", pathway: "Pathway", transform: "Transform", workout: "Workout", week: "Wochenplan", settings: "Einstellungen", coach: "Coach", advisor: "Advisor", review: "Ergebnisprüfung", twin: "Twin", simulator: "Simulator", experiments: "Experimente", protocol: "Persönlicher Standard", timeline: "Timeline", memory: "Memory", map: "Performance Map", learned: "Gelernt", grants: "Zugänge verwalten" };
+  var VIEW_LABEL = { today: "Today", plan: "Plan", track: "Track", progress: "Progress", learn: "Learn", baseline: "Baseline", pathway: "Pathway", transform: "Transform", workout: "Workout", week: "Wochenplan", settings: "Einstellungen", coach: "Coach", advisor: "Advisor", review: "Ergebnisprüfung", twin: "Twin", simulator: "Simulator", experiments: "Experimente", protocol: "Persönlicher Standard", timeline: "Timeline", memory: "Memory", map: "Performance Map", learned: "Gelernt", grants: "Mitglieder & Zugänge", usage: "Nutzung" };
   function announce(msg) {
     var el = document.getElementById("mmStatus");
     if (!el) return;
@@ -621,6 +621,23 @@
     html += '<div class="os-head"><span class="eyebrow" style="margin:0">My MaleMetrix</span><span style="display:flex;gap:8px"><a class="os-ghost" href="#settings" aria-label="Einstellungen">⚙</a>' +
       (snap.state === "signed_in" ? '<button id="mmOut" class="os-ghost">Abmelden</button>' : '') + '</span></div>';
 
+    /* Offene Stripe-Zahlung: der Kunde hat bezahlt, aber die Freischaltung
+       fehlt noch — meist weil er sich erst nach der Zahlung angemeldet hat
+       (der Magic Link führt hierher, nicht zurück in die Kasse). Das ist der
+       teuerste denkbare Zustand, deshalb steht der Weg zurück ganz oben.
+       Der Checkout nimmt die Prüfung mit der gemerkten Sitzung wieder auf. */
+    if (snap.state === "signed_in" && !protocolLink().owned) {
+      var sp = null;
+      try { sp = JSON.parse(localStorage.getItem("mm_stripe_pending") || "null"); } catch (e) { sp = null; }
+      var frisch = sp && sp.sessionId && (!sp.at || (Date.now() - sp.at) < 48 * 3600 * 1000);
+      if (frisch) {
+        html += '<div class="card os-accent"><p style="font-weight:600;margin:0 0 6px">Zahlung noch nicht freigeschaltet</p>' +
+          '<p class="small" style="margin:0 0 12px;color:var(--muted)">Deine Stripe-Zahlung' + (sp.no ? " (" + esc(sp.no) + ")" : "") +
+          ' ist eingegangen, der Zugang ist aber noch nicht deinem Konto zugeordnet. Ein Tipp genügt — bitte NICHT erneut bezahlen.</p>' +
+          '<a class="btn btn-primary btn-sm" href="checkout.html?bezahlt=stripe">Jetzt prüfen und freischalten →</a></div>';
+      }
+    }
+
     if (snap.state === "signed_in") {
       var inv = MM.account.localInventory(); var ms = MM.account.migrationStatus();
       if ((inv.score || inv.program) && ms.state !== "complete") {
@@ -993,6 +1010,14 @@
     html += sec("Pathway",
       '<p class="muted" style="margin:0 0 10px">Aktuell: <b style="color:var(--text)">' + (spw && OS.PATHWAYS[spw] ? esc(OS.PATHWAYS[spw].label) : "noch nicht gewählt") + '</b> — der Pathway bestimmt Ton, Tiefe und Inhalte (Health · Performance · Enhanced). Dein Programm und Modus bleiben davon unberührt.</p>' +
       '<a class="os-ghost" href="#pathway">Pathway ' + (spw ? "ändern" : "wählen") + ' →</a>');
+    /* Owner-Werkzeuge: nur für den Konto-Inhaber sichtbar. Die Sichtbarkeit ist
+       nur Bequemlichkeit — die Autorisierung erzwingt mm-admin serverseitig. */
+    if (MM.entitlements && MM.entitlements.isOwner && MM.entitlements.isOwner()) {
+      html += sec("Betreiber",
+        '<p class="muted" style="margin:0 0 10px">Nur für dich sichtbar: anonyme Reichweite und Nutzung deiner Website sowie registrierte Konten, Produkte, Abos und manuelle Zugangsvergaben.</p>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap"><a class="os-ghost" href="#usage">Nutzung ansehen →</a>' +
+        '<a class="os-ghost" href="#grants">Mitglieder &amp; Zugänge →</a></div>');
+    }
     html += '<p style="margin-top:16px"><a class="os-ghost" href="#today">← Zurück zu Today</a></p>';
     return html;
   }
@@ -1489,16 +1514,16 @@
     var rowsSvg = data.rows.map(function (r, i) {
       var y = top + 240 + i * 150;
       return '<text x="90" y="' + y + '" font-family="monospace" font-size="40" fill="rgba(255,255,255,0.55)" letter-spacing="6">' + r.k + '</text>' +
-        '<text x="990" y="' + (y + 8) + '" text-anchor="end" font-family="monospace" font-size="72" font-weight="bold" fill="#eef2f7">' + r.v + '</text>' +
+        '<text x="990" y="' + (y + 8) + '" text-anchor="end" font-family="monospace" font-size="72" font-weight="bold" fill="#F0EEE9">' + r.v + '</text>' +
         '<line x1="90" y1="' + (y + 40) + '" x2="990" y2="' + (y + 40) + '" stroke="rgba(255,255,255,0.08)"/>';
     }).join("");
     return '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">' +
-      '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2e7cf6"/><stop offset="1" stop-color="#00c2ff"/></linearGradient></defs>' +
-      '<rect width="' + W + '" height="' + H + '" fill="#07090d"/>' +
+      '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#258CFF"/><stop offset="1" stop-color="#16C4F4"/></linearGradient></defs>' +
+      '<rect width="' + W + '" height="' + H + '" fill="#070A0F"/>' +
       '<g stroke="rgba(255,255,255,0.045)">' + [1, 2, 3, 4, 5].map(function (i) { return '<line x1="' + (i * W / 6) + '" y1="0" x2="' + (i * W / 6) + '" y2="' + H + '"/>'; }).join("") + '</g>' +
       '<rect x="0" y="0" width="' + W + '" height="10" fill="url(#g)"/>' +
       '<text x="90" y="' + top + '" font-family="monospace" font-size="44" fill="rgba(255,255,255,0.5)" letter-spacing="10">' + data.mode + '</text>' +
-      '<text x="90" y="' + (top + 110) + '" font-family="sans-serif" font-size="96" font-weight="800" fill="#eef2f7">' + data.head + '</text>' +
+      '<text x="90" y="' + (top + 110) + '" font-family="sans-serif" font-size="96" font-weight="800" fill="#F0EEE9">' + data.head + '</text>' +
       rowsSvg +
       '<text x="90" y="' + (top + 240 + data.rows.length * 150 + 40) + '" font-family="sans-serif" font-size="40" fill="rgba(255,255,255,0.72)">' + data.story + '</text>' +
       '<text x="90" y="' + (H - 90) + '" font-family="monospace" font-size="36" fill="rgba(255,255,255,0.4)" letter-spacing="4">MALEMETRIX · GEMESSEN, NICHT BEHAUPTET</text>' +
@@ -1536,9 +1561,16 @@
     if (!(MM.entitlements && MM.entitlements.isOwner && MM.entitlements.isOwner())) {
       return '<div class="card"><p class="muted">Dieser Bereich ist dem Konto-Inhaber vorbehalten.</p></div>';
     }
-    return sec("Zugänge verwalten",
+    return sec("Mitglieder",
+      '<p class="small muted" style="margin:0 0 12px">Alle registrierten Konten mit Produkten, Abo-Zustand und Herkunft (Kauf oder manuelle Vergabe). ' +
+      'Du selbst erscheinst mit der Rolle OWNER — dein Zugang läuft über die Rolle, nicht über ein Produkt.</p>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+      '<button id="grMembers" class="btn btn-primary btn-sm">Mitglieder laden</button></div>' +
+      '<div id="grMembersTable" style="margin-top:12px"></div>') +
+    sec("Manuell vergebene Zugänge",
       '<p class="small muted" style="margin:0 0 12px">Gib einer E-Mail-Adresse kostenlosen Zugang zu DAS PROTOKOLL — oder entziehe ihn wieder. ' +
-      'Empfänger erhalten ausschließlich das Produkt, nie Adminrechte. Existiert noch kein Konto, bleibt die Einladung offen und greift automatisch bei der Registrierung.</p>' +
+      'Empfänger erhalten ausschließlich das Produkt, nie Adminrechte. Existiert noch kein Konto, bleibt die Einladung offen und greift automatisch bei der Registrierung. ' +
+      '<b>Diese Liste zeigt nur deine manuellen Vergaben</b> — Käufer und du selbst stehen oben unter „Mitglieder“.</p>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">' +
       '<label class="small" for="grEmail" style="flex:1;min-width:200px">E-Mail-Adresse' +
       '<input id="grEmail" type="email" autocomplete="off" spellcheck="false" placeholder="name@beispiel.de" ' +
@@ -1546,9 +1578,182 @@
       '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
       '<button id="grAdd" class="btn btn-primary btn-sm">Zugang geben</button>' +
       '<button id="grDel" class="os-ghost">Zugang entziehen</button>' +
-      '<button id="grList" class="os-ghost">Liste laden</button></div>' +
+      '<button id="grList" class="os-ghost">Vergaben laden</button></div>' +
       '<p id="grMsg" class="small" role="status" aria-live="polite" style="display:none;margin-top:10px"></p>' +
       '<div id="grTable" style="margin-top:12px"></div>');
+  }
+
+  /* Mitgliederzeile: E-Mail + Rolle/Produkte/Abo kompakt. Nur echte Daten —
+     ohne Entitlement und ohne Abo steht dort ehrlich „nur Konto“. */
+  function memberRow(m) {
+    var tags = [];
+    if (m.role === "owner") tags.push("OWNER");
+    (m.entitlements || []).forEach(function (e) {
+      if (e.status !== "active") return;
+      tags.push(e.product_key + (e.source === "manual_grant" ? " (vergeben)" : e.source === "purchase" ? " (Kauf)" : ""));
+    });
+    if (m.subscription && m.subscription.state) tags.push("Abo: " + m.subscription.state);
+    var reg = (m.created_at || "").slice(0, 10);
+    var seen = m.last_sign_in_at ? " · zuletzt " + m.last_sign_in_at.slice(0, 10) : "";
+    return '<div class="os-decision" style="margin:6px 0"><b>' + esc(m.email) + '</b>' +
+      '<span class="s">' + esc(tags.length ? tags.join(" · ") : "nur Konto") +
+      ' · registriert ' + esc(reg) + esc(seen) + '</span></div>';
+  }
+
+  function membersCall() {
+    var box = document.getElementById("grMembersTable");
+    if (!box) return;
+    if (!(MM.account && MM.account.invokeFunction)) { box.innerHTML = '<p class="small muted">Kein Konto-Backend aktiv.</p>'; return; }
+    box.innerHTML = '<p class="small muted">Wird geladen…</p>';
+    MM.account.invokeFunction("mm-admin", { action: "list_members" })
+      .then(function (r) {
+        var d = r && (r.data || r);
+        if (!d || d.error || !Array.isArray(d.members)) {
+          box.innerHTML = '<p class="small muted">' + (d && d.error === "forbidden" ? "Nur der Konto-Inhaber darf das." : "Das hat nicht geklappt.") + '</p>';
+          return;
+        }
+        box.innerHTML = '<p class="small muted" style="margin:0 0 8px">' + d.members.length +
+          (d.members.length === 1 ? " Konto" : " Konten") + ' · neueste zuerst</p>' +
+          (d.members.map(memberRow).join("") || '<p class="small muted">Noch keine registrierten Konten.</p>');
+      })
+      .catch(function () { box.innerHTML = '<p class="small muted">Verbindung zum Server fehlgeschlagen.</p>'; });
+  }
+
+  /* =========================== NUTZUNG (Owner) ===========================
+     Zeigt die eigene, anonyme Website-Telemetrie (public.site_events). Die
+     Zahlen kommen ausschließlich aggregiert aus mm-usage → site_usage_report;
+     einzelne Besucher-Zeilen verlassen die Datenbank nie. */
+  var usageDays = 7;
+  var usageData = null;
+  /* Verbrauch der dynamischen Übersetzung (public.translation_report).
+     Steht bewusst neben der Nutzung: es ist die einzige Stelle, an der laufend
+     Fremdkosten entstehen können — die will man sehen, nicht suchen. */
+  var transData = null;
+  /* Technische Ereignisnamen → Klartext. Unbekannte Namen bleiben stehen
+     (ehrlicher als eine falsche Beschriftung) — der Kauf-Trichter zuerst. */
+  var USAGE_LABEL = {
+    score_start_click: "Score-Button geklickt",
+    check_started: "Score begonnen",
+    check_completed: "Score abgeschlossen",
+    leadmagnet_signup: "E-Mail hinterlassen",
+    cta_protokoll: "Zur Protokoll-Seite",
+    protokoll_add_to_cart: "Protokoll in den Warenkorb",
+    checkout_started: "Kasse geöffnet",
+    checkout_stripe_redirect: "Zur Bezahlseite",
+    order_completed: "KAUF abgeschlossen",
+    protokoll_unlocked: "Protokoll geöffnet",
+    postbuy_read_protokoll: "Nach Kauf: lesen",
+    postbuy_start_program: "Nach Kauf: Programm",
+    upsell_coaching_view: "Coaching-Angebot gesehen",
+    upsell_coaching_click: "Coaching angeklickt",
+    pathway_selected: "Pathway gewählt",
+    today_open: "App geöffnet (Today)"
+  };
+
+  function vUsage() {
+    if (!(MM.entitlements && MM.entitlements.isOwner && MM.entitlements.isOwner())) {
+      return '<div class="card"><p class="muted">Dieser Bereich ist dem Konto-Inhaber vorbehalten.</p></div>';
+    }
+    var r = usageData;
+    var html = '<div class="os-head"><span class="eyebrow" style="margin:0">MM / Nutzung</span>' +
+      '<span style="display:flex;gap:6px">' +
+      [7, 30, 90].map(function (d) {
+        return '<button class="os-chip' + (usageDays === d ? " sel" : "") + '" data-usagedays="' + d + '">' + d + ' Tage</button>';
+      }).join("") + '</span></div>';
+
+    if (!r) {
+      html += '<div class="card"><p class="muted" id="usMsg">Bericht wird geladen…</p></div>';
+      return html;
+    }
+    if (r.error) {
+      html += '<div class="card"><p class="muted">' + esc(r.error) + '</p>' +
+        '<button class="os-ghost" data-usagedays="' + usageDays + '" style="margin-top:10px">Erneut versuchen</button></div>';
+      return html;
+    }
+
+    var strip = [
+      ['<span class="os-stat"><span class="k">HEUTE</span><b>' + (r.heute || 0) + '</b></span>'],
+      ['<span class="os-stat"><span class="k">BESUCHE ' + usageDays + 'T</span><b>' + (r.sitzungen || 0) + '</b></span>'],
+      ['<span class="os-stat"><span class="k">AKTIONEN</span><b>' + (r.ereignisse || 0) + '</b></span>']
+    ].map(function (x) { return x[0]; }).join("");
+    html += '<div class="os-statstrip">' + strip + '</div>';
+
+    if (!r.sitzungen) {
+      html += '<div class="card"><span class="tag">NOCH KEINE DATEN</span>' +
+        '<p class="muted" style="margin:6px 0 0">Es wurden noch keine Besuche erfasst. Die Messung läuft ab dem nächsten Seitenaufruf — schau in ein paar Stunden wieder rein.</p></div>';
+      return html;
+    }
+
+    function liste(titel, rows, wertKey, leer) {
+      if (!rows || !rows.length) return sec(titel, '<p class="small muted" style="margin:0">' + esc(leer) + '</p>');
+      var max = rows.reduce(function (m, x) { return Math.max(m, Number(x[wertKey]) || 0); }, 0) || 1;
+      return sec(titel, '<div class="os-metriclist">' + rows.map(function (x) {
+        var v = Number(x[wertKey]) || 0;
+        return '<div><span>' + esc(String(x.name || "—")) + '</span>' +
+          '<b><span class="os-usebar" aria-hidden="true"><i style="width:' + Math.round(v / max * 100) + '%"></i></span></b>' +
+          '<i>' + v + '</i></div>';
+      }).join("") + '</div>');
+    }
+
+    html += liste("Verlauf · Besuche pro Tag", (r.verlauf || []).slice(-30).map(function (d) {
+      return { name: fmtMetricDate(d.tag), sitzungen: d.sitzungen };
+    }), "sitzungen", "—");
+    html += liste("Meistbesuchte Seiten", r.seiten, "sitzungen", "Noch keine Seitendaten.");
+    html += liste("Woher die Besucher kommen", r.quellen, "sitzungen",
+      "Noch keine externen Quellen — Besucher kamen direkt (Lesezeichen, App, Link in Nachricht).");
+    html += liste("Was benutzt wird", (r.aktionen || []).map(function (a) {
+      return { name: USAGE_LABEL[a.name] || a.name, anzahl: a.anzahl };
+    }), "anzahl", "Noch keine Aktionen erfasst.");
+    html += liste("Geräte", r.geraete, "sitzungen", "—");
+    html += '<p class="small muted" style="margin-top:14px">Anonym gemessen: Zufalls-ID pro Sitzung, keine IP, keine Cookies. ' +
+      'Von der Herkunft wird nur der Host gespeichert, nie die Suchanfrage.</p>';
+
+    /* Englische Fassung: die einzige Stelle mit laufenden Fremdkosten. Der
+       Server-Cache sorgt dafür, dass jeder Satz genau einmal zählt — deshalb
+       fällt der Verbrauch nach den ersten Besuchen praktisch auf null. */
+    if (transData) {
+      var anb = transData.anbieter || {};
+      var kostenpflichtig = (Number(anb.deepl) || 0) + (Number(anb.google) || 0);
+      var ANB_LABEL = { mymemory: "kostenlos", deepl: "DeepL (bezahlt)", google: "Google (bezahlt)", manual: "von Hand geprüft" };
+      var anbText = Object.keys(anb).map(function (k) {
+        return (ANB_LABEL[k] || k) + ": " + anb[k];
+      }).join(" · ") || "noch nichts übersetzt";
+      html += sec("Englische Fassung · Übersetzung",
+        '<div class="os-metriclist">' +
+        '<div><span>Übersetzte Sätze</span><b></b><i>' + (Number(transData.saetze) || 0) + '</i></div>' +
+        '<div><span>Zeichen gesamt</span><b></b><i>' + (Number(transData.zeichen_gesamt) || 0).toLocaleString("de-DE") + '</i></div>' +
+        '<div><span>davon diesen Monat</span><b></b><i>' + (Number(transData.zeichen_monat) || 0).toLocaleString("de-DE") + '</i></div>' +
+        '</div>' +
+        '<p class="small" style="margin-top:10px;color:var(--muted)">Herkunft: ' + esc(anbText) + '</p>' +
+        (kostenpflichtig === 0
+          ? '<p class="small muted" style="margin-top:8px">Kostet nichts: der Übersetzungsdienst läuft ohne Vertrag und ohne Guthaben. ' +
+            'Jeder Satz wird genau einmal übersetzt und dann für alle Besucher gespeichert — nach den ersten ' +
+            'englischen Aufrufen fällt der Verbrauch fast auf null. Änderst du einen deutschen Text, wird nur ' +
+            'dieser Satz neu übersetzt.</p>'
+          : '<p class="small" style="margin-top:8px;color:var(--amber,#f5a623)">Achtung: ' + kostenpflichtig +
+            ' Sätze kamen von einem kostenpflichtigen Anbieter. Das passiert nur, wenn in Supabase ein ' +
+            'DEEPL_API_KEY oder GOOGLE_TRANSLATE_API_KEY gesetzt ist.</p>'));
+    }
+    html += '<p style="margin-top:12px"><a class="os-ghost" href="#settings">← Zurück zu den Einstellungen</a></p>';
+    return html;
+  }
+
+  function usageLoad() {
+    if (!(MM.account && MM.account.invokeFunction)) { usageData = { error: "Kein Konto-Backend aktiv." }; render(); return; }
+    MM.account.invokeFunction("mm-usage", { days: usageDays })
+      .then(function (r) {
+        var d = r && (r.data || r);
+        usageData = (d && d.ok && d.report) ? d.report : { error: "Bericht konnte nicht geladen werden." };
+        render();
+      })
+      .catch(function () { usageData = { error: "Verbindung zum Server fehlgeschlagen." }; render(); });
+    /* Übersetzungs-Verbrauch daneben: separater, unabhängiger Aufruf. Fällt er
+       aus, fehlt nur diese Zeile — der Nutzungsbericht bleibt vollständig. */
+    if (MM.account.rpc) {
+      MM.account.rpc("translation_report").then(function (r) {
+        if (r && r.data && !r.error) { transData = r.data; render(); }
+      }).catch(function () {});
+    }
   }
 
   function grantsCall(action, email) {
@@ -1584,8 +1789,9 @@
               '<span class="s">' + esc(g.status) + ' · ' + esc((g.granted_at || "").slice(0, 10)) +
               (g.user_id ? ' · Konto verknüpft' : ' · Einladung offen') + '</span></div>';
           }).join("");
-          document.getElementById("grTable").innerHTML = rows || '<p class="small muted">Noch keine Vergaben.</p>';
-          say("Liste geladen.", true);
+          document.getElementById("grTable").innerHTML = rows ||
+            '<p class="small muted">Noch keine manuellen Vergaben. Käufer und dein eigenes Konto stehen oben unter „Mitglieder“ — sie erscheinen hier nie.</p>';
+          say("Vergaben geladen.", true);
           return;
         }
         say(action === "grant"
@@ -1769,11 +1975,11 @@
       var pts = [];
       for (var i = 0; i < days; i++) pts.push(x(i).toFixed(1) + "," + y(w0 * (1 + band[0] / 100 * i / 7)).toFixed(1));
       for (var j = days - 1; j >= 0; j--) pts.push(x(j).toFixed(1) + "," + y(w0 * (1 + band[1] / 100 * j / 7)).toFixed(1));
-      bandPath = '<polygon points="' + pts.join(" ") + '" fill="rgba(0,194,255,0.10)" stroke="none"/>';
+      bandPath = '<polygon points="' + pts.join(" ") + '" fill="rgba(22, 196, 244,0.10)" stroke="none"/>';
     }
     var line = series.map(function (m, i) { return x(i).toFixed(1) + "," + y(m.value).toFixed(1); }).join(" ");
     return '<svg class="mm-chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Gewichtsverlauf mit Erwartungskorridor (' + min.toFixed(1) + '–' + max.toFixed(1) + ' kg)">' + bandPath +
-      '<polyline points="' + line + '" fill="none" stroke="var(--accent-2,#00c2ff)" stroke-width="1.6" vector-effect="non-scaling-stroke"/>' +
+      '<polyline points="' + line + '" fill="none" stroke="var(--accent-2,#16C4F4)" stroke-width="1.6" vector-effect="non-scaling-stroke"/>' +
       '<text x="' + P + '" y="10" class="mm-chart-lbl">' + max.toFixed(1) + '</text><text x="' + P + '" y="' + (H - 2) + '" class="mm-chart-lbl">' + min.toFixed(1) + ' kg</text></svg>' +
       (band ? '<p class="small muted" style="margin:2px 0 0">Blaues Band = Erwartungskorridor ' + esc(ctx.goal.mode.toUpperCase()) + ' (' + band[0] + '…' + band[1] + ' %KG/Woche) · Linie = deine Messungen.</p>' : '');
   }
@@ -2230,10 +2436,13 @@
     var v = view();
     if (v !== "track") trackEcho = null;   // Mess-Antwort gehört nur zur Track-Ansicht
     var body = v === "plan" ? vPlan() : v === "track" ? vTrack() : v === "progress" ? vProgress() : v === "learn" ? vLearn() : v === "baseline" ? vBaseline() : v === "pathway" ? vPathway() : v === "transform" ? vTransform() : v === "workout" ? vWorkout() : v === "week" ? vWeek() : v === "settings" ? vSettings() :
-      v === "coach" ? vCoach() : v === "advisor" ? vAdvisor() : v === "review" ? vReview() : v === "twin" ? vTwin() : v === "simulator" ? vSimulator() : v === "experiments" ? vExperiments() : v === "protocol" ? vProtocol() : v === "timeline" ? vTimeline() : v === "memory" ? vMemory() : v === "map" ? vMap() : v === "learned" ? vLearned() : v === "grants" ? vGrants() : vToday(snap);
+      v === "coach" ? vCoach() : v === "advisor" ? vAdvisor() : v === "review" ? vReview() : v === "twin" ? vTwin() : v === "simulator" ? vSimulator() : v === "experiments" ? vExperiments() : v === "protocol" ? vProtocol() : v === "timeline" ? vTimeline() : v === "memory" ? vMemory() : v === "map" ? vMap() : v === "learned" ? vLearned() : v === "grants" ? vGrants() : v === "usage" ? vUsage() : vToday(snap);
     var fab = (v !== "workout" && v !== "settings" && snap.state !== "signed_out") ? '<button class="os-fab" data-fab aria-label="Schnell erfassen">+</button>' : "";
     host.innerHTML = '<div class="os-shell os-env-' + (v === "progress" || v === "workout" ? "performance" : v === "plan" ? "metabolic" : v === "learn" && OS.pathway() === "enhanced" ? "clinical" : "instrument") + '">' + navBar(v) + '<div class="os-body" tabindex="-1">' + body + '</div>' + fab + '</div>';
     if (v === "progress") loadPhotoCompare();
+    // Nutzungsbericht beim Betreten der Ansicht einmal nachladen.
+    if (v === "usage" && !usageData) usageLoad();
+    if (v !== "usage") usageData = null;   // beim Verlassen verwerfen → immer frische Zahlen
     /* Nach einem Navigationsklick den Fokus in den neuen Inhalt setzen.
        Ohne das bleibt der Fokus auf dem entfernten Link und fällt auf
        <body> zurück — der Screenreader steht wieder am Seitenanfang. */
@@ -2253,12 +2462,18 @@
       var t = e.target;
       var out = t.closest("#mmOut"); if (out) { MM.account.signOut(); return; }
       var imp = t.closest("#mmImport"); if (imp) { imp.disabled = true; imp.textContent = "Übernehme…"; MM.account.importLocalData().then(function (r) { var m = document.getElementById("mmImportMsg"); if (m) { m.style.display = "block"; m.textContent = r.ok ? "Vollständig übernommen. Deine lokalen Daten bleiben als Backup." : ((r.status && r.status.state === "partial") ? "Teilweise übernommen — bitte erneut versuchen." : (r.message || "Fehlgeschlagen — bitte erneut versuchen.")); } setTimeout(render, 900); }); return; }
+      var ud = t.closest("[data-usagedays]"); if (ud) {
+        // render() stößt das Nachladen selbst an, sobald usageData leer ist.
+        usageDays = parseInt(ud.getAttribute("data-usagedays"), 10) || 7;
+        usageData = null; render(); return;
+      }
       var ga = t.closest("#grAdd"), gd = t.closest("#grDel"), gl = t.closest("#grList");
       if (ga || gd || gl) {
         var em = (document.getElementById("grEmail") || {}).value || "";
         grantsCall(ga ? "grant" : gd ? "revoke" : "list", em);
         return;
       }
+      if (t.closest("#grMembers")) { membersCall(); return; }
       var cb = t.closest("#mmClaimBtn"); if (cb) { var val = (document.getElementById("mmClaim") || {}).value; var m2 = document.getElementById("mmClaimMsg"); cb.disabled = true; MM.account.claimAccessCode(val).then(function (r) { if (m2) { m2.style.display = "block"; m2.style.color = r.ok ? "var(--green,#3ddc84)" : "var(--amber,#f5a623)"; m2.textContent = r.ok ? "Zugang aktiviert." : (r.message || "Code nicht erkannt."); } cb.disabled = false; if (r.ok) { if (MM.track) MM.track("claim_access", {}); setTimeout(render, 700); } }); return; }
       // Zahlung prüfen (P0.10): server-autoritative PayPal-Recovery im Konto.
       // Löst NIE eine neue Zahlung aus — reine Verifikation bei PayPal.

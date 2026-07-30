@@ -77,7 +77,7 @@
   function chip(text, cls) {
     var colors = {
       live: "background:rgba(46,204,113,0.12);color:#2ecc71;border:1px solid rgba(46,204,113,0.3)",
-      manual: "background:rgba(46,124,246,0.12);color:var(--accent);border:1px solid rgba(46,124,246,0.3)",
+      manual: "background:rgba(37, 140, 255,0.12);color:var(--accent);border:1px solid rgba(37, 140, 255,0.3)",
       config: "background:rgba(241,196,15,0.1);color:#f1c40f;border:1px solid rgba(241,196,15,0.3)",
       blocked: "background:rgba(231,76,60,0.1);color:#e74c3c;border:1px solid rgba(231,76,60,0.3)",
       calc: "background:rgba(255,255,255,0.06);color:var(--muted);border:1px solid var(--line)"

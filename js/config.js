@@ -77,8 +77,8 @@ window.MM_CONFIG = {
   //    aktivieren. Apple Pay ist für gehostete Bezahlseiten standardmäßig an.
   // 3. Dashboard → Zahlungslinks → "Neu" → Produkt "DAS PROTOKOLL", Preis
   //    99 €, einmalig. Danach unter "Nach der Zahlung" → "Weiterleitung zu
-  //    einer Seite" eintragen:
-  //      https://www.malemetrix.com/checkout.html?bezahlt=stripe
+  //    einer Seite" GENAU DAS eintragen (mit Platzhalter, siehe unten):
+  //      https://www.malemetrix.com/checkout.html?bezahlt=stripe&session_id={CHECKOUT_SESSION_ID}
   // 4. Die entstandene URL (beginnt mit https://buy.stripe.com/) hier unten
   //    bei "protokoll" einsetzen. Fertig — die Zahlart erscheint sofort.
   //
@@ -97,11 +97,32 @@ window.MM_CONFIG = {
   // Der Wächter G9 in tools-dev/tests/security-guards.test.js bricht den
   // Build, falls doch einmal einer hineingerät.
   //
-  // WICHTIG zur Auslieferung: PayPal schaltet den Zugang automatisch frei,
-  // weil die Zahlung serverseitig geprüft wird. Für Stripe existiert diese
-  // Prüfung noch nicht — dort schaltest du den Zugang nach der Zahlung
-  // einmal manuell frei (My MaleMetrix → Zugänge verwalten). Der Checkout
-  // sagt dem Käufer das ehrlich an. Details in COMMERCE.md.
+  // AUTOMATISCHE FREISCHALTUNG (Stripe) — zwei Voraussetzungen:
+  //
+  // a) Die Rückleitung am Zahlungslink MUSS den Platzhalter tragen:
+  //      ...checkout.html?bezahlt=stripe&session_id={CHECKOUT_SESSION_ID}
+  //    Stripe ersetzt ihn beim Weiterleiten durch die echte Session-ID. Nur
+  //    damit kann der Server die Zahlung nachprüfen. Fehlt der Platzhalter,
+  //    bleibt es beim ehrlichen Hinweis auf manuelle Freischaltung — es wird
+  //    NIE ein Zugang ohne geprüfte Zahlung vergeben.
+  //
+  // b) In Supabase muss das Secret STRIPE_SECRET_KEY gesetzt sein (Dashboard →
+  //    Edge Functions → Secrets). GESETZT am 30.07.2026 als eingeschränkter
+  //    Schlüssel (rk_live_…) mit genau einer Berechtigung: Checkout-Sitzungen
+  //    lesen. Mehr braucht die Freischaltung nicht — und selbst wenn dieser
+  //    Schlüssel abfließt, kann damit niemand Geld bewegen. Der Schlüssel
+  //    gehört AUSSCHLIESSLICH nach Supabase, niemals in diese Datei und
+  //    niemals ins Repository. Fehlt er, antwortet die Function mit
+  //    provider_not_configured und der Checkout fällt auf den manuellen
+  //    Hinweis zurück.
+  //
+  // Wie es dann läuft: Der Käufer kommt von Stripe zurück, der Browser ruft
+  // mm-commerce mit action "verify_stripe" auf, die Function fragt die
+  // Checkout-Session direkt bei Stripe ab und verlangt status "complete" plus
+  // payment_status "paid". Der PaymentIntent dient als Zahlungsreferenz —
+  // dadurch bleibt jede Wiederholung idempotent (kein Doppelzugang). Erst
+  // danach entstehen Bestellung und Entitlement, genau wie bei PayPal.
+  // Details in COMMERCE.md.
   stripeLinks: {
     // Zahlungslink plink_1TxUWXDjofqc7MMzNA1IEKoE · DAS PROTOKOLL ·
     // 99,00 EUR · Rückleitung auf checkout.html?bezahlt=stripe.
@@ -207,10 +228,110 @@ window.MM_CONFIG = {
   //
   // Welche Ereignisse den Kauf-Trichter bilden, steht im Kopf von
   // js/analytics.js.
+  // ZWEI MESSUNGEN, ZWEI AUFGABEN — sie ergänzen sich:
+  //
+  //   1) cloudflareToken  → Besucherzahlen, Herkunft, Geräte (KOSTENLOS).
+  //      Cloudflare Web Analytics ist cookielos und braucht kein Cookie-Banner.
+  //      Einrichten: dash.cloudflare.com → "Web Analytics" → "Add a site" →
+  //      www.malemetrix.com eintragen. Cloudflare zeigt dann ein <script>-
+  //      Snippet mit  data-cf-beacon='{"token": "abc123..."}'  — NUR den
+  //      Token-Wert unten eintragen, nicht das ganze Snippet. Kein Skript in
+  //      die Seiten kopieren, das erledigt js/analytics.js.
+  //      WICHTIG: Cloudflare zählt nur Seitenaufrufe, KEINE eigenen Ereignisse.
+  //
+  //   2) siteTelemetry    → was auf der Seite passiert (EIGENE Messung).
+  //      Läuft über die Edge Function site-telemetry in dein eigenes Supabase:
+  //      welche Seiten, welche Aktionen, welche Herkunfts-Hosts. Anonym
+  //      (Zufalls-ID pro Sitzung, keine IP, keine Cookies, kein User-Agent).
+  //      Auswertung: My MaleMetrix → Einstellungen → Nutzung (nur Owner).
+  //      Auf false setzen, um die eigene Messung komplett abzuschalten.
+  //
+  //   3) plausibleDomain  → optionale Alternative/Ergänzung (ab ~9 €/Monat),
+  //      liefert den Kauf-Trichter in einem fertigen Dashboard.
   analytics: {
+    cloudflareToken: "4293a8214f104e3db5866141b15a29eb",   // Cloudflare Web Analytics (kostenlos, cookielos)
+    siteTelemetry: true,   // eigene, anonyme Nutzungsmessung (Supabase)
     plausibleDomain: "",   // z. B. "www.malemetrix.com"
     plausibleSrc: "https://plausible.io/js/script.tagged-events.js"
   },
+
+  // --- Englische Fassung: dynamische Übersetzung, keine Seiten-Klone --------
+  //
+  // Klickt ein Besucher oben auf EN, wird die GANZE Seite übersetzt — auch
+  // alles, was JavaScript erzeugt (Score, My MaleMetrix, Tracker, Rechner).
+  // Es gibt keine englischen Kopien der Seiten und kein handgepflegtes
+  // Wörterbuch: beides würde beim ersten Textwechsel auseinanderdriften.
+  //
+  // So läuft es:
+  //   1. js/i18n.js sammelt die deutschen Sätze der Seite.
+  //   2. Bekannte Sätze werden sofort ersetzt (lokaler Cache im Browser bzw.
+  //      Glossar js/i18n-en.js für Marken- und Fachbegriffe).
+  //   3. Der Rest geht gebündelt an die Edge Function mm-translate. Die
+  //      antwortet aus ihrem Server-Cache (Tabelle public.translations) oder
+  //      übersetzt einmal und merkt sich das Ergebnis für ALLE Besucher.
+  //
+  // WAS DAS FÜR DICH BEDEUTET: Du änderst deutschen Text — fertig. Der
+  // geänderte Satz hat einen neuen Schlüssel und wird beim nächsten
+  // englischen Besuch automatisch neu übersetzt. Nichts nachzupflegen.
+  //
+  // REIHENFOLGE DER ÜBERSETZER (immer kostenlos, immer 0,00 €):
+  //   1. Cache (Browser + Server) — kostet nichts, ist sofort da.
+  //   2. DAS GERÄT SELBST: Neuere Chrome-Versionen bringen ein
+  //      Übersetzungsmodell mit (Translator-API). Wo es das gibt, ist es die
+  //      beste Option überhaupt — unbegrenzt, sofort, und kein Satz verlässt
+  //      den Browser. Kein Server, kein Limit, keine Kosten.
+  //   3. Der Server (MyMemory) für Browser ohne eigenes Modell, heute Safari
+  //      und Firefox.
+  // Ergebnis: Chrome-Besucher sehen sofort die ganze Seite auf Englisch;
+  // andere füllen den gemeinsamen Cache über den Server.
+  //
+  // Übersetzungen VOM GERÄT werden bewusst NICHT an den Server geschickt: Der
+  // Endpunkt ist öffentlich und anonym: würde er Übersetzungen von Clients
+  // annehmen, könnte jeder beliebigen Text in den gemeinsamen Cache schreiben
+  // und damit die Seite für alle verändern. Ein schneller gefüllter Cache ist
+  // das nicht wert.
+  //
+  // KOSTET NICHTS UND MUSS NICHT EINGERICHTET WERDEN.
+  // Standard-Anbieter ist MyMemory: kein Konto, keine Kreditkarte, kein
+  // Vertrag, kein ablaufendes Guthaben. Begrenzt ist nur das Tagesvolumen
+  // (5.000 Zeichen; mit einer hinterlegten E-Mail 50.000). Weil der Cache jede
+  // Übersetzung dauerhaft behält, ist das reichlich: Die ganze Website
+  // entspricht rund 80.000 Zeichen EINMALIG. Reicht ein Tag nicht, bleiben die
+  // restlichen Sätze deutsch und kommen beim nächsten Besuch dran — die Seite
+  // füllt sich über wenige Tage von selbst.
+  //
+  // OPTIONAL, in Supabase → Edge Functions → Secrets:
+  //   MYMEMORY_EMAIL   = eine beliebige eigene E-Mail. Hebt das Tageslimit von
+  //                      5.000 auf 50.000 Zeichen. Kostenlos, keine Anmeldung.
+  //   DEEPL_API_KEY    = bessere Qualität, falls du das später willst. Sobald
+  //                      der Schlüssel gesetzt ist, übernimmt DeepL automatisch
+  //                      — ohne Code-Änderung. Achtung: DeepL-Free ist seit
+  //                      Juli 2026 eine EINMALGUTSCHRIFT (1 Mio. Zeichen), kein
+  //                      Monatskontingent. Danach kostet es Geld.
+  //   GOOGLE_TRANSLATE_API_KEY = dritte Möglichkeit, ebenfalls kostenpflichtig.
+  //   TRANSLATE_BUDGET_CHARS (Standard 400000) = Monatsbremse gegen Missbrauch.
+  //   TRANSLATE_BUDGET_TOTAL (Standard 900000) = greift NUR bei bezahlten
+  //                      Anbietern und schützt deren endliches Guthaben.
+  // Schlüssel gehören AUSSCHLIESSLICH nach Supabase, niemals in diese Datei.
+  //
+  // In My MaleMetrix → Einstellungen → Nutzung ansehen steht, wie viele Sätze
+  // übersetzt wurden und von welchem Anbieter. Sobald dort ein bezahlter
+  // Anbieter auftaucht, wird es ausdrücklich als Warnung angezeigt.
+  //
+  // Fällt der Dienst aus oder ist das Tageslimit erreicht, bleibt der Satz
+  // DEUTSCH stehen. Das ist Absicht: unübersetzt ist unschön, halbleere Seiten
+  // wären schlimmer.
+  //
+  // BEWUSST NICHT ÜBERSETZT:
+  //   · AGB, Datenschutz, Impressum — die deutsche Fassung ist die
+  //     verbindliche. Englische Besucher sehen dort einen Hinweis darauf.
+  //   · Der Premium-Reader (/ebooks/) — das ist das gekaufte Produkt und
+  //     verdient eine geprüfte Übersetzung, keine maschinelle.
+  //
+  // PRÜFEN (Browser-Konsole, auf Englisch geschaltet):
+  //   MM.i18n.status()          → Zustand: bekannt / wartend / Dienst
+  //   MM.i18n.untranslated()    → Sätze ohne Übersetzung, häufigste zuerst
+  //   MM.i18n.clearCache()      → lokalen Cache verwerfen (nach Textänderung)
 
   // --- Premium-Zugänge (Protokoll, Programm, Ultimate Stack) ----------------
   // Die Zugangscodes stehen bewusst NICHT mehr hier (diese Datei ist öffentlich

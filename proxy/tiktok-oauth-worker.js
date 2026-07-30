@@ -88,7 +88,7 @@ function json(data, status, request) {
   });
 }
 function page(body, status) {
-  return new Response("<!doctype html><meta charset='utf-8'><body style='font-family:system-ui;background:#07090d;color:#e8edf5;display:grid;place-items:center;height:100vh'><div style='text-align:center;max-width:420px'>" + body + "</div></body>", {
+  return new Response("<!doctype html><meta charset='utf-8'><body style='font-family:system-ui;background:#070A0F;color:#e8edf5;display:grid;place-items:center;height:100vh'><div style='text-align:center;max-width:420px'>" + body + "</div></body>", {
     status: status || 200, headers: { "content-type": "text/html; charset=utf-8" }
   });
 }
