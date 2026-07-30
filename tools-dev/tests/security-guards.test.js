@@ -393,6 +393,23 @@ group("G11 · Bezahltes Werk: rueckverfolgbar statt scheinbar unkopierbar");
      Screenshots seien unmoeglich. */
   ok(!/screenshots? (sind |ist )?(nicht|un)m(oe|ö)glich/i.test(r),
     "es wird nirgends behauptet, Screenshots seien unmoeglich");
+
+  /* Der Autor muss an seine eigenen Texte kommen -- kopieren, drucken, saubere
+     Screenshots. Entscheidend: Die Ausnahme haengt an der SERVER-Rolle, nicht
+     an localStorage. Sonst waere der Schutz mit einer Zeile im Browser
+     ausgehebelt und damit keiner. */
+  var aus = (r.match(/function autorAusnahme[\s\S]*?\n  \}/) || [""])[0];
+  ok(aus.length > 0, "es gibt eine Ausnahme fuer das Betreiber-Konto");
+  ok(/MM\.account\.role\(\) === "owner"/.test(aus),
+    "die Ausnahme prueft die Rolle (kommt aus public.user_roles, an die Nutzer-ID gebunden)");
+  ok(/MM\.account\.loadRole/.test(aus), "die Rolle wird beim Server nachgeladen, nicht geraten");
+  ok(!/localStorage|mm_role|sessionStorage/.test(aus),
+    "die Ausnahme liest NICHTS aus dem Browser-Speicher (waere sonst faelschbar)");
+  /* Reihenfolge: erst schuetzen, dann ausnehmen. Ein langsamer Server darf nie
+     dazu fuehren, dass das Werk kurz ungeschuetzt in der Seite steht. */
+  var showFn = (r.match(/function show\(html\)[\s\S]*?autorAusnahme\(\);/) || [""])[0];
+  ok(showFn.indexOf('classList.add("bp-protected")') < showFn.indexOf("autorAusnahme()"),
+    "geschuetzt wird SOFORT, die Ausnahme kommt danach");
 })();
 
 console.log("\n==============================");
