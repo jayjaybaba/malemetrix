@@ -1608,6 +1608,26 @@
      einzelne Besucher-Zeilen verlassen die Datenbank nie. */
   var usageDays = 7;
   var usageData = null;
+  /* Technische Ereignisnamen → Klartext. Unbekannte Namen bleiben stehen
+     (ehrlicher als eine falsche Beschriftung) — der Kauf-Trichter zuerst. */
+  var USAGE_LABEL = {
+    score_start_click: "Score-Button geklickt",
+    check_started: "Score begonnen",
+    check_completed: "Score abgeschlossen",
+    leadmagnet_signup: "E-Mail hinterlassen",
+    cta_protokoll: "Zur Protokoll-Seite",
+    protokoll_add_to_cart: "Protokoll in den Warenkorb",
+    checkout_started: "Kasse geöffnet",
+    checkout_stripe_redirect: "Zur Bezahlseite",
+    order_completed: "KAUF abgeschlossen",
+    protokoll_unlocked: "Protokoll geöffnet",
+    postbuy_read_protokoll: "Nach Kauf: lesen",
+    postbuy_start_program: "Nach Kauf: Programm",
+    upsell_coaching_view: "Coaching-Angebot gesehen",
+    upsell_coaching_click: "Coaching angeklickt",
+    pathway_selected: "Pathway gewählt",
+    today_open: "App geöffnet (Today)"
+  };
 
   function vUsage() {
     if (!(MM.entitlements && MM.entitlements.isOwner && MM.entitlements.isOwner())) {
@@ -1660,7 +1680,9 @@
     html += liste("Meistbesuchte Seiten", r.seiten, "sitzungen", "Noch keine Seitendaten.");
     html += liste("Woher die Besucher kommen", r.quellen, "sitzungen",
       "Noch keine externen Quellen — Besucher kamen direkt (Lesezeichen, App, Link in Nachricht).");
-    html += liste("Was benutzt wird", r.aktionen, "anzahl", "Noch keine Aktionen erfasst.");
+    html += liste("Was benutzt wird", (r.aktionen || []).map(function (a) {
+      return { name: USAGE_LABEL[a.name] || a.name, anzahl: a.anzahl };
+    }), "anzahl", "Noch keine Aktionen erfasst.");
     html += liste("Geräte", r.geraete, "sitzungen", "—");
     html += '<p class="small muted" style="margin-top:14px">Anonym gemessen: Zufalls-ID pro Sitzung, keine IP, keine Cookies. ' +
       'Von der Herkunft wird nur der Host gespeichert, nie die Suchanfrage.</p>';
