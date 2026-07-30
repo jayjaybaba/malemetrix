@@ -2918,7 +2918,10 @@ body > * { position: relative; z-index: 0; }
   letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase;
 }
 .co-facts span { color: var(--muted-2); margin: 0 6px; }
-.co-hero .hero-ctas { margin-top: 22px; }
+/* .hero-ctas bringt global 36px Abstand nach unten mit — zusammen mit dem
+   Abstand des Vergleichslinks klaffte darunter eine 52px-Lücke. Der Platz
+   gehört dem Porträt, nicht dem Weißraum. */
+.co-hero .hero-ctas { margin-top: 22px; margin-bottom: 0; }
 .co-compare {
   display: inline-block; margin-top: 16px; font-size: 0.92rem;
   color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--hairline);
@@ -2964,7 +2967,10 @@ body > * { position: relative; z-index: 0; }
      Displays gibt es diesen Platz nicht; dort füllt das Bild wie bisher den
      Kopf und der Text liegt auf dem kräftigen Scrim. */
   @media (min-height: 800px) {
-    .co-hero-media img { height: 64vh; }
+    /* Unter dem Header ansetzen, damit der Scheitel nicht hinter der
+       Kopfleiste verschwindet — und den gewonnenen Platz in die Bildhöhe
+       geben, sodass der Kopf frei und groß über der Textgruppe steht. */
+    .co-hero-media img { top: var(--header-h); height: 66vh; }
   }
   .co-facts { margin-top: 14px; font-size: 0.72rem; }
   .co-hero .hero-ctas { margin-top: 18px; }
