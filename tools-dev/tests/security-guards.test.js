@@ -366,6 +366,35 @@ group("G10 · Der dokumentierte Kauf-Trichter wird wirklich gemessen");
     "die Datenschutzerklaerung deckt die Reichweitenmessung ab");
 })();
 
+/* ------------------------------------------------------------------ G11 */
+group("G11 · Bezahltes Werk: rueckverfolgbar statt scheinbar unkopierbar");
+(function () {
+  var r = read("ebooks/protokoll.html");
+
+  /* Screenshots kann eine Website nicht verhindern -- das macht das
+     Betriebssystem. Was wirkt, ist Zurueckverfolgbarkeit: jedes Exemplar
+     traegt sichtbar, wem es gehoert. Diese Pruefungen sichern genau das,
+     und sie sichern, dass der Schutz die zahlenden Leser nicht behindert. */
+  ok(/function wasserzeichen/.test(r), "der Reader legt ein Wasserzeichen an");
+  ok(/MM\.account\.getCurrentUser/.test((r.match(/function wasserzeichen[\s\S]*?\n  \}/) || [""])[0]),
+    "das Wasserzeichen nennt das Konto des Lesers (macht einen Leak zuordenbar)");
+  ok(/wer = "Lizenz "/.test(r), "ohne Konto steht dort ein Datum -- nie ein leeres Wasserzeichen");
+  ok(/pointer-events: none/.test(r), "das Wasserzeichen blockiert die Bedienung nicht");
+  ok(/position: fixed; inset: 0/.test(r), "es liegt fest am Bildschirm, ist also auf jedem Screenshot mit drauf");
+  ok(/\.bp-protected, \.bp-protected \* \{[\s\S]{0,160}user-select: none/.test(r),
+    "der Werktext ist nicht markierbar (kein bequemes Kopieren ganzer Kapitel)");
+  ok(/\.bp-protected input, \.bp-protected textarea[\s\S]{0,120}user-select: text/.test(r),
+    "Eingabefelder bleiben benutzbar -- der Schutz darf die Bedienung nicht kaputt machen");
+  ok(/@media print \{\s*\.bp-protected \{ display: none !important; \}/.test(r),
+    "Drucken und PDF-Export liefern das Werk nicht aus");
+  ok(/bp-print-note/.test(r) && /nicht drucken oder als PDF speichern/.test(r),
+    "beim Drucken steht ein erklaerender Hinweis statt einer leeren Seite");
+  /* Kein falsches Versprechen im Produkt: nirgends darf behauptet werden,
+     Screenshots seien unmoeglich. */
+  ok(!/screenshots? (sind |ist )?(nicht|un)m(oe|ö)glich/i.test(r),
+    "es wird nirgends behauptet, Screenshots seien unmoeglich");
+})();
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 if (failed) process.exit(1);

@@ -274,6 +274,23 @@ window.MM_CONFIG = {
   // geänderte Satz hat einen neuen Schlüssel und wird beim nächsten
   // englischen Besuch automatisch neu übersetzt. Nichts nachzupflegen.
   //
+  // REIHENFOLGE DER ÜBERSETZER (immer kostenlos, immer 0,00 €):
+  //   1. Cache (Browser + Server) — kostet nichts, ist sofort da.
+  //   2. DAS GERÄT SELBST: Neuere Chrome-Versionen bringen ein
+  //      Übersetzungsmodell mit (Translator-API). Wo es das gibt, ist es die
+  //      beste Option überhaupt — unbegrenzt, sofort, und kein Satz verlässt
+  //      den Browser. Kein Server, kein Limit, keine Kosten.
+  //   3. Der Server (MyMemory) für Browser ohne eigenes Modell, heute Safari
+  //      und Firefox.
+  // Ergebnis: Chrome-Besucher sehen sofort die ganze Seite auf Englisch;
+  // andere füllen den gemeinsamen Cache über den Server.
+  //
+  // Übersetzungen VOM GERÄT werden bewusst NICHT an den Server geschickt: Der
+  // Endpunkt ist öffentlich und anonym: würde er Übersetzungen von Clients
+  // annehmen, könnte jeder beliebigen Text in den gemeinsamen Cache schreiben
+  // und damit die Seite für alle verändern. Ein schneller gefüllter Cache ist
+  // das nicht wert.
+  //
   // KOSTET NICHTS UND MUSS NICHT EINGERICHTET WERDEN.
   // Standard-Anbieter ist MyMemory: kein Konto, keine Kreditkarte, kein
   // Vertrag, kein ablaufendes Guthaben. Begrenzt ist nur das Tagesvolumen
