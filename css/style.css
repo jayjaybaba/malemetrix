@@ -1774,6 +1774,16 @@ input[type="range"]::-moz-range-thumb {
 }
 .nav-more-menu a:hover { background: var(--card-2); color: var(--text); }
 .nav-more-menu a .mi { font-size: 1rem; }
+/* Gruppen-Beschriftung: acht Einträge ohne Gliederung wären eine Liste, in
+   der man sucht. Mit zwei Mini-Überschriften ist es ein Menü, das man liest.
+   Kein Trennstrich zusätzlich — die Beschriftung IST die Trennung. */
+.nav-more-label {
+  display: block; padding: 10px 14px 4px; font-family: var(--font-mono);
+  font-size: 0.58rem; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--muted-2); pointer-events: none;
+}
+.nav-more-label + a { margin-top: 0; }
+.nav-more-menu a + .nav-more-label { margin-top: 6px; border-top: 1px solid var(--hairline); }
 
 /* My MaleMetrix — ruhiger Sekundär-Zugang (kein zweiter dominanter CTA) */
 .main-nav a.nav-my:not(.btn) {
@@ -1812,6 +1822,10 @@ input[type="range"]::-moz-range-thumb {
     color: var(--muted-2);
   }
   .nav-more-menu a:hover, .nav-more-menu a.active { color: var(--text); background: none; }
+  /* Im Akkordeon reicht die Beschriftung ohne Trennstrich — die Einträge
+     haben hier schon eigene Linien, ein zweiter Strich wäre Rauschen. */
+  .nav-more-label { padding: 14px 4px 4px; }
+  .nav-more-menu a + .nav-more-label { border-top: none; margin-top: 0; }
 }
 
 /* ==========================================================================
