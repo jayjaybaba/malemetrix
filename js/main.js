@@ -150,7 +150,38 @@
   /* ---------- Warenkorb (geteilt über alle Seiten) ---------- */
 
   MM.cart = {
-    items() { return MM.store.get("cart", []); },
+    /* Der Warenkorb lebt im Browser des Besuchers und überlebt Katalog-
+       Änderungen. Wird ein Produkt entfernt (z. B. das 1-€-Testprodukt nach
+       dem PayPal-Live-Test), blieb der Eintrag liegen: Das Abzeichen zählte
+       ihn, die Liste konnte ihn nicht anzeigen und die Summe blieb 0,00 € —
+       ein Warenkorb, der voll aussah und leer war.
+       Deshalb wird hier bei JEDEM Lesen bereinigt: unbekannte Produkte,
+       kaputte Mengen und Fremdformate fliegen raus.
+       WICHTIG: Ohne geladenen Katalog wird NICHT gefiltert — sonst würde eine
+       Seite ohne shop-data.js einen gültigen Warenkorb leeren. */
+    items() {
+      const raw = MM.store.get("cart", []);
+      if (!Array.isArray(raw)) return [];
+      const katalog = window.MM_PRODUCTS;
+      if (!Array.isArray(katalog) || !katalog.length) return raw;
+
+      const clean = [];
+      raw.forEach(i => {
+        if (!i || typeof i.id !== "string") return;
+        if (!katalog.some(p => p.id === i.id)) return;                 // Produkt existiert nicht mehr
+        const qty = Math.floor(Number(i.qty));
+        if (!(qty > 0)) return;                                        // 0, negativ, NaN
+        const vorhanden = clean.find(c => c.id === i.id);              // Dubletten zusammenführen
+        if (vorhanden) vorhanden.qty = Math.min(99, vorhanden.qty + qty);
+        else clean.push({ id: i.id, qty: Math.min(99, qty) });
+      });
+
+      // Nur schreiben, wenn sich wirklich etwas geändert hat. Der Schreibvorgang
+      // löst kein Re-Render aus, das hier wieder hereinlaufen könnte — beim
+      // zweiten Lesen ist die Liste bereits sauber.
+      if (JSON.stringify(clean) !== JSON.stringify(raw)) MM.store.set("cart", clean);
+      return clean;
+    },
 
     save(items) {
       MM.store.set("cart", items);
