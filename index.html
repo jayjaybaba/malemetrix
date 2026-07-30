@@ -123,19 +123,27 @@
       <!-- Diagnose-Instrument (Beispieldaten, als solche markiert): das
            Produktversprechen als Messgerät, nicht als Dashboard-Karte. -->
       <div class="os14-diag" aria-label="Beispiel einer MaleMetrix Score-Analyse">
-        <div class="head"><span>MM / PROFIL · 12 BEREICHE VERDICHTET · BEISPIEL</span><span class="live">DIAGNOSTIC</span></div>
+        <div class="head"><span data-i18n="home.diag.head">MALEMETRIX SCORE · BEISPIELAUSWERTUNG</span><span class="live">DIAGNOSTIC</span></div>
         <div class="readout">
           <div class="num">52<small>/100</small></div>
-          <div class="meta"><b>Solide Basis, klare Engpässe</b><span>Typ: Der müde Leistungsträger</span></div>
+          <div class="meta"><b data-i18n="home.diag.level">Solide Basis, klare Engpässe</b><span data-i18n="home.diag.type">Typ: Der müde Leistungsträger</span></div>
         </div>
         <div class="mm-sys">
-          <div class="row"><span class="id">BODY</span><div class="bar"><span style="width:54%"></span></div><span class="val">54</span></div>
-          <div class="row"><span class="id">STRENGTH</span><div class="bar"><span style="width:61%"></span></div><span class="val">61</span></div>
-          <div class="row"><span class="id">FUEL</span><div class="bar"><span style="width:38%"></span></div><span class="val">38</span></div>
-          <div class="row is-primary"><span class="id">RECOVERY</span><div class="bar"><span style="width:31%"></span></div><span class="val">31</span></div>
-          <div class="row"><span class="id">BLOOD</span><div class="bar"><span style="width:24%"></span></div><span class="val">24</span></div>
-          <div class="row"><span class="id">DRIVE</span><div class="bar"><span style="width:47%"></span></div><span class="val">47</span></div>
-          <div class="row"><span class="id">EXECUTION</span><div class="bar"><span style="width:72%"></span></div><span class="val">72</span></div>
+          <div class="row"><span class="id" data-i18n="home.diag.body">KÖRPER</span><div class="bar"><span style="width:54%"></span></div><span class="val">54</span></div>
+          <div class="row"><span class="id" data-i18n="home.diag.strength">TRAINING</span><div class="bar"><span style="width:61%"></span></div><span class="val">61</span></div>
+          <div class="row"><span class="id" data-i18n="home.diag.fuel">ERNÄHRUNG</span><div class="bar"><span style="width:38%"></span></div><span class="val">38</span></div>
+          <div class="row is-primary"><span class="id" data-i18n="home.diag.recovery">SCHLAF</span><div class="bar"><span style="width:31%"></span></div><span class="val">31</span></div>
+          <div class="row"><span class="id" data-i18n="home.diag.blood">BLUTWERTE</span><div class="bar"><span style="width:24%"></span></div><span class="val">24</span></div>
+          <div class="row"><span class="id" data-i18n="home.diag.drive">ENERGIE</span><div class="bar"><span style="width:47%"></span></div><span class="val">47</span></div>
+          <div class="row"><span class="id" data-i18n="home.diag.execution">UMSETZUNG</span><div class="bar"><span style="width:72%"></span></div><span class="val">72</span></div>
+        </div>
+        <!-- Der Nutzen steht direkt unter der Messung: aus dem Engpass wird eine
+             Reihenfolge. Zweite Zeile beugt dem Missverständnis vor, der Engpass
+             sei automatisch der niedrigste Wert (die Engine priorisiert nach
+             Wirkung, siehe C.primaryBottleneck). -->
+        <div class="diag-foot">
+          <p class="lead-out" data-i18n-html="home.diag.leadOut"><b>Primärer Engpass: Schlaf &amp; Erholung.</b> Daraus werden deine nächsten Schritte nach Wirkung und Aufwand priorisiert.</p>
+          <p class="note" data-i18n="home.diag.note">Verdichtetes Profil aus 12 Bereichen. Der Engpass ist der wirksamste Hebel — nicht automatisch der niedrigste Wert.</p>
         </div>
       </div>
     </div>
