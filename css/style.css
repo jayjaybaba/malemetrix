@@ -2267,17 +2267,18 @@ input[type="range"]::-moz-range-thumb {
   .container, .container-narrow, .container-tight,
   .wizard-wrap, .result-wrap { width: calc(100% - 32px); }
 
-  /* Header kompakt (Founder-Review): 72 → 60px Höhe (−17 %). Über die
-     Variable, damit alles mitzieht, was daran hängt — das mobile Menü
-     (position: fixed, top: var(--header-h)) und der Hero-Abstand. */
-  :root { --header-h: 60px; }
+  /* Header kompakt (Founder-Review): 72 → 54px Höhe. Über die Variable, damit
+     alles mitzieht, was daran hängt — das mobile Menü (position: fixed,
+     top: var(--header-h)) und der Hero-Abstand. Die Tippflächen bleiben bei
+     40 px und damit über der 36-px-Grenze für sichere Ziele. */
+  :root { --header-h: 54px; }
   .header-inner { gap: 12px; }
-  .logo { font-size: 1.18rem; }
+  .logo { font-size: 1.1rem; }
   /* Legacy .logo-mark Mobile-Regel entfernt (P15 Split-X) */
-  .header-actions { gap: 10px; }
-  .icon-btn { height: 40px; min-width: 40px; padding: 0 9px; }
+  .header-actions { gap: 8px; }
+  .icon-btn { height: 38px; min-width: 38px; padding: 0 8px; }
   .icon-btn svg { width: 16px; height: 16px; }
-  .cart-btn, .nav-toggle { width: 40px; height: 40px; flex-shrink: 0; }
+  .cart-btn, .nav-toggle { width: 38px; height: 38px; flex-shrink: 0; }
 
   /* Grid-/Flex-Kinder dürfen unter ihre Inhaltsbreite schrumpfen
      (Standard min-width:auto verhindert das und erzeugt Überlauf). */
@@ -2901,10 +2902,31 @@ body > * { position: relative; z-index: 0; }
 .co-hero-media .scrim {
   position: absolute; inset: 0;
   background:
-    linear-gradient(90deg, var(--bg-0) 0%, rgba(7, 9, 13, 0.9) 32%, rgba(7, 9, 13, 0.45) 56%, rgba(7, 9, 13, 0.12) 78%, rgba(7, 9, 13, 0.28) 100%),
+    linear-gradient(90deg, var(--bg-0) 0%, rgba(7, 9, 13, 0.95) 38%, rgba(7, 9, 13, 0.62) 58%, rgba(7, 9, 13, 0.12) 80%, rgba(7, 9, 13, 0.28) 100%),
     linear-gradient(180deg, rgba(7, 9, 13, 0.4) 0%, transparent 30%, transparent 62%, var(--bg-0) 100%);
 }
 .co-hero > .container { position: relative; z-index: 1; }
+
+/* Textspalte schmaler als der alte 720er-Block: die Headline bleibt zweizeilig
+   und läuft nicht bis in die Bildhälfte, in der das Gesicht steht. */
+.co-hero-copy { max-width: 560px; }
+.co-hero-copy .lead { margin-top: 18px; }
+/* Leistungszeile statt Wiederholung im Fließtext — der Preis steht hier
+   einmal und nirgends sonst im Hero. */
+.co-facts {
+  margin: 16px 0 0; font-family: var(--font-mono); font-size: 0.76rem;
+  letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase;
+}
+.co-facts span { color: var(--muted-2); margin: 0 6px; }
+.co-hero .hero-ctas { margin-top: 22px; }
+.co-compare {
+  display: inline-block; margin-top: 16px; font-size: 0.92rem;
+  color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--hairline);
+  padding-bottom: 2px; transition: color 0.2s ease, border-color 0.2s ease;
+}
+.co-compare span { color: var(--status-active); margin-left: 4px; }
+.co-compare:hover { color: var(--text); border-color: var(--status-active); }
+.co-signature { font-size: 0.82rem; color: var(--muted-2); margin: 18px 0 0; }
 
 /* Gründer-Porträt auf der Über-Seite: volle Bildschirmbreite (bricht aus
    dem Container aus), Gesicht bleibt durch object-position oben im Bild. */
@@ -2922,9 +2944,20 @@ body > * { position: relative; z-index: 0; }
     object-position: 50% 0;
     mask-image: none; -webkit-mask-image: none;
   }
+  /* Das Gesicht liegt im oberen Drittel und bleibt frei: bis 34 % nur ein
+     leichter Schleier, darunter setzt der Textgrund kräftig ein. Der Text
+     beginnt erst unterhalb dieser Kante, damit keine Zeile durch die Augen
+     läuft. */
   .co-hero-media .scrim {
-    background: linear-gradient(180deg, rgba(7, 9, 13, 0.42) 0%, rgba(7, 9, 13, 0.6) 30%, rgba(7, 9, 13, 0.8) 55%, rgba(7, 9, 13, 0.92) 78%, var(--bg-0) 100%);
+    background: linear-gradient(180deg, rgba(7, 9, 13, 0.3) 0%, rgba(7, 9, 13, 0.34) 34%, rgba(7, 9, 13, 0.82) 50%, rgba(7, 9, 13, 0.94) 70%, var(--bg-0) 100%);
   }
+  .co-hero-copy { max-width: none; }
+  .co-hero-copy .lead { margin-top: 14px; }
+  .co-facts { margin-top: 14px; font-size: 0.72rem; }
+  .co-hero .hero-ctas { margin-top: 18px; }
+  /* Hauptbutton etwas niedriger — er soll führen, nicht dominieren. */
+  .co-hero .hero-ctas .btn-primary { padding: 14px 22px; width: 100%; }
+  .co-signature { margin-top: 14px; }
 }
 @media (prefers-reduced-motion: reduce) { .mm-ambient video { transition: none; } }
 
