@@ -1,15 +1,17 @@
 // ============================================================================
 // MaleMetrix Phase 10 — Edge Function `mm-commerce`
-// SERVERSEITIGE Kauf-Verifikation + Entitlement-Vergabe.
+// SERVERSEITIGE Kauf-Verifikation + Entitlement-Vergabe (PayPal UND Stripe).
 //   supabase secrets set PAYPAL_CLIENT_ID=... PAYPAL_SECRET=... [PAYPAL_ENV=live]
+//   supabase secrets set STRIPE_SECRET_KEY=...      (für action: verify_stripe)
 //   supabase functions deploy mm-commerce
 //
 // EISERNE REGELN:
 // · Der Client vergibt NIE bezahlten Zugriff und bestimmt NIE Preis/Währung/
 //   Entitlements — er meldet nur Kaufabsicht (Produkt-IDs). Die Zahlung wird
-//   DIREKT bei PayPal (Server→Server) verifiziert.
+//   DIREKT beim Anbieter (Server→Server) verifiziert: bei PayPal die Order/
+//   Capture, bei Stripe die Checkout-Session (status=complete + paid).
 // · Fulfillment-Reihenfolge (Live-Bugfix, siehe fulfillment.mjs):
-//   PAYPAL VERIFIED → ORDER → ENTITLEMENT → AUDIT (best effort).
+//   ZAHLUNG VERIFIZIERT → ORDER → ENTITLEMENT → AUDIT (best effort).
 //   orders(provider, provider_ref) ist die Transaktions-Idempotenz,
 //   entitlements(user_id, product_key) die Access-Idempotenz,
 //   commerce_events ist NUR Audit und blockiert nie einen bezahlten Kauf.
@@ -111,9 +113,11 @@ Deno.serve(async (req) => {
     const body = await req.json();
 
     // --- Konfigurations-Ehrlichkeit: ohne Secrets keine Vortäuschung ---
+    // Die Prüfung erfolgt PRO ANBIETER weiter unten. Früher stand hier ein
+    // harter PayPal-Check für JEDEN Aufruf — damit hätte ein reiner
+    // Stripe-Betrieb ohne PayPal-Secrets pauschal 503 bekommen.
     const PP_ID = Deno.env.get("PAYPAL_CLIENT_ID") || "";
     const PP_SECRET = Deno.env.get("PAYPAL_SECRET") || "";
-    if (!PP_ID || !PP_SECRET) return json({ error: "provider_not_configured" }, 503);
     const PP_BASE = (Deno.env.get("PAYPAL_ENV") || "live") === "sandbox"
       ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
 
@@ -142,14 +146,93 @@ Deno.serve(async (req) => {
       return json({ error: "auth_validation_failed" }, 401);
     }
 
+    // --- Fulfillment: ORDER → ENTITLEMENT → AUDIT (fulfillment.mjs) ---
+    // Der DB-Adapter kapselt Supabase; die Geschäftslogik ist injiziert und
+    // in tools-dev/tests/commerce-fulfillment.test.js real unit-getestet.
+    const db = {
+      findOrderByProviderRef: async (provider: string, ref: string) =>
+        await service.from("orders")
+          .select("id,user_id,status,total_cents,currency,product_keys")
+          .eq("provider", provider).eq("provider_ref", ref).maybeSingle(),
+      insertOrder: async (row: Record<string, unknown>) => await service.from("orders").insert(row),
+      upsertEntitlement: async (row: Record<string, unknown>) =>
+        await service.from("entitlements").upsert(row, { onConflict: "user_id,product_key" }),
+      logEvent: async (row: Record<string, unknown>) => await service.from("commerce_events").insert(row),
+    };
     // --- Abo-Webhook (§10–§12): deterministische Zustandsmaschine, idempotent ---
     if (body.action === "subscription_event") {
       return await handleSubscriptionEvent(body, user, service, json);
     }
 
+    // --- STRIPE: Zahlung serverseitig prüfen, dann derselbe Fulfillment-Kern ---
+    // Die Rückleitung von Stripe ist KEIN Zahlungsnachweis. Beweis ist
+    // ausschließlich die Checkout-Session, direkt bei Stripe abgefragt.
+    // Als provider_ref dient der PaymentIntent: er ist die Geld-Identität und
+    // bleibt über Wiederholungen stabil — genau das braucht die Idempotenz.
+    if (body.action === "verify_stripe") {
+      const SK = Deno.env.get("STRIPE_SECRET_KEY") || "";
+      if (!SK) return json({ error: "provider_not_configured" }, 503);
+      const sid = typeof body.sessionId === "string" ? body.sessionId.trim() : "";
+      // Formatprüfung vor dem Netzaufruf: nur echte Session-IDs, kein Freitext.
+      if (!/^cs_[A-Za-z0-9_]{10,200}$/.test(sid)) return json({ error: "bad_request" }, 400);
+
+      const idsS: string[] = Array.isArray(body.productIds) ? body.productIds : [];
+      const pvS = validateProducts(idsS, PRODUCTS);
+      if (!pvS.ok) return json({ error: pvS.error }, pvS.status);
+
+      const sres = await fetch("https://api.stripe.com/v1/checkout/sessions/" + encodeURIComponent(sid), {
+        headers: { authorization: "Bearer " + SK },
+      });
+      if (sres.status === 404) return json({ error: "order_not_found" }, 404);
+      if (sres.status === 401 || sres.status === 403) return json({ error: "stripe_auth_failed" }, 502);
+      if (!sres.ok) return json({ error: "stripe_lookup_failed", status: sres.status }, 502);
+      const session = await sres.json();
+
+      // Bezahlt heißt bei Stripe: Session abgeschlossen UND payment_status paid.
+      if (session.status !== "complete" || session.payment_status !== "paid") {
+        return json({ error: "not_captured", status: String(session.payment_status || session.status || "unknown") }, 409);
+      }
+      const ref = typeof session.payment_intent === "string" && session.payment_intent
+        ? session.payment_intent : String(session.id);
+
+      // Adaptive Pricing (am Zahlungslink aktiv, live geprüft Juli 2026): zahlt
+      // ein Käufer in seiner Landeswährung, stehen `currency` und
+      // `amount_total` in DIESER Währung — eine US-Zahlung käme als USD mit
+      // umgerechnetem Betrag zurück. Der Fulfillment-Kern prüft exakt gegen den
+      // EUR-Katalogpreis; ohne diese Umrechnung würde ein völlig korrekt
+      // bezahlter Auslandskauf mit currency_mismatch/amount_mismatch abgelehnt.
+      // Weist Stripe eine Umrechnung aus, gilt deshalb der Ursprungsbetrag.
+      const conv = session.currency_conversion || null;
+      const paidCents = Number((conv && conv.amount_total != null ? conv.amount_total : session.amount_total) || 0);
+      const paidCurrency = String((conv && conv.source_currency) || session.currency || "").toUpperCase();
+
+      const resultS = await fulfillVerifiedCapture({
+        provider: "stripe",
+        userId: user.id,
+        email: user.email || null,
+        // Bestellnummer aus dem Client ODER aus der Referenz, die der Checkout
+        // beim Weiterleiten an Stripe mitgegeben hat (client_reference_id).
+        orderNo: typeof body.orderNo === "string" && body.orderNo ? body.orderNo
+          : (typeof session.client_reference_id === "string" ? session.client_reference_id : null),
+        items: body.items,
+        capture: {
+          id: ref,
+          // Der Kern erwartet die PayPal-Nomenklatur; die Prüfung "bezahlt"
+          // ist oben schon anhand der Stripe-Felder erfolgt.
+          status: "COMPLETED",
+          amountCents: paidCents,
+          currency: paidCurrency,
+        },
+        productIds: idsS,
+      }, db, PRODUCTS);
+      return json(resultS.body, resultS.status);
+    }
+
     if (body.action !== "verify_paypal" || typeof body.paypalOrderId !== "string") {
       return json({ error: "bad_request" }, 400);
     }
+    // Ab hier ausschließlich PayPal — erst jetzt sind PayPal-Secrets Pflicht.
+    if (!PP_ID || !PP_SECRET) return json({ error: "provider_not_configured" }, 503);
     // Produkt-/Preis-Validierung VOR dem PayPal-Roundtrip: unbekannte oder
     // leere Produktlisten sofort ablehnen (P0.2) — nie still tolerieren.
     const productIds: string[] = Array.isArray(body.productIds) ? body.productIds : [];
@@ -197,20 +280,8 @@ Deno.serve(async (req) => {
     }
     if (cap.status !== "COMPLETED") return json({ error: "capture_incomplete", status: cap.status }, 409);
 
-    // --- Fulfillment: ORDER → ENTITLEMENT → AUDIT (fulfillment.mjs) ---
-    // Der DB-Adapter kapselt Supabase; die Geschäftslogik ist injiziert und
-    // in tools-dev/tests/commerce-fulfillment.test.js real unit-getestet.
-    const db = {
-      findOrderByProviderRef: async (provider: string, ref: string) =>
-        await service.from("orders")
-          .select("id,user_id,status,total_cents,currency,product_keys")
-          .eq("provider", provider).eq("provider_ref", ref).maybeSingle(),
-      insertOrder: async (row: Record<string, unknown>) => await service.from("orders").insert(row),
-      upsertEntitlement: async (row: Record<string, unknown>) =>
-        await service.from("entitlements").upsert(row, { onConflict: "user_id,product_key" }),
-      logEvent: async (row: Record<string, unknown>) => await service.from("commerce_events").insert(row),
-    };
     const result = await fulfillVerifiedCapture({
+      provider: "paypal",
       userId: user.id,
       email: user.email || null,
       orderNo: typeof body.orderNo === "string" ? body.orderNo : null,

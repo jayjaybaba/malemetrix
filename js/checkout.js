@@ -116,7 +116,11 @@
     };
     /* Auf einem Apple-Pay-fähigen Gerät steht Apple Pay vorn: dort ist es
        der Weg mit den wenigsten Abbrüchen. Überall sonst steht PayPal vorn,
-       weil nur dieser Weg den Zugang automatisch und sofort freischaltet. */
+       weil der Zugang dort ohne Seitenwechsel entsteht — der Käufer bleibt
+       die ganze Zeit hier. Stripe schaltet inzwischen ebenfalls automatisch
+       frei (Prüfung bei der Rückkehr, siehe renderStripeReturn), braucht
+       dafür aber die Rückleitung mit session_id und das Server-Secret; bis
+       das steht, sagt die Beschreibung unten ehrlich die Wartezeit an. */
     if (applePay) payOptions.push(stripeOption);
     if (CFG.paypalClientId) {
       payOptions.push({ id: "paypal_smart", name: "PayPal / Kreditkarte", desc: "Sicher mit PayPal, Kredit- oder Debitkarte zahlen — ohne die Seite zu verlassen. Zugang sofort nach der Zahlung." });
@@ -234,8 +238,10 @@
     const orders = MM.store.get("orders", []);
     orders.push(order);
     MM.store.set("orders", orders);
-    /* Damit die Rückkehr von Stripe die Bestellung wiederfindet. */
-    MM.store.set("stripe_pending", { no: order.no, at: Date.now() });
+    /* Damit die Rückkehr von Stripe die Bestellung wiederfindet. productIds
+       müssen mit: der Warenkorb wird bei der Rückkehr geleert, aber der Server
+       braucht die Produktliste, um Betrag und Freischaltung zu prüfen. */
+    MM.store.set("stripe_pending", { no: order.no, at: Date.now(), productIds: order.productIds || [] });
     if (MM.track) MM.track("checkout_stripe_redirect", { value: order.total });
 
     /* Die Benachrichtigung darf den Kaufweg nicht blockieren. Antwortet der
@@ -270,16 +276,157 @@
       "&client_reference_id=" + encodeURIComponent(order.no);
   }
 
-  /* Rückkehr von der Bezahlseite. Stripe leitet mit ?bezahlt=stripe zurück.
-     Diese Rückleitung ist KEIN Zahlungsnachweis — sie sagt nur, dass der
-     Käufer den Vorgang durchlaufen hat. Deshalb wird hier kein Zugang
-     vergeben und auch keine Zahlung behauptet. */
+  /* Rückkehr von der Bezahlseite. Stripe leitet mit
+     ?bezahlt=stripe&session_id=cs_… zurück.
+
+     Die Rückleitung selbst ist KEIN Zahlungsnachweis — jeder könnte die URL
+     aufrufen. Beweis ist ausschließlich die Checkout-Session, die der Server
+     direkt bei Stripe abfragt (action: verify_stripe). Erst wenn Stripe dort
+     "complete/paid" meldet, vergibt der Server das Entitlement. Fehlt die
+     session_id (Zahlungslink noch ohne Platzhalter konfiguriert), bleibt es
+     beim ehrlichen Hinweis auf manuelle Freischaltung — nie eine
+     Erfolgsmeldung ohne Deckung. */
+  function stripeSessionIdFromUrl() {
+    const m = /[?&]session_id=(cs_[A-Za-z0-9_]{10,200})(?:&|$)/.exec(window.location.search);
+    return m ? m[1] : "";
+  }
+
+  /* Fällt der Pending-State weg (anderes Gerät, Speicher geleert), lässt sich
+     die Produktliste rekonstruieren, solange genau EIN Zahlungslink
+     konfiguriert ist. Ein Fehlgriff wäre unschädlich: der Server vergleicht
+     den bei Stripe bezahlten Betrag exakt mit dem Produktpreis und lehnt
+     Abweichungen mit amount_mismatch ab. */
+  function stripeProductIds(pending) {
+    const fromPending = (pending && Array.isArray(pending.productIds)) ? pending.productIds.filter(x => typeof x === "string" && x) : [];
+    if (fromPending.length) return fromPending;
+    const keys = Object.keys(CFG.stripeLinks || {});
+    return keys.length === 1 ? [keys[0]] : [];
+  }
+
   function renderStripeReturn() {
     const pending = MM.store.get("stripe_pending", null);
-    const nr = pending && pending.no ? pending.no : null;
-    MM.store.set("stripe_pending", null);
     MM.cart.clear();
     if (MM.track) MM.track("checkout_stripe_returned", {});
+    const sid = stripeSessionIdFromUrl();
+    if (!sid) { renderStripeManual(pending); return; }
+    runStripeVerify(sid, pending);
+  }
+
+  /* Zwischenzustand: der Server fragt Stripe. Nie "bezahlt" behaupten,
+     solange die Antwort fehlt. */
+  function renderStripeChecking() {
+    wrap.innerHTML =
+      '<div class="order-success">' +
+      '<div class="success-icon" style="background:var(--accent-soft);color:var(--accent-2)">…</div>' +
+      '<h1 class="h-section" style="margin-bottom:10px">Zahlung wird bestätigt …</h1>' +
+      '<p class="muted">Wir prüfen deine Zahlung direkt bei Stripe und schalten deinen Zugang frei. Bitte NICHT erneut bezahlen und das Fenster kurz offen lassen.</p></div>';
+  }
+
+  function runStripeVerify(sid, pending) {
+    renderStripeChecking();
+    const ids = stripeProductIds(pending);
+    const call = () => MM.account.invokeFunction("mm-commerce", {
+      action: "verify_stripe",
+      sessionId: sid,
+      orderNo: (pending && pending.no) || null,
+      productIds: ids,
+      items: []
+    }).then((r) => {
+      if (fnOk(r)) {
+        MM.store.set("stripe_pending", null);
+        MM.account.loadAccountState().then(() => {});
+        renderStripeSuccess(pending, fnData(r));
+      } else {
+        renderStripeIssue(fnCode(r), sid, pending);
+      }
+    }).catch(() => renderStripeIssue("network", sid, pending));
+
+    const signedIn = window.MM && MM.account && MM.account.getCurrentUser && MM.account.getCurrentUser();
+    if (signedIn) { call(); return; }
+    /* account.js lädt asynchron — erst die Sitzung abwarten, dann urteilen. */
+    if (window.MM && MM.account && MM.account.whenReady) {
+      MM.account.whenReady().then(() => {
+        if (MM.account.getCurrentUser && MM.account.getCurrentUser()) call();
+        else renderStripeIssue("not_signed_in", sid, pending);
+      }).catch(() => renderStripeIssue("not_signed_in", sid, pending));
+    } else {
+      renderStripeIssue("not_signed_in", sid, pending);
+    }
+  }
+
+  function renderStripeSuccess(pending, data) {
+    const ents = (data && data.entitlements) || [];
+    const nr = (pending && pending.no) ? pending.no : ((data && data.order_no) || null);
+    if (MM.track) MM.track("order_completed", { value: data && data.amount_cents ? (data.amount_cents / 100) : "stripe", paid: true, method: "Stripe" });
+    if (MM.track && ents.indexOf("protocol") >= 0) MM.track("protokoll_unlocked", {});
+    wrap.innerHTML =
+      '<div class="order-success">' +
+      '<div class="success-icon">✓</div>' +
+      (nr ? '<span class="eyebrow" style="justify-content:center">Bestellung ' + esc(nr) + '</span>' : '') +
+      '<h1 class="h-section" style="margin-bottom:14px">Zahlung bestätigt — Zugang ist frei.</h1>' +
+      '<div class="card" style="text-align:left;margin:0 auto 16px;max-width:560px;border-color:var(--accent-line)">' +
+      '<span class="card-num" style="color:var(--green)">✓ ZAHLUNG ERHALTEN</span>' +
+      '<p class="muted" style="margin-top:6px">Deine Zahlung ist bei Stripe verifiziert' +
+      (data && data.amount_cents ? " (" + MM.eur(data.amount_cents / 100) + ")" : "") +
+      (data && data.replay ? " — war bereits verarbeitet, kein doppelter Zugriff vergeben" : "") + '.</p></div>' +
+      '<div class="mm-access" style="padding-top:8px">' +
+      '<span class="stamp">ACCESS GRANTED</span>' +
+      '<div class="grant">' + (ents.indexOf("protocol") >= 0 ? '<b>DAS PROTOKOLL</b>' : '') + (ents.indexOf("twelve_week") >= 0 ? '<b>12-WEEK SYSTEM</b>' : '') + '</div>' +
+      '<p class="assigned">ASSIGNED TO YOUR ACCOUNT · ALLE GERÄTE</p></div>' +
+      (ents.indexOf("protocol") >= 0
+        ? '<div class="mm-access-choice"><a class="btn btn-primary" href="ebooks/protokoll.html" data-track="postbuy_read_protokoll">Das Protokoll lesen →</a>' +
+          '<a class="btn btn-dark" href="mein-protokoll.html" data-track="postbuy_start_program">12-Wochen-Programm starten →</a></div>'
+        : '<a href="mein-protokoll.html" class="btn btn-primary">Jetzt starten →</a>') +
+      '<p class="small" style="color:var(--muted-2);margin-top:22px">Die Rechnung kommt per E-Mail von Stripe.</p>' +
+      '</div>';
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  /* Fehlermeldungen für den Stripe-Weg. Die gemeinsamen Codes aus VERIFY_MSG
+     nennen PayPal namentlich — hier stehen deshalb die anbieter-richtigen
+     Texte, alles Übrige fällt auf VERIFY_MSG zurück. */
+  const STRIPE_MSG = {
+    order_not_found: "Zu dieser Bezahl-Sitzung findet Stripe keine Zahlung. Bitte melde dich bei uns — NICHT erneut bezahlen.",
+    not_captured: "Stripe hat die Zahlung noch nicht als abgeschlossen gemeldet. Bitte in einer Minute erneut prüfen — NICHT erneut bezahlen.",
+    capture_incomplete: "Stripe hat die Zahlung noch nicht als abgeschlossen gemeldet. Bitte in einer Minute erneut prüfen — NICHT erneut bezahlen.",
+    capture_not_found: "Zu dieser Bezahl-Sitzung findet Stripe keine Zahlung. Bitte melde dich bei uns — NICHT erneut bezahlen.",
+    amount_mismatch: "Der bei Stripe bezahlte Betrag passt nicht zur Bestellung. Bitte melde dich bei uns — NICHT erneut bezahlen.",
+    currency_mismatch: "Die Währung der Stripe-Zahlung passt nicht zur Bestellung (EUR erwartet). Bitte melde dich — NICHT erneut bezahlen.",
+    stripe_auth_failed: "Server-Konfigurationsproblem bei der Zahlungsprüfung. Deine Zahlung ist sicher — wir schalten von Hand frei, bitte melde dich.",
+    stripe_lookup_failed: "Stripe war bei der Prüfung kurz nicht erreichbar. Bitte in einigen Minuten erneut prüfen — NICHT erneut bezahlen.",
+    provider_not_configured: "Die automatische Prüfung ist serverseitig noch nicht aktiv. Deine Zahlung ist eingegangen — wir schalten den Zugang von Hand frei.",
+    no_entitled_products: "Wir konnten deine Bestellung im Browser nicht mehr zuordnen. Deine Zahlung ist sicher — melde dich kurz, wir schalten von Hand frei.",
+    unknown_product: "Wir konnten deine Bestellung im Browser nicht mehr zuordnen. Deine Zahlung ist sicher — melde dich kurz, wir schalten von Hand frei.",
+    bad_request: "Die Bezahl-Referenz aus der Rückleitung war unvollständig. Deine Zahlung ist sicher — melde dich kurz, wir schalten von Hand frei.",
+    unknown_provider: "Interner Fehler bei der Zahlungsprüfung. Deine Zahlung ist sicher — melde dich kurz, wir schalten von Hand frei."
+  };
+
+  function renderStripeIssue(errCode, sid, pending) {
+    const loginNoetig = ["not_signed_in", "unauthorized", "no_cloud", "auth_missing", "auth_invalid_token", "auth_validation_failed"].indexOf(errCode) >= 0;
+    const hint = STRIPE_MSG[errCode] || VERIFY_MSG[errCode] ||
+      "Deine Zahlung ist bei Stripe eingegangen. Die automatische Freischaltung hat gerade nicht geklappt — bitte NICHT erneut bezahlen, prüfe es einfach noch einmal.";
+    wrap.innerHTML =
+      '<div class="order-success">' +
+      '<div class="success-icon" style="background:rgba(245,166,35,.12);color:#f5a623">!</div>' +
+      '<h1 class="h-section" style="margin-bottom:14px">Zahlung eingegangen — Freischaltung noch offen.</h1>' +
+      '<p class="muted" style="max-width:56ch;margin:0 auto 10px">' + hint + '</p>' +
+      ((pending && pending.no) ? '<p class="small" style="color:var(--muted-2);margin-bottom:6px">Deine Bestellnummer: <strong style="color:var(--text)">' + esc(pending.no) + '</strong></p>' : '') +
+      (errCode && !loginNoetig ? '<p class="small" style="color:var(--muted-2);margin-bottom:18px">Technischer Status: ' + String(errCode).replace(/[<>]/g, "") + '</p>' : '<div style="margin-bottom:18px"></div>') +
+      '<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">' +
+      '<button class="btn btn-primary" id="retryStripe">Zahlung erneut prüfen</button>' +
+      (loginNoetig ? '<a class="btn btn-dark" href="mein-protokoll.html">Zu My MaleMetrix (Login)</a>' : '<a class="btn btn-dark" href="kontakt.html">Frage zur Bestellung</a>') +
+      '</div>' +
+      '<p class="small" style="color:var(--muted-2);margin-top:22px">Der Prüf-Button löst KEINE neue Zahlung aus — er fragt nur den Status deiner bestehenden Stripe-Zahlung ab.</p>' +
+      '</div>';
+    const btn = document.getElementById("retryStripe");
+    if (btn) btn.addEventListener("click", () => runStripeVerify(sid, pending));
+  }
+
+  /* Ohne session_id in der Rückleitung ist keine Prüfung möglich — dann bleibt
+     es beim ehrlichen Hinweis auf die manuelle Freischaltung. */
+  function renderStripeManual(pending) {
+    const nr = pending && pending.no ? pending.no : null;
+    MM.store.set("stripe_pending", null);
     wrap.innerHTML = '<div class="order-success"><div class="success-icon">✅</div>' +
       '<h1 class="h-section" style="margin-bottom:14px">Danke — deine Zahlung ist bei Stripe eingegangen.</h1>' +
       (nr ? '<p class="muted" style="margin-bottom:10px">Deine Bestellnummer: <strong style="color:var(--text)">' + esc(nr) + '</strong></p>' : '') +
