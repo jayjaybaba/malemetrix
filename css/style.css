@@ -2964,23 +2964,25 @@ body > * { position: relative; z-index: 0; }
      Displays gibt es diesen Platz nicht; dort füllt das Bild wie bisher den
      Kopf und der Text liegt auf dem kräftigen Scrim. */
   @media (min-height: 800px) {
-    .co-hero-media img { height: 56vh; }
-  }
-  /* Sehr kurze Displays (iPhone SE): Abstände straffen, damit der Aufruf
-     ohne Scrollen sichtbar bleibt. */
-  @media (max-height: 640px) {
-    .co-hero { padding-bottom: 24px; }
-    .co-hero-copy .lead { margin-top: 10px; }
-    .co-facts { margin-top: 10px; }
-    .co-hero .hero-ctas { margin-top: 14px; }
-    .co-compare { margin-top: 12px; }
-    .co-signature { margin-top: 10px; }
+    .co-hero-media img { height: 64vh; }
   }
   .co-facts { margin-top: 14px; font-size: 0.72rem; }
   .co-hero .hero-ctas { margin-top: 18px; }
   /* Hauptbutton etwas niedriger — er soll führen, nicht dominieren. */
   .co-hero .hero-ctas .btn-primary { padding: 14px 22px; width: 100%; }
   .co-signature { margin-top: 14px; }
+
+  /* Sehr kurze Displays (iPhone SE): Abstände straffen, damit der Aufruf ohne
+     Scrollen sichtbar bleibt. Steht bewusst als LETZTES im Mobilblock — bei
+     gleicher Spezifität gewinnt sonst die allgemeine Regel darunter. */
+  @media (max-height: 640px) {
+    .co-hero { padding-bottom: 16px; }
+    .co-hero-copy .lead { margin-top: 10px; }
+    .co-facts { margin-top: 10px; font-size: 0.68rem; letter-spacing: 0.04em; }
+    .co-hero .hero-ctas { margin-top: 12px; }
+    .co-compare { margin-top: 12px; }
+    .co-signature { margin-top: 8px; }
+  }
 }
 @media (prefers-reduced-motion: reduce) { .mm-ambient video { transition: none; } }
 
