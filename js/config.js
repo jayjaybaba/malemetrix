@@ -207,7 +207,29 @@ window.MM_CONFIG = {
   //
   // Welche Ereignisse den Kauf-Trichter bilden, steht im Kopf von
   // js/analytics.js.
+  // ZWEI MESSUNGEN, ZWEI AUFGABEN — sie ergänzen sich:
+  //
+  //   1) cloudflareToken  → Besucherzahlen, Herkunft, Geräte (KOSTENLOS).
+  //      Cloudflare Web Analytics ist cookielos und braucht kein Cookie-Banner.
+  //      Einrichten: dash.cloudflare.com → "Web Analytics" → "Add a site" →
+  //      www.malemetrix.com eintragen. Cloudflare zeigt dann ein <script>-
+  //      Snippet mit  data-cf-beacon='{"token": "abc123..."}'  — NUR den
+  //      Token-Wert unten eintragen, nicht das ganze Snippet. Kein Skript in
+  //      die Seiten kopieren, das erledigt js/analytics.js.
+  //      WICHTIG: Cloudflare zählt nur Seitenaufrufe, KEINE eigenen Ereignisse.
+  //
+  //   2) siteTelemetry    → was auf der Seite passiert (EIGENE Messung).
+  //      Läuft über die Edge Function site-telemetry in dein eigenes Supabase:
+  //      welche Seiten, welche Aktionen, welche Herkunfts-Hosts. Anonym
+  //      (Zufalls-ID pro Sitzung, keine IP, keine Cookies, kein User-Agent).
+  //      Auswertung: My MaleMetrix → Einstellungen → Nutzung (nur Owner).
+  //      Auf false setzen, um die eigene Messung komplett abzuschalten.
+  //
+  //   3) plausibleDomain  → optionale Alternative/Ergänzung (ab ~9 €/Monat),
+  //      liefert den Kauf-Trichter in einem fertigen Dashboard.
   analytics: {
+    cloudflareToken: "",   // z. B. "a1b2c3d4e5f6..." (nur der Token, KOSTENLOS)
+    siteTelemetry: true,   // eigene, anonyme Nutzungsmessung (Supabase)
     plausibleDomain: "",   // z. B. "www.malemetrix.com"
     plausibleSrc: "https://plausible.io/js/script.tagged-events.js"
   },
