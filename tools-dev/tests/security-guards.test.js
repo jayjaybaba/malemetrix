@@ -412,6 +412,52 @@ group("G11 · Bezahltes Werk: rueckverfolgbar statt scheinbar unkopierbar");
     "geschuetzt wird SOFORT, die Ausnahme kommt danach");
 })();
 
+/* ------------------------------------------------------------------ G12 */
+group("G12 · Textschutz auf der Website, ohne Selbstschaden");
+(function () {
+  var m = read("js/main.js");
+  var css = read("css/style.css");
+  var schutz = (m.match(/function textschutz[\s\S]*?\n  \}/) || [""])[0];
+
+  ok(schutz.length > 0 && /classList\.add\("mm-guard"\)/.test(schutz),
+    "die Seiten bekommen den Schutz-Marker");
+  ok(/\.mm-guard, \.mm-guard \* \{[\s\S]{0,140}user-select: none/.test(css),
+    "CSS sperrt das Markieren");
+  /* CSS allein genuegt nicht: "Alles markieren" umgeht user-select in
+     mehreren Browsern. Das Kopier-Ereignis MUSS zusaetzlich abgefangen werden. */
+  ok(/\["copy", "cut"\]/.test(schutz) && /e\.preventDefault\(\)/.test(schutz),
+    "Kopieren und Ausschneiden werden zusaetzlich als Ereignis geblockt");
+
+  /* Die Ausnahmen sind der Unterschied zwischen Schutz und Selbstschaden. */
+  ok(/GUARD_AUS = \["agb\.html", "datenschutz\.html", "impressum\.html"\]/.test(m),
+    "Rechtsseiten sind ausgenommen (Verbraucher muessen die AGB speichern koennen)");
+  ok(/312i BGB/.test(m), "der Grund fuer die Rechts-Ausnahme steht im Code");
+  ["input", "textarea", "\\.mono", "\\.order-success", "mailto:"].forEach(function (sel) {
+    ok(new RegExp(sel).test(css.slice(css.indexOf(".mm-guard input"))),
+      "kopierbar bleibt: " + sel.replace(/\\\\/g, ""));
+  });
+  ok(/\.mm-guard \.mono[\s\S]{0,400}user-select: text/.test(css),
+    "IBAN, Bestellnummern und Betraege (.mono) bleiben kopierbar");
+
+  /* Rechtsklick nur auf geschuetztem Text unterdruecken -- ein Verbot auf der
+     ganzen Seite nimmt dem Besucher auch "Link in neuem Tab oeffnen". */
+  ok(/closest\("a\[href\], img, video"\)/.test(schutz),
+    "Rechtsklick auf Links, Bilder und Videos bleibt erlaubt");
+
+  /* Autor-Ausnahme: Server-Rolle, nie localStorage. */
+  ok(/MM\.account\.role\(\) === "owner"/.test(schutz) && /loadRole/.test(schutz),
+    "der Autor wird ueber die Server-Rolle erkannt");
+  ok(!/localStorage/.test(schutz), "die Autor-Ausnahme liest nichts aus dem Browser-Speicher");
+  ok(/versuche <= 25/.test(schutz),
+    "auf das spaeter geladene Konto-Modul wird gewartet (main.js laeuft davor)");
+  ok(schutz.indexOf('classList.add("mm-guard")') < schutz.indexOf('MM.account.role'),
+    "geschuetzt wird zuerst, die Ausnahme danach");
+
+  /* Ehrlichkeit: nirgends behaupten, der Text sei nicht auslesbar. */
+  ok(/absoluter schutz ist im web unm(oe|ö)glich/i.test(m) || /Absoluter Schutz ist im Web/.test(m),
+    "die Grenze des Schutzes ist im Code benannt, nicht beschoenigt");
+})();
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 if (failed) process.exit(1);
