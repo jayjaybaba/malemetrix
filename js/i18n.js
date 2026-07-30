@@ -29,7 +29,10 @@
     "nav.protocol": { de: "Das Protokoll", en: "The Protocol" },
     "nav.magazine":{ de: "Magazin", en: "Magazine" },
     "nav.blood":   { de: "Blutwerte", en: "Blood Values" },
-    "nav.trackerGroup": { de: "Kostenlose Tracker", en: "Free trackers" },
+    /* Gruppe heisst "Kostenlos", nicht "Tracker": die Rechner gehoeren dazu,
+       sind aber keine Tracker. */
+    "nav.freeGroup":    { de: "Kostenlos", en: "Free" },
+    "nav.calc":         { de: "Rechner & Werkzeuge", en: "Calculators & tools" },
     "nav.trackerGym":   { de: "Training & Schlaf", en: "Training & sleep" },
     "nav.trackerFood":  { de: "Kalorien & Protein", en: "Calories & protein" },
     "nav.trackerLabs":  { de: "Blutwerte im Verlauf", en: "Blood over time" },
@@ -392,6 +395,80 @@
     return base ? String(base).replace(/\/+$/, "") + "/functions/v1/mm-translate" : "";
   }
 
+  /* =========================================================================
+     ÜBERSETZUNG IM BROWSER (ohne Server, ohne Limit, ohne Kosten)
+     -------------------------------------------------------------------------
+     Neuere Chrome-Versionen bringen ein Übersetzungsmodell MIT — die
+     Translator-API arbeitet auf dem Gerät. Wo es das gibt, ist das die beste
+     Option, die es überhaupt gibt: unbegrenzt, sofort, kostenlos, und kein
+     einziger Satz verlässt den Browser.
+
+     Deshalb die Reihenfolge: Cache → Gerät → Server. Der Server (und damit
+     dessen Tageslimit) wird nur noch für Browser gebraucht, die das nicht
+     können — heute Safari und Firefox.
+
+     WICHTIG, und bewusst so: Ergebnisse vom Gerät werden NICHT an den Server
+     geschickt. Der Endpunkt ist öffentlich und anonym; würde er Übersetzungen
+     von Clients annehmen, könnte jeder beliebigen Text in den gemeinsamen
+     Cache schreiben und damit die Seite für alle Besucher verändern. Ein
+     gefüllter Cache ist das nicht wert. Gerät-Übersetzungen bleiben lokal
+     (localStorage) — für diesen Besucher dauerhaft, für andere unsichtbar. */
+  let geraetUeb = null;          // erzeugte Translator-Instanz
+  let geraetState = "unknown";   // unknown | none | pending | ready
+  let geraetLaeuft = false;
+
+  function geraetApi() {
+    try {
+      if (typeof Translator !== "undefined" && Translator && typeof Translator.create === "function") return Translator;
+      if (self.ai && self.ai.translator && typeof self.ai.translator.create === "function") return self.ai.translator;
+    } catch (e) {}
+    return null;
+  }
+
+  function geraetVorbereiten() {
+    if (geraetState !== "unknown") return;
+    const api = geraetApi();
+    if (!api) { geraetState = "none"; return; }
+    geraetState = "pending";
+    const opts = { sourceLanguage: "de", targetLanguage: "en" };
+    /* create() darf laut Spezifikation einen Modell-Download auslösen und
+       verlangt dafür unter Umständen eine Nutzeraktion. Der Klick auf EN IST
+       eine — deshalb wird hier genau in diesem Moment erzeugt. Schlägt es
+       fehl, ist das kein Fehler, sondern der Normalfall in anderen Browsern. */
+    let p;
+    try { p = api.create(opts); } catch (e) { geraetState = "none"; return; }
+    Promise.resolve(p).then((t) => {
+      if (t && typeof t.translate === "function") { geraetUeb = t; geraetState = "ready"; geraetArbeiten(); }
+      else geraetState = "none";
+    }).catch(() => { geraetState = "none"; planeSenden(); });
+  }
+
+  /* Arbeitet die Warteschlange auf dem Gerät ab — in kleinen Schritten, damit
+     die Seite dabei flüssig bleibt. */
+  function geraetArbeiten() {
+    if (geraetState !== "ready" || geraetLaeuft || lang !== "en") return;
+    const offen = [];
+    WARTEND.forEach((_v, k) => { if (PHRASES[k] == null) offen.push(k); });
+    if (!offen.length) return;
+    geraetLaeuft = true;
+    const paket = offen.slice(0, 20);
+    Promise.all(paket.map((k) => {
+      return Promise.resolve(geraetUeb.translate(k)).then((en) => {
+        const t = normText(en || "");
+        if (!t || t === k) return;
+        PHRASES[k] = t;
+        patche(k, t);
+      }).catch(() => {});
+    })).then(() => {
+      geraetLaeuft = false;
+      cacheMerken();
+      if (WARTEND.size) {
+        // Nächstes Paket, aber erst im nächsten Frame — nie die Seite blockieren.
+        setTimeout(geraetArbeiten, 30);
+      }
+    }).catch(() => { geraetLaeuft = false; });
+  }
+
   function merken(satz, node, attr) {
     let e = WARTEND.get(satz);
     if (!e) { e = { nodes: new Set(), attrs: new Set() }; WARTEND.set(satz, e); }
@@ -401,6 +478,10 @@
   }
 
   function planeSenden() {
+    // Erst das Gerät fragen: unbegrenzt, sofort, ohne Server.
+    geraetVorbereiten();
+    if (geraetState === "ready") { geraetArbeiten(); return; }
+    if (geraetState === "pending") return;         // Modell wird gerade bereitgestellt
     if (dienstAus || sendeTimer || !dienstUrl()) return;
     // 250 ms Sammelzeit: genug, damit ein ganzer Seitenaufbau in EINE Anfrage
     // passt, kurz genug, dass es sich sofort anfühlt.
@@ -693,6 +774,9 @@
         bekannt: Object.keys(PHRASES).length,
         wartend: WARTEND.size,
         angefragt: ANGEFRAGT.size,
+        /* geraet: "ready" = dieser Browser übersetzt selbst, unbegrenzt und
+           ohne Server. "none" = Server-Weg (Tageslimit). */
+        geraet: geraetState,
         dienst: dienstAus ? "aus" : (dienstUrl() ? "an" : "nicht konfiguriert")
       };
     },

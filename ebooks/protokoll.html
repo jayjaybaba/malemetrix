@@ -47,6 +47,49 @@
       .bp-appnav a:focus-visible { outline: 2px solid #00c2ff; outline-offset: -2px; }
     }
     @media print { .bp-appnav { display: none !important; } }
+
+    /* ---- Schutz des bezahlten Werks -------------------------------------
+       Wasserzeichen: diagonal über die ganze Fläche, fest am Bildschirm
+       (position: fixed), damit es auf JEDEM Screenshot mit drauf ist — egal
+       an welcher Stelle der Leser gerade ist. Bewusst dezent: es soll lesbar
+       bleiben, aber sichtbar genug, um abzuschrecken.
+       pointer-events: none ist Pflicht, sonst wäre die Seite nicht bedienbar. */
+    .bp-wm {
+      position: fixed; inset: 0; z-index: 40; pointer-events: none;
+      display: flex; flex-direction: column; justify-content: space-around;
+      overflow: hidden; transform: rotate(-24deg) scale(1.4);
+    }
+    .bp-wm span {
+      white-space: nowrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase;
+      text-align: center;
+      /* Sehr leise: auf einem Screenshot klar lesbar, wenn man hinsieht, aber
+         beim Lesen nicht im Weg. Ein kräftiges Wasserzeichen schützt keinen
+         Satz mehr als ein leises — es vertreibt nur die zahlenden Leser.
+         Kein mix-blend-mode: auf dem dunklen Hintergrund wurde es damit
+         deutlich greller als der Deckkraft-Wert vermuten liess. */
+      color: rgba(238, 242, 247, 0.035);
+    }
+    @media (max-width: 640px) { .bp-wm span { font-size: 0.6rem; letter-spacing: 0.14em; } }
+
+    /* Kein bequemes Kopieren ganzer Kapitel. Überschriften und Text sind
+       geschützt; Eingabefelder bleiben ausdrücklich benutzbar. */
+    .bp-protected, .bp-protected * {
+      -webkit-user-select: none; -moz-user-select: none; user-select: none;
+      -webkit-touch-callout: none;
+    }
+    .bp-protected input, .bp-protected textarea, .bp-protected [contenteditable] {
+      -webkit-user-select: text; -moz-user-select: text; user-select: text;
+    }
+
+    /* Drucken und "Als PDF speichern" liefern das Werk nicht aus — das wäre
+       die einfachste Möglichkeit, eine saubere Kopie zu erzeugen. Statt einer
+       leeren Seite steht ein erklärender Hinweis da. */
+    @media print {
+      .bp-protected { display: none !important; }
+      .bp-print-note { display: block !important; padding: 40px 0; text-align: center; }
+    }
+    .bp-print-note { display: none; }
   </style>
 </head>
 <body class="bp-wrap bp-atmos">
@@ -77,6 +120,14 @@
 </div>
 
 <div id="protoContent" hidden></div>
+<!-- Nur beim Drucken/PDF-Export sichtbar (siehe @media print). Ehrlich statt
+     einer leeren Seite, die wie ein Fehler aussähe. -->
+<div class="bp-print-note" data-no-i18n>
+  <p><strong>DAS PROTOKOLL lässt sich nicht drucken oder als PDF speichern.</strong></p>
+  <p>Dein Zugang gilt dauerhaft und auf allen Geräten — melde dich einfach mit deinem
+     Konto an und lies online weiter. Brauchst du etwas Bestimmtes auf Papier,
+     schreib uns kurz.</p>
+</div>
 
 <!-- App-Navigation (Mobil, nach Freischaltung): identische Ziele wie die
      Bottom-Nav in My MaleMetrix, „Protokoll" ist der aktive, nicht
@@ -119,9 +170,52 @@
     if (onScroll) onScroll();
   }, { passive: true });
 
+  /* ==========================================================================
+     SCHUTZ DES BEZAHLTEN WERKS
+     --------------------------------------------------------------------------
+     Was NICHT geht, und zwar in keinem Browser: Screenshots verhindern. Das
+     macht das Betriebssystem, nicht die Seite — es gibt keine Web-Schnittstelle
+     dafür. Wer etwas anderes verspricht, verkauft eine Illusion.
+
+     Was wirklich hilft, ist Zurückverfolgbarkeit: Jede Seite trägt sichtbar,
+     WEM dieses Exemplar gehört. Ein Screenshot, der irgendwo auftaucht, zeigt
+     damit auch, aus welchem Konto er stammt. Das ist der Grund, warum
+     Verlage genau das machen — es schreckt wirksamer ab als jede Sperre, die
+     sich in zehn Sekunden umgehen lässt.
+
+     Dazu zwei kleinere Riegel: Text nicht markierbar (verhindert das bequeme
+     Kopieren ganzer Kapitel) und kein Drucken/PDF-Export des Werks.
+     ========================================================================== */
+  function wasserzeichen() {
+    var wer = "";
+    try {
+      var u = (window.MM && MM.account && MM.account.getCurrentUser) ? MM.account.getCurrentUser() : null;
+      if (u && u.email) wer = u.email;
+    } catch (e) {}
+    if (!wer) {
+      // Ohne Konto (Legacy-Zugang über Code): Datum als schwächere, aber
+      // immer noch nützliche Spur. Nie leer lassen.
+      try { wer = "Lizenz " + new Date().toISOString().slice(0, 10); } catch (e) { wer = "Lizenziertes Exemplar"; }
+    }
+    var alt = document.getElementById("bpWm");
+    if (alt && alt.parentNode) alt.parentNode.removeChild(alt);
+    var wm = document.createElement("div");
+    wm.id = "bpWm";
+    wm.className = "bp-wm no-print";
+    wm.setAttribute("aria-hidden", "true");
+    wm.setAttribute("data-no-i18n", "");
+    var zeile = "MaleMetrix · " + wer + " · nicht zur Weitergabe";
+    var s = "";
+    for (var i = 0; i < 14; i++) s += "<span>" + zeile.replace(/[<>&]/g, "") + "</span>";
+    wm.innerHTML = s;
+    document.body.appendChild(wm);
+  }
+
   function show(html) {
     content.innerHTML = html;
     gate.hidden = true; content.hidden = false;
+    wasserzeichen();
+    content.classList.add("bp-protected");
     /* App-Navigation erst mit dem freigeschalteten Werk zeigen — auf dem
        Gate wäre sie Navigation in eine App, deren Inhalt hier noch zu ist. */
     document.body.classList.add("with-appnav");

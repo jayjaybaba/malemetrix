@@ -108,16 +108,16 @@ group("Navigation · Kernziele existieren, keine Dublette");
   seiten.forEach(function (f) {
     var h = read(f);
     var mehr = /<button class="nav-more-toggle" data-i18n="nav\.more">Mehr<\/button>/.test(h);
-    var trk = ["tracker.html", "dinner.html", "labor.html"].every(function (d) {
+    var trk = ["tracker.html", "dinner.html", "labor.html", "tools.html"].every(function (d) {
       return h.indexOf('<a href="' + d + '"') !== -1;
     });
     if (!mehr || !trk) fehlt.push(f + (mehr ? "" : " [Titel]") + (trk ? "" : " [Tracker]"));
   });
-  ok(fehlt.length === 0, "jede Seite trägt \"Mehr\" + alle drei Tracker (fehlt: " + (fehlt.join(", ") || "nichts") + ")");
+  ok(fehlt.length === 0, "jede Seite trägt \"Mehr\" + die drei Tracker + die Rechner (fehlt: " + (fehlt.join(", ") || "nichts") + ")");
   // Die Übersetzungen müssen zu den neuen Schlüsseln existieren, sonst stünde
   // in der EN-Ansicht der deutsche Text.
   var i18n = read("js/i18n.js");
-  ["nav.more", "nav.trackerGroup", "nav.trackerGym", "nav.trackerFood", "nav.trackerLabs", "nav.aboutGroup"].forEach(function (k) {
+  ["nav.more", "nav.freeGroup", "nav.trackerGym", "nav.trackerFood", "nav.trackerLabs", "nav.calc", "nav.aboutGroup"].forEach(function (k) {
     ok(new RegExp('"' + k.replace(".", "\\.") + '":').test(i18n), "i18n-Schlüssel vorhanden: " + k);
   });
   ok(/"nav\.more":\s*\{ de: "Mehr", en: "More" \}/.test(i18n), "nav.more ist DE \"Mehr\" / EN \"More\"");
