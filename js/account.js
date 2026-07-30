@@ -797,6 +797,12 @@
     migrationStatus: migrationStatus,
     migrated: function () { return migrationStatus().state === "complete"; },
     claimAccessCode: claimAccessCode,
+    /* Postgres-Funktion aufrufen (SECURITY DEFINER prüft die Rolle selbst).
+       Genutzt für Betreiber-Berichte, die keine eigene Edge Function brauchen. */
+    rpc: function (name, args) {
+      if (!backend || !backend.rpc) return Promise.resolve({ data: null, error: { message: "no_backend" } });
+      return backend.rpc(name, args);
+    },
     exportMyData: exportMyData,
     requestAccountDeletion: requestAccountDeletion,
     // Phase 7 — MM.ai u. a.: authentifizierter Edge-Function-Aufruf; ehrlich
