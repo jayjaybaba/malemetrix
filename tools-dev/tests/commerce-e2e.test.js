@@ -217,6 +217,29 @@ group("resolve-product-access · autoritative Auth + user-scoped Entitlement");
   ok(!/JSON\.stringify\(\{[^}]*material[^}]*\}[\s\S]*console/.test(rpa) && /Never log the material|material/.test(rpa), "Schlüsselmaterial wird nicht geloggt");
 })();
 
+/* ===== 14) Warenkorb: entfernte Produkte dürfen nicht als Geister zählen =====
+   Founder-Befund (Live, Juli 2026): Das Abzeichen zeigte "1", die Liste war
+   leer, Summe 0,00 € — im Browser lag noch das entfernte 1-€-Testprodukt.
+   Der Warenkorb MUSS beim Lesen bereinigen. */
+group("Warenkorb · keine Geister-Artikel aus entfernten Produkten");
+(function () {
+  var main = read("js/main.js");
+  var itemsFn = (main.match(/items\(\)\s*\{[\s\S]*?\n    \},/) || [""])[0];
+  ok(/katalog|MM_PRODUCTS/.test(itemsFn), "items() prüft den Produktkatalog");
+  ok(/katalog\.some\(p => p\.id === i\.id\)/.test(itemsFn), "Einträge ohne existierendes Produkt werden verworfen");
+  ok(/if \(!Array\.isArray\(katalog\) \|\| !katalog\.length\) return raw;/.test(itemsFn),
+     "ohne geladenen Katalog wird NICHT gefiltert (kein Datenverlust auf Seiten ohne shop-data.js)");
+  ok(/qty > 0/.test(itemsFn), "kaputte Mengen (0, negativ, NaN) fliegen raus");
+  ok(/MM\.store\.set\("cart", clean\)/.test(itemsFn), "der bereinigte Stand wird persistiert");
+  ok(/JSON\.stringify\(clean\) !== JSON\.stringify\(raw\)/.test(itemsFn),
+     "geschrieben wird nur bei echter Änderung (keine Schreib-Schleife)");
+  // Der Zähler des Abzeichens speist sich aus derselben, bereinigten Quelle.
+  ok(/count: items\.reduce/.test(main) && /const items = MM\.cart\.items\(\);/.test(main),
+     "totals().count zählt dieselbe bereinigte Liste (Abzeichen == Inhalt)");
+  // Checkout darf keinen 0-€-Auftrag anbieten.
+  ok(/if \(!t\.count\)/.test(read("js/checkout.js")), "Checkout zeigt bei leerem Warenkorb den Leer-Zustand");
+})();
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 process.exit(failed ? 1 : 0);
