@@ -1712,20 +1712,27 @@
        Server-Cache sorgt dafür, dass jeder Satz genau einmal zählt — deshalb
        fällt der Verbrauch nach den ersten Besuchen praktisch auf null. */
     if (transData) {
-      var monat = Number(transData.zeichen_monat || 0);
-      var frei = 500000;                       // DeepL-Free-Kontingent pro Monat
-      var quote = Math.min(100, Math.round(monat / frei * 100));
+      var anb = transData.anbieter || {};
+      var kostenpflichtig = (Number(anb.deepl) || 0) + (Number(anb.google) || 0);
+      var ANB_LABEL = { mymemory: "kostenlos", deepl: "DeepL (bezahlt)", google: "Google (bezahlt)", manual: "von Hand geprüft" };
+      var anbText = Object.keys(anb).map(function (k) {
+        return (ANB_LABEL[k] || k) + ": " + anb[k];
+      }).join(" · ") || "noch nichts übersetzt";
       html += sec("Englische Fassung · Übersetzung",
         '<div class="os-metriclist">' +
-        '<div><span>Übersetzte Sätze (gesamt)</span><b></b><i>' + (Number(transData.saetze) || 0) + '</i></div>' +
-        '<div><span>Zeichen diesen Monat</span>' +
-        '<b><span class="os-usebar" aria-hidden="true"><i style="width:' + quote + '%"></i></span></b>' +
-        '<i>' + monat.toLocaleString("de-DE") + '</i></div>' +
+        '<div><span>Übersetzte Sätze</span><b></b><i>' + (Number(transData.saetze) || 0) + '</i></div>' +
+        '<div><span>Zeichen gesamt</span><b></b><i>' + (Number(transData.zeichen_gesamt) || 0).toLocaleString("de-DE") + '</i></div>' +
+        '<div><span>davon diesen Monat</span><b></b><i>' + (Number(transData.zeichen_monat) || 0).toLocaleString("de-DE") + '</i></div>' +
         '</div>' +
-        '<p class="small muted" style="margin-top:10px">' + quote + ' % des kostenlosen Monatskontingents (' +
-        frei.toLocaleString("de-DE") + ' Zeichen). Jeder Satz wird genau einmal übersetzt und dann für alle ' +
-        'Besucher gespeichert — der Verbrauch fällt nach den ersten englischen Aufrufen fast auf null. ' +
-        'Änderst du einen deutschen Text, wird nur dieser Satz neu übersetzt.</p>');
+        '<p class="small" style="margin-top:10px;color:var(--muted)">Herkunft: ' + esc(anbText) + '</p>' +
+        (kostenpflichtig === 0
+          ? '<p class="small muted" style="margin-top:8px">Kostet nichts: der Übersetzungsdienst läuft ohne Vertrag und ohne Guthaben. ' +
+            'Jeder Satz wird genau einmal übersetzt und dann für alle Besucher gespeichert — nach den ersten ' +
+            'englischen Aufrufen fällt der Verbrauch fast auf null. Änderst du einen deutschen Text, wird nur ' +
+            'dieser Satz neu übersetzt.</p>'
+          : '<p class="small" style="margin-top:8px;color:var(--amber,#f5a623)">Achtung: ' + kostenpflichtig +
+            ' Sätze kamen von einem kostenpflichtigen Anbieter. Das passiert nur, wenn in Supabase ein ' +
+            'DEEPL_API_KEY oder GOOGLE_TRANSLATE_API_KEY gesetzt ist.</p>'));
     }
     html += '<p style="margin-top:12px"><a class="os-ghost" href="#settings">← Zurück zu den Einstellungen</a></p>';
     return html;
