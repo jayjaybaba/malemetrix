@@ -430,16 +430,16 @@
     });
     // Wertefläche
     const valPts = keys.map((k, i) => pt(i, Math.max(scores[k], 4)).join(",")).join(" ");
-    svg += '<polygon points="' + valPts + '" fill="rgba(46,124,246,0.25)" stroke="#2e7cf6" stroke-width="2"/>';
+    svg += '<polygon points="' + valPts + '" fill="rgba(37, 140, 255,0.25)" stroke="#258CFF" stroke-width="2"/>';
     keys.forEach((k, i) => {
       const [x, y] = pt(i, Math.max(scores[k], 4));
-      svg += '<circle cx="' + x + '" cy="' + y + '" r="4" fill="#00c2ff"/>';
+      svg += '<circle cx="' + x + '" cy="' + y + '" r="4" fill="#16C4F4"/>';
     });
     // Beschriftung
     keys.forEach((k, i) => {
       const [x, y] = pt(i, 122);
       const nm = (C.moduleNamesShort && C.moduleNamesShort[k]) || C.moduleNames[k];
-      svg += '<text x="' + x + '" y="' + y + '" fill="#9aa4b5" font-size="10.5" font-family="JetBrains Mono,monospace" text-anchor="middle" dominant-baseline="middle">' +
+      svg += '<text x="' + x + '" y="' + y + '" fill="#A9A396" font-size="10.5" font-family="JetBrains Mono,monospace" text-anchor="middle" dominant-baseline="middle">' +
         nm.toUpperCase() + '</text>';
     });
     svg += '</svg>';
@@ -451,7 +451,7 @@
     const off = circ * (1 - total / 100);
     return '<svg width="190" height="190" viewBox="0 0 190 190">' +
       '<defs><linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">' +
-      '<stop offset="0%" stop-color="#2e7cf6"/><stop offset="100%" stop-color="#00c2ff"/></linearGradient></defs>' +
+      '<stop offset="0%" stop-color="#258CFF"/><stop offset="100%" stop-color="#16C4F4"/></linearGradient></defs>' +
       '<circle class="ring-bg" cx="95" cy="95" r="' + r + '" fill="none" stroke-width="12"/>' +
       '<circle class="ring-val" cx="95" cy="95" r="' + r + '" fill="none" stroke-width="12" ' +
       'stroke-dasharray="' + circ + '" stroke-dashoffset="' + circ + '" data-target="' + off + '"/></svg>';

@@ -18,7 +18,7 @@
   /* Der Vorname kommt aus dem Fragebogen und wird in innerHTML gesetzt. */
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]; }); }
 
-  function barColor(v) { return v < 40 ? "#e0654f" : v < 70 ? "#e8a33d" : "#2e7cf6"; }
+  function barColor(v) { return v < 40 ? "#e0654f" : v < 70 ? "#e8a33d" : "#258CFF"; }
 
   const moduleText = C.moduleText;
 
@@ -39,10 +39,10 @@
       svg += '<line x1="' + cx + '" y1="' + cy + '" x2="' + x + '" y2="' + y + '" stroke="#e3e6eb"/>';
     });
     const valPts = keys.map((k, i) => pt(i, Math.max(scores[k], 4)).join(",")).join(" ");
-    svg += '<polygon points="' + valPts + '" fill="rgba(46,124,246,0.18)" stroke="#2e7cf6" stroke-width="2"/>';
+    svg += '<polygon points="' + valPts + '" fill="rgba(37, 140, 255,0.18)" stroke="#258CFF" stroke-width="2"/>';
     keys.forEach((k, i) => {
       const [x, y] = pt(i, Math.max(scores[k], 4));
-      svg += '<circle cx="' + x + '" cy="' + y + '" r="3.5" fill="#2e7cf6"/>';
+      svg += '<circle cx="' + x + '" cy="' + y + '" r="3.5" fill="#258CFF"/>';
     });
     keys.forEach((k, i) => {
       const [x, y] = pt(i, 124);
@@ -114,7 +114,7 @@
       })() +
       '</table>' +
       '<p style="margin-top:8px;font-size:0.9rem">' + (V.conf.reasons || []).join(" ") + '</p>' +
-      (V.panel ? '<div class="r-box" style="margin-top:12px;border-left:4px solid #2e7cf6"><h3>' + V.panel.title + ' — ' + V.panel.verdict + '</h3>' +
+      (V.panel ? '<div class="r-box" style="margin-top:12px;border-left:4px solid #258CFF"><h3>' + V.panel.title + ' — ' + V.panel.verdict + '</h3>' +
         (V.panel.lines || []).map(function (l) { return '<p style="font-size:0.86rem;margin-top:6px">' + l + '</p>'; }).join('') + '</div>' : '') +
       '<p style="font-size:0.82rem;color:#8893a7;margin-top:10px">Der Status ist ein Kontext, keine Bewertung. Er senkt deinen Score nicht — bewertet wird ausschließlich, wie gut dein aktuelles System kontrolliert ist.</p>' +
       '</div>';
@@ -238,7 +238,7 @@
 
   /* ---------- Archetyp ---------- */
   html += '<div class="r-section"><h2>Dein Performance-Typ</h2>' +
-    '<div class="r-box" style="border-left:4px solid #2e7cf6">' +
+    '<div class="r-box" style="border-left:4px solid #258CFF">' +
     '<h3 style="font-size:1.2rem">' + r.archetype.name + '</h3>' +
     '<p style="font-weight:600;color:#16181d;margin:4px 0 8px">' + r.archetype.tagline + '</p>' +
     '<p>' + r.archetype.text + '</p></div></div>';
@@ -278,7 +278,7 @@
 
   /* ---------- Trainingsempfehlung (Ziel/Erfahrung entscheiden, kein Universal-Plan) ---------- */
   html += '<div class="r-section"><h2>Trainings-Empfehlung: jeden Tag Bewegung, gezielt Kraft</h2>' +
-    '<div class="r-callout" style="border-left:3px solid var(--accent);padding:12px 16px;margin-bottom:14px;background:rgba(46,124,246,0.06);border-radius:0 8px 8px 0">' +
+    '<div class="r-callout" style="border-left:3px solid var(--accent);padding:12px 16px;margin-bottom:14px;background:rgba(37, 140, 255,0.06);border-radius:0 8px 8px 0">' +
     '<strong>Das MaleMetrix-Prinzip:</strong> Bewege und trainiere jeden Tag — aber nicht jeden Tag maximal. ' +
     'Drei Tage davon sind gezieltes Krafttraining, die übrigen Tage bestehen aus Zone 2, Mobility, Spaziergängen/Steps oder aktiver Regeneration. ' +
     'Jeden Tag ein Reiz, damit Bewegung zur Gewohnheit wird — die Belastung steuerst du, nicht das Kalenderblatt.</div>' +
@@ -328,7 +328,7 @@
   /* ---------- Passendes Angebot (personalisiert — nicht immer Coaching) ---------- */
   (function () {
     const rec = C.productRecommendation(r);
-    const color = rec.kind === 'medical' ? '#c0392b' : (rec.kind === 'coaching' ? '#7c5cff' : '#2e7cf6');
+    const color = rec.kind === 'medical' ? '#c0392b' : (rec.kind === 'coaching' ? '#7c5cff' : '#258CFF');
     html += '<div class="r-section"><h2>Dein nächster Schritt mit MaleMetrix</h2>' +
       '<div class="r-box" style="border-left:4px solid ' + color + '"><h3>' + rec.title + '</h3>' +
       '<p style="margin-top:6px">' + rec.why + '</p>' +

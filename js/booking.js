@@ -56,7 +56,7 @@
     const dark = document.documentElement.getAttribute("data-theme") !== "light";
     window.Cal("init", { origin: "https://cal.com" });
     window.Cal("inline", { elementOrSelector: "#cal-embed", calLink: link, config: { theme: dark ? "dark" : "light" } });
-    window.Cal("ui", { theme: dark ? "dark" : "light", hideEventTypeDetails: false, styles: { branding: { brandColor: "#2e7cf6" } } });
+    window.Cal("ui", { theme: dark ? "dark" : "light", hideEventTypeDetails: false, styles: { branding: { brandColor: "#258CFF" } } });
   }
 
   const $ = (s) => document.querySelector(s);
