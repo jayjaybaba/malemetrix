@@ -19,13 +19,21 @@
     "nav.mycourse":{ de: "My MaleMetrix", en: "My MaleMetrix" },
     "nav.mymm":    { de: "My MaleMetrix", en: "My MaleMetrix" },
     "nav.shop":    { de: "Shop", en: "Shop" },
-    "nav.more":    { de: "Wissen", en: "Knowledge" },
+    /* Der Sammelpunkt hieß "Über" und enthielt nur Info-Seiten. Die drei
+       kostenlosen Tracker waren dagegen nur im Footer verlinkt — also
+       praktisch unauffindbar. Beides liegt jetzt hier zusammen, und der
+       Punkt heißt entsprechend "Mehr". */
+    "nav.more":    { de: "Mehr", en: "More" },
     "nav.ebooks":  { de: "Library", en: "Library" },
     "nav.library": { de: "Kapitelübersicht", en: "Chapter index" },
     "nav.protocol": { de: "Das Protokoll", en: "The Protocol" },
     "nav.magazine":{ de: "Magazin", en: "Magazine" },
     "nav.blood":   { de: "Blutwerte", en: "Blood Values" },
-    "nav.about":   { de: "Über", en: "About" },
+    "nav.trackerGroup": { de: "Kostenlose Tracker", en: "Free trackers" },
+    "nav.trackerGym":   { de: "Training & Schlaf", en: "Training & sleep" },
+    "nav.trackerFood":  { de: "Kalorien & Protein", en: "Calories & protein" },
+    "nav.trackerLabs":  { de: "Blutwerte im Verlauf", en: "Blood over time" },
+    "nav.aboutGroup":   { de: "MaleMetrix", en: "MaleMetrix" },
     "nav.aboutMM": { de: "Über MaleMetrix", en: "About MaleMetrix" },
     "nav.faq":     { de: "FAQ", en: "FAQ" },
     "nav.contact": { de: "Kontakt", en: "Contact" },
