@@ -228,7 +228,7 @@ window.MM_CONFIG = {
   //   3) plausibleDomain  → optionale Alternative/Ergänzung (ab ~9 €/Monat),
   //      liefert den Kauf-Trichter in einem fertigen Dashboard.
   analytics: {
-    cloudflareToken: "",   // z. B. "a1b2c3d4e5f6..." (nur der Token, KOSTENLOS)
+    cloudflareToken: "4293a8214f104e3db5866141b15a29eb",   // Cloudflare Web Analytics (kostenlos, cookielos)
     siteTelemetry: true,   // eigene, anonyme Nutzungsmessung (Supabase)
     plausibleDomain: "",   // z. B. "www.malemetrix.com"
     plausibleSrc: "https://plausible.io/js/script.tagged-events.js"
