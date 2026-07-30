@@ -88,6 +88,9 @@
     @media print {
       .bp-protected { display: none !important; }
       .bp-print-note { display: block !important; padding: 40px 0; text-align: center; }
+      /* Der Autor druckt sein eigenes Werk — dann gilt der Riegel nicht und der
+         Hinweis hat dort auch nichts zu suchen. */
+      .bp-autor .bp-print-note { display: none !important; }
     }
     .bp-print-note { display: none; }
   </style>
@@ -211,11 +214,45 @@
     document.body.appendChild(wm);
   }
 
+  /* Der Autor muss an seine eigenen Texte kommen: kopieren, drucken, saubere
+     Screenshots für Marketing. Der Schutz gilt deshalb für Käufer, NICHT für
+     das Betreiber-Konto.
+
+     Die Rolle kommt vom Server (public.user_roles, an die geprüfte Nutzer-ID
+     gebunden) — nicht aus localStorage. Sonst wäre der Schutz mit einer Zeile
+     im Browser ausgehebelt und damit keiner.
+
+     Reihenfolge ist Absicht: geschützt wird SOFORT, die Ausnahme kommt erst,
+     wenn der Server die Owner-Rolle bestätigt hat. Ein langsamer Server darf
+     nie dazu führen, dass das Werk kurz unprotected in der Seite steht. */
+  function autorAusnahme() {
+    try {
+      if (!(window.MM && MM.account)) return;
+      var fertig = function () {
+        try {
+          if (MM.account.role && MM.account.role() === "owner") {
+            content.classList.remove("bp-protected");
+            var wm = document.getElementById("bpWm");
+            if (wm && wm.parentNode) wm.parentNode.removeChild(wm);
+            document.body.classList.add("bp-autor");
+          }
+        } catch (e) {}
+      };
+      if (MM.account.role && MM.account.role() === "owner") { fertig(); return; }
+      if (MM.account.loadRole) {
+        // whenReady zuerst: ohne Sitzung gibt es keine Rolle zu laden.
+        var p = MM.account.whenReady ? MM.account.whenReady() : Promise.resolve();
+        Promise.resolve(p).then(function () { return MM.account.loadRole(); }).then(fertig).catch(function () {});
+      }
+    } catch (e) {}
+  }
+
   function show(html) {
     content.innerHTML = html;
     gate.hidden = true; content.hidden = false;
     wasserzeichen();
     content.classList.add("bp-protected");
+    autorAusnahme();
     /* App-Navigation erst mit dem freigeschalteten Werk zeigen — auf dem
        Gate wäre sie Navigation in eine App, deren Inhalt hier noch zu ist. */
     document.body.classList.add("with-appnav");
