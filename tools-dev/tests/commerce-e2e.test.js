@@ -304,6 +304,67 @@ group("Stripe · serverseitige Verifikation + automatische Freischaltung");
      "config.js dokumentiert die Rückleitung mit {CHECKOUT_SESSION_ID}");
 })();
 
+/* ===== 16) Konto im Checkout: der bezahlte Zugang lebt im Konto ============
+   Der Zugang wird serverseitig an die Nutzer-ID gebunden. Ein Käufer, der das
+   erst NACH der Zahlung erfährt, steht mit bezahlter Ware vor einer
+   Login-Aufforderung. Deshalb muss es vorher stehen — und der Weg zurück muss
+   von jeder Stelle aus funktionieren, an der der Käufer landen kann. */
+group("Konto im Checkout · Ansage vorher, Rückweg von überall");
+(function () {
+  // -- Ansage vor dem Bezahlen --
+  ok(/id="coAccount"/.test(checkout) && /function renderAccountBlock/.test(checkout),
+     "der Checkout hat einen eigenen Konto-Block");
+  var accFn = (checkout.match(/function renderAccountBlock[\s\S]*?\n  \}/) || [""])[0];
+  ok(/if \(!snap \|\| !snap\.configured\)/.test(accFn),
+     "ohne Cloud-Konfiguration verspricht der Block nichts (bleibt leer)");
+  ok(/items\(\)\.some\(i => i\.p\.digital\)/.test(accFn),
+     "der Block erscheint nur, wenn überhaupt etwas freizuschalten ist");
+  ok(/diesem Konto zugeordnet/.test(accFn) && /auf allen deinen Geräten/.test(accFn),
+     "angemeldet: sagt zu, wohin der Zugang geht");
+  ok(/zuerst bezahlen<\/strong>/.test(accFn),
+     "abgemeldet: nennt ausdrücklich, dass man auch zuerst bezahlen kann");
+  ok(/MM\.account\.signIn\(v\)/.test(checkout), "die Anmeldung läuft über MM.account.signIn (Magic Link)");
+  ok(!/type="password"/i.test(checkout), "kein Passwortfeld im Checkout (die Anmeldung ist passwortlos)");
+  // Die Anmeldung darf den Kauf NICHT blockieren: keine Prüfung auf Login in
+  // validateForm oder in goToStripe.
+  var validate = (checkout.match(/function validateForm\(\)[\s\S]*?\n  \}/) || [""])[0];
+  ok(!/getCurrentUser|signed_in/.test(validate), "validateForm erzwingt keine Anmeldung (kein Kaufabbruch)");
+  var toStripe = (checkout.match(/async function goToStripe\(\)[\s\S]*?\n  \}/) || [""])[0];
+  ok(!/getCurrentUser|signed_in/.test(toStripe), "goToStripe erzwingt keine Anmeldung");
+
+  // -- Nach dem Login automatisch weiterprüfen --
+  ok(/let stripeWaiting = null/.test(checkout) && /stripeWaiting = \{ sid: sid, pending: pending \}/.test(checkout),
+     "die offene Prüfung wird gemerkt");
+  ok(/function onAuthMaybeChanged/.test(checkout) && /MM\.account\.onChange\(onAuthMaybeChanged\)/.test(checkout),
+     "ein Auth-Wächter hängt an MM.account.onChange (deckt auch andere Tabs ab)");
+  var watch = (checkout.match(/function onAuthMaybeChanged[\s\S]*?\n  \}/) || [""])[0];
+  ok(/user && stripeWaiting && !stripeRunning/.test(watch),
+     "nach Anmeldung wird die Prüfung wiederholt — und nie doppelt gleichzeitig");
+  ok(/visibilitychange[\s\S]{0,80}onAuthMaybeChanged/.test(checkout),
+     "Sichtbarkeitswechsel als Absicherung (entladener Tab auf iOS)");
+  ok(/loginNoetig \? loginFormHtml\(\)/.test(checkout) && /function loginFormHtml/.test(checkout),
+     "die Prüf-Ansicht enthält das Anmeldeformular selbst (kein Umweg über eine andere Seite)");
+
+  // -- Rückweg von überall --
+  ok(/sessionId: sid/.test(checkout), "die Stripe-Sitzung wird gemerkt, nicht nur aus der URL gelesen");
+  ok(/stripeSessionIdFromUrl\(\) \|\| \(pending && typeof pending\.sessionId === "string"/.test(checkout),
+     "die Prüfung findet die Sitzung auch ohne Rückkehr-URL");
+  ok(/STRIPE_PENDING_TTL_MS = 48 \* 3600 \* 1000/.test(checkout) && /function stripePending\(\)/.test(checkout),
+     "der Pending-State verfällt nach 48 Stunden (kein Zombie-Zustand)");
+  ok(/stripeWiederaufnahme && !MM\.cart\.totals\(\)\.count/.test(checkout),
+     "bei leerem Warenkorb wird die offene Zahlung von selbst wieder aufgenommen");
+  ok(/Offene Zahlung/.test(checkout) && /Jetzt prüfen und freischalten/.test(checkout),
+     "liegen neue Artikel im Korb, gibt es stattdessen einen Hinweis mit Rückweg");
+  // -- Und in My MaleMetrix, wo der Magic Link landet --
+  var app = read("js/os/app.js");
+  ok(/mm_stripe_pending/.test(app) && /Zahlung noch nicht freigeschaltet/.test(app),
+     "My MaleMetrix zeigt eine offene Stripe-Zahlung an (dort landet der Login-Link)");
+  ok(/snap\.state === "signed_in" && !protocolLink\(\)\.owned/.test(app),
+     "der Hinweis erscheint nur, wenn der Zugang wirklich fehlt");
+  ok(/48 \* 3600 \* 1000/.test(app), "auch dort verfällt der Hinweis nach 48 Stunden");
+  ok(/href="checkout\.html\?bezahlt=stripe"/.test(app), "der Hinweis führt in die Prüfung zurück");
+})();
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 process.exit(failed ? 1 : 0);
