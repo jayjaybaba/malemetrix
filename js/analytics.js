@@ -43,7 +43,9 @@
      Die beantwortet unsere eigene site-telemetry weiter unten. */
   if (CFG.cloudflareToken) {
     const cf = document.createElement("script");
-    cf.defer = true;
+    // type="module" wie im offiziellen Cloudflare-Snippet (dort ist defer
+    // implizit). data-cf-beacon trägt den Token — sonst zählt Cloudflare nichts.
+    cf.type = "module";
     cf.src = "https://static.cloudflareinsights.com/beacon.min.js";
     cf.setAttribute("data-cf-beacon", JSON.stringify({ token: CFG.cloudflareToken }));
     document.head.appendChild(cf);
