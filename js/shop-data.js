@@ -10,9 +10,9 @@
   const defs =
     '<defs>' +
     '<linearGradient id="pgGrad" x1="0%" y1="0%" x2="100%" y2="100%">' +
-    '<stop offset="0%" stop-color="#2e7cf6"/><stop offset="100%" stop-color="#00c2ff"/></linearGradient>' +
+    '<stop offset="0%" stop-color="#258CFF"/><stop offset="100%" stop-color="#16C4F4"/></linearGradient>' +
     '<radialGradient id="pgGlow" cx="50%" cy="35%" r="70%">' +
-    '<stop offset="0%" stop-color="rgba(46,124,246,0.22)"/><stop offset="100%" stop-color="rgba(46,124,246,0)"/></radialGradient>' +
+    '<stop offset="0%" stop-color="rgba(37, 140, 255,0.22)"/><stop offset="100%" stop-color="rgba(37, 140, 255,0)"/></radialGradient>' +
     '</defs>';
 
   function visual(inner) {

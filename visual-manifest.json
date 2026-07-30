@@ -2,7 +2,7 @@
   "version": 2,
   "phase": 7,
   "note": "Cinematic Asset Pipeline (§101–§103). Status REQUIRES_EXTERNAL_GENERATION — in dieser Umgebung wird nichts als 'erstellt' behauptet. Prompts sind produktionsreif für externe Generierung; Integration über die genannten Seiten/Slots.",
-  "artDirection": "PERFORMANCE LUXURY × Präzisionsdiagnostik × cinematic editorial. Dunkles Koordinatensystem, kalibrierte Cyan-Akzente (#00c2ff), reale erwachsene Männer 30–50, keine Neon-Sci-Fi-Klischees, keine Stock-Fitness-Ästhetik.",
+  "artDirection": "PERFORMANCE LUXURY × Präzisionsdiagnostik × cinematic editorial. Dunkles Koordinatensystem, kalibrierte Cyan-Akzente (#16C4F4), reale erwachsene Männer 30–50, keine Neon-Sci-Fi-Klischees, keine Stock-Fitness-Ästhetik.",
   "assets": [
     {
       "id": "home_metrix_hero",

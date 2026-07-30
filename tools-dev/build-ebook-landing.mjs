@@ -104,7 +104,7 @@ function page(b) {
   <link rel="stylesheet" href="../css/fonts.css">
   <link rel="stylesheet" href="../css/style.css">
   <link rel="icon" href="${FAVICON}">
-  <meta name="theme-color" content="#07090d">
+  <meta name="theme-color" content="#070A0F">
 </head>
 <body>
   <header class="lp-topbar">

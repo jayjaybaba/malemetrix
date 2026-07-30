@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2307090d'/%3E%3Cpath d='M8.5 8.5l5.5 5.5M8.5 23.5l5.5-5.5' stroke='%23eef2f7' stroke-width='3.4' stroke-linecap='round' fill='none'/%3E%3Cpath d='M23.5 8.5l-5.5 5.5M23.5 23.5l-5.5-5.5' stroke='%2300c2ff' stroke-width='3.4' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
   <link rel="canonical" href="https://www.malemetrix.com/">
-  <meta name="theme-color" content="#07090d">
+  <meta name="theme-color" content="#070A0F">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
   <meta property="og:type" content="website">
@@ -61,7 +61,7 @@
 
 <header class="site-header" id="siteHeader">
   <div class="container header-inner">
-    <a href="index.html" class="logo" aria-label="MaleMetrix Startseite"><span class="logo-word">MALEMETRI</span><svg class="logo-x" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path d="M22 22 42 42 M22 78 42 58" stroke="#eef2f7" stroke-width="12" stroke-linecap="round" fill="none"/><path d="M78 22 58 42 M78 78 58 58" stroke="#00c2ff" stroke-width="12" stroke-linecap="round" fill="none"/></svg></a>
+    <a href="index.html" class="logo" aria-label="MaleMetrix Startseite"><span class="logo-word">MALEMETRI</span><svg class="logo-x" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path d="M22 22 42 42 M22 78 42 58" stroke="#F0EEE9" stroke-width="12" stroke-linecap="round" fill="none"/><path d="M78 22 58 42 M78 78 58 58" stroke="#16C4F4" stroke-width="12" stroke-linecap="round" fill="none"/></svg></a>
     <nav class="main-nav" id="mainNav">
       <a href="check.html" data-i18n="nav.check">Score</a>
       <a href="protokoll.html" data-i18n="nav.protocol">Das Protokoll</a>
@@ -117,13 +117,15 @@
     <div class="container os14-hero-inner">
       <div>
         <div class="os14-sysline">MM / PERFORMANCE OS</div>
-        <h1 class="h-display" data-i18n-html="home.h1">Bau den Körper.<br><span class="text-grad">Schütz das System.</span></h1>
-        <p class="lead" data-i18n="home.lead">Training, Ernährung, Schlaf und Hormone für Männer mit Job und Familie — Messwerte statt Bauchgefühl. MaleMetrix findet zuerst deinen größten Engpass, bevor du Zeit, Geld oder Energie in die falschen Dinge steckst.</p>
+        <!-- br-m bricht NUR mobil: "Steuere dein / System." statt eines
+             zufälligen Umbruchs mitten im Markenversprechen. -->
+        <h1 class="h-display" data-i18n-html="home.h1">Bau deinen Körper.<br><span class="text-grad">Steuere dein <br class="br-m">System.</span></h1>
+        <p class="lead" data-i18n="home.lead">Finde zuerst den Engpass, der deinen Fortschritt wirklich bremst. MaleMetrix verbindet Training, Ernährung, Schlaf und Gesundheitsdaten zu einer klaren Priorität.</p>
         <div class="hero-ctas">
-          <a href="check.html" class="btn btn-primary btn-lg btn-arrow" data-track="score_start_click" data-i18n="cta.startCheck">Kostenlosen MaleMetrix Score starten</a>
+          <a href="check.html" class="btn btn-primary btn-lg btn-arrow" data-track="score_start_click" data-i18n="cta.startCheck">Meinen kostenlosen Score starten</a>
         </div>
-        <p class="small" style="color:var(--muted-2);margin-top:14px" data-i18n="home.trustline">~7 Minuten · kostenlos · sofortige Auswertung · kein E-Mail-Zwang</p>
-        <p style="margin-top:12px"><a href="#system" style="color:var(--muted);text-decoration:none;font-size:0.95rem" data-i18n="home.howLink">So funktioniert MaleMetrix&nbsp;↓</a></p>
+        <p class="small os14-trust" data-i18n="home.trustline">7 Minuten · Ergebnis sofort · ohne Anmeldung</p>
+        <p class="os14-howlink-wrap"><a href="#system" class="os14-howlink" data-i18n="home.howLink">So funktioniert der Score&nbsp;↓</a></p>
       </div>
       <!-- Diagnose-Instrument (Beispieldaten, als solche markiert): das
            Produktversprechen als Messgerät, nicht als Dashboard-Karte. -->
@@ -473,7 +475,7 @@
   <div class="container">
     <div class="footer-grid">
       <div class="footer-brand">
-        <a href="index.html" class="logo" aria-label="MaleMetrix Startseite"><span class="logo-word">MALEMETRI</span><svg class="logo-x" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path d="M22 22 42 42 M22 78 42 58" stroke="#eef2f7" stroke-width="12" stroke-linecap="round" fill="none"/><path d="M78 22 58 42 M78 78 58 58" stroke="#00c2ff" stroke-width="12" stroke-linecap="round" fill="none"/></svg></a>
+        <a href="index.html" class="logo" aria-label="MaleMetrix Startseite"><span class="logo-word">MALEMETRI</span><svg class="logo-x" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path d="M22 22 42 42 M22 78 42 58" stroke="#F0EEE9" stroke-width="12" stroke-linecap="round" fill="none"/><path d="M78 22 58 42 M78 78 58 58" stroke="#16C4F4" stroke-width="12" stroke-linecap="round" fill="none"/></svg></a>
         <p data-i18n="foot.brand">Das Performance-System für Männer. Körper. Kraft. Energie. Blutwerte. Umsetzung.</p>
       </div>
       <div class="footer-col">

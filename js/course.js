@@ -705,7 +705,7 @@
         var mLbl = (MODES[obState.goal] && (MODES[obState.goal].label || MODES[obState.goal].name)) || obState.goal.toUpperCase();
         mount.innerHTML =
           '<div class="mm-access" style="padding-top:56px">' +
-          '<span class="stamp" style="color:var(--status-active,#00c2ff);border-color:rgba(0,194,255,0.35)">SYSTEM READY</span>' +
+          '<span class="stamp" style="color:var(--status-active,#16C4F4);border-color:rgba(22, 196, 244,0.35)">SYSTEM READY</span>' +
           '<div class="mm-metric-row" style="max-width:640px;margin:28px auto 0;text-align:left">' +
           '<div class="mm-metric"><span class="v" style="font-size:1.3rem">' + String(mLbl).toUpperCase() + '</span><span class="k">MODE</span></div>' +
           '<div class="mm-metric"><span class="v" style="font-size:1.3rem">' + String(obState.bottleneck).toUpperCase() + '</span><span class="k">PRIMÄRER ENGPASS</span></div>' +

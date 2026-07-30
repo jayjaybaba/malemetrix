@@ -279,7 +279,7 @@
         "MaleMetrix veröffentlicht keine erfundenen Erfolgsgeschichten. Wenn du willst, wird dein Durchlauf zu einer echten, nachvollziehbaren Fallstudie — mit Zahlen, mit Umsetzungsquote und mit dem, was nicht funktioniert hat. Freiwillig, anonymisiert, jederzeit widerrufbar.",
         "MaleMetrix does not publish invented success stories. If you want, your cycle becomes a real, traceable case study — with numbers, adherence and the parts that did not work. Voluntary, anonymised, revocable at any time."
       ) + '</p>' +
-      '<div class="c2-card2" style="margin-top:12px;background:rgba(0,194,255,.05)"><span class="k">' + L("KURZFASSUNG", "SUMMARY") + '</span><p style="margin:4px 0 0"><b style="color:#fff">' + esc(headline(cs)) + '</b></p></div>';
+      '<div class="c2-card2" style="margin-top:12px;background:rgba(22, 196, 244,.05)"><span class="k">' + L("KURZFASSUNG", "SUMMARY") + '</span><p style="margin:4px 0 0"><b style="color:#fff">' + esc(headline(cs)) + '</b></p></div>';
 
     html += '<div class="c2-field" style="margin-top:14px"><label for="csNotWorking">' +
       L("Was hat NICHT funktioniert? (Pflichtfeld)", "What did NOT work? (required)") + '</label>' +

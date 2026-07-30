@@ -73,7 +73,7 @@
     "foot.tagline": { de: "Made for Männer, die mehr wollen.", en: "Made for men who want more." },
 
     /* ---------- Buttons / wiederkehrend ---------- */
-    "cta.startCheck": { de: "Kostenlosen MaleMetrix Score starten", en: "Start the free MaleMetrix Score" },
+    "cta.startCheck": { de: "Meinen kostenlosen Score starten", en: "Start my free score" },
     "cta.viewCoaching": { de: "1:1 Coaching ansehen", en: "View 1:1 coaching" },
     "common.free": { de: "Kostenlos", en: "Free" },
     "common.addCart": { de: "In den Warenkorb", en: "Add to cart" },
@@ -102,12 +102,15 @@
 
     /* ---------- Homepage (aktuell verdrahtet, Stand P9.8) ---------- */
     "home.badge": { de: "Männergesundheit als System — nicht nach Bauchgefühl", en: "Men’s health as a system — not guesswork" },
-    "home.h1": { de: "Bau den Körper.<br><span class=\"text-grad\">Schütz das System.</span>",
-                 en: "Build the body.<br><span class=\"text-grad\">Protect the system.</span>" },
-    "home.lead": { de: "Training, Ernährung, Schlaf und Hormone für Männer mit Job und Familie — Messwerte statt Bauchgefühl. MaleMetrix findet zuerst deinen größten Engpass, bevor du Zeit, Geld oder Energie in die falschen Dinge steckst.",
-                   en: "Training, nutrition, sleep and hormones for men with a job and a family — measurements, not guesswork. MaleMetrix first finds your biggest bottleneck, before you pour time, money or energy into the wrong things." },
-    "home.trustline": { de: "~7 Minuten · kostenlos · sofortige Auswertung · kein E-Mail-Zwang", en: "~7 minutes · free · instant results · no email required" },
-    "home.howLink": { de: "So funktioniert MaleMetrix ↓", en: "How MaleMetrix works ↓" },
+    /* Hero-Neufassung (Founder, Juli 2026): aktivere Verben ("Bau DEINEN
+       Körper", "STEUERE dein System"), kürzerer Nutzen-Text ohne "Hormone"
+       und "Bauchgefühl", CTA in Ich-Form. br-m bricht nur mobil. */
+    "home.h1": { de: "Bau deinen Körper.<br><span class=\"text-grad\">Steuere dein <br class=\"br-m\">System.</span>",
+                 en: "Build your body.<br><span class=\"text-grad\">Steer your <br class=\"br-m\">system.</span>" },
+    "home.lead": { de: "Finde zuerst den Engpass, der deinen Fortschritt wirklich bremst. MaleMetrix verbindet Training, Ernährung, Schlaf und Gesundheitsdaten zu einer klaren Priorität.",
+                   en: "First find the bottleneck that is really holding you back. MaleMetrix turns training, nutrition, sleep and health data into one clear priority." },
+    "home.trustline": { de: "7 Minuten · Ergebnis sofort · ohne Anmeldung", en: "7 minutes · instant result · no sign-up" },
+    "home.howLink": { de: "So funktioniert der Score ↓", en: "How the score works ↓" },
 
     /* Sektions-Kicker + Überschriften */
     "home.s.problem.k": { de: "Das eigentliche Problem", en: "The real problem" },

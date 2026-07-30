@@ -1019,7 +1019,7 @@
     const W = 600, H = 150, pad = 26;
     const pts = disp.map((v, i) => [pad + i / (disp.length - 1) * (W - 2 * pad), H - pad - (v - min) / range * (H - 2 * pad)]);
     const path = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
-    return '<svg class="mini-chart" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none"><defs><linearGradient id="trkGrad2" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#2e7cf6"/><stop offset="100%" stop-color="#00c2ff"/></linearGradient></defs>' +
+    return '<svg class="mini-chart" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none"><defs><linearGradient id="trkGrad2" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#258CFF"/><stop offset="100%" stop-color="#16C4F4"/></linearGradient></defs>' +
       '<line class="axis" x1="' + pad + '" y1="' + (H - pad) + '" x2="' + (W - pad) + '" y2="' + (H - pad) + '"/>' +
       '<path class="ln" d="' + path + '" style="stroke:url(#trkGrad2)"/>' +
       pts.map(p => '<circle class="dot" cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="3"/>').join("") +

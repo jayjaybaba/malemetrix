@@ -522,6 +522,24 @@
       });
     }
 
+    /* Sprachwahl im mobilen Menü (Founder-Review): der Header trägt mobil nur
+       noch Warenkorb und Menü-Button, der EN-Knopf dort ist per CSS versteckt.
+       Diese Zeile ersetzt ihn — mit derselben .lang-code-Klasse, die
+       MM.i18n.setLang() bereits überall aktualisiert. Am Desktop blendet CSS
+       die Zeile aus; der Header-Knopf bleibt dort unverändert. */
+    if (nav && !nav.querySelector(".nav-lang")) {
+      const lb = document.createElement("button");
+      lb.type = "button";
+      lb.className = "nav-lang";
+      lb.setAttribute("data-no-i18n", "");
+      const ziel = (window.MM && MM.i18n && MM.i18n.lang === "en") ? "DE" : "EN";
+      lb.innerHTML = '<span>Sprache / Language</span><span class="lang-code">' + ziel + '</span>';
+      lb.addEventListener("click", () => { if (window.MM && MM.i18n) MM.i18n.toggle(); });
+      /* Vor den CTA-Button im Menü, hinter die normalen Links. */
+      const cta = nav.querySelector(".btn");
+      nav.insertBefore(lb, cta || null);
+    }
+
     setupChrome();
 
     // Warenkorb

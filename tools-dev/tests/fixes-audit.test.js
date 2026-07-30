@@ -204,7 +204,7 @@ group("S10-S20 · Ballast, Kontrast, Live-Region, Service Worker, robots.txt");
   ok(/check-data\.js/.test(read("check.html")), "… check.html braucht sie weiterhin und behält sie");
 
   var css = read("css/style.css");
-  ok(/--muted-2: #8b95a8;/.test(css), "S13: --muted-2 ist aufgehellt");
+  ok(/--muted-2: #98948A;/.test(css), "S13: --muted-2 ist aufgehellt");
   /* Kontrast gegen den dunkelsten Seitengrund nachrechnen (WCAG-Formel). */
   function lum(hex) {
     var c = [1, 3, 5].map(function (i) { return parseInt(hex.substr(i, 2), 16) / 255; })
@@ -212,8 +212,8 @@ group("S10-S20 · Ballast, Kontrast, Live-Region, Service Worker, robots.txt");
     return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
   }
   function ratio(a, b) { var l1 = lum(a), l2 = lum(b); return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05); }
-  var bg = (css.match(/--bg-0:\s*(#[0-9a-f]{6})/i) || [])[1] || "#07090d";
-  var r = ratio("#8b95a8", bg);
+  var bg = (css.match(/--bg-0:\s*(#[0-9a-f]{6})/i) || [])[1] || "#070A0F";
+  var r = ratio("#98948A", bg);
   ok(r >= 4.5, "S13: Kontrast " + r.toFixed(2) + ":1 gegen " + bg + " erreicht 4.5:1");
   ok(ratio("#687184", bg) < 4.5, "… der alte Wert lag mit " + ratio("#687184", bg).toFixed(2) + ":1 darunter");
 
@@ -612,9 +612,9 @@ group("Q2 · Kontrast auf hellem Papier und auf gefüllten Schaltflächen");
   }
   function ratio(a, b) { var x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
 
-  /* Der Akzent #2e7cf6 ist auf dunklem Grund richtig und bleibt dort. Auf
+  /* Der Akzent #258CFF ist auf dunklem Grund richtig und bleibt dort. Auf
      dem weißen Dokumentpapier verfehlt er AA — dort steht jetzt #1a56c4. */
-  ok(ratio("#2e7cf6", "#ffffff") < 4.5, "Beleg: der Akzent erreicht auf weiß nur " + ratio("#2e7cf6", "#ffffff").toFixed(2) + ":1");
+  ok(ratio("#258CFF", "#ffffff") < 4.5, "Beleg: der Akzent erreicht auf weiß nur " + ratio("#258CFF", "#ffffff").toFixed(2) + ":1");
   ok(ratio("#1a56c4", "#ffffff") >= 4.5, "die Papier-Linkfarbe erreicht " + ratio("#1a56c4", "#ffffff").toFixed(2) + ":1");
   ok(ratio("#646c7c", "#ffffff") >= 4.5, "die Fußzeile erreicht " + ratio("#646c7c", "#ffffff").toFixed(2) + ":1 (vorher 2,54)");
   ok(ratio("#ffffff", "#215fc9") >= 4.5, "Weiß auf der aktiven Schaltfläche erreicht " + ratio("#ffffff", "#215fc9").toFixed(2) + ":1 (vorher 3,94)");
@@ -624,7 +624,7 @@ group("Q2 · Kontrast auf hellem Papier und auf gefüllten Schaltflächen");
   ok(/\.doc-footer \{[^}]*color: #646c7c/.test(css), "die Dokument-Fußzeile ist umgestellt");
   ok(/\.unit-toggle button\.active \{ background: #215fc9/.test(css), "die aktive Einheiten-Schaltfläche ist umgestellt");
   ok(/\.tracker-tab\.active \{ background: #215fc9/.test(css), "der aktive Tracker-Tab ist umgestellt");
-  ok(/--accent:\s*#2e7cf6/.test(css) || css.indexOf("#2e7cf6") >= 0, "der Marken-Akzent selbst bleibt unangetastet");
+  ok(/--accent:\s*#258CFF/.test(css) || css.indexOf("#258CFF") >= 0, "der Marken-Akzent selbst bleibt unangetastet");
 
   /* Auf den hellen Dokumentseiten darf die zu helle Variante nicht mehr
      inline stehen. */
@@ -637,7 +637,7 @@ group("Q2 · Kontrast auf hellem Papier und auf gefüllten Schaltflächen");
       if (!/\.html$/.test(e.name)) return;
       var src = fs.readFileSync(p, "utf8");
       if (src.indexOf("doc-paper") < 0) return;
-      if (/color:#2e7cf6/.test(src)) alt.push(path.relative(ROOT, p));
+      if (/color:#258CFF/.test(src)) alt.push(path.relative(ROOT, p));
     });
   })(ROOT);
   ok(alt.length === 0, "keine Dokumentseite setzt die zu helle Linkfarbe mehr inline" + (alt.length ? ": " + alt.join(", ") : ""));
