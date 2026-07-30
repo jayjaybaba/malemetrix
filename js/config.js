@@ -274,19 +274,36 @@ window.MM_CONFIG = {
   // geänderte Satz hat einen neuen Schlüssel und wird beim nächsten
   // englischen Besuch automatisch neu übersetzt. Nichts nachzupflegen.
   //
-  // EINRICHTUNG (einmalig, in Supabase → Edge Functions → Secrets):
-  //   DEEPL_API_KEY = der Schlüssel von deepl.com/pro-api (Free-Tarif:
-  //   500.000 Zeichen/Monat, reicht für diese Seite mehrfach). Alternativ
-  //   GOOGLE_TRANSLATE_API_KEY. Der Schlüssel gehört AUSSCHLIESSLICH dorthin,
-  //   niemals in diese Datei.
-  //   Optional: TRANSLATE_BUDGET_CHARS (Standard 400000) begrenzt, wie viele
-  //   Zeichen pro Monat NEU übersetzt werden. Ist das Budget erreicht, liefert
-  //   die Function nur noch Cache-Treffer — der schlimmste Fall ist "Englisch
-  //   wird diesen Monat nicht mehr ergänzt", nie eine Rechnung.
+  // KOSTET NICHTS UND MUSS NICHT EINGERICHTET WERDEN.
+  // Standard-Anbieter ist MyMemory: kein Konto, keine Kreditkarte, kein
+  // Vertrag, kein ablaufendes Guthaben. Begrenzt ist nur das Tagesvolumen
+  // (5.000 Zeichen; mit einer hinterlegten E-Mail 50.000). Weil der Cache jede
+  // Übersetzung dauerhaft behält, ist das reichlich: Die ganze Website
+  // entspricht rund 80.000 Zeichen EINMALIG. Reicht ein Tag nicht, bleiben die
+  // restlichen Sätze deutsch und kommen beim nächsten Besuch dran — die Seite
+  // füllt sich über wenige Tage von selbst.
   //
-  // Ohne Schlüssel bleibt die Seite auf Deutsch stehen (bis auf Navigation,
-  // Footer und das Glossar). Das ist Absicht: unübersetzt ist unschön,
-  // halbleere Seiten wären schlimmer.
+  // OPTIONAL, in Supabase → Edge Functions → Secrets:
+  //   MYMEMORY_EMAIL   = eine beliebige eigene E-Mail. Hebt das Tageslimit von
+  //                      5.000 auf 50.000 Zeichen. Kostenlos, keine Anmeldung.
+  //   DEEPL_API_KEY    = bessere Qualität, falls du das später willst. Sobald
+  //                      der Schlüssel gesetzt ist, übernimmt DeepL automatisch
+  //                      — ohne Code-Änderung. Achtung: DeepL-Free ist seit
+  //                      Juli 2026 eine EINMALGUTSCHRIFT (1 Mio. Zeichen), kein
+  //                      Monatskontingent. Danach kostet es Geld.
+  //   GOOGLE_TRANSLATE_API_KEY = dritte Möglichkeit, ebenfalls kostenpflichtig.
+  //   TRANSLATE_BUDGET_CHARS (Standard 400000) = Monatsbremse gegen Missbrauch.
+  //   TRANSLATE_BUDGET_TOTAL (Standard 900000) = greift NUR bei bezahlten
+  //                      Anbietern und schützt deren endliches Guthaben.
+  // Schlüssel gehören AUSSCHLIESSLICH nach Supabase, niemals in diese Datei.
+  //
+  // In My MaleMetrix → Einstellungen → Nutzung ansehen steht, wie viele Sätze
+  // übersetzt wurden und von welchem Anbieter. Sobald dort ein bezahlter
+  // Anbieter auftaucht, wird es ausdrücklich als Warnung angezeigt.
+  //
+  // Fällt der Dienst aus oder ist das Tageslimit erreicht, bleibt der Satz
+  // DEUTSCH stehen. Das ist Absicht: unübersetzt ist unschön, halbleere Seiten
+  // wären schlimmer.
   //
   // BEWUSST NICHT ÜBERSETZT:
   //   · AGB, Datenschutz, Impressum — die deutsche Fassung ist die
