@@ -381,7 +381,8 @@
      der ganzen Seite.
      ========================================================================= */
   const WARTEND = new Map();      // deutscher Satz → { nodes:Set, attrs:Set }
-  const ANGEFRAGT = new Set();    // schon einmal gefragt: nie in einer Schleife nachfragen
+  const ANGEFRAGT = new Set();    // gerade gefragt: nie zwei Anfragen für denselben Satz
+  const VERSUCHE = new Map();     // Satz → Anzahl Versuche (deckelt Nachfragen)
   let sendeTimer = null;
   let laufend = 0;
   let dienstAus = false;          // kein Schlüssel / Budget erreicht → nicht weiter fragen
@@ -436,7 +437,24 @@
         patche(de, en);
       });
       if (neu.length) cacheMerken();
-      if (WARTEND.size) planeSenden();
+
+      /* Der kostenlose Anbieter übersetzt pro Aufruf nur eine begrenzte Menge —
+         der Rest der Anfrage kommt unübersetzt zurück. Diese Sätze müssen
+         wieder freigegeben werden, sonst bliebe die halbe Seite für den Rest
+         des Besuchs deutsch, obwohl sie beim nächsten Anlauf dran wäre.
+         Zwei Versuche pro Satz, dann Ruhe. */
+      let offenGeblieben = 0;
+      paket.forEach((k) => {
+        if (PHRASES[k] != null) return;                    // erledigt
+        const n = (VERSUCHE.get(k) || 0) + 1;
+        VERSUCHE.set(k, n);
+        if (n < 2 && WARTEND.has(k)) { ANGEFRAGT.delete(k); offenGeblieben++; }
+      });
+      /* Kam KEIN einziger neuer Satz zurück, ist das Tageslimit erschöpft oder
+         der Anbieter stumm. Dann für diesen Besuch aufhören statt im Kreis zu
+         fragen — beim nächsten Aufruf der Seite geht es weiter. */
+      if (!neu.length && paket.length) dienstAus = true;
+      if (WARTEND.size && (offenGeblieben || !dienstAus)) planeSenden();
     }).catch(() => {
       laufend--;
       // Netzfehler: nicht endlos nachbohren. Beim nächsten Seitenaufruf neu.

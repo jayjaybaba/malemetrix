@@ -132,8 +132,20 @@ group("Datenschutz · es verlässt nur Seitentext den Browser");
 })();
 
 /* ===== 8) Der Schlüssel liegt nur in Supabase ===== */
-group("Schlüssel · niemals im Repo");
+group("Kostenlos by default · Schlüssel niemals im Repo");
 (function () {
+  /* Der Betreiber will für Englisch nichts zahlen. Deshalb MUSS der Standard
+     ohne Schlüssel funktionieren — und ein bezahlter Anbieter darf nur dann
+     greifen, wenn jemand ausdrücklich einen Schlüssel gesetzt hat. */
+  ok(/translateMyMemory/.test(fn), "es gibt einen kostenlosen Anbieter");
+  ok(/const provider = deepl \? "deepl" : \(google \? "google" : "mymemory"\)/.test(fn),
+     "ohne Schlüssel wird der kostenlose Anbieter genommen (kein provider_not_configured mehr)");
+  ok(!/provider_not_configured/.test(fn),
+     "die Function ist nie \"nicht konfiguriert\" — Englisch funktioniert ohne Einrichtung");
+  ok(/mymemoryUnbrauchbar/.test(fn) && /MYMEMORY WARNING/.test(fn),
+     "Fehlermeldungen des kostenlosen Dienstes landen nie als Text auf der Seite");
+  ok(/bezahlt && gesamt >= BUDGET_TOTAL/.test(fn),
+     "das Gesamtbudget bremst nur bezahlte Anbieter (der kostenlose hat ein Tageslimit)");
   ok(/Deno\.env\.get\("DEEPL_API_KEY"\)/.test(fn), "DeepL-Schlüssel kommt aus der Umgebung");
   ok(!/DeepL-Auth-Key [A-Za-z0-9-]{8}/.test(fn.replace(/key\.trim\(\)/g, "")),
      "kein Schlüssel im Function-Quelltext");
