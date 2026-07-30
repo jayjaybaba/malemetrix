@@ -1514,16 +1514,16 @@
     var rowsSvg = data.rows.map(function (r, i) {
       var y = top + 240 + i * 150;
       return '<text x="90" y="' + y + '" font-family="monospace" font-size="40" fill="rgba(255,255,255,0.55)" letter-spacing="6">' + r.k + '</text>' +
-        '<text x="990" y="' + (y + 8) + '" text-anchor="end" font-family="monospace" font-size="72" font-weight="bold" fill="#eef2f7">' + r.v + '</text>' +
+        '<text x="990" y="' + (y + 8) + '" text-anchor="end" font-family="monospace" font-size="72" font-weight="bold" fill="#F0EEE9">' + r.v + '</text>' +
         '<line x1="90" y1="' + (y + 40) + '" x2="990" y2="' + (y + 40) + '" stroke="rgba(255,255,255,0.08)"/>';
     }).join("");
     return '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">' +
-      '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2e7cf6"/><stop offset="1" stop-color="#00c2ff"/></linearGradient></defs>' +
-      '<rect width="' + W + '" height="' + H + '" fill="#07090d"/>' +
+      '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#258CFF"/><stop offset="1" stop-color="#16C4F4"/></linearGradient></defs>' +
+      '<rect width="' + W + '" height="' + H + '" fill="#070A0F"/>' +
       '<g stroke="rgba(255,255,255,0.045)">' + [1, 2, 3, 4, 5].map(function (i) { return '<line x1="' + (i * W / 6) + '" y1="0" x2="' + (i * W / 6) + '" y2="' + H + '"/>'; }).join("") + '</g>' +
       '<rect x="0" y="0" width="' + W + '" height="10" fill="url(#g)"/>' +
       '<text x="90" y="' + top + '" font-family="monospace" font-size="44" fill="rgba(255,255,255,0.5)" letter-spacing="10">' + data.mode + '</text>' +
-      '<text x="90" y="' + (top + 110) + '" font-family="sans-serif" font-size="96" font-weight="800" fill="#eef2f7">' + data.head + '</text>' +
+      '<text x="90" y="' + (top + 110) + '" font-family="sans-serif" font-size="96" font-weight="800" fill="#F0EEE9">' + data.head + '</text>' +
       rowsSvg +
       '<text x="90" y="' + (top + 240 + data.rows.length * 150 + 40) + '" font-family="sans-serif" font-size="40" fill="rgba(255,255,255,0.72)">' + data.story + '</text>' +
       '<text x="90" y="' + (H - 90) + '" font-family="monospace" font-size="36" fill="rgba(255,255,255,0.4)" letter-spacing="4">MALEMETRIX · GEMESSEN, NICHT BEHAUPTET</text>' +
@@ -1975,11 +1975,11 @@
       var pts = [];
       for (var i = 0; i < days; i++) pts.push(x(i).toFixed(1) + "," + y(w0 * (1 + band[0] / 100 * i / 7)).toFixed(1));
       for (var j = days - 1; j >= 0; j--) pts.push(x(j).toFixed(1) + "," + y(w0 * (1 + band[1] / 100 * j / 7)).toFixed(1));
-      bandPath = '<polygon points="' + pts.join(" ") + '" fill="rgba(0,194,255,0.10)" stroke="none"/>';
+      bandPath = '<polygon points="' + pts.join(" ") + '" fill="rgba(22, 196, 244,0.10)" stroke="none"/>';
     }
     var line = series.map(function (m, i) { return x(i).toFixed(1) + "," + y(m.value).toFixed(1); }).join(" ");
     return '<svg class="mm-chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Gewichtsverlauf mit Erwartungskorridor (' + min.toFixed(1) + '–' + max.toFixed(1) + ' kg)">' + bandPath +
-      '<polyline points="' + line + '" fill="none" stroke="var(--accent-2,#00c2ff)" stroke-width="1.6" vector-effect="non-scaling-stroke"/>' +
+      '<polyline points="' + line + '" fill="none" stroke="var(--accent-2,#16C4F4)" stroke-width="1.6" vector-effect="non-scaling-stroke"/>' +
       '<text x="' + P + '" y="10" class="mm-chart-lbl">' + max.toFixed(1) + '</text><text x="' + P + '" y="' + (H - 2) + '" class="mm-chart-lbl">' + min.toFixed(1) + ' kg</text></svg>' +
       (band ? '<p class="small muted" style="margin:2px 0 0">Blaues Band = Erwartungskorridor ' + esc(ctx.goal.mode.toUpperCase()) + ' (' + band[0] + '…' + band[1] + ' %KG/Woche) · Linie = deine Messungen.</p>' : '');
   }

@@ -81,7 +81,7 @@ main { padding-top: var(--header-h); }
 .gos-quickbar {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
   display: none; gap: 2px; padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
-  background: color-mix(in srgb, var(--bg, #07090d) 88%, transparent);
+  background: color-mix(in srgb, var(--bg, #070A0F) 88%, transparent);
   backdrop-filter: blur(12px); border-top: 1px solid var(--line);
 }
 .gos-quickbar button {
