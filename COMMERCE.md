@@ -11,7 +11,7 @@
 | Orders-/Events-Schema (Idempotenz) | Migration `20260723000007_phase8_commerce.sql` |
 | Legacy-Auslieferung (Vault-Code nach Client-Capture) | LIVE, dokumentiertes Risiko (s. u.) |
 | Stripe Payment Link (Apple Pay / Karte / Google Pay / Klarna) | LIVE — Zahlungslink `plink_1TxUWXDjofqc7MMzNA1IEKoE`, bewusst ohne Steuerberechnung (§ 19 UStG) |
-| Automatische Freischaltung nach Stripe-Zahlung (`verify_stripe`) | CODE COMPLETE — braucht nur noch das Supabase-Secret `STRIPE_SECRET_KEY` (s. u.) |
+| Automatische Freischaltung nach Stripe-Zahlung (`verify_stripe`) | LIVE (30.07.2026) — Secret gesetzt, Kette gegen eine echte Stripe-Sitzung geprüft (`not_captured`) |
 | Abo-Billing (Stripe/PayPal Subscriptions), Trials, Coupons, Grace Period | DEFERRED — Architektur-Notizen unten, kein Fake |
 | Refund-Webhook-Automatik | DEFERRED — Refunds derzeit manuell (Entitlement-Zeile auf `status='revoked'` setzen) |
 
@@ -53,11 +53,20 @@ ehrlichen Hinweis auf manuelle Freischaltung. Es gibt keinen Pfad, auf dem eine
 Erfolgsmeldung ohne bestätigte Serverantwort erscheint (Wächter G9 in
 `tools-dev/tests/security-guards.test.js`, Gruppe 15 in `commerce-e2e.test.js`).
 
-**Einmalige Einrichtung:** `STRIPE_SECRET_KEY` (`sk_live_…` aus Stripe →
-Entwickler → API-Schlüssel) als Supabase-Secret setzen — Dashboard → Edge
-Functions → Secrets, oder `supabase secrets set STRIPE_SECRET_KEY=…`. Der
-Schlüssel gehört **ausschließlich** dorthin, niemals in `js/config.js` und
-niemals ins Repository (Wächter G9 bricht den Build).
+**Einrichtung (erledigt 30.07.2026):** `STRIPE_SECRET_KEY` liegt als
+Supabase-Secret (Dashboard → Edge Functions → Secrets). Verwendet wird ein
+**eingeschränkter** Schlüssel (`rk_live_…`) mit genau einer Berechtigung:
+Checkout-Sitzungen *lesen*. Mehr braucht der Ablauf nicht — die
+PaymentIntent-Nummer steht bereits in der Session-Antwort, sie wird nicht
+separat abgefragt. Ein abgeflossener Schlüssel dieser Art kann kein Geld
+bewegen. Er gehört **ausschließlich** nach Supabase, niemals in
+`js/config.js` und niemals ins Repository (Wächter G9 bricht den Build).
+
+**Live-Nachweis ohne Geldfluss:** eine abgelaufene, unbezahlte Checkout-Session
+über die Rückkehr-URL prüfen lassen. Erwartete Antwort: `not_captured`. Die
+kann nur entstehen, nachdem Stripe erfolgreich geantwortet hat — ein fehlendes
+Secret ergäbe `provider_not_configured`, ein zu schwacher Schlüssel
+`stripe_auth_failed`. So geprüft am 30.07.2026.
 
 ## Dokumentiertes Restrisiko (Launch-Kompromiss)
 
