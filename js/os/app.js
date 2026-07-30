@@ -27,7 +27,7 @@
   function todayYmd() { var d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
 
   /* ---------- Routing ---------- */
-  var VIEWS = ["today", "plan", "track", "progress", "learn", "baseline", "pathway", "transform", "workout", "week", "settings", "coach", "advisor", "review", "twin", "simulator", "experiments", "protocol", "timeline", "memory", "map", "learned", "grants"];
+  var VIEWS = ["today", "plan", "track", "progress", "learn", "baseline", "pathway", "transform", "workout", "week", "settings", "coach", "advisor", "review", "twin", "simulator", "experiments", "protocol", "timeline", "memory", "map", "learned", "grants", "usage"];
   function view() { var h = (location.hash || "#today").slice(1).split("?")[0]; return VIEWS.indexOf(h) >= 0 ? h : "today"; }
   function hashParam(name) { var q = (location.hash || "").split("?")[1] || ""; var m = q.split("&").filter(function (kv) { return kv.split("=")[0] === name; })[0]; return m ? decodeURIComponent(m.split("=")[1] || "") : ""; }
   window.addEventListener("hashchange", function () { render(true); window.scrollTo(0, 0); });
@@ -58,7 +58,7 @@
 
   /* Kurzmeldung an die Live-Region in mein-protokoll.html. Absichtlich
      knapp: hier gehört der Ansichtsname hin, nicht die Ansicht. */
-  var VIEW_LABEL = { today: "Today", plan: "Plan", track: "Track", progress: "Progress", learn: "Learn", baseline: "Baseline", pathway: "Pathway", transform: "Transform", workout: "Workout", week: "Wochenplan", settings: "Einstellungen", coach: "Coach", advisor: "Advisor", review: "Ergebnisprüfung", twin: "Twin", simulator: "Simulator", experiments: "Experimente", protocol: "Persönlicher Standard", timeline: "Timeline", memory: "Memory", map: "Performance Map", learned: "Gelernt", grants: "Mitglieder & Zugänge" };
+  var VIEW_LABEL = { today: "Today", plan: "Plan", track: "Track", progress: "Progress", learn: "Learn", baseline: "Baseline", pathway: "Pathway", transform: "Transform", workout: "Workout", week: "Wochenplan", settings: "Einstellungen", coach: "Coach", advisor: "Advisor", review: "Ergebnisprüfung", twin: "Twin", simulator: "Simulator", experiments: "Experimente", protocol: "Persönlicher Standard", timeline: "Timeline", memory: "Memory", map: "Performance Map", learned: "Gelernt", grants: "Mitglieder & Zugänge", usage: "Nutzung" };
   function announce(msg) {
     var el = document.getElementById("mmStatus");
     if (!el) return;
@@ -993,12 +993,13 @@
     html += sec("Pathway",
       '<p class="muted" style="margin:0 0 10px">Aktuell: <b style="color:var(--text)">' + (spw && OS.PATHWAYS[spw] ? esc(OS.PATHWAYS[spw].label) : "noch nicht gewählt") + '</b> — der Pathway bestimmt Ton, Tiefe und Inhalte (Health · Performance · Enhanced). Dein Programm und Modus bleiben davon unberührt.</p>' +
       '<a class="os-ghost" href="#pathway">Pathway ' + (spw ? "ändern" : "wählen") + ' →</a>');
-    /* Owner-Einstieg zur Mitglieder-/Zugangsverwaltung. Die Sichtbarkeit ist
+    /* Owner-Werkzeuge: nur für den Konto-Inhaber sichtbar. Die Sichtbarkeit ist
        nur Bequemlichkeit — die Autorisierung erzwingt mm-admin serverseitig. */
     if (MM.entitlements && MM.entitlements.isOwner && MM.entitlements.isOwner()) {
       html += sec("Betreiber",
-        '<p class="muted" style="margin:0 0 10px">Nur für dich sichtbar: registrierte Konten, Produkte, Abos und manuelle Zugangsvergaben.</p>' +
-        '<a class="os-ghost" href="#grants">Mitglieder &amp; Zugänge →</a>');
+        '<p class="muted" style="margin:0 0 10px">Nur für dich sichtbar: anonyme Reichweite und Nutzung deiner Website sowie registrierte Konten, Produkte, Abos und manuelle Zugangsvergaben.</p>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap"><a class="os-ghost" href="#usage">Nutzung ansehen →</a>' +
+        '<a class="os-ghost" href="#grants">Mitglieder &amp; Zugänge →</a></div>');
     }
     html += '<p style="margin-top:16px"><a class="os-ghost" href="#today">← Zurück zu Today</a></p>';
     return html;
@@ -1599,6 +1600,83 @@
           (d.members.map(memberRow).join("") || '<p class="small muted">Noch keine registrierten Konten.</p>');
       })
       .catch(function () { box.innerHTML = '<p class="small muted">Verbindung zum Server fehlgeschlagen.</p>'; });
+  }
+
+  /* =========================== NUTZUNG (Owner) ===========================
+     Zeigt die eigene, anonyme Website-Telemetrie (public.site_events). Die
+     Zahlen kommen ausschließlich aggregiert aus mm-usage → site_usage_report;
+     einzelne Besucher-Zeilen verlassen die Datenbank nie. */
+  var usageDays = 7;
+  var usageData = null;
+
+  function vUsage() {
+    if (!(MM.entitlements && MM.entitlements.isOwner && MM.entitlements.isOwner())) {
+      return '<div class="card"><p class="muted">Dieser Bereich ist dem Konto-Inhaber vorbehalten.</p></div>';
+    }
+    var r = usageData;
+    var html = '<div class="os-head"><span class="eyebrow" style="margin:0">MM / Nutzung</span>' +
+      '<span style="display:flex;gap:6px">' +
+      [7, 30, 90].map(function (d) {
+        return '<button class="os-chip' + (usageDays === d ? " sel" : "") + '" data-usagedays="' + d + '">' + d + ' Tage</button>';
+      }).join("") + '</span></div>';
+
+    if (!r) {
+      html += '<div class="card"><p class="muted" id="usMsg">Bericht wird geladen…</p></div>';
+      return html;
+    }
+    if (r.error) {
+      html += '<div class="card"><p class="muted">' + esc(r.error) + '</p>' +
+        '<button class="os-ghost" data-usagedays="' + usageDays + '" style="margin-top:10px">Erneut versuchen</button></div>';
+      return html;
+    }
+
+    var strip = [
+      ['<span class="os-stat"><span class="k">HEUTE</span><b>' + (r.heute || 0) + '</b></span>'],
+      ['<span class="os-stat"><span class="k">BESUCHE ' + usageDays + 'T</span><b>' + (r.sitzungen || 0) + '</b></span>'],
+      ['<span class="os-stat"><span class="k">AKTIONEN</span><b>' + (r.ereignisse || 0) + '</b></span>']
+    ].map(function (x) { return x[0]; }).join("");
+    html += '<div class="os-statstrip">' + strip + '</div>';
+
+    if (!r.sitzungen) {
+      html += '<div class="card"><span class="tag">NOCH KEINE DATEN</span>' +
+        '<p class="muted" style="margin:6px 0 0">Es wurden noch keine Besuche erfasst. Die Messung läuft ab dem nächsten Seitenaufruf — schau in ein paar Stunden wieder rein.</p></div>';
+      return html;
+    }
+
+    function liste(titel, rows, wertKey, leer) {
+      if (!rows || !rows.length) return sec(titel, '<p class="small muted" style="margin:0">' + esc(leer) + '</p>');
+      var max = rows.reduce(function (m, x) { return Math.max(m, Number(x[wertKey]) || 0); }, 0) || 1;
+      return sec(titel, '<div class="os-metriclist">' + rows.map(function (x) {
+        var v = Number(x[wertKey]) || 0;
+        return '<div><span>' + esc(String(x.name || "—")) + '</span>' +
+          '<b><span class="os-usebar" aria-hidden="true"><i style="width:' + Math.round(v / max * 100) + '%"></i></span></b>' +
+          '<i>' + v + '</i></div>';
+      }).join("") + '</div>');
+    }
+
+    html += liste("Verlauf · Besuche pro Tag", (r.verlauf || []).slice(-30).map(function (d) {
+      return { name: fmtMetricDate(d.tag), sitzungen: d.sitzungen };
+    }), "sitzungen", "—");
+    html += liste("Meistbesuchte Seiten", r.seiten, "sitzungen", "Noch keine Seitendaten.");
+    html += liste("Woher die Besucher kommen", r.quellen, "sitzungen",
+      "Noch keine externen Quellen — Besucher kamen direkt (Lesezeichen, App, Link in Nachricht).");
+    html += liste("Was benutzt wird", r.aktionen, "anzahl", "Noch keine Aktionen erfasst.");
+    html += liste("Geräte", r.geraete, "sitzungen", "—");
+    html += '<p class="small muted" style="margin-top:14px">Anonym gemessen: Zufalls-ID pro Sitzung, keine IP, keine Cookies. ' +
+      'Von der Herkunft wird nur der Host gespeichert, nie die Suchanfrage.</p>';
+    html += '<p style="margin-top:12px"><a class="os-ghost" href="#settings">← Zurück zu den Einstellungen</a></p>';
+    return html;
+  }
+
+  function usageLoad() {
+    if (!(MM.account && MM.account.invokeFunction)) { usageData = { error: "Kein Konto-Backend aktiv." }; render(); return; }
+    MM.account.invokeFunction("mm-usage", { days: usageDays })
+      .then(function (r) {
+        var d = r && (r.data || r);
+        usageData = (d && d.ok && d.report) ? d.report : { error: "Bericht konnte nicht geladen werden." };
+        render();
+      })
+      .catch(function () { usageData = { error: "Verbindung zum Server fehlgeschlagen." }; render(); });
   }
 
   function grantsCall(action, email) {
@@ -2281,10 +2359,13 @@
     var v = view();
     if (v !== "track") trackEcho = null;   // Mess-Antwort gehört nur zur Track-Ansicht
     var body = v === "plan" ? vPlan() : v === "track" ? vTrack() : v === "progress" ? vProgress() : v === "learn" ? vLearn() : v === "baseline" ? vBaseline() : v === "pathway" ? vPathway() : v === "transform" ? vTransform() : v === "workout" ? vWorkout() : v === "week" ? vWeek() : v === "settings" ? vSettings() :
-      v === "coach" ? vCoach() : v === "advisor" ? vAdvisor() : v === "review" ? vReview() : v === "twin" ? vTwin() : v === "simulator" ? vSimulator() : v === "experiments" ? vExperiments() : v === "protocol" ? vProtocol() : v === "timeline" ? vTimeline() : v === "memory" ? vMemory() : v === "map" ? vMap() : v === "learned" ? vLearned() : v === "grants" ? vGrants() : vToday(snap);
+      v === "coach" ? vCoach() : v === "advisor" ? vAdvisor() : v === "review" ? vReview() : v === "twin" ? vTwin() : v === "simulator" ? vSimulator() : v === "experiments" ? vExperiments() : v === "protocol" ? vProtocol() : v === "timeline" ? vTimeline() : v === "memory" ? vMemory() : v === "map" ? vMap() : v === "learned" ? vLearned() : v === "grants" ? vGrants() : v === "usage" ? vUsage() : vToday(snap);
     var fab = (v !== "workout" && v !== "settings" && snap.state !== "signed_out") ? '<button class="os-fab" data-fab aria-label="Schnell erfassen">+</button>' : "";
     host.innerHTML = '<div class="os-shell os-env-' + (v === "progress" || v === "workout" ? "performance" : v === "plan" ? "metabolic" : v === "learn" && OS.pathway() === "enhanced" ? "clinical" : "instrument") + '">' + navBar(v) + '<div class="os-body" tabindex="-1">' + body + '</div>' + fab + '</div>';
     if (v === "progress") loadPhotoCompare();
+    // Nutzungsbericht beim Betreten der Ansicht einmal nachladen.
+    if (v === "usage" && !usageData) usageLoad();
+    if (v !== "usage") usageData = null;   // beim Verlassen verwerfen → immer frische Zahlen
     /* Nach einem Navigationsklick den Fokus in den neuen Inhalt setzen.
        Ohne das bleibt der Fokus auf dem entfernten Link und fällt auf
        <body> zurück — der Screenreader steht wieder am Seitenanfang. */
@@ -2304,6 +2385,11 @@
       var t = e.target;
       var out = t.closest("#mmOut"); if (out) { MM.account.signOut(); return; }
       var imp = t.closest("#mmImport"); if (imp) { imp.disabled = true; imp.textContent = "Übernehme…"; MM.account.importLocalData().then(function (r) { var m = document.getElementById("mmImportMsg"); if (m) { m.style.display = "block"; m.textContent = r.ok ? "Vollständig übernommen. Deine lokalen Daten bleiben als Backup." : ((r.status && r.status.state === "partial") ? "Teilweise übernommen — bitte erneut versuchen." : (r.message || "Fehlgeschlagen — bitte erneut versuchen.")); } setTimeout(render, 900); }); return; }
+      var ud = t.closest("[data-usagedays]"); if (ud) {
+        // render() stößt das Nachladen selbst an, sobald usageData leer ist.
+        usageDays = parseInt(ud.getAttribute("data-usagedays"), 10) || 7;
+        usageData = null; render(); return;
+      }
       var ga = t.closest("#grAdd"), gd = t.closest("#grDel"), gl = t.closest("#grList");
       if (ga || gd || gl) {
         var em = (document.getElementById("grEmail") || {}).value || "";
