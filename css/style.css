@@ -2664,6 +2664,44 @@ body > * { position: relative; z-index: 0; }
 .mm-access-choice .btn { width: 100%; animation: mm-rise 600ms 520ms both; }
 .mm-access-choice .btn + .btn { animation-delay: 640ms; }
 
+/* ==========================================================================
+   TEXTSCHUTZ — Inhalte sind das Produkt, nicht Rohmaterial für andere
+   --------------------------------------------------------------------------
+   WAS DAS KANN: Das bequeme Markieren und Kopieren ganzer Abschnitte
+   verhindern. Das hält Gelegenheits-Kopierer und Copy-Paste-Blogs ab.
+
+   WAS DAS NICHT KANN, und das ist wichtig zu wissen: Wer den Text wirklich
+   will, holt ihn über "Seite anzeigen", den Reader-Modus des Browsers oder
+   einen Screenshot mit Texterkennung. Absoluter Schutz ist im Web
+   unmöglich — jeder Text, den ein Browser anzeigen kann, ist auslesbar.
+
+   DESHALB DIE AUSNAHMEN UNTEN. Sie sind keine Schwäche, sondern der
+   Unterschied zwischen Schutz und Selbstschaden: Wer seine IBAN nicht
+   kopieren kann, überweist nicht. Wer seine Bestellnummer nicht kopieren
+   kann, schreibt eine Supportmail. Wer die AGB nicht speichern kann, hat ein
+   Verbraucherrecht verloren.
+   ========================================================================== */
+.mm-guard, .mm-guard * {
+  -webkit-user-select: none; -moz-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+}
+/* Was zwingend kopierbar bleibt — nach Zweck, nicht nach Gefühl:
+   · Eingabefelder: sonst ist kein Formular bedienbar.
+   · .mono: dort stehen IBAN, Bestellnummern, Beträge, Codes.
+   · Zusammenfassungen und Bestätigungsseiten: Transaktionsdaten des Kunden.
+   · mailto/tel-Links: Kontaktaufnahme darf nie erschwert werden.
+   · .mm-copyable: bewusst freigegeben, für alles Weitere. */
+.mm-guard input, .mm-guard textarea, .mm-guard select,
+.mm-guard [contenteditable], .mm-guard [contenteditable] *,
+.mm-guard .mono, .mm-guard code, .mm-guard kbd, .mm-guard pre,
+.mm-guard .summary-line, .mm-guard .summary-line *,
+.mm-guard .order-success, .mm-guard .order-success *,
+.mm-guard a[href^="mailto:"], .mm-guard a[href^="tel:"],
+.mm-guard .mm-copyable, .mm-guard .mm-copyable * {
+  -webkit-user-select: text; -moz-user-select: text; user-select: text;
+  -webkit-touch-callout: default;
+}
+
 /* ---- KONTO IM CHECKOUT — der bezahlte Zugang lebt im Konto ----------------
    Ruhige, informierende Karte: sie erklärt, wohin der Zugang geht, und
    bietet die Anmeldung an, ohne den Kauf zu blockieren. Der angemeldete
