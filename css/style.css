@@ -2971,6 +2971,9 @@ body > * { position: relative; z-index: 0; }
        Kopfleiste verschwindet — und den gewonnenen Platz in die Bildhöhe
        geben, sodass der Kopf frei und groß über der Textgruppe steht. */
     .co-hero-media img { top: var(--header-h); height: 66vh; }
+    /* Etwas mehr Herohöhe: die Textgruppe ist unten verankert und rückt
+       dadurch von der Kinnlinie ab, ohne dass sich am Porträt etwas ändert. */
+    .co-hero { min-height: 96vh; }
   }
   .co-facts { margin-top: 14px; font-size: 0.72rem; }
   .co-hero .hero-ctas { margin-top: 18px; }
