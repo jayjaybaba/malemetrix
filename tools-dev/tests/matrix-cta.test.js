@@ -119,6 +119,34 @@ group("Sekundäre · nur belegte Schwäche zählt");
   ok(falsch.length === 0, "die Säulen-Zuordnung stimmt mit C.LEGACY_DOMAIN_KEY überein");
 })();
 
+/* ===== 2c) Enhanced schlaegt die Engpass-Zuordnung =====
+   Der Fehler, den ein echter Durchlauf aufgedeckt hat: Bei Enhanced-Nutzern
+   ist der primaere Engpass haeufig `movement`, und die Sekundaerprioritaeten
+   fielen durch die Schwaeche-Bedingung. Damit gab es fuer genau die Gruppe
+   keinen Uebergang, fuer die die Seite am meisten hergibt. */
+group("Enhanced · eigener Grund, eigener Vorrang");
+(function () {
+  function enh(kat, primary, weakest) {
+    var r = ergebnis(primary || "movement", [], {}, weakest || ["blood", "drive", "execution"]);
+    r.status = "enhanced"; r.answers.enh_categories = kat;
+    return r;
+  }
+  ok(M.context(enh(["testosterone"])) === "enhanced",
+    "Enhanced mit Kategorie liefert einen CTA, auch ohne passenden Engpass");
+  ok(M.context(enh(["testosterone", "gh"], "training", ["strength", "fuel", "recovery"])) === "enhanced",
+    "und schlaegt auch einen passenden Engpass — der Grund ist ein anderer");
+  ok(M.context(enh([])) === null, "Enhanced ohne Kategorie faellt auf die normale Regel zurueck");
+  ok(M.context(enh(["no_answer"])) === null, "„Moechte ich nicht angeben\" schaltet nichts frei");
+
+  var trt = ergebnis("movement", [], {}, ["blood", "drive", "execution"]);
+  trt.status = "medical_trt"; trt.answers.enh_categories = ["testosterone"];
+  ok(M.context(trt) === null, "TRT bekommt keinen Enhanced-CTA");
+
+  ok(M.decide(enh(["testosterone"]), null, {}).variant === "card", "die normale Karte wird gerendert");
+  ok(!/\d+ von \d+|zwei von dreizehn/.test(M.COPY.text.enhanced),
+    "die Enhanced-Copy behauptet keine Wege-Zahl, die die Ergebnisseite nicht kennt");
+})();
+
 /* ===== 3) Kein CTA bei fehlenden oder kaputten Daten ===== */
 group("Sicherheit · im Zweifel kein CTA");
 (function () {
@@ -138,7 +166,7 @@ group("Sicherheit · im Zweifel kein CTA");
   kaputt.forEach(function (k, i) {
     var r;
     try { r = M.context(k); } catch (e) { r = "EXCEPTION: " + e.message; }
-    ok(r === null || ["training", "nutrition", "recovery", "multiple"].indexOf(r) >= 0,
+    ok(r === null || ["training", "nutrition", "recovery", "multiple", "enhanced"].indexOf(r) >= 0,
       "beschädigte Struktur #" + i + " wirft nicht (Ergebnis: " + r + ")");
   });
   ok(M.context({}) === null, "leeres Ergebnisobjekt → kein CTA");
@@ -348,7 +376,7 @@ group("Sprache · Einordnung, keine Messung");
   });
   ok(/adressiert/.test(text), "sie spricht von adressieren");
   ok(/wahrscheinlich/.test(text), "und bleibt bei wahrscheinlich statt sicher");
-  ["training", "nutrition", "recovery", "multiple"].forEach(function (k) {
+  ["training", "nutrition", "recovery", "multiple", "enhanced"].forEach(function (k) {
     ok(typeof M.COPY.text[k] === "string" && M.COPY.text[k].length > 40, "Copy für " + k + " vorhanden");
   });
   ok(M.COPY.kicker === "Vertiefung · Muskelaufbau", "Kicker wie vorgegeben");

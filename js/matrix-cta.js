@@ -68,6 +68,22 @@
   function context(result) {
     if (!istObjekt(result)) return null;
 
+    /* 0) Enhanced-Kontext schlägt alles.
+       Für Enhanced-Nutzer ist „hast du eine Schwäche in Training, Ernährung
+       oder Erholung?" die falsche Frage. Der Grund, sie zur Matrix zu
+       führen, hängt nicht an ihren Domain-Werten: Ihre Substanzen bedienen
+       einige Wege der Matrix, alle übrigen laufen weiter ausschließlich über
+       Verhalten. Das gilt auch dann, wenn alle Bereiche gut stehen. Wie
+       viele es genau sind, rechnet die Matrixseite aus den Kategorien aus —
+       hier ist es nicht bekannt und wird nicht behauptet.
+
+       Vorher fiel genau diese Gruppe durch: Ihr primärer Engpass ist häufig
+       `movement`, das bewusst auf keinen Kontext abgebildet ist, und die
+       Sekundärprioritäten scheiterten an der Schwäche-Bedingung. Damit gab
+       es für sie keinen Übergang — für die Gruppe, für die die Seite am
+       meisten hergibt. */
+    if (enhancedStack(result)) return "enhanced";
+
     /* 1) Bestehender primärer Engpass. Die Engine hat ihn bereits bestimmt;
           hier wird er nur gelesen. */
     var primaer = domainVon(result.primaryBottleneck) || domainVon(result.bottleneck);
@@ -223,7 +239,13 @@
       training: "Dein Score zeigt Potenzial im Training. Die Matrix ordnet ein, welche Aufbau-Mechanismen dein Training wahrscheinlich adressiert.",
       nutrition: "Dein Score zeigt: Baumaterial oder Energie könnten dich begrenzen. Die Matrix ordnet beides in die Mechanismen des Muskelaufbaus ein.",
       recovery: "Ein Trainingsreiz wirkt nur, wenn dein Körper ihn umsetzt. Die Matrix ordnet ein, welche Rolle Schlaf und Erholung dabei spielen.",
-      multiple: "Dein Score zeigt mehrere Faktoren. Die Matrix ordnet Training, Ernährung und Erholung in ein gemeinsames Aufbauprofil ein."
+      multiple: "Dein Score zeigt mehrere Faktoren. Die Matrix ordnet Training, Ernährung und Erholung in ein gemeinsames Aufbauprofil ein.",
+      /* Eigene Fassung, weil der Grund ein anderer ist: nicht eine Schwäche
+         im Score, sondern die Reichweite der Substanzen selbst. */
+      /* Bewusst ohne Zahl: Wie viele Wege ein Stack bedient, hängt an den
+         Kategorien — und die kennt die Ergebnisseite nicht. Die Matrixseite
+         rechnet es aus, hier wird nichts behauptet. */
+      enhanced: "Deine Substanzen bedienen nur einen Teil dieser Matrix. Die Seite zeigt, welche Wege dein Stack offen lässt — und welche davon dein Verhalten adressiert."
     },
     /* Nach abgeschlossenem Selbstcheck: kein zweites Mal als gleich starke
        Hauptempfehlung, aber der Zugang bleibt. */

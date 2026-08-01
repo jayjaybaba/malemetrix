@@ -109,7 +109,22 @@ mit Substanzen.
   senken; beides prüft der Test.
 
 - **Einstiege:** Karte in `blog.html`, Kontextlink in
-  `blog/testosteron-natuerlich-steigern.html`, Eintrag in `sitemap.xml`.
+  `blog/testosteron-natuerlich-steigern.html`, Eintrag in `sitemap.xml`,
+  kontextabhängige Karte auf der Score-Ergebnisseite (`js/matrix-cta.js`).
+
+  **Enhanced hat Vorrang, aus einem anderen Grund.** Die Karte wählt ihren
+  Anlass sonst aus dem primären Engpass und den gerankten
+  `secondaryPriorities`. Für Enhanced-Nutzer geht das an der Sache vorbei:
+  Ihr Engpass lautet häufig `movement` — bewusst keinem Kontext zugeordnet —
+  und die Sekundärbereiche fielen durch die Schwäche-Bedingung. Genau die
+  Gruppe, für die die Seite am meisten hergibt, bekam damit keinen Übergang.
+  Deshalb steht `enhanced` als erste Regel vor der Engpass-Zuordnung: Der
+  Anlass ist nicht eine Schwäche im Score, sondern die Reichweite der
+  Substanzen selbst — und die gilt auch dann, wenn alle Bereiche gut stehen.
+  Die Copy nennt bewusst **keine** Wege-Zahl: Wie viele Wege ein Stack
+  bedient, hängt an den Kategorien; die rechnet erst die Matrixseite aus.
+  `medical_trt` und Enhanced ohne Kategorie fallen weiter auf die normale
+  Regel zurück.
 
 ## Blog (`blog.html`) — 11 Artikel
 Tirzepatid-Kosten · TRT-Telemedizin · Testosteron natürlich · Blutwerte ab 30 ·
