@@ -19,37 +19,73 @@ Für die ist das Ergebnis nicht Glückssache, sondern Physiologie.
 
 ---
 
-## 2 — Die Verkaufsseite (Kernaussagen)
+## 2 — Die Verkaufsseite
 
-Headline:
-> **28 Tage. −8 cm Bauchumfang. Oder du bekommst dein Geld zurück.**
+**Tonlage — die Regel, an der sich jeder Satz misst:**
 
-Subline:
-> Kein „ohne Verzicht". Vier Wochen unangenehm, dann ist es vorbei.
+> Ehrlichkeit, die **vorhersagt**, ist Autorität. Ehrlichkeit, die sich
+> **entschuldigt**, ist Schwäche.
 
-Die drei Blöcke, die darunter stehen — in dieser Reihenfolge, weil der
-Ausschluss vor dem Versprechen kommt:
+„Woche 1 stürzt die Waage, davon sind 2–3 kg Wasser — ich sage es dir vorher,
+damit du in Woche 2 nicht denkst, es hört auf zu wirken" klingt wie jemand,
+der das hundertmal gesehen hat. „Wir haben dazu noch keine Daten" klingt wie
+ein Praktikant. Beides ist wahr, nur eines verkauft. **Auf der Seite steht
+kein Satz, der das eigene Angebot relativiert.** Die Garantie trägt das
+Risiko — sie braucht keinen Disclaimer daneben, der sie wieder einreißt.
 
-**a) Für wen das nicht ist.**
-> Bauchumfang unter 100 cm? Dann ist das hier das falsche Produkt und du
-> bekommst es nicht verkauft. Diabetes, Essstörung in der Vorgeschichte,
-> BMI unter 25 — dasselbe. Der Eignungs-Check steht vor dem Kaufbutton, nicht
-> im Kleingedruckten.
+---
 
-**b) Was in vier Wochen wirklich passiert.**
-> Woche 1 fällt die Waage schnell — davon sind 2–3 kg Wasser und Glykogen.
-> Das ist kein Fett und wird auch nicht so verkauft. Ab Woche 2 sind es
-> etwa 0,8–1,2 kg Fett pro Woche. Bei einem 100-kg-Mann landen die meisten
-> nach 28 Tagen bei **6–9 kg und 6–10 cm Bauchumfang**.
+**Headline:**
+> # 28 Tage. −8 cm Bauchumfang. Oder du zahlst nichts.
 
-**c) Warum der Bauchumfang zählt und nicht das Gewicht.**
-> Gewicht schwankt mit Salz, Schlaf und Darminhalt. Der Bauchumfang tut das
-> nicht. Deshalb hängt die Garantie daran.
+**Subline:**
+> Miss an Tag 0. Miss an Tag 28. Die Zahl entscheidet — nicht ich, und nicht
+> dein Gefühl.
 
-Und ein Satz, der genauso deutlich dasteht:
+**a) Der Einstieg.**
+> Du kennst dein Problem. Es sitzt vorne, es ist seit Jahren da, und kein
+> Januar hat daran je etwas geändert.
+>
+> PROTOKOLL 28 ändert es in vier Wochen. Nicht, weil es ein Wundermittel
+> gibt, sondern weil du zum ersten Mal ein Defizit fährst, das hart genug
+> ist — und einen Protein-Boden, der deine Muskeln dabei schützt.
+>
+> Ist dein Bauchumfang nach 28 Tagen nicht mindestens 8 cm kleiner,
+> bekommst du dein Geld zurück. Ohne Nachfrage.
 
-> **PROTOKOLL 28 enthält keine Substanzen, empfiehlt keine und braucht keine.
-> Der Begrenzer beim Fettabbau ist das Defizit, nicht die Pharmakologie.**
+**b) Nicht jeder bekommt es.**
+> Unter 100 cm Bauchumfang verkaufe ich es dir nicht. Diabetes, Essstörung
+> in der Vorgeschichte, BMI unter 25 — auch nein.
+>
+> Das ist keine Höflichkeit. Für dich wäre das Programm hart und der Ertrag
+> klein, und die Garantie könnte ich dir dann nicht geben. Der Check steht
+> **vor** dem Kaufbutton.
+
+**c) Was in den vier Wochen passiert — vorher gesagt, nicht hinterher erklärt.**
+> **Woche 1:** Die Waage stürzt. 2–3 kg. Das ist Wasser und Glykogen, kein
+> Fett. Ich sage es dir jetzt, damit du in Woche 2 nicht denkst, es
+> funktioniert nicht mehr, wenn der Sturz aufhört.
+>
+> **Woche 2:** Der unangenehmste Teil. Hier hörst du auf, wenn du aufhörst.
+> Deshalb ist das der am dichtesten geführte Block des Programms.
+>
+> **Woche 3:** Es läuft. Die Hose sitzt anders, bevor die Waage es einholt.
+>
+> **Woche 4:** Der kontrollierte Ausstieg — der Teil, den jede Crash-Diät
+> auslässt und an dem jede Crash-Diät scheitert.
+
+**d) Warum der Bauchumfang und nicht das Gewicht.**
+> Gewicht schwankt mit Salz, Schlaf und Darminhalt. Es lügt dich an, in
+> beide Richtungen. Der Bauchumfang tut das nicht. Deshalb hängt die
+> Garantie daran — und deshalb ist es die Zahl, an der du das Ergebnis
+> siehst, bevor irgendjemand etwas sagt.
+
+**e) Der Satz, der genauso deutlich dasteht:**
+> **PROTOKOLL 28 enthält keine Substanzen und empfiehlt keine. Der Begrenzer
+> beim Fettabbau ist das Defizit, nicht die Pharmakologie.**
+
+Das ist kein Rückzieher, sondern Abgrenzung nach oben: Der halbe Markt
+verkauft Abkürzungen. Hier steht, dass es keine braucht.
 
 ---
 
@@ -278,27 +314,45 @@ sagt **„−8 cm in 28 Tagen"** — exakt das, was die Regel verhindern soll.
 schreibt „Tagen". Diese Lücke zu benutzen wäre die unehrlichste verfügbare
 Option — Wächter bestanden, Standard gebrochen. Kommt nicht in Frage.
 
-Drei echte Wege:
+**Die Auflösung ist eine andere:** Der Wächter unterscheidet bisher nicht
+zwischen zwei völlig verschiedenen Sätzen.
 
-| Weg | Was passiert | Bewertung |
+| Satz | Wer trägt das Risiko | Braucht Beleg |
 |---|---|---|
-| **A** · Zahl erst nach Kohorte 1 | Start ohne „−8 cm", Garantie als reine Rückgabe-Zusage formuliert | sicher, aber nimmt dem Angebot die Schärfe genau dort, wo sie sitzt |
-| **B** · Zahl mit Offenlegung | Zahl bleibt, dazu auf derselben Seite: *„Dafür haben wir noch keine eigenen Ergebnisse. Deshalb die Garantie: entweder es passiert, oder du zahlst nichts."* Wächter wird auf genau dieses Muster erweitert | **empfohlen** |
-| **C** · Wächter aufweichen | Regel entschärfen | nein — das ist die Regel, die das Haus glaubwürdig macht |
+| „Männer verlieren hier 8 cm in 28 Tagen." | der Käufer | **ja** — das ist eine Behauptung über typische Ergebnisse |
+| „−8 cm oder du zahlst nichts." | der **Verkäufer** | nein — das ist eine Angebotsbedingung |
 
-**Warum B und nicht A:** Ein Ergebnisversprechen und eine
-Rückgabe-Zusage sind nicht dasselbe. „Du verlierst 8 cm" ist eine Behauptung
-über den Käufer. „8 cm oder Geld zurück, und eigene Daten haben wir noch
-keine" ist ein **Angebot mit offengelegtem Risiko** — der Verkäufer trägt es,
-nicht der Käufer. Das ist stärker als eine vorsichtige Formulierung *und*
-ehrlicher als eine selbstbewusste.
+Der zweite Satz ist kein Ergebnisversprechen, sondern eine
+**Rückgabe-Zusage**. Er behauptet nichts über den Käufer; er verpflichtet den
+Verkäufer. Genau deshalb darf er ohne Fallstudie stehen — und genau deshalb
+braucht er **keinen relativierenden Zusatz**. Ein „wir haben dazu noch keine
+Daten" daneben würde die Zusage nicht ehrlicher machen, nur schwächer.
 
-Der Wächter würde entsprechend erweitert: Eine Zahl ist erlaubt, **wenn** auf
-derselben Seite eine Rückgabe-Zusage und der Hinweis auf fehlende eigene
-Daten stehen. Fehlt eines von beiden, schlägt die Suite fehl. Das ist eine
-Verschärfung für alle anderen Seiten, keine Aufweichung.
+**Wächter-Erweiterung:** Eine Ergebniszahl auf einer öffentlichen Seite ist
+erlaubt, **wenn sie auf derselben Seite an eine Rückgabe-Zusage samt
+Bedingungen gebunden ist**. Steht die Zahl frei — ohne Garantie, ohne
+Bedingungen — schlägt die Suite weiterhin fehl, und der Ausdruck wird dabei
+zusätzlich auf `Tagen|Wochen|Monaten` erweitert, damit die heutige Lücke
+zugeht. Unterm Strich ist das eine **Verschärfung**: Aktuell käme jede
+Zahl mit „Tagen" überall durch.
 
-**Ohne deine Entscheidung baue ich die Verkaufsseite nicht.**
+Die einzige Bedingung, die diese Konstruktion trägt: **Die Garantie muss
+tatsächlich bedient werden.** Eine nicht eingelöste Rückgabe-Zusage ist nach
+UWG angreifbar und beendet das Produkt schneller als jede schwache Headline.
+
+### 13.3 Der schnellste Weg aus der Beleglage
+
+Diese ganze Frage verschwindet nach 28 Tagen — sobald echte Durchläufe
+vorliegen.
+
+1. **Eigener Durchlauf.** Du machst PROTOKOLL 28 selbst, dokumentiert nach
+   `PROOF_STANDARD.md` (W0/W28, Maßband, Adhärenz aus dem Programm). Das ist
+   ein legitimer Beleg, sofort verfügbar, und es prüft nebenbei das Programm.
+2. **Kohorte 1** liefert 28 Tage nach Start den Rest — ungedeckelt und mit
+   gemeinsamem Startdatum kommen die Daten gebündelt.
+
+Danach steht auf der Seite eine Zahl mit echten Fällen dahinter, und die
+Garantie ist nicht mehr die einzige Stütze, sondern der Verstärker.
 
 ---
 
