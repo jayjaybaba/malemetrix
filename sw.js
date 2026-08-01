@@ -10,7 +10,7 @@
    · push: echter Handler — wird nur aktiv, wenn Server-Push konfiguriert ist
      (VAPID + Backend). Ohne Config passiert hier ehrlich: nichts.
    ========================================================================== */
-const VERSION = "mm-v174";
+const VERSION = "mm-v175";
 const CORE = [
   "tracker.html", "dinner.html", "index.html", "mein-protokoll.html", "labor.html",
   "css/fonts.css", "css/style.css", "css/os.css", "css/labs.css", "css/blueprint.css",
@@ -27,7 +27,12 @@ const CORE = [
   "js/os/intelligence/knowledge.js", "js/os/intelligence/foresight.js", "js/os/intelligence/ai.js",
   "js/os/intelligence/proof.js", "js/os/activation.js",
   "js/os/entitlements.js", "js/os/billing-machine.js", "js/os/production-status.js",
-  "js/tracker.js", "js/tracker-data.js",
+  "js/tracker.js", "js/tracker-data.js", "js/tracker-curated.js",
+  /* tracker-library.js (247 KB) und tracker-guide.js (592 KB) stehen bewusst
+     NICHT hier: der Tracker lädt sie erst, wenn jemand die Bibliothek
+     wirklich öffnet. Sie im Voraus zu holen würde jeden Erstbesuch bezahlen
+     lassen für etwas, das die meisten nie anfassen. Sie landen über die
+     Laufzeit-Strategie des Service Workers im Cache. */
   "js/food-db.js", "js/dinner.js",
   "js/shop-data.js",
   "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png"

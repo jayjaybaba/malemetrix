@@ -32,7 +32,9 @@
     templates: () => MM.store.get("trk_templates", []),
     saveTemplates: (v) => MM.store.set("trk_templates", v),
     customEx: () => MM.store.get("trk_custom_ex", []),
-    saveCustomEx: (v) => MM.store.set("trk_custom_ex", v),
+    /* invalidateIndex(): der Übungs-Index unten cacht den Bestand. Eine neue
+       eigene Übung muss ihn verwerfen, sonst wird sie nicht gefunden. */
+    saveCustomEx: (v) => { MM.store.set("trk_custom_ex", v); invalidateIndex(); },
     active: () => MM.store.get("trk_active", null),
     saveActive: (v) => MM.store.set("trk_active", v),
     clearActive: () => MM.store.remove("trk_active"),
@@ -54,9 +56,136 @@
 
   const T = (de, en) => tr({ de, en });
 
-  function allExercises() { return MM_TRK_EXERCISES.concat(S.customEx()); }
-  function exById(id) { return allExercises().find(e => e.id === id) || { id, muscle: "other", equip: "other", name: { de: id, en: id } }; }
+  /* Selbst angelegte Übungsnamen landen in HTML — deshalb maskieren. */
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
+  /* ==========================================================================
+     ÜBUNGSBESTAND
+     --------------------------------------------------------------------------
+     Drei Quellen, absichtlich getrennt:
+
+       1. KURATIERT  (js/tracker-data.js)      — 49 Übungen, immer geladen.
+          Das sind die, die das MaleMetrix-Programm tatsächlich vorgibt.
+       2. BIBLIOTHEK (js/tracker-library.js)   — 825 weitere, NACHGELADEN.
+       3. EIGENE     (localStorage)            — was der Nutzer selbst anlegt.
+
+     Die Bibliothek hängt nicht im <head>, weil sie 247 KB wiegt. Wer nur
+     Sätze loggen will, lädt sie nie. Erst wer sucht oder stöbert, holt sie —
+     einmal pro Seitenaufruf, danach liegt sie im Speicher.
+     ========================================================================== */
+  const LIB_BASE = "https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/";
+
+  /* Fotos liegen bewusst NICHT im Repository: 873 Übungen × 2 Bilder sind
+     ~90 MB. Sie kommen vom CDN der (gemeinfreien) Quelle. Wer sie später
+     selbst hosten will, ändert genau diese eine Konstante. */
+  function exImg(srcSlug, n) { return srcSlug ? LIB_BASE + srcSlug + "/" + (n || 0) + ".jpg" : ""; }
+
+  /* Der Tracker läuft ausdrücklich offline — die Fotos kommen aber aus dem
+     Netz. Ohne Verbindung zeigte der Browser sonst überall das Symbol für
+     "kaputtes Bild". Stattdessen fällt die Kachel still auf ihre leere Form
+     zurück: die Übung bleibt benutzbar, nur ohne Foto.
+
+     Ein einziger Lauscher in der Capture-Phase, weil error-Ereignisse nicht
+     aufsteigen — so gilt er auch für alles, was später gezeichnet wird. */
+  document.addEventListener("error", (ev) => {
+    const el = ev.target;
+    if (!el || el.tagName !== "IMG") return;
+    if (el.classList.contains("ex-thumb") || el.classList.contains("ex-pick-thumb") ||
+        (el.parentElement && el.parentElement.classList.contains("ex-detail-media"))) {
+      el.removeAttribute("src");
+      el.classList.add("ex-thumb-empty");
+    }
+  }, true);
+
+  let libState = "idle";            // idle | loading | ready | failed
+  let guideState = "idle";
+  const libWaiting = [], guideWaiting = [];
+
+  function loadScriptOnce(src, done) {
+    const s = document.createElement("script");
+    s.src = src;
+    s.onload = () => done(true);
+    s.onerror = () => done(false);
+    document.head.appendChild(s);
+  }
+
+  /* Lädt die Bibliothek und ruft cb(ok). Mehrfachaufrufe während des Ladens
+     werden gesammelt, nicht wiederholt angestoßen. */
+  function loadLibrary(cb) {
+    if (libState === "ready" || libState === "failed") { cb(libState === "ready"); return; }
+    libWaiting.push(cb);
+    if (libState === "loading") return;
+    libState = "loading";
+    loadScriptOnce("js/tracker-library.js", (ok) => {
+      libState = ok && window.MM_TRK_LIBRARY ? "ready" : "failed";
+      exIndex = null;                              // Index neu aufbauen
+      libWaiting.splice(0).forEach(f => f(libState === "ready"));
+    });
+  }
+
+  function loadGuide(cb) {
+    if (guideState === "ready" || guideState === "failed") { cb(guideState === "ready"); return; }
+    guideWaiting.push(cb);
+    if (guideState === "loading") return;
+    guideState = "loading";
+    loadScriptOnce("js/tracker-guide.js", (ok) => {
+      guideState = ok && window.MM_TRK_GUIDE ? "ready" : "failed";
+      guideWaiting.splice(0).forEach(f => f(guideState === "ready"));
+    });
+  }
+
+  /* Die kuratierten Übungen um Fotos und feine Muskeln ergänzen. Läuft einmal;
+     js/tracker-curated.js ist klein und liegt im <head>. */
+  let curatedMerged = false;
+  function curated() {
+    if (!curatedMerged) {
+      const meta = window.MM_TRK_CURATED_META || {};
+      MM_TRK_EXERCISES.forEach(e => {
+        const m = meta[e.id];
+        e.core = true;                              // Kennzeichen "vom Protokoll empfohlen"
+        if (!m) return;
+        if (m.src) e.src = m.src;
+        if (m.m1) e.m1 = m.m1;
+        if (m.m2) e.m2 = m.m2;
+      });
+      curatedMerged = true;
+    }
+    return MM_TRK_EXERCISES;
+  }
+
+  /* allExercises() wurde früher in jeder exById()-Abfrage neu zusammengebaut.
+     Bei 49 Übungen war das egal, bei 874 nicht mehr — der Verlauf ruft
+     exById() pro Satz auf. Deshalb ein Index, der nur neu entsteht, wenn
+     sich der Bestand wirklich ändert. */
+  let exIndex = null;
+  function allExercises() {
+    return curated().concat(window.MM_TRK_LIBRARY || [], S.customEx());
+  }
+  function buildIndex() {
+    exIndex = new Map();
+    allExercises().forEach(e => exIndex.set(e.id, e));
+  }
+  function invalidateIndex() { exIndex = null; }
+  function exById(id) {
+    if (!exIndex) buildIndex();
+    return exIndex.get(id) || { id, muscle: "other", equip: "other", name: { de: id, en: id } };
+  }
   function muscleLabel(m) { return tr(MM_TRK_MUSCLES[m] || { de: m, en: m }); }
+  function fineLabel(m) { return tr((window.MM_TRK_FINE || {})[m] || { de: m, en: m }); }
+  function equipLabel(e) { return tr((window.MM_TRK_EQUIP || {})[e] || { de: e, en: e }); }
+
+  /* Feine Muskeln einer Übung. Kuratierte und Bibliotheks-Übungen tragen
+     m1/m2; eigene Übungen haben nur die grobe Gruppe — die zählt dann als
+     primär, damit die Heatmap sie nicht verschluckt. */
+  function fineMuscles(ex) {
+    if (ex.m1 && ex.m1.length) return { primary: ex.m1, secondary: ex.m2 || [] };
+    const guess = { chest: ["chest"], back: ["lats"], legs: ["quadriceps"], shoulders: ["shoulders"], arms: ["biceps"], core: ["abdominals"] };
+    return { primary: guess[ex.muscle] || [], secondary: [] };
+  }
   const e1RM = (w, r) => r <= 0 ? 0 : w * (1 + r / 30);
   function fmtDate(iso) {
     const d = new Date(iso);
@@ -74,6 +203,20 @@
       if (ex && workingSets(ex).length) return workingSets(ex);
     }
     return null;
+  }
+  /* Bestes e1RM je Übung in EINEM Durchlauf. bestE1RM() einzeln pro Karte
+     aufzurufen ginge bei 60 Karten 60-mal durch die gesamte Historie. */
+  function bestE1RMMap() {
+    const best = {};
+    S.sessions().forEach(s => (s.exercises || []).forEach(e => {
+      e.sets.forEach(x => {
+        if (x.done && !x.warmup) {
+          const v = e1RM(x.weight, x.reps);
+          if (v > (best[e.exId] || 0)) best[e.exId] = v;
+        }
+      });
+    }));
+    return best;
   }
   function bestE1RM(exId) {
     let best = 0;
@@ -869,14 +1012,40 @@
     let modal = document.getElementById("exModal");
     if (!modal) { modal = document.createElement("div"); modal.id = "exModal"; modal.className = "modal-overlay"; document.body.appendChild(modal); }
     let muscleFilter = "";
+    const PICK_MAX = 60;             // mehr Treffer als das zu scrollen lohnt
     const draw = (filter) => {
-      const q = (filter || "").toLowerCase();
-      const list = allExercises().filter(e =>
+      const q = (filter || "").trim().toLowerCase();
+      const all = allExercises().filter(e =>
         (!muscleFilter || e.muscle === muscleFilter) &&
-        (tr(e.name).toLowerCase().includes(q) || muscleLabel(e.muscle).toLowerCase().includes(q)));
-      modal.querySelector(".ex-picker-list").innerHTML = list.map(e =>
-        '<button class="ex-pick" data-pick="' + e.id + '"><span>' + tr(e.name) + '</span><span class="ex-muscle-tag">' + muscleLabel(e.muscle) + '</span></button>'
-      ).join("") || '<p class="muted" style="text-align:center;padding:20px">' + T("Nichts gefunden.", "Nothing found.") + '</p>';
+        (!q || (e.name.de || "").toLowerCase().includes(q) ||
+               (e.name.en || "").toLowerCase().includes(q) ||
+               muscleLabel(e.muscle).toLowerCase().includes(q)));
+      /* Programm-Übungen zuerst — im laufenden Training will man die
+         gewohnten oben haben, nicht alphabetisches Bibliotheksrauschen. */
+      all.sort((a, b) => {
+        if (!!b.core !== !!a.core) return b.core ? 1 : -1;
+        return tr(a.name).localeCompare(tr(b.name));
+      });
+      const list = all.slice(0, PICK_MAX);
+      const rows = list.map(e => {
+        const img = exImg(e.src, 0);
+        return '<button class="ex-pick" data-pick="' + esc(e.id) + '">' +
+          (img ? '<img class="ex-pick-thumb" src="' + img + '" alt="" loading="lazy" decoding="async">' : '<span class="ex-pick-thumb ex-thumb-empty"></span>') +
+          '<span class="ex-pick-name">' + (e.core ? '<span class="ex-pick-star">★</span> ' : '') + esc(tr(e.name)) + '</span>' +
+          '<span class="ex-muscle-tag">' + esc(muscleLabel(e.muscle)) + '</span></button>';
+      }).join("");
+
+      modal.querySelector(".ex-picker-list").innerHTML =
+        (rows || '<p class="muted" style="text-align:center;padding:20px">' +
+          (libState === "loading"
+            ? T("Bibliothek lädt…", "Loading library…")
+            : T("Nichts gefunden.", "Nothing found.")) + '</p>') +
+        (all.length > list.length
+          ? '<p class="muted small" style="text-align:center;padding:10px">' +
+            T("… und " + (all.length - list.length) + " weitere. Suche eingrenzen.",
+              "… and " + (all.length - list.length) + " more. Narrow your search.") + '</p>'
+          : '');
+
       modal.querySelectorAll("[data-pick]").forEach(b => b.addEventListener("click", () => {
         const active = S.active();
         active.exercises.push({ exId: b.dataset.pick, sets: [{ weight: 0, reps: 0, done: false }] });
@@ -893,6 +1062,12 @@
       '<button class="btn btn-dark btn-block btn-sm" id="addCustomEx" style="margin-top:14px">+ ' + T("Eigene Übung anlegen", "Create custom exercise") + '</button></div>';
     modal.classList.add("open");
     draw("");
+    /* Bibliothek im Hintergrund holen; die kuratierten Übungen stehen sofort,
+       die restlichen 825 erscheinen, sobald sie da sind. */
+    loadLibrary(() => {
+      const box = document.getElementById("exModal");
+      if (box && box.classList.contains("open")) draw(box.querySelector("#exSearch").value);
+    });
     modal.querySelector("#exClose").addEventListener("click", () => closeModal("exModal"));
     modal.addEventListener("click", e => { if (e.target === modal) closeModal("exModal"); });
     const search = modal.querySelector("#exSearch");
@@ -1005,11 +1180,50 @@
         (metric.length >= 2 ? '<div style="margin:16px 0"><div class="muted small" style="margin-bottom:6px">' + (type === "weight_reps" ? T("Geschätztes 1RM über Zeit", "Estimated 1RM over time") : T("Beste Wiederholungen über Zeit", "Best reps over time")) + '</div>' + chart + '</div>' : '') +
         '<div style="margin-top:8px">' + rows + '</div>';
     }
-    modal.innerHTML = '<div class="modal-box"><div class="modal-head"><h3 class="h-card">' + tr(meta.name) + '</h3><button class="cart-close" id="exdClose" aria-label="' + T("Übungsdetails schließen", "Close exercise details") + '">✕</button></div>' +
-      '<span class="ex-muscle-tag" style="margin-bottom:14px;display:inline-block">' + muscleLabel(meta.muscle) + '</span>' + body + '</div>';
+    /* Fotos: Start- und Endposition der Bewegung. Zwei Bilder sagen mehr über
+       die Ausführung als jeder Absatz Text — und sie brauchen keine Sprache. */
+    const media = meta.src
+      ? '<div class="ex-detail-media">' +
+          '<img src="' + exImg(meta.src, 0) + '" alt="' + esc(tr(meta.name)) + ' — ' + T("Startposition", "start position") + '" loading="lazy" decoding="async">' +
+          '<img src="' + exImg(meta.src, 1) + '" alt="' + esc(tr(meta.name)) + ' — ' + T("Endposition", "end position") + '" loading="lazy" decoding="async">' +
+        '</div>'
+      : '';
+
+    /* Muskeln: primär hervorgehoben, sekundär gedämpft. */
+    const fm = fineMuscles(meta);
+    const chip = (m, primary) => '<span class="ex-mchip' + (primary ? " is-primary" : "") + '">' + esc(fineLabel(m)) + '</span>';
+    const muscles = (fm.primary.length || fm.secondary.length)
+      ? '<div class="ex-mchips">' + fm.primary.map(m => chip(m, true)).join("") +
+        fm.secondary.map(m => chip(m, false)).join("") + '</div>'
+      : '';
+
+    const tags = '<div class="ex-detail-tags">' +
+      '<span class="ex-muscle-tag">' + esc(muscleLabel(meta.muscle)) + '</span>' +
+      (meta.equip ? '<span class="ex-muscle-tag">' + esc(equipLabel(meta.equip)) + '</span>' : '') +
+      (meta.core ? '<span class="ex-muscle-tag is-core">★ ' + T("Programm-Übung", "Programme exercise") + '</span>' : '') +
+      '</div>';
+
+    modal.innerHTML = '<div class="modal-box"><div class="modal-head"><h3 class="h-card">' + esc(tr(meta.name)) + '</h3><button class="cart-close" id="exdClose" aria-label="' + T("Übungsdetails schließen", "Close exercise details") + '">✕</button></div>' +
+      media + tags + muscles +
+      '<div id="exdGuide"></div>' +
+      body + '</div>';
     modal.classList.add("open");
     modal.querySelector("#exdClose").addEventListener("click", () => closeModal("exDetailModal"));
     modal.addEventListener("click", e => { if (e.target === modal) closeModal("exDetailModal"); });
+
+    /* Ausführungsschritte liegen in einer eigenen, größeren Datei — die wird
+       erst hier geholt, nicht beim Öffnen des Tabs. */
+    const slot = modal.querySelector("#exdGuide");
+    loadGuide((ok) => {
+      if (!slot.isConnected) return;
+      const steps = ok && window.MM_TRK_GUIDE ? window.MM_TRK_GUIDE[exId] : null;
+      if (!steps || !steps.length) return;
+      slot.innerHTML = '<h4 class="ex-detail-h">' + T("Ausführung", "How to perform") + '</h4>' +
+        '<ol class="ex-steps">' + steps.map(s => '<li>' + esc(s) + '</li>').join("") + '</ol>' +
+        '<p class="muted small ex-steps-note">' +
+        T("Ausführungstext im englischen Original aus der gemeinfreien Quelle free-exercise-db.",
+          "Instructions in the original English from the public-domain source free-exercise-db.") + '</p>';
+    });
   }
 
   function lineChart(vals, isWeight) {
@@ -1029,38 +1243,241 @@
   /* ==========================================================================
      EXERCISES (Bibliothek + Fortschritt)
      ========================================================================== */
-  function renderExercises(p) {
-    // Übungen, die schon trainiert wurden, mit PR + zuletzt
-    const trained = {};
-    S.sessions().forEach(s => (s.exercises || []).forEach(e => {
-      if (workingSets(e).length) { trained[e.exId] = Math.max(trained[e.exId] || 0, new Date(s.date).getTime()); }
-    }));
-    const trainedIds = Object.keys(trained).sort((a, b) => trained[b] - trained[a]);
+  /* Filterzustand überlebt einen Tab-Wechsel — wer nach "Brust, Kurzhantel"
+     gesucht hat, findet das nach dem Blick in den Verlauf wieder vor. */
+  const exFilter = { q: "", muscle: "", equip: "", onlyCore: false, limit: 60 };
 
-    let html = '';
-    if (trainedIds.length) {
-      html += '<h3 class="h-card" style="margin-bottom:12px">' + T("Deine Übungen", "Your exercises") + '</h3>' +
-        '<div style="display:grid;gap:8px;margin-bottom:24px">' + trainedIds.map(id => {
-          const pr = bestE1RM(id); const meta = exById(id);
-          return '<button class="ex-progress-row" data-exdetail="' + id + '">' +
-            '<div><div style="font-weight:600;color:var(--text)">' + tr(meta.name) + '</div>' +
-            '<div class="muted small">' + muscleLabel(meta.muscle) + '</div></div>' +
-            '<div style="text-align:right"><div class="mono" style="color:var(--accent)">' + (pr > 0 ? fmtW(pr) : "–") + '</div>' +
-            '<div class="muted small">' + T("bestes e1RM", "best e1RM") + '</div></div></button>';
-        }).join("") + '</div>';
-    }
-    // gesamte Bibliothek nach Muskelgruppe
-    html += '<h3 class="h-card" style="margin-bottom:12px">' + T("Übungs-Bibliothek", "Exercise library") + '</h3>';
-    Object.keys(MM_TRK_MUSCLES).forEach(m => {
-      const list = allExercises().filter(e => e.muscle === m);
-      if (!list.length) return;
-      html += '<div class="muted small" style="margin:14px 0 6px;text-transform:uppercase;letter-spacing:0.06em">' + muscleLabel(m) + '</div>' +
-        '<div style="display:grid;gap:6px">' + list.map(e =>
-          '<button class="ex-progress-row" data-exdetail="' + e.id + '"><div style="font-weight:500;color:var(--text)">' + tr(e.name) + '</div>' +
-          '<span class="ex-muscle-tag">' + (e.equip || "") + '</span></button>').join("") + '</div>';
+  /* Karte einer Übung: Foto (falls vorhanden), Name, Muskel, Gerät — und der
+     eigene Rekord, sobald die Übung schon trainiert wurde. */
+  function exCardHTML(e, pr) {
+    const img = exImg(e.src, 0);
+    const thumb = img
+      ? '<img class="ex-thumb" src="' + img + '" alt="" loading="lazy" decoding="async">'
+      : '<span class="ex-thumb ex-thumb-empty" aria-hidden="true">' + (e.core ? "★" : "—") + '</span>';
+    return '<button class="ex-card" data-exdetail="' + esc(e.id) + '">' + thumb +
+      '<span class="ex-card-body">' +
+        '<span class="ex-card-name">' + esc(tr(e.name)) + '</span>' +
+        '<span class="ex-card-meta">' + esc(muscleLabel(e.muscle)) +
+          (e.equip ? ' · ' + esc(equipLabel(e.equip)) : '') + '</span>' +
+        (pr > 0 ? '<span class="ex-card-pr mono">' + fmtW(pr) + ' ' + T("bestes e1RM", "best e1RM") + '</span>' : '') +
+      '</span>' +
+      (e.core ? '<span class="ex-badge-core" title="' + T("Im MaleMetrix-Programm vorgesehen", "Part of the MaleMetrix programme") + '">★</span>' : '') +
+      '</button>';
+  }
+
+  function exMatches(e) {
+    if (exFilter.onlyCore && !e.core) return false;
+    if (exFilter.muscle && e.muscle !== exFilter.muscle) return false;
+    if (exFilter.equip && e.equip !== exFilter.equip) return false;
+    const q = exFilter.q.trim().toLowerCase();
+    if (!q) return true;
+    return (e.name.de || "").toLowerCase().includes(q) ||
+           (e.name.en || "").toLowerCase().includes(q) ||
+           muscleLabel(e.muscle).toLowerCase().includes(q);
+  }
+
+  function renderExercises(p) {
+    /* Reihenfolge: schon trainierte zuerst (das eigene Repertoire), dann die
+       kuratierten Programm-Übungen, dann der Rest der Bibliothek. Nicht
+       "alles", sondern das Richtige zuerst. */
+    const prs = bestE1RMMap();
+    const list = allExercises().filter(exMatches).sort((a, b) => {
+      const ta = prs[a.id] ? 1 : 0, tb = prs[b.id] ? 1 : 0;
+      if (ta !== tb) return tb - ta;
+      if (!!b.core !== !!a.core) return b.core ? 1 : -1;
+      return tr(a.name).localeCompare(tr(b.name));
     });
-    p.innerHTML = html;
+    const shown = list.slice(0, exFilter.limit);
+
+    const chips = ['<button class="mfilter' + (exFilter.muscle ? "" : " active") + '" data-mf="">' + T("Alle", "All") + '</button>']
+      .concat(Object.keys(MM_TRK_MUSCLES).map(m =>
+        '<button class="mfilter' + (exFilter.muscle === m ? " active" : "") + '" data-mf="' + m + '">' + esc(muscleLabel(m)) + '</button>')).join("");
+
+    const equipOpts = ['<option value="">' + T("Alle Geräte", "All equipment") + '</option>']
+      .concat(Object.keys(window.MM_TRK_EQUIP || {}).map(k =>
+        '<option value="' + k + '"' + (exFilter.equip === k ? " selected" : "") + '>' + esc(equipLabel(k)) + '</option>')).join("");
+
+    p.innerHTML =
+      '<div class="ex-lib-head">' +
+        '<input type="search" id="exLibSearch" class="ex-picker-search" placeholder="' +
+          T("Übung suchen — Name oder Muskel…", "Search exercise — name or muscle…") + '" value="' + esc(exFilter.q) + '">' +
+        '<div class="ex-lib-controls">' +
+          '<select id="exLibEquip" class="ex-lib-select">' + equipOpts + '</select>' +
+          '<label class="ex-lib-toggle"><input type="checkbox" id="exLibCore"' + (exFilter.onlyCore ? " checked" : "") + '> ' +
+            T("Nur Programm-Übungen", "Programme exercises only") + '</label>' +
+        '</div>' +
+        '<div class="mfilter-row">' + chips + '</div>' +
+      '</div>' +
+      '<p class="muted small" id="exLibCount" style="margin:0 0 12px">' +
+        list.length + " " + T("Übungen", "exercises") +
+        (libState === "ready" ? "" : " · " + T("Bibliothek lädt…", "loading library…")) + '</p>' +
+      '<div class="ex-card-grid">' + shown.map(e => exCardHTML(e, prs[e.id])).join("") + '</div>' +
+      (list.length > shown.length
+        ? '<button class="btn btn-dark btn-block" id="exLibMore" style="margin-top:16px">' +
+          T("Weitere anzeigen", "Show more") + ' (' + (list.length - shown.length) + ')</button>'
+        : '') +
+      (libState === "failed"
+        ? '<p class="muted small" style="margin-top:16px">' +
+          T("Die große Bibliothek konnte nicht geladen werden — deine kuratierten Übungen funktionieren normal weiter.",
+            "The full library could not be loaded — your curated exercises keep working normally.") + '</p>'
+        : '');
+
     p.querySelectorAll("[data-exdetail]").forEach(b => b.addEventListener("click", () => openExerciseDetail(b.dataset.exdetail)));
+
+    const search = p.querySelector("#exLibSearch");
+    /* Neu zeichnen, ohne den Fokus zu verlieren — sonst schließt die
+       Tastatur auf dem Handy nach jedem Buchstaben. */
+    const redraw = () => {
+      const pos = search === document.activeElement ? search.selectionStart : null;
+      renderExercises(p);
+      if (pos != null) {
+        const s2 = p.querySelector("#exLibSearch");
+        if (s2) { s2.focus(); try { s2.setSelectionRange(pos, pos); } catch (e) {} }
+      }
+    };
+    search.addEventListener("input", () => { exFilter.q = search.value; exFilter.limit = 60; redraw(); });
+    p.querySelector("#exLibEquip").addEventListener("change", (ev) => { exFilter.equip = ev.target.value; exFilter.limit = 60; redraw(); });
+    p.querySelector("#exLibCore").addEventListener("change", (ev) => { exFilter.onlyCore = ev.target.checked; exFilter.limit = 60; redraw(); });
+    p.querySelectorAll("[data-mf]").forEach(b => b.addEventListener("click", () => {
+      exFilter.muscle = b.dataset.mf; exFilter.limit = 60; redraw();
+    }));
+    const more = p.querySelector("#exLibMore");
+    if (more) more.addEventListener("click", () => { exFilter.limit += 60; redraw(); });
+
+    /* Bibliothek beim ersten Blick in den Tab holen und dann neu zeichnen. */
+    if (libState === "idle") loadLibrary(() => { if (tab === "exercises") renderExercises(p); });
+  }
+
+  /* ==========================================================================
+     MUSKEL-HEATMAP
+     --------------------------------------------------------------------------
+     Zwei stilisierte Körperansichten, eingefärbt nach den Sätzen der letzten
+     sieben Tage. Das beantwortet in einer Sekunde die Frage, für die man sonst
+     den Verlauf durchgehen müsste: Was ist zu kurz gekommen?
+
+     Zählweise: ein Satz zählt für den PRIMÄREN Muskel voll, für sekundäre
+     halb. Bankdrücken ist Brusttraining und Trizepstraining — aber nicht zu
+     gleichen Teilen. Ohne diese Gewichtung sähe jeder Drückplan so aus, als
+     wäre der Trizeps genauso bedient wie die Brust.
+     ========================================================================== */
+  const SECONDARY_WEIGHT = 0.5;
+
+  function muscleLoad(days) {
+    const since = new Date(Date.now() - (days || 7) * 864e5);
+    const load = {};
+    S.sessions().forEach(s => {
+      if (new Date(s.date) < since) return;
+      (s.exercises || []).forEach(e => {
+        const n = workingSets(e).length;
+        if (!n) return;
+        const fm = fineMuscles(exById(e.exId));
+        fm.primary.forEach(m => { load[m] = (load[m] || 0) + n; });
+        fm.secondary.forEach(m => { load[m] = (load[m] || 0) + n * SECONDARY_WEIGHT; });
+      });
+    });
+    return load;
+  }
+
+  /* Mannequin-Grundform — dieselbe für Vorder- und Rückansicht. Sie trägt
+     keine Bedeutung, sie gibt den Muskelflächen nur einen Körper. */
+  const BODY_BASE =
+    '<circle cx="60" cy="17" r="11" class="mmap-base"/>' +
+    '<rect x="55" y="25" width="10" height="9" rx="3" class="mmap-base"/>' +
+    '<rect x="42" y="33" width="36" height="62" rx="11" class="mmap-base"/>' +
+    '<rect x="45" y="92" width="30" height="18" rx="7" class="mmap-base"/>' +
+    '<rect x="26" y="40" width="12" height="36" rx="6" class="mmap-base"/>' +
+    '<rect x="82" y="40" width="12" height="36" rx="6" class="mmap-base"/>' +
+    '<rect x="22" y="72" width="11" height="36" rx="5.5" class="mmap-base"/>' +
+    '<rect x="87" y="72" width="11" height="36" rx="5.5" class="mmap-base"/>' +
+    '<rect x="42" y="104" width="16" height="48" rx="8" class="mmap-base"/>' +
+    '<rect x="62" y="104" width="16" height="48" rx="8" class="mmap-base"/>' +
+    '<rect x="44" y="148" width="13" height="46" rx="6.5" class="mmap-base"/>' +
+    '<rect x="63" y="148" width="13" height="46" rx="6.5" class="mmap-base"/>';
+
+  /* Muskelflächen je Ansicht. Ein Muskel darf mehrere Flächen haben
+     (linke und rechte Körperhälfte). */
+  const BODY_FRONT = {
+    neck:       ['<rect x="55" y="25" width="10" height="9" rx="3"/>'],
+    shoulders:  ['<ellipse cx="33" cy="45" rx="8" ry="7.5"/>', '<ellipse cx="87" cy="45" rx="8" ry="7.5"/>'],
+    chest:      ['<ellipse cx="51" cy="48" rx="8.5" ry="8"/>', '<ellipse cx="69" cy="48" rx="8.5" ry="8"/>'],
+    biceps:     ['<ellipse cx="32" cy="61" rx="5.5" ry="12"/>', '<ellipse cx="88" cy="61" rx="5.5" ry="12"/>'],
+    forearms:   ['<ellipse cx="27.5" cy="89" rx="5" ry="15"/>', '<ellipse cx="92.5" cy="89" rx="5" ry="15"/>'],
+    abdominals: ['<rect x="50" y="60" width="20" height="33" rx="6"/>'],
+    abductors:  ['<ellipse cx="45" cy="105" rx="5" ry="9"/>', '<ellipse cx="75" cy="105" rx="5" ry="9"/>'],
+    adductors:  ['<ellipse cx="55" cy="120" rx="4.5" ry="15"/>', '<ellipse cx="65" cy="120" rx="4.5" ry="15"/>'],
+    quadriceps: ['<ellipse cx="49" cy="126" rx="7.5" ry="22"/>', '<ellipse cx="71" cy="126" rx="7.5" ry="22"/>'],
+    calves:     ['<ellipse cx="50" cy="170" rx="6" ry="18"/>', '<ellipse cx="70" cy="170" rx="6" ry="18"/>']
+  };
+  const BODY_BACK = {
+    neck:         ['<rect x="55" y="25" width="10" height="9" rx="3"/>'],
+    traps:        ['<ellipse cx="60" cy="40" rx="17" ry="9"/>'],
+    shoulders:    ['<ellipse cx="33" cy="45" rx="8" ry="7.5"/>', '<ellipse cx="87" cy="45" rx="8" ry="7.5"/>'],
+    triceps:      ['<ellipse cx="32" cy="61" rx="5.5" ry="12"/>', '<ellipse cx="88" cy="61" rx="5.5" ry="12"/>'],
+    forearms:     ['<ellipse cx="27.5" cy="89" rx="5" ry="15"/>', '<ellipse cx="92.5" cy="89" rx="5" ry="15"/>'],
+    lats:         ['<ellipse cx="47" cy="60" rx="7" ry="14"/>', '<ellipse cx="73" cy="60" rx="7" ry="14"/>'],
+    "middle back":['<rect x="53" y="50" width="14" height="18" rx="4"/>'],
+    "lower back": ['<rect x="52" y="72" width="16" height="18" rx="4"/>'],
+    glutes:       ['<ellipse cx="51" cy="101" rx="9" ry="9"/>', '<ellipse cx="69" cy="101" rx="9" ry="9"/>'],
+    hamstrings:   ['<ellipse cx="49" cy="128" rx="7.5" ry="22"/>', '<ellipse cx="71" cy="128" rx="7.5" ry="22"/>'],
+    calves:       ['<ellipse cx="50" cy="170" rx="6" ry="18"/>', '<ellipse cx="70" cy="170" rx="6" ry="18"/>']
+  };
+
+  function bodyViewHTML(regions, load, max, label) {
+    const shapes = Object.keys(regions).map(m => {
+      const v = load[m] || 0;
+      /* Nie ganz durchsichtig: auch ein einziger Satz soll sichtbar sein,
+         volle Deckung erst beim Wochenmaximum. */
+      const o = v > 0 ? 0.28 + 0.72 * Math.min(1, v / max) : 0;
+      const cls = v > 0 ? "mmap-on" : "mmap-off";
+      const title = esc(fineLabel(m)) + ": " + (Math.round(v * 10) / 10) + " " + T("Sätze", "sets");
+      return regions[m].map(sh =>
+        sh.replace("/>", ' class="' + cls + '" style="opacity:' + o.toFixed(2) + '"><title>' + title + '</title></' +
+          (sh.indexOf("<rect") === 0 ? "rect" : "ellipse") + '>')
+      ).join("");
+    }).join("");
+    return '<figure class="mmap-fig">' +
+      '<svg viewBox="0 0 120 200" class="mmap-svg" role="img" aria-label="' + esc(label) + '">' +
+      BODY_BASE + shapes + '</svg>' +
+      '<figcaption class="mmap-cap">' + esc(label) + '</figcaption></figure>';
+  }
+
+  function heatmapHTML() {
+    const load = muscleLoad(7);
+    const vals = Object.values(load);
+    const max = vals.length ? Math.max.apply(null, vals) : 0;
+
+    if (!max) {
+      return '<div class="card" style="margin-bottom:18px">' +
+        '<h3 class="h-card" style="margin-bottom:6px">' + T("Muskelkarte (7 Tage)", "Muscle map (7 days)") + '</h3>' +
+        '<p class="muted small">' + T("Noch keine Sätze in den letzten sieben Tagen. Sobald du loggst, färbt sich hier ein, was du bedient hast — und es bleibt sichtbar, was nicht.", "No sets in the last seven days. Once you log, this fills in what you trained — and leaves visible what you did not.") + '</p></div>';
+    }
+
+    /* Vernachlässigt = im System bekannt, aber diese Woche ohne einen Satz.
+       Nacken bleibt außen vor, den trainiert kaum jemand gezielt. */
+    const known = Object.keys(window.MM_TRK_FINE || {}).filter(m => m !== "neck");
+    const missing = known.filter(m => !load[m]);
+    const ranked = known.filter(m => load[m]).sort((a, b) => load[b] - load[a]);
+
+    const rows = ranked.map(m =>
+      '<div class="msl-row"><span class="msl-label">' + esc(fineLabel(m)) + '</span>' +
+      '<div class="msl-track"><div class="msl-fill" style="width:' + (load[m] / max * 100) + '%"></div></div>' +
+      '<span class="msl-val mono">' + (Math.round(load[m] * 10) / 10) + '</span></div>').join("");
+
+    return '<div class="card" style="margin-bottom:18px">' +
+      '<h3 class="h-card" style="margin-bottom:4px">' + T("Muskelkarte (7 Tage)", "Muscle map (7 days)") + '</h3>' +
+      '<p class="muted small" style="margin-bottom:14px">' +
+        T("Sätze der letzten sieben Tage. Primärer Muskel zählt voll, unterstützender halb.",
+          "Sets from the last seven days. Primary muscle counts fully, supporting muscle by half.") + '</p>' +
+      '<div class="mmap-wrap">' +
+        bodyViewHTML(BODY_FRONT, load, max, T("Vorderseite", "Front")) +
+        bodyViewHTML(BODY_BACK, load, max, T("Rückseite", "Back")) +
+      '</div>' +
+      '<div class="mmap-legend">' + rows + '</div>' +
+      (missing.length
+        ? '<p class="mmap-gap"><strong>' + T("Diese Woche ohne Satz:", "No sets this week:") + '</strong> ' +
+          missing.map(m => esc(fineLabel(m))).join(", ") + '</p>'
+        : '<p class="mmap-gap mmap-gap-ok">' + T("Diese Woche kam jede Muskelgruppe dran.", "Every muscle group got work this week.") + '</p>') +
+      '</div>';
   }
 
   /* ==========================================================================
@@ -1107,10 +1524,18 @@
     }).join("");
 
     p.innerHTML =
+      heatmapHTML() +
       '<div class="card" style="margin-bottom:18px"><h3 class="h-card" style="margin-bottom:14px">' + T("Volumen (8 Wochen)", "Volume (8 weeks)") + '</h3>' +
       '<div class="ins-bars">' + bars + '</div></div>' +
-      '<div class="card" style="margin-bottom:18px"><h3 class="h-card" style="margin-bottom:14px">' + T("Sätze pro Muskel (7 Tage)", "Sets per muscle (7 days)") + '</h3>' + muscleRows + '</div>' +
+      '<div class="card" style="margin-bottom:18px"><h3 class="h-card" style="margin-bottom:14px">' + T("Sätze pro Muskelgruppe (7 Tage)", "Sets per muscle group (7 days)") + '</h3>' + muscleRows + '</div>' +
       '<div class="card"><h3 class="h-card" style="margin-bottom:14px">' + T("Kraft-Rekorde (e1RM)", "Strength records (e1RM)") + '</h3><div class="mini-stat-grid">' + coreRows + '</div></div>';
+
+    /* Die Heatmap braucht die feinen Muskeln jeder geloggten Übung. Stammt
+       eine davon aus der Bibliothek, muss die geladen sein — sonst fehlt
+       genau die Zeile, die der Nutzer sucht. */
+    if (libState === "idle" && S.sessions().some(s => (s.exercises || []).some(e => String(e.exId).indexOf("fx_") === 0))) {
+      loadLibrary(() => { if (tab === "insights") renderInsights(p); });
+    }
   }
 
   /* ==========================================================================

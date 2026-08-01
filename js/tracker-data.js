@@ -78,6 +78,50 @@ window.MM_TRK_MUSCLES = {
   other: { de: "Sonstige", en: "Other" }
 };
 
+/* ==========================================================================
+   FEINE MUSKELN
+   --------------------------------------------------------------------------
+   Die sechs groben Gruppen oben bleiben, wofür sie da sind: Filter und
+   Alt-Daten. Für die Heatmap sind sie zu grob — "Beine" sagt nichts darüber,
+   ob Quadrizeps oder Beinbeuger drankam.
+
+   Diese 17 Schlüssel stammen aus der Übungsbibliothek und sind bewusst
+   identisch benannt, damit Bibliothek und Heatmap dieselbe Sprache sprechen.
+   "group" ordnet jeden feinen Muskel seiner groben Gruppe zu.
+   ========================================================================== */
+window.MM_TRK_FINE = {
+  chest:        { de: "Brust",            en: "Chest",       group: "chest" },
+  lats:         { de: "Latissimus",       en: "Lats",        group: "back" },
+  "middle back":{ de: "Mittlerer Rücken", en: "Middle Back", group: "back" },
+  "lower back": { de: "Unterer Rücken",   en: "Lower Back",  group: "back" },
+  traps:        { de: "Trapez",           en: "Traps",       group: "back" },
+  shoulders:    { de: "Schultern",        en: "Shoulders",   group: "shoulders" },
+  biceps:       { de: "Bizeps",           en: "Biceps",      group: "arms" },
+  triceps:      { de: "Trizeps",          en: "Triceps",     group: "arms" },
+  forearms:     { de: "Unterarme",        en: "Forearms",    group: "arms" },
+  quadriceps:   { de: "Quadrizeps",       en: "Quadriceps",  group: "legs" },
+  hamstrings:   { de: "Beinbeuger",       en: "Hamstrings",  group: "legs" },
+  glutes:       { de: "Gesäß",            en: "Glutes",      group: "legs" },
+  calves:       { de: "Waden",            en: "Calves",      group: "legs" },
+  adductors:    { de: "Adduktoren",       en: "Adductors",   group: "legs" },
+  abductors:    { de: "Abduktoren",       en: "Abductors",   group: "legs" },
+  abdominals:   { de: "Bauch",            en: "Abdominals",  group: "core" },
+  neck:         { de: "Nacken",           en: "Neck",        group: "other" }
+};
+
+/* Gerätenamen — die Bibliothek bringt mehr Geräte mit als die kuratierte
+   Liste (Kettlebell, Bänder). */
+window.MM_TRK_EQUIP = {
+  barbell:    { de: "Langhantel",   en: "Barbell" },
+  dumbbell:   { de: "Kurzhantel",   en: "Dumbbell" },
+  machine:    { de: "Maschine",     en: "Machine" },
+  cable:      { de: "Kabelzug",     en: "Cable" },
+  bodyweight: { de: "Körpergewicht", en: "Bodyweight" },
+  kettlebell: { de: "Kettlebell",   en: "Kettlebell" },
+  bands:      { de: "Bänder",       en: "Bands" },
+  other:      { de: "Sonstiges",    en: "Other" }
+};
+
 window.MM_TRK_TEMPLATES = [
   { id: "fullA", name: { de: "Ganzkörper A", en: "Full Body A" }, exIds: ["squat", "bench", "barbell_row", "leg_curl", "lateral_raise", "plank"] },
   { id: "fullB", name: { de: "Ganzkörper B", en: "Full Body B" }, exIds: ["rdl", "ohp", "lat_pulldown", "lunge", "barbell_curl", "hanging_leg_raise"] },

@@ -2424,6 +2424,102 @@ input[type="range"]::-moz-range-thumb {
 .msl-fill { height:100%; background:linear-gradient(90deg,#258CFF,#16C4F4); border-radius:5px; }
 .msl-val { flex:0 0 24px; text-align:right; font-size:0.85rem; color:var(--text); }
 
+/* ==========================================================================
+   ÜBUNGSBIBLIOTHEK — Karten mit Foto, Filterleiste, Detail
+   ========================================================================== */
+.ex-lib-head { margin-bottom:14px; }
+.ex-lib-head .ex-picker-search { width:100%; margin-bottom:0; }
+.ex-lib-controls { display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin-top:10px; }
+.ex-lib-select {
+  background:var(--card-2); border:1px solid var(--line); color:var(--text);
+  border-radius:8px; padding:7px 10px; font-size:0.84rem; min-width:180px; width:auto;
+}
+.ex-lib-toggle { display:inline-flex; align-items:center; gap:7px; font-size:0.84rem; color:var(--muted); cursor:pointer; }
+.ex-lib-toggle input { accent-color:var(--accent); width:15px; height:15px; }
+
+.ex-card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(258px,1fr)); gap:10px; }
+.ex-card {
+  position:relative; display:flex; align-items:center; gap:12px; width:100%; text-align:left;
+  background:var(--card); border:1px solid var(--line); border-radius:12px;
+  padding:10px 12px; cursor:pointer; transition:border-color 0.2s, transform 0.15s;
+}
+.ex-card:hover { border-color:var(--accent-line); transform:translateY(-1px); }
+.ex-thumb {
+  flex:0 0 56px; width:56px; height:56px; border-radius:9px; object-fit:cover;
+  background:var(--bg-2); border:1px solid var(--line);
+}
+/* Ohne Foto: gleiche Fläche, damit die Karten nicht springen. Gilt auch für
+   Bilder, die nicht geladen werden konnten (offline) — js/tracker.js hängt
+   diese Klasse dann nach. */
+.ex-thumb-empty {
+  display:flex; align-items:center; justify-content:center;
+  color:var(--muted-2); font-size:1rem;
+}
+img.ex-thumb-empty { object-fit:none; }
+.ex-card-body { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.ex-card-name { font-weight:600; color:var(--text); font-size:0.92rem; line-height:1.25; }
+.ex-card-meta { font-size:0.74rem; color:var(--muted); }
+.ex-card-pr { font-size:0.7rem; color:var(--accent-2); }
+.ex-badge-core { position:absolute; top:8px; right:10px; color:var(--amber); font-size:0.78rem; }
+
+/* Detail-Fenster */
+.ex-detail-media { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; }
+.ex-detail-media img {
+  width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:10px;
+  background:var(--bg-2); border:1px solid var(--line);
+}
+.ex-detail-tags { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:12px; }
+.ex-muscle-tag.is-core { color:var(--amber); background:rgba(245,180,60,0.10); border-color:rgba(245,180,60,0.35); }
+.ex-mchips { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
+.ex-mchip {
+  font-size:0.72rem; padding:3px 9px; border-radius:100px;
+  background:var(--card-2); border:1px solid var(--line); color:var(--muted);
+}
+.ex-mchip.is-primary { background:var(--accent-soft); border-color:var(--accent-line); color:var(--accent-2); font-weight:600; }
+.ex-detail-h { font-family:var(--font-display); font-size:0.98rem; color:var(--text); margin:4px 0 8px; }
+.ex-steps { margin:0 0 8px; padding-left:20px; }
+.ex-steps li { font-size:0.86rem; color:var(--muted); line-height:1.55; margin-bottom:6px; }
+.ex-steps-note { font-size:0.7rem; margin-bottom:16px; }
+
+/* Picker-Zeile mit Vorschaubild */
+.ex-pick-thumb {
+  flex:0 0 34px; width:34px; height:34px; border-radius:7px; object-fit:cover;
+  background:var(--bg-2); border:1px solid var(--line);
+}
+.ex-pick-name { flex:1; min-width:0; }
+.ex-pick-star { color:var(--amber); font-size:0.76rem; }
+/* Mit Vorschaubild braucht die Zeile weniger Innenabstand, sonst wird die
+   Liste im laufenden Training unnötig lang. */
+.ex-picker-list .ex-pick { padding:9px 12px; }
+
+/* ==========================================================================
+   MUSKELKARTE (Heatmap)
+   ========================================================================== */
+.mmap-wrap { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:18px; }
+.mmap-fig { margin:0; text-align:center; }
+.mmap-svg { width:100%; max-width:190px; height:auto; }
+.mmap-cap {
+  font-family:var(--font-mono); font-size:0.64rem; letter-spacing:0.1em;
+  text-transform:uppercase; color:var(--muted-2); margin-top:4px;
+}
+/* Grundform trägt keine Aussage — sie darf nie mit den Farbflächen konkurrieren. */
+.mmap-base { fill:var(--line); }
+.mmap-on { fill:var(--accent); }
+.mmap-off { fill:none; }
+.mmap-legend { margin-bottom:4px; }
+.mmap-legend .msl-label { flex:0 0 118px; }
+.mmap-gap {
+  font-size:0.78rem; color:var(--muted); line-height:1.5;
+  border-top:1px solid var(--line); padding-top:12px; margin:12px 0 0;
+}
+.mmap-gap strong { color:var(--amber); font-weight:600; }
+.mmap-gap-ok { color:var(--green); }
+
+@media (max-width:520px) {
+  .ex-card-grid { grid-template-columns:1fr; }
+  .mmap-legend .msl-label { flex:0 0 96px; font-size:0.8rem; }
+}
+
 /* --- Wochenplan-Kalender & Heute-Karte (Gym-Tracker) --- */
 .today-card { margin-bottom:16px; border-left:3px solid var(--accent); }
 .today-card.gym { border-left-color:var(--amber); background:linear-gradient(135deg,var(--accent-soft),transparent); }
