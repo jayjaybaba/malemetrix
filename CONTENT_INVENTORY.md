@@ -29,25 +29,39 @@ Auditiert am tatsächlichen Repo-Stand `cdc96d9`. Frühere Berichte nicht vertra
 
 ## Referenzseite — `anabole-matrix.html`
 
-Freie, indexierte Referenz: **11 Signalwege × 12 Hebel** als Matrix, dazu
-Signalweg-Karte (SVG), Detailraster je Weg und Hebel (Dosis · Zeitfenster ·
-Nachweis · häufigster Fehler · Grenze), Trigger-Plan über eine Woche und der
-ehrliche Vergleich mit Substanzen.
+Freie, indexierte Referenz: **13 Signalwege × 14 Hebel** als Matrix, dazu die
+multiplikative Rechnung (Zuwachs = Reiz × Baumaterial × Kapazität × Erholung −
+Bremsen), Signalweg-Karte (SVG), Detailraster je Weg und Hebel (Dosis ·
+Zeitfenster · Nachweis · häufigster Fehler · Grenze), der Abschnitt „Wege ohne
+steuerbaren Hebel“, Trigger-Plan über eine Woche und der ehrliche Vergleich
+mit Substanzen.
 
 - **Datengetrieben:** `js/anabole-matrix-data.js` (Inhalt) +
   `js/anabole-matrix.js` (Darstellung). Inhalt wird nur in der Datendatei
   geändert — der Test hält die Trennung fest.
-- **Evidenz:** 11 web-verifizierte Arbeiten mit DOI und kanonischer URL.
-  Fünf davon stehen identisch im Wissensgraph (Morton 2018, Schoenfeld 2017,
-  Kreider 2017, Watson 2015, Bhasin 2018), sechs sind für diese Seite ergänzt
+- **Zwei Evidenzachsen:** `evidenz` (STARK/MITTEL/SCHWACH) sagt, wie sicher
+  der Beleg ist; `evidenzArt` (HUMAN-LANGZEIT · HUMAN-AKUT · PRÄKLINISCH ·
+  LEITLINIE · MECHANISMUS) sagt, welcher Art er ist. Ohne die zweite Achse
+  verschwimmt „Mechanismus belegt“ mit „Hebel belegt“.
+- **Evidenz:** 17 web-verifizierte Arbeiten mit DOI und kanonischer URL.
+  Fünf stehen identisch im Wissensgraph (Morton 2018, Schoenfeld 2017,
+  Kreider 2017, Watson 2015, Bhasin 2018), zwölf sind für diese Seite ergänzt
   (West 2012, Morton AR 2018, Leproult 2011, Refalo 2023, Bhasin 1996,
-  Bhasin 2001). Wo keine Landmark-Quelle vorliegt (SW05, SW09, SW10), steht
-  das als `evidenzNote` an der Aussage — es wird keine erfunden.
-- **Leitplanken** (`tools-dev/tests/anabole-matrix.test.js`, 62 Prüfungen):
+  Bhasin 2001, Stec 2016, Snijders 2017, Damas 2016, Schoenfeld 2016/Pause,
+  Lange 2002, Baggish 2017). Wo keine Landmark-Quelle vorliegt (SW05, SW09,
+  SW10), steht das als `evidenzNote` an der Aussage — es wird keine erfunden.
+- **Wege ohne Hebel** (`OHNE_HEBEL`, 7 Einträge): YAP/TAZ, MAPK,
+  Calcineurin/NFAT, HGF/IL-6/Notch/Wnt, pharmakologische Myostatin-Hemmung,
+  β₂-Adrenozeptor, GH/IGF-1/Insulin extern. Sie stehen bewusst außerhalb der
+  Matrix — eine Zeile ohne Hebel wäre eine leere Zeile —, aber auf der Seite,
+  weil unter genau diesen Namen Präparate verkauft werden.
+- **Leitplanken** (`tools-dev/tests/anabole-matrix.test.js`, 94 Prüfungen):
   keine Bremse als „schaltet direkt“, keine Evidenzstufe STARK ohne Quelle,
-  keine unbenutzte oder unvollständige Quelle, keine Dosieranweisung für
-  Substanzen — und die Passage „Was Substanzen anders machen“ kann nicht
-  still verschwinden.
+  kein MECHANISMUS-Eintrag mit Studie, keine unbenutzte oder unvollständige
+  Quelle, keine Dosieranweisung für Substanzen, jeder Signalweg gehört zu
+  einem Faktor der Rechnung — und die Passagen „Was Substanzen anders machen“
+  samt Konvergenz-Argument können nicht still verschwinden. Alle Zahlen im
+  Fließtext werden gegen die Daten geprüft.
 - **Einstiege:** Karte in `blog.html`, Kontextlink in
   `blog/testosteron-natuerlich-steigern.html`, Eintrag in `sitemap.xml`.
 

@@ -62,25 +62,24 @@
       "<thead><tr>" + kopf + "</tr></thead><tbody>" + zeilen + "</tbody></table>");
   }
 
-  /* ============================================================ KENNZAHLEN */
+  /* ============================================================ KENNZAHLEN
+     Alle Zahlen werden gerechnet, keine gepflegt. Wer eine Matrixzelle
+     ändert, ändert die Kopfzeile mit. */
   function renderKennzahlen() {
-    var direkt = 0, offen = D.offeneWege().length;
+    var direkt = 0;
     D.hebel.forEach(function (h) {
       var z = D.matrix[h.id] || {};
       Object.keys(z).forEach(function (k) { if (z[k] === 2) direkt++; });
     });
     var breit = D.hebel.slice().sort(function (a, b) { return D.deckung(b.id) - D.deckung(a.id); })[0];
-    var trainingSchlafEssen = D.hebel.filter(function (h) {
-      return ["H01", "H02", "H03", "H04", "H05", "H06", "H07", "H08"].indexOf(h.id) >= 0;
-    }).length;
 
     put("amZahlen",
       metric(D.signalwege.length, "Signalwege") +
       metric(D.hebel.length, "steuerbare Hebel") +
       metric(direkt, "direkte Schaltpunkte") +
-      metric(trainingSchlafEssen + '<small> / ' + D.hebel.length + "</small>", "sind Training, Essen, Schlaf") +
+      metric(D.formel.faktoren.length, "Faktoren, multipliziert") +
       metric(D.deckung(breit.id) + '<small> Wege</small>', "breitester Hebel: " + breit.kurz) +
-      metric(offen, "Wege ohne Hebel", offen > 0 ? "is-watch" : ""));
+      metric(D.ohneHebel.length, "Wege ohne steuerbaren Hebel", "is-watch"));
   }
   function metric(v, k, mod) {
     return '<div class="mm-metric ' + (mod || "") + '"><span class="v">' + v + '</span><span class="k">' + esc(k) + "</span></div>";
@@ -119,6 +118,7 @@
         '<dl class="am-defs">' + reihen + "</dl>" +
         '<div class="am-foot">' +
           '<span class="am-ev ev-' + w.evidenz.toLowerCase() + '">EVIDENZ ' + esc(w.evidenz) + "</span>" +
+          '<span class="am-art">' + esc(w.evidenzArt) + "</span>" +
           quellMarken(w.quellen) +
           (hebel ? '<span class="am-chips">' + hebel + "</span>" : "") +
         "</div>" +
@@ -151,10 +151,50 @@
         "</dl>" +
         '<div class="am-foot">' +
           '<span class="am-ev ev-' + h.evidenz.toLowerCase() + '">EVIDENZ ' + esc(h.evidenz) + "</span>" +
+          '<span class="am-art">' + esc(h.evidenzArt) + "</span>" +
           quellMarken(h.quellen) +
           '<span class="am-deck">' + D.deckung(h.id) + " von " + D.signalwege.length + " Wegen</span>" +
         "</div>" +
         (wege ? '<span class="am-chips">' + wege + "</span>" : "") +
+        (h.evidenzNote ? '<p class="am-note">' + esc(h.evidenzNote) + "</p>" : "") +
+        "</article>";
+    }).join(""));
+  }
+
+  /* ============================================================== FORMEL
+     Die multiplikative Logik. Sie steht vor der Matrix, weil sie erklärt,
+     warum es eine Matrix ist und keine Rangliste. */
+  function renderFormel() {
+    var f = D.formel;
+    put("amFormel",
+      '<p class="am-formel-satz">' + esc(f.satz) + "</p>" +
+      '<p class="am-formel-kern">' + esc(f.kern) + "</p>" +
+      '<div class="am-faktoren">' + f.faktoren.map(function (fa, i) {
+        var wege = fa.wege.map(function (id) {
+          var w = D.signalwege.filter(function (x) { return x.id === id; })[0];
+          return '<a class="am-chip" href="#' + esc(id) + '">' + esc(w ? w.kurz : id) + "</a>";
+        }).join("");
+        return '<div class="am-faktor">' +
+          '<span class="am-faktor-n">' + (i + 1) + "</span>" +
+          "<div><b>" + esc(fa.name) + "</b>" +
+          '<p class="am-faktor-f">' + esc(fa.frage) + "</p>" +
+          '<p class="am-faktor-l"><span>Steht bei null, wenn:</span> ' + esc(fa.leer) + "</p>" +
+          '<span class="am-chips">' + wege + "</span></div></div>";
+      }).join("") + "</div>" +
+      '<p class="am-formel-folge">' + esc(f.folgerung) + "</p>");
+  }
+
+  /* ====================================================== WEGE OHNE HEBEL
+     Real, aber nicht steuerbar. Sie stehen außerhalb der Matrix, weil eine
+     Zeile ohne Hebel eine leere Zeile wäre — und trotzdem auf der Seite,
+     weil genau unter diesen Namen Präparate verkauft werden. */
+  function renderOhneHebel() {
+    put("amOhne", D.ohneHebel.map(function (o) {
+      return '<article class="am-oh" id="' + esc(o.id) + '">' +
+        '<header class="am-oh-h"><h3>' + esc(o.name) + "</h3>" +
+        '<span class="am-art">' + esc(o.art) + "</span></header>" +
+        '<p class="am-oh-was">' + esc(o.was) + "</p>" +
+        '<p class="am-oh-warum"><span>Warum kein Hebel:</span> ' + esc(o.warum) + "</p>" +
         "</article>";
     }).join(""));
   }
@@ -234,8 +274,10 @@
   function init() {
     renderMatrix();
     renderKennzahlen();
+    renderFormel();
     renderWege();
     renderHebel();
+    renderOhneHebel();
     renderWoche();
     renderVergleich();
     renderQuellen();
