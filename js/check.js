@@ -529,6 +529,10 @@
     const confColorOf = (lvl) => lvl === "HIGH" ? "var(--status-improving,#2dd4a7)" : lvl === "MODERATE" ? "var(--status-attention,#f5b54a)" : "var(--status-flag,#f06a6a)";
 
     let html = '';
+    /* Entscheidung des Matrix-Übergangs — wird beim Rendern gefüllt und
+       nach dem Einsetzen genau einmal für das Sichtbarkeits-Ereignis
+       gelesen. Kein Zustand, keine Speicherung. */
+    let matrixCta = null;
 
     /* ---------- 1. HERO (P14): Data-as-Design — die Zahl IST das Layout ---
        Massives Score-Readout + Mono-Systemzeile statt Ring-in-Karte.
@@ -1080,6 +1084,51 @@
       html += '</div>';
     })();
 
+    /* ---------- VERTIEFUNG: ANABOLE MATRIX -------------------------------
+       Reine Darstellungsschicht. Die Entscheidung, ob dieser Übergang
+       überhaupt erscheint, trifft MM_MATRIX_CTA.decide() aus bereits
+       berechneten Ergebnisdaten — dem primären Engpass und den von der
+       Engine gerankten secondaryPriorities. Hier wird nichts bewertet,
+       nichts gerechnet und nichts gespeichert.
+
+       Platz: NACH dem einen Auftrag, damit der primäre Auftrag die
+       Ergebnisführung behält. Bewusst kompakter als ein Ergebnisblock —
+       die Seite gilt bereits als dicht (VISUAL_SYSTEM, Score Result 7.0).
+       Genau EIN CTA, nie mehrere. */
+    (function () {
+      const M = window.MM_MATRIX_CTA;
+      if (!M) return;
+      let d = null;
+      try {
+        d = M.decide(r, MM.store.get("check_draft", null), MM.store.get("anabolic_check", null));
+      } catch (e) { return; }
+      if (!d || !d.context || !d.variant) return;
+
+      matrixCta = d;                                  // fürs Ereignis nach dem Rendern
+
+      if (d.variant === "quiet") {
+        /* Selbstcheck bereits abgeschlossen: kein zweites Mal als gleich
+           starke Empfehlung — aber der Zugang bleibt bestehen. */
+        html += '<p class="small muted" id="matrixCtaQuiet" style="margin:0 0 22px">' +
+          esc(M.COPY.quiet) + ' <a href="' + esc(M.COPY.ziel) + '" id="matrixCtaLink" ' +
+          'style="color:var(--accent-2)">Selbstcheck öffnen</a></p>';
+        return;
+      }
+
+      /* Ein Absatz statt zwei: Auf dem Telefon kostete die getrennte Zeile
+         für die Vorbelegung rund 60 px, ohne inhaltlich mehr zu sagen. */
+      html += '<div class="card dash-block" id="matrixCta" style="margin-bottom:22px">' +
+        '<span class="card-num">' + esc(M.COPY.kicker) + '</span>' +
+        /* h2 wie die übrigen Abschnittsüberschriften der Ergebnisseite —
+           unter der h1 des Scores. S15 in fixes-audit.test.js hält das fest. */
+        '<h2 style="margin:2px 0 6px;font-size:1rem">' + esc(M.COPY.titel) + '</h2>' +
+        '<p class="small muted" style="margin:0 0 12px">' + esc(M.COPY.text[d.context]) +
+        (d.prefill ? ' ' + esc(M.COPY.prefillHinweis) : '') + '</p>' +
+        '<a class="btn btn-primary btn-sm" href="' + esc(M.COPY.ziel) + '" id="matrixCtaLink" ' +
+        'aria-label="' + esc(M.COPY.button + " — " + M.COPY.titel) + '">' + esc(M.COPY.button) + '</a>' +
+        '</div>';
+    })();
+
     /* ---------- DEIN NÄCHSTER SCORE — Rückkehr ohne E-Mail, ohne Konto ----
        Ein Score ist eine Momentaufnahme; sein Wert entsteht im Vergleich.
        Deshalb hier ein echter Termin statt eines Newsletters: die .ics-Datei
@@ -1166,6 +1215,29 @@
     /* Wrapper, damit das Ergebnis denselben Seitenrand hat wie jede andere
        Seite — vorher wurde es randlos in die <section> geschrieben. */
     el.innerHTML = '<div class="result-wrap">' + html + '</div>';
+
+    /* ---------- Matrix-Übergang: Ereignisse -------------------------------
+       Dieselbe Konvention wie die übrigen CTAs der Seite (MM.track, Präfix
+       cta_, source: "score_result"). Übertragen werden nur Kategorien —
+       Engpass-Kontext und ein Ja/Nein zur Vorbelegung —, nie ein Score, nie
+       eine Antwort (Analytics-Invariante §91.23).
+       Das Sichtbarkeits-Ereignis feuert genau einmal je tatsächlicher
+       Anzeige: renderResult() setzt den Container jedes Mal neu, und
+       `data-track` wird bewusst NICHT gesetzt, damit der Klick nicht
+       zusätzlich über die Delegation in analytics.js doppelt zählt. */
+    (function () {
+      if (!matrixCta || !matrixCta.context) return;
+      const props = {
+        source: "score_result",
+        trigger_domain: matrixCta.context,
+        prefill_available: matrixCta.prefill ? "true" : "false"
+      };
+      if (MM.track) MM.track(matrixCta.variant === "quiet" ? "cta_matrix_view_quiet" : "cta_matrix_view", props);
+      const link = el.querySelector("#matrixCtaLink");
+      if (link) link.addEventListener("click", function () {
+        if (MM.track) MM.track("cta_matrix_click", props);
+      }, { once: true });
+    })();
     if (MM.renderTrust) MM.renderTrust();
 
     /* ---------- Telemetrie der Ergebnisseite (opt-in, kategorial) ---------- */

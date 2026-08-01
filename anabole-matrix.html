@@ -36,6 +36,9 @@
        ====================================================================== */
     .am-head { padding: calc(var(--header-h) + 48px) 0 8px; }
     .am-sec { padding: clamp(40px, 6vw, 72px) 0 0; }
+    /* Sprungziel #abgleich: ohne diesen Abstand landet die Überschrift
+       hinter dem festen Seitenkopf. */
+    .am-sec[id] { scroll-margin-top: calc(var(--header-h) + 12px); }
     .am-lede { max-width: 62ch; color: var(--muted); }
 
     /* ---- Signalweg-Karte ---- */
@@ -155,6 +158,9 @@
     .am-opt:hover { border-color: var(--line-strong); color: var(--text); }
     .am-opt.is-on { border-color: var(--accent-2); color: var(--text); background: rgba(22,196,244,0.07); }
     .am-opt:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+    .am-q.is-uebernommen { border-top-color: var(--accent-line); }
+    .am-q-src { display: block; margin-top: 5px; font-family: var(--font-mono); font-size: 0.54rem;
+      letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-2); }
     .am-q-ref { display: inline-block; margin-top: 10px; font-family: var(--font-mono); font-size: 0.56rem;
       letter-spacing: 0.12em; color: var(--muted-2); text-decoration: none; border-bottom: 1px dashed var(--line); }
     .am-q-ref:hover { color: var(--accent-2); }
@@ -582,6 +588,10 @@
 <script src="js/shop-data.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/main.js"></script>
+<!-- Gemeinsame Abbildung Score-Antwort → Matrix-Hebel. Dieselbe Datei nutzt
+     check.html, damit die Ergebnisseite keine Vorbelegung ankuendigt, die
+     hier nicht eingeloest wird. -->
+<script src="js/matrix-cta.js"></script>
 <script src="js/anabole-matrix-data.js"></script>
 <script src="js/anabole-matrix.js"></script>
 </body>

@@ -208,6 +208,10 @@
      Der Test in tools-dev/tests/anabole-matrix.test.js hält das fest. */
   var SPEICHER = "anabolic_check";
   var antworten = {};
+  /* Welche Antworten aus dem Score stammen. Nur Anzeigezustand, wird nicht
+     gespeichert — nach einem Neuladen sind alle Antworten gleichwertig
+     editierbar und werden nicht länger als übernommen ausgewiesen. */
+  var uebernommen = {};
 
   function ladeAntworten() {
     try {
@@ -223,35 +227,30 @@
 
   /* ---- Übernahme aus dem Score ----------------------------------------
      Nur lesend. Der Score bleibt unberührt: keine Rückschreibung, keine
-     Änderung an seiner Engine. Übernommen wird ausschließlich, was der
-     Score in vergleichbarer Auflösung erfasst — der Rest wird gefragt. */
+     Änderung an seiner Engine, keine zweite Kopie der Antworten.
+
+     Die Abbildung Score-Antwort → Hebel liegt in js/matrix-cta.js, weil die
+     Score-Ergebnisseite dieselbe Prüfung braucht, um zu entscheiden, ob sie
+     eine Vorbelegung überhaupt ankündigen darf. Läge sie doppelt vor, würde
+     die eine Seite versprechen, was die andere nicht einlöst.
+
+     Gelesen wird beides: `check_result.answers` nach einem abgeschlossenen
+     Score — check.js löscht `check_draft` beim Abschluss — und ersatzweise
+     der Entwurf eines noch laufenden Score-Durchgangs. */
+  function scoreRohdaten() {
+    if (!(window.MM && MM.store)) return null;
+    var res = null, draft = null;
+    try { res = MM.store.get("check_result", null); } catch (e) { res = null; }
+    try { draft = MM.store.get("check_draft", null); } catch (e) { draft = null; }
+    var M = window.MM_MATRIX_CTA;
+    if (M) return M.scoreAntworten(res, draft);
+    return (res && res.answers) || draft || null;
+  }
+
   function ausScore() {
-    var d = null;
-    try { d = (window.MM && MM.store) ? MM.store.get("check_draft", null) : null; } catch (e) { return {}; }
-    if (!d || typeof d !== "object") return {};
-    var v = {}, s;
-
-    if (Array.isArray(d.str_exercises)) {
-      var n = d.str_exercises.filter(function (x) { return x !== "keine" && x !== "core"; }).length;
-      v.H01 = n >= 4 ? 2 : (n >= 2 ? 1 : 0);
-    }
-    if (d.str_plan || d.str_log) {
-      var prog = d.str_plan === "progression", log = d.str_log === "app";
-      v.H05 = (prog && log) ? 2 : ((prog || log) ? 1 : 0);
-    }
-    s = { tracke: 2, "120to160": 2, gt160: 1, "80to120": 1, lt80: 0, keine_ahnung: 0 };
-    if (d.fuel_protein in s) v.H06 = s[d.fuel_protein];
-    s = { tracke: 2, gut: 2, grob: 1, nein: 0 };
-    if (d.fuel_calories in s) v.H07 = s[d.fuel_calories];
-    s = { gt8: 2, "7to8": 2, "6to7": 1, "5to6": 0, lt5: 0 };
-    if (d.rec_duration in s) v.H08 = s[d.rec_duration];
-    s = { nie: 2, "1x": 1, "2to3": 0 };
-    if (d.fuel_alcohol in s) v.H09 = s[d.fuel_alcohol];
-
-    var w = Number(d.waist), h = Number(d.height);
-    if (w > 0 && h > 0) { var q = w / h; v.H10 = q < 0.5 ? 2 : (q < 0.55 ? 1 : 0); }
-
-    return v;
+    var M = window.MM_MATRIX_CTA;
+    if (!M) return {};
+    try { return M.prefillFrom(scoreRohdaten()); } catch (e) { return {}; }
   }
 
   function renderCheck() {
@@ -273,7 +272,9 @@
     wrap.addEventListener("click", function (e) {
       var b = e.target.closest(".am-opt");
       if (!b) return;
-      antworten[b.getAttribute("data-hebel")] = Number(b.getAttribute("data-w"));
+      var h = b.getAttribute("data-hebel");
+      antworten[h] = Number(b.getAttribute("data-w"));
+      delete uebernommen[h];              // eigene Wahl ersetzt die Übernahme
       sichereAntworten();
       zeichneCheck();
     });
@@ -281,17 +282,27 @@
     var reset = el("amCheckReset");
     if (reset) reset.addEventListener("click", function () {
       antworten = {};
+      uebernommen = {};
       sichereAntworten();
       zeichneCheck();
     });
 
     var uebernahme = el("amCheckScore");
-    if (uebernahme) uebernahme.addEventListener("click", function () {
-      var v = ausScore();
-      Object.keys(v).forEach(function (k) { antworten[k] = v[k]; });
-      sichereAntworten();
-      zeichneCheck();
-    });
+    if (uebernahme) {
+      /* Der Knopf verspricht nur, was tatsächlich geht: Ohne verwertbare
+         Score-Antworten bleibt er deaktiviert statt wirkungslos zu klicken. */
+      var vorhanden = Object.keys(ausScore()).length;
+      if (!vorhanden) {
+        uebernahme.disabled = true;
+        uebernahme.title = "Keine übernehmbaren Antworten gefunden — mach zuerst den Score.";
+      }
+      uebernahme.addEventListener("click", function () {
+        var v = ausScore();
+        Object.keys(v).forEach(function (k) { antworten[k] = v[k]; uebernommen[k] = true; });
+        sichereAntworten();
+        zeichneCheck();
+      });
+    }
   }
 
   /* ---- Zeichnen: Auswahlzustand, Matrix-Einfärbung, Auswertung ---- */
@@ -302,6 +313,21 @@
       var an = antworten[b.getAttribute("data-hebel")] === Number(b.getAttribute("data-w"));
       b.classList.toggle("is-on", an);
       b.setAttribute("aria-pressed", an ? "true" : "false");
+    });
+
+    /* Übernommene Antworten sind als solche erkennbar und bleiben genauso
+       änderbar wie selbst gegebene. Sie sind eine Ableitung aus früheren
+       Angaben, kein gemessener Befund. */
+    document.querySelectorAll(".am-q").forEach(function (f) {
+      var h = f.getAttribute("data-hebel");
+      f.classList.toggle("is-uebernommen", !!uebernommen[h]);
+      var m = f.querySelector(".am-q-src");
+      if (uebernommen[h] && !m) {
+        m = document.createElement("span");
+        m.className = "am-q-src";
+        m.textContent = "aus deinem Score übernommen · änderbar";
+        f.querySelector("legend").appendChild(m);
+      } else if (!uebernommen[h] && m) { m.remove(); }
     });
 
     /* Matrix einfärben: Zeilen nach der eigenen Antwort, Spaltenmarker nach
