@@ -160,6 +160,24 @@
     return Object.keys(prefillFrom(scoreAntworten(result, draft))).length > 0;
   }
 
+  /* ================================================== ENHANCED-KONTEXT ====
+     Freischaltung des Stack-Abgleichs. Er ist ausschließlich für Nutzer
+     gedacht, die im Score ausdrücklich „Enhanced" angegeben UND Kategorien
+     genannt haben — für alle anderen existiert der Abschnitt nicht.
+
+     Bewusst NICHT freigeschaltet: `medical_trt` (ärztlich begleitete
+     Therapie ist ein anderer Kontext, dort entscheidet die Ärztin),
+     `former_enhanced` (nimmt nichts mehr) und `uncertain`/`unknown`.
+     „Möchte ich nicht angeben" wird nie als Kategorie gewertet. */
+  function enhancedStack(result) {
+    if (!istObjekt(result)) return null;
+    if (result.status !== "enhanced") return null;
+    var a = istObjekt(result.answers) ? result.answers : {};
+    var k = Array.isArray(a.enh_categories) ? a.enh_categories : [];
+    k = k.filter(function (x) { return typeof x === "string" && x && x !== "no_answer"; });
+    return k.length ? { kategorien: k } : null;
+  }
+
   /* ================================================ ZUSTAND SELBSTCHECK ===
      Nutzt den bestehenden Speicher des Selbstchecks (mm_anabolic_check).
      Kein zusätzlicher Statusschlüssel, keine Profil-Logik. */
@@ -222,6 +240,7 @@
     scoreAntworten: scoreAntworten,
     prefillAvailable: prefillAvailable,
     checkState: checkState,
+    enhancedStack: enhancedStack,
     decide: decide
   };
 })(typeof window !== "undefined" ? window : globalThis);

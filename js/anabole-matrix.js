@@ -415,6 +415,79 @@
       (r.vollstaendig ? "" : '<p class="am-ck-teil">Noch nicht alle Fragen beantwortet — die offenen Wege bleiben ausdrücklich unbewertet, statt als Versäumnis zu zählen.</p>');
   }
 
+  /* ====================================================== STACK-ABGLEICH
+     Nur für den Enhanced-Kontext. Ohne ihn existiert der Abschnitt nicht —
+     er wird nicht ausgeblendet, sondern gar nicht erst gefüllt.
+
+     Die Reihenfolge der Ausgabe ist die Aussage: erst was konvergiert, dann
+     was gar nicht berührt wird, dann die Kontrollmarker. Kein Präparat
+     bekommt eine „freigeschaltete" Spalte gefeiert. */
+  function renderStack() {
+    var sec = el("amStack");
+    if (!sec) return;
+    var M = window.MM_MATRIX_CTA;
+    if (!M) return;
+    var res = null;
+    try { res = (window.MM && MM.store) ? MM.store.get("check_result", null) : null; } catch (e) { return; }
+    var gate = M.enhancedStack(res);
+    if (!gate) return;
+
+    var r = D.bewerteStack(gate.kategorien);
+    if (!r.kategorien.length) return;
+
+    function wegChip(id) {
+      var w = D.signalwege.filter(function (x) { return x.id === id; })[0];
+      return '<a class="am-chip" href="#' + esc(id) + '">' + esc(w ? w.kurz : id) + "</a>";
+    }
+
+    var kopf = metric(r.kategorien.length, "Kategorien angegeben") +
+      metric(r.achsen.length, "anabole Achsen davon") +
+      metric(r.unberuehrt.length + '<small> / ' + D.signalwege.length + "</small>", "Wege unberührt", "is-watch") +
+      metric(r.kontrolle.length, "Marker zu kontrollieren", r.kontrolle.length ? "is-flag" : "");
+
+    var eintraege = r.eintraege.map(function (e) {
+      var s = e.daten;
+      var ziele = (s.achsen || []).map(wegChip).join("") +
+        (s.gegen || []).map(function (id) {
+          var w = D.signalwege.filter(function (x) { return x.id === id; })[0];
+          return '<a class="am-chip is-gegen" href="#' + esc(id) + '">↓ ' + esc(w ? w.kurz : id) + "</a>";
+        }).join("") +
+        (s.ausserhalb ? '<a class="am-chip" href="#' + esc(s.ausserhalb) + '">außerhalb der Matrix</a>' : "");
+      return '<article class="am-st-item' + (e.konvergiert ? " is-konvergent" : "") + '">' +
+        '<header class="am-st-h"><h3>' + esc(s.name) + "</h3>" +
+        (e.konvergiert ? '<span class="am-st-flag">öffnet keine neue Achse</span>' : "") + "</header>" +
+        '<p class="am-st-w">' + esc(s.wirkt) + "</p>" +
+        '<p class="am-st-g"><span>Was es nicht tut:</span> ' + esc(s.grenze) + "</p>" +
+        (ziele ? '<span class="am-chips">' + ziele + "</span>" : "") +
+        quellMarken(s.quellen) +
+        (s.evidenzNote ? '<p class="am-note">' + esc(s.evidenzNote) + "</p>" : "") +
+        "</article>";
+    }).join("");
+
+    var konv = r.konvergenz.length
+      ? '<p class="am-st-kern"><strong>' + r.konvergenz.length +
+        (r.konvergenz.length === 1 ? " deiner Kategorien öffnet" : " deiner Kategorien öffnen") +
+        " keine Achse, die nicht ohnehin offen wäre.</strong> Verschiedene Rezeptoren, dieselben Knoten — die Wirkungen laufen zusammen, die Nebenwirkungen nicht.</p>"
+      : "";
+
+    var unber = '<div class="am-st-unber"><span class="k">Kein Präparat dieser Liste berührt</span>' +
+      '<div class="am-chips">' + r.unberuehrt.map(wegChip).join("") + "</div>" +
+      "<p>Das sind die Wege, die weiterhin nur über Reiz, Baumaterial, Kapazität und Erholung laufen. " +
+      "Der Selbstcheck weiter oben sagt dir, welche davon dein Verhalten aktuell adressiert.</p></div>";
+
+    var kontrolle = r.kontrolle.length
+      ? '<div class="am-st-kontrolle"><span class="k">Was dazu kontrolliert gehört</span>' +
+        '<div class="am-chips">' + r.kontrolle.map(function (m) { return '<span class="am-chip">' + esc(m) + "</span>"; }).join("") + "</div>" +
+        '<p>Diese Marker gehören zum ärztlichen Gespräch und ins Labor — die <a href="checkliste.html">Blutwerte-Checkliste</a> führt sie zum Mitnehmen. ' +
+        "MaleMetrix bewertet hier nichts davon und empfiehlt weder eine Substanz noch eine Dosis.</p></div>"
+      : "";
+
+    put("amStackBody",
+      '<div class="mm-metric-row">' + kopf + "</div>" + konv + unber +
+      '<div class="am-st-list">' + eintraege + "</div>" + kontrolle);
+    sec.hidden = false;
+  }
+
   /* ========================================================= TRIGGER-PLAN */
   function renderWoche() {
     put("amWoche", D.woche.map(function (t) {
@@ -494,6 +567,7 @@
     renderWege();
     renderHebel();
     renderOhneHebel();
+    renderStack();
     renderWoche();
     renderVergleich();
     renderQuellen();

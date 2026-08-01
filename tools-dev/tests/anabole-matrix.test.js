@@ -107,6 +107,7 @@ group("Quellen · DOI, Adresse, keine Platzhalter");
   D.signalwege.forEach(function (w) { pruefe(w.quellen, w.id); });
   D.hebel.forEach(function (h) { pruefe(h.quellen, h.id); });
   D.vergleich.punkte.forEach(function (p, i) { pruefe(p.quellen, "vergleich[" + i + "]"); });
+  Object.keys(D.substanzKategorien).forEach(function (k) { pruefe(D.substanzKategorien[k].quellen, "stack/" + k); });
   ok(tot.length === 0, "kein Verweis zeigt auf eine Quelle, die es nicht gibt" + (tot.length ? " (" + tot.join(", ") + ")" : ""));
 
   /* Umgekehrt: eine Quelle, die nirgends benutzt wird, ist Ballast. */
@@ -114,6 +115,9 @@ group("Quellen · DOI, Adresse, keine Platzhalter");
   D.signalwege.forEach(function (w) { (w.quellen || []).forEach(function (q) { benutzt[q] = 1; }); });
   D.hebel.forEach(function (h) { (h.quellen || []).forEach(function (q) { benutzt[q] = 1; }); });
   D.vergleich.punkte.forEach(function (p) { (p.quellen || []).forEach(function (q) { benutzt[q] = 1; }); });
+  Object.keys(D.substanzKategorien).forEach(function (k) {
+    (D.substanzKategorien[k].quellen || []).forEach(function (q) { benutzt[q] = 1; });
+  });
   var unbenutzt = ids.filter(function (id) { return !benutzt[id]; });
   ok(unbenutzt.length === 0, "jede geführte Quelle wird auch verwendet" + (unbenutzt.length ? " (" + unbenutzt.join(", ") + ")" : ""));
 })();
@@ -393,6 +397,96 @@ group("Selbstcheck · Projektion, keine Messung");
   ok(!/MM\.store\.set\("check_|MM\.store\.set\('check_/.test(view),
     "der Selbstcheck schreibt nie in die Speicherbereiche des Scores");
   ok(!/check-data|CHECK_DATA|MM_CHECK/.test(view), "und rührt die kalibrierte Score-Engine nicht an");
+})();
+
+/* ===== 6c) Stack-Abgleich: nur Enhanced, nur Kategorien, kein Planer =====
+   Die Ansicht bildet die Substanz-KATEGORIEN des Scores auf die Matrix ab.
+   Sie darf drei Dinge nie tun: für andere Kontexte erscheinen, unter die
+   Kategorie-Ebene gehen, oder eine zusätzliche Substanz als Gewinn zeigen. */
+group("Stack-Abgleich · Konvergenz zeigen, nicht Eskalation belohnen");
+(function () {
+  require(path.join(ROOT, "js/matrix-cta.js"));
+  var CTA = globalThis.MM_MATRIX_CTA || (global.window && global.window.MM_MATRIX_CTA);
+  var K = D.substanzKategorien;
+
+  /* --- Freischaltung --- */
+  function res(status, kat) { return { status: status, answers: { enh_categories: kat } }; }
+  ok(!!CTA.enhancedStack(res("enhanced", ["testosterone"])), "Enhanced mit Kategorie schaltet frei");
+  ["natural", "medical_trt", "former_enhanced", "uncertain", "unknown"].forEach(function (s) {
+    ok(CTA.enhancedStack(res(s, ["testosterone"])) === null, s + " schaltet NICHT frei");
+  });
+  ok(CTA.enhancedStack(res("enhanced", [])) === null, "Enhanced ohne Kategorie schaltet nicht frei");
+  ok(CTA.enhancedStack(res("enhanced", ["no_answer"])) === null, "„Möchte ich nicht angeben“ zählt nie als Kategorie");
+  [null, undefined, {}, { status: "enhanced" }, { status: "enhanced", answers: "x" }].forEach(function (bad, i) {
+    var r; try { r = CTA.enhancedStack(bad); } catch (e) { r = "EX"; }
+    ok(r === null, "unbrauchbare Eingabe #" + i + " → keine Freischaltung");
+  });
+
+  /* --- Jede Kategorie des Scores ist abgebildet --- */
+  var scoreKats = ["testosterone", "aas", "oral", "gh", "glp1", "thyroid", "insulin", "stimulants", "peptides", "other"];
+  var fehlend = scoreKats.filter(function (k) { return !K[k]; });
+  ok(fehlend.length === 0, "jede Kategorie aus enh_categories ist abgebildet" + (fehlend.length ? " (" + fehlend.join(", ") + ")" : ""));
+  var engine = read("js/check-data.js");
+  var imScore = scoreKats.filter(function (k) { return new RegExp('v: "' + k + '"').test(engine); });
+  ok(imScore.length === scoreKats.length, "und jede davon wird vom Score wirklich erhoben (" + imScore.length + "/" + scoreKats.length + ")");
+
+  /* --- Verweise zeigen nur auf echte Wege bzw. echte Nicht-Hebel --- */
+  var ohneIds = D.ohneHebel.map(function (o) { return o.id; });
+  var tot = [];
+  Object.keys(K).forEach(function (k) {
+    (K[k].achsen || []).concat(K[k].gegen || []).forEach(function (w) { if (wegIds.indexOf(w) < 0) tot.push(k + "→" + w); });
+    if (K[k].ausserhalb && ohneIds.indexOf(K[k].ausserhalb) < 0) tot.push(k + "→" + K[k].ausserhalb);
+    (K[k].quellen || []).forEach(function (q) { if (!D.quelle(q)) tot.push(k + "→Quelle " + q); });
+    if (!K[k].name || !K[k].wirkt || !K[k].grenze) tot.push(k + " unvollständig");
+  });
+  ok(tot.length === 0, "kein Verweis zeigt ins Leere" + (tot.length ? " (" + tot.join(", ") + ")" : ""));
+
+  /* --- Der Kernbefund: Konvergenz --- */
+  var einer = D.bewerteStack(["testosterone"]);
+  ok(einer.achsen.length === 1 && einer.unberuehrt.length === D.signalwege.length - 1,
+    "eine Substanz öffnet eine Achse — zwölf Wege bleiben unberührt");
+
+  var zwei = D.bewerteStack(["testosterone", "aas"]);
+  ok(zwei.achsen.length === 1, "eine zweite androgene Kategorie öffnet KEINE zusätzliche Achse");
+  ok(zwei.konvergenz.indexOf("aas") >= 0, "… und wird ausdrücklich als konvergent ausgewiesen");
+  ok(zwei.kontrolle.length >= einer.kontrolle.length, "… während die Kontrollmarker nicht weniger werden");
+
+  var voll = D.bewerteStack(["testosterone", "aas", "gh", "stimulants", "glp1"]);
+  ok(voll.kategorien.length === 5 && voll.achsen.length === 2,
+    "fünf Kategorien ergeben zwei anabole Achsen (" + voll.achsen.length + ")");
+  ok(voll.unberuehrt.length >= 7, "und lassen mindestens sieben Wege unberührt (" + voll.unberuehrt.length + ")");
+  ok(voll.gegen.length > 0, "eine Kategorie wirkt ausdrücklich in die Gegenrichtung");
+  ok(voll.ausserhalb.indexOf("OH6") >= 0, "die β₂-Achse wird als außerhalb der Matrix geführt");
+
+  /* Mehr Kategorien dürfen die unberührten Wege nie erhöhen und die
+     Kontrollmarker nie senken — sonst würde die Ansicht Eskalation belohnen. */
+  ok(voll.unberuehrt.length < einer.unberuehrt.length, "mehr Kategorien lassen nicht MEHR Wege unberührt");
+  ok(voll.kontrolle.length > einer.kontrolle.length, "aber mehr Marker zu kontrollieren (" + einer.kontrolle.length + " → " + voll.kontrolle.length + ")");
+
+  /* --- Reinheit --- */
+  var eingabe = ["testosterone", "gh"];
+  var vorher = JSON.stringify(eingabe);
+  D.bewerteStack(eingabe); D.bewerteStack(eingabe);
+  ok(JSON.stringify(eingabe) === vorher, "die Eingabe wird nicht verändert");
+  ok(JSON.stringify(D.bewerteStack(eingabe)) === JSON.stringify(D.bewerteStack(eingabe)), "deterministisch");
+  ok(D.bewerteStack(["quatsch", null, 7]).kategorien.length === 0, "Unbekanntes wird ignoriert, nicht interpretiert");
+
+  /* --- Kein Planer: keine Dosis, kein Verbindungsvergleich --- */
+  var stackText = JSON.stringify(K) + read("js/anabole-matrix.js").split("STACK-ABGLEICH")[1].split("TRIGGER-PLAN")[0];
+  [/\d+\s?mg\b/i, /\d+\s?(IE|iu)\b/i, /\d+\s?ml\b/i, /pro Woche\s+\d/i, /Zyklus/i, /\bDosierung\b/i,
+   /Primo|Masteron|Trenbolon|Enanthat|Semaglutid|Clenbuterol|Retatrutid/i].forEach(function (re) {
+    ok(!re.test(stackText), "keine Planer-Angabe im Stack-Abgleich (" + re.source + ")");
+  });
+  ok(/Arzt|ärztlich/.test(read("anabole-matrix.html").split('id="amStack"')[1].split("</section>")[0]),
+    "der Abschnitt verweist für Substanzfragen an den Arzt");
+
+  /* --- Der Abschnitt existiert nur im Enhanced-Kontext --- */
+  var html = read("anabole-matrix.html");
+  ok(/<section class="am-sec" id="amStack" hidden>/.test(html), "der Abschnitt ist standardmäßig ausgeblendet");
+  var view = read("js/anabole-matrix.js");
+  ok(/enhancedStack\(res\)/.test(view) && /if \(!gate\) return;/.test(view),
+    "er wird nur bei bestätigtem Enhanced-Kontext gefüllt");
+  ok(/sec\.hidden = false;/.test(view), "und erst dann sichtbar gemacht");
 })();
 
 /* ===== 7) Seite und Datenmodell hängen zusammen ===== */

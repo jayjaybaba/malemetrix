@@ -43,19 +43,19 @@ mit Substanzen.
   der Beleg ist; `evidenzArt` (HUMAN-LANGZEIT · HUMAN-AKUT · PRÄKLINISCH ·
   LEITLINIE · MECHANISMUS) sagt, welcher Art er ist. Ohne die zweite Achse
   verschwimmt „Mechanismus belegt“ mit „Hebel belegt“.
-- **Evidenz:** 17 web-verifizierte Arbeiten mit DOI und kanonischer URL.
+- **Evidenz:** 18 web-verifizierte Arbeiten mit DOI und kanonischer URL.
   Fünf stehen identisch im Wissensgraph (Morton 2018, Schoenfeld 2017,
   Kreider 2017, Watson 2015, Bhasin 2018), zwölf sind für diese Seite ergänzt
   (West 2012, Morton AR 2018, Leproult 2011, Refalo 2023, Bhasin 1996,
   Bhasin 2001, Stec 2016, Snijders 2017, Damas 2016, Schoenfeld 2016/Pause,
-  Lange 2002, Baggish 2017). Wo keine Landmark-Quelle vorliegt (SW05, SW09,
+  Lange 2002, Baggish 2017, STEP-1 2021). Wo keine Landmark-Quelle vorliegt (SW05, SW09,
   SW10), steht das als `evidenzNote` an der Aussage — es wird keine erfunden.
 - **Wege ohne Hebel** (`OHNE_HEBEL`, 7 Einträge): YAP/TAZ, MAPK,
   Calcineurin/NFAT, HGF/IL-6/Notch/Wnt, pharmakologische Myostatin-Hemmung,
   β₂-Adrenozeptor, GH/IGF-1/Insulin extern. Sie stehen bewusst außerhalb der
   Matrix — eine Zeile ohne Hebel wäre eine leere Zeile —, aber auf der Seite,
   weil unter genau diesen Namen Präparate verkauft werden.
-- **Leitplanken** (`tools-dev/tests/anabole-matrix.test.js`, 129 Prüfungen):
+- **Leitplanken** (`tools-dev/tests/anabole-matrix.test.js`, 169 Prüfungen):
   keine Bremse als „schaltet direkt“, keine Evidenzstufe STARK ohne Quelle,
   kein MECHANISMUS-Eintrag mit Studie, keine unbenutzte oder unvollständige
   Quelle, keine Dosieranweisung für Substanzen, jeder Signalweg gehört zu
@@ -85,6 +85,28 @@ mit Substanzen.
   unbeantworteter Hebel wird nie als nächster Schritt empfohlen. Kein
   Gesamtwert, keine Prozentnote: Die Rechnung ist multiplikativ, ein
   Mittelwert würde sie verwischen.
+
+- **Stack-Abgleich „Was dein Stack nicht abdeckt"** (`#amStack`, nur Enhanced):
+  bildet die Substanz-**Kategorien**, die der Score unter `enh_categories`
+  ohnehin erfasst, auf die Wege der Matrix ab. Freigeschaltet ausschließlich
+  bei `check_result.status === "enhanced"` **und** mindestens einer echten
+  Kategorie; `medical_trt`, `former_enhanced`, `uncertain` und
+  „Möchte ich nicht angeben" schalten nie frei. Der Abschnitt ist im Markup
+  `hidden` und wird nur im Enhanced-Fall gefüllt.
+
+  **Die Richtung ist die Entscheidung:** Eine Ansicht, die je Präparat eine
+  neue Spalte aufleuchten lässt, belohnt Eskalation. Diese zeigt zuerst die
+  Konvergenz (mehrere Kategorien, dieselbe Achse), dann die Wege, die kein
+  Präparat der Liste berührt, dann die Kontrollmarker. Beispiel Testosteron
+  + weitere AAS + GH + Stimulanzien + GLP-1: **5 Kategorien → 2 anabole
+  Achsen, 1 konvergent, 8 von 13 Wegen unberührt, 12 Marker zu
+  kontrollieren.**
+
+  **Kein Planer, testgesichert:** keine Dosis, keine Zykluslänge, kein
+  Vergleich einzelner Verbindungen, kein Handelsname. Die Auflösung endet
+  bei der Kategorie — dort, wo der Score sie erhebt. Mehr Kategorien dürfen
+  die Zahl der unberührten Wege nie erhöhen und die Kontrollmarker nie
+  senken; beides prüft der Test.
 
 - **Einstiege:** Karte in `blog.html`, Kontextlink in
   `blog/testosteron-natuerlich-steigern.html`, Eintrag in `sitemap.xml`.

@@ -184,6 +184,16 @@
       art: "RCT",
       aussage: "Wachstumshormon steigerte weder Kraft noch Muskelmasse — weder allein noch zusätzlich zum Krafttraining. Mehr fettfreie Masse ist nicht dasselbe wie mehr kontraktiler Muskel."
     },
+    step1_2021: {
+      kurz: "STEP-1 2021",
+      titel: "Once-Weekly Semaglutide in Adults with Overweight or Obesity (STEP 1)",
+      autoren: "Wilding JPH, et al.", jahr: 2021,
+      venue: "N Engl J Med 384:989–1002",
+      doi: "10.1056/NEJMoa2032183",
+      url: "https://www.nejm.org/doi/full/10.1056/NEJMoa2032183",
+      art: "RCT",
+      aussage: "Semaglutid senkte Körpergewicht deutlich. Ein Teil jedes so erzeugten Gewichtsverlusts ist fettfreie Masse — genau deshalb sind Protein und Krafttraining unter dieser Medikation keine Kür."
+    },
     baggish_2017: {
       kurz: "Baggish 2017",
       titel: "Cardiovascular Toxicity of Illicit Anabolic-Androgenic Steroid Use",
@@ -714,6 +724,148 @@
     }
   ];
 
+  /* ======================= STACK-ABGLEICH (nur Enhanced) ====================
+     Bildet die Substanz-KATEGORIEN, die der Score unter `enh_categories`
+     ohnehin erfasst, auf die Wege dieser Matrix ab.
+
+     WAS ER ZEIGT — und warum die Richtung so gewählt ist: Eine Ansicht, die
+     je Präparat eine neue leuchtende Spalte aufgehen lässt, belohnt
+     Eskalation. Diese hier zeigt zuerst die Konvergenz (mehrere Kategorien,
+     dieselbe Achse) und dann die Wege, die kein Präparat der Liste berührt.
+     Das ist dieselbe Aussage wie im Vergleich weiter oben, nur auf die
+     eigene Lage bezogen.
+
+     WAS ER NICHT IST: kein Planer. Es gibt keine Dosis, keinen Vergleich
+     einzelner Verbindungen, keine Zykluslänge und keine Empfehlung, etwas zu
+     nehmen oder wegzulassen. Die Auflösung endet bei der Kategorie — genau
+     dort, wo der Score sie auch erhebt. Der Test hält das fest.
+
+     `achsen`  = Wege, auf die die Kategorie anabol wirkt
+     `gegen`   = Wege, auf die sie Druck ausübt (Gegenrichtung)
+     `ausserhalb` = Angriffspunkt, der bewusst keine Matrixzeile ist
+                    (siehe OHNE_HEBEL) */
+  var SUBSTANZ_KATEGORIEN = {
+    testosterone: {
+      name: "Testosteron",
+      achsen: ["SW04"],
+      wirkt: "Bindet den Androgenrezeptor. Supraphysiologisch dosiert ist das der am besten belegte pharmakologische Aufbaueffekt überhaupt — und der Grund, warum das alte Hochdosis-Modell funktioniert hat.",
+      grenze: "Erzeugt keinen Trainingsreiz, kein Baumaterial und keine Erholung. Der Rezeptor verstärkt, was ohnehin passiert — er ersetzt es nicht.",
+      kontrolle: ["Blutdruck", "Hämatokrit", "Lipidprofil", "Estradiol"],
+      quellen: ["bhasin_1996", "bhasin_2001", "baggish_2017"]
+    },
+    aas: {
+      name: "Weitere anabol/androgen wirksame Substanzen",
+      achsen: ["SW04"],
+      wirkt: "Dieselbe Androgenrezeptor-Achse wie Testosteron.",
+      grenze: "Addiert keinen zusätzlichen Signalweg. Was sich zwischen den Verbindungen unterscheidet, ist das Nebenwirkungsprofil — nicht der Wirkweg.",
+      kontrolle: ["Blutdruck", "Hämatokrit", "Lipidprofil"],
+      quellen: ["bhasin_2001", "baggish_2017"]
+    },
+    oral: {
+      name: "Orale anabole Substanzen",
+      achsen: ["SW04"],
+      wirkt: "Ebenfalls die Androgenrezeptor-Achse.",
+      grenze: "Kein zusätzlicher Weg. Die orale Form verlagert die Belastung zusätzlich auf Leber und Lipide.",
+      kontrolle: ["Leberwerte (GOT, GPT, GGT)", "Lipidprofil", "Blutdruck"],
+      quellen: ["baggish_2017"]
+    },
+    gh: {
+      name: "Wachstumshormon",
+      achsen: ["SW03"],
+      wirkt: "GH-Rezeptor über JAK2/STAT5 auf IGF-1. Das ist tatsächlich eine eigene Achse und nicht die des Testosterons.",
+      grenze: "In einer kontrollierten Studie an gesunden älteren Männern steigerte Wachstumshormon weder Kraft noch Muskelmasse — weder allein noch zusätzlich zum Krafttraining. Ein Teil der fettfreien Masse ist Flüssigkeit und Bindegewebe, kein kontraktiles Gewebe. Gleichzeitig verschlechtert es die Insulinsensitivität.",
+      kontrolle: ["Nüchternglukose", "HbA1c", "Wassereinlagerungen"],
+      quellen: ["lange_2002"]
+    },
+    glp1: {
+      name: "GLP-1 / GIP-Medikation",
+      achsen: [],
+      gegen: ["SW06", "SW09", "SW11"],
+      wirkt: "Nicht anabol. Diese Klasse senkt Energieaufnahme und Körpergewicht.",
+      grenze: "In dieser Matrix wirkt sie auf der Gegenseite: mehr Druck auf Energieverfügbarkeit und auf den Abbauarm. Ein Teil jedes so erzeugten Gewichtsverlusts ist fettfreie Masse. Protein und Krafttraining sind hier keine Kür, sondern die Bedingung dafür, dass der Verlust überwiegend aus Fett kommt.",
+      kontrolle: ["Proteinzufuhr", "Kraftverlauf im Log", "Gewichtstrend"],
+      quellen: ["step1_2021", "morton_2018"]
+    },
+    thyroid: {
+      name: "Schilddrüsenhormon",
+      achsen: [],
+      gegen: ["SW06", "SW11"],
+      wirkt: "Hebt den Grundumsatz. Anabol ist das nicht.",
+      grenze: "Über dem eigenen Bedarf erhöht es den Energiebedarf und damit den Druck auf die Aufbauseite — Muskelmasse gehört zu dem, was dabei verloren gehen kann. Ein tatsächlicher Mangel gehört ärztlich behandelt; das ist etwas anderes.",
+      kontrolle: ["TSH", "fT3", "fT4", "Ruhepuls"],
+      quellen: [],
+      evidenzNote: "Für die Steuerbarkeit über die Matrix liegt hier keine Landmark-Quelle vor — der Eintrag beschreibt die Richtung, nicht eine belegte Effektgröße."
+    },
+    insulin: {
+      name: "Insulin / glukosewirksame Substanzen",
+      achsen: ["SW06"],
+      wirkt: "Trifft den Nährstoffsensor direkt — denselben Weg, den Essen bedient.",
+      grenze: "Genau deshalb addiert es wenig: Insulin ist erlaubend, nicht additiv. Ohne verfügbare Aminosäuren erzeugt mehr Insulinwirkung keine proportional höhere Proteinsynthese. Das Risiko dagegen ist unmittelbar und akut.",
+      kontrolle: ["Nüchternglukose", "HbA1c"],
+      quellen: ["morton_2018"],
+      evidenzNote: "Bewusst ohne Anwendungsdetails. Diese Seite bespricht keine Handhabung."
+    },
+    stimulants: {
+      name: "Stimulanzien",
+      achsen: [],
+      ausserhalb: "OH6",
+      wirkt: "Greift an der β₂-adrenergen Achse an — die steht in dieser Matrix bewusst außerhalb der Hebelspalten.",
+      grenze: "Derselbe Rezeptor sitzt am Herzen; Muskel- und Herzwirkung lassen sich nicht trennen. Zusätzlich kostet die Achse Schlaf, und Schlaf trägt bei dir drei andere Wege.",
+      kontrolle: ["Ruhepuls", "Blutdruck", "Schlafdauer"],
+      quellen: []
+    },
+    peptides: {
+      name: "Peptide / sonstige Performance-Substanzen",
+      achsen: [],
+      wirkt: "Sammelkategorie ohne einheitlichen Angriffspunkt.",
+      grenze: "Ohne konkrete Substanz lässt sich hier nichts zuordnen — und diese Seite ordnet nichts zu, was sie nicht belegen kann. Vieles aus dieser Gruppe hat beim gesunden Trainierenden keine belastbare Wirkungsevidenz.",
+      kontrolle: [],
+      quellen: []
+    },
+    other: {
+      name: "Anderes",
+      achsen: [],
+      wirkt: "Nicht zuzuordnen.",
+      grenze: "Ohne Kategorie keine Aussage. Das bleibt hier offen statt geraten.",
+      kontrolle: [],
+      quellen: []
+    }
+  };
+
+  /* Deterministisch, ohne Seiteneffekt. Eingabe sind die Kategorie-Schlüssel
+     aus dem Score; alles Unbekannte wird ignoriert statt interpretiert. */
+  function bewerteStack(kategorien) {
+    var liste = (Array.isArray(kategorien) ? kategorien : [])
+      .filter(function (k) { return SUBSTANZ_KATEGORIEN[k]; });
+
+    var achsen = [], gegen = [], kontrolle = [], ausserhalb = [], konvergenz = [], quellen = [];
+    var eintraege = liste.map(function (k) {
+      var s = SUBSTANZ_KATEGORIEN[k];
+      var neu = (s.achsen || []).filter(function (w) { return achsen.indexOf(w) < 0; });
+      /* Konvergenz: Die Kategorie wirkt anabol, öffnet aber keine Achse, die
+         nicht schon offen wäre. Das ist der Kernbefund dieser Ansicht. */
+      var konv = (s.achsen || []).length > 0 && neu.length === 0;
+      if (konv) konvergenz.push(k);
+      neu.forEach(function (w) { achsen.push(w); });
+      (s.gegen || []).forEach(function (w) { if (gegen.indexOf(w) < 0) gegen.push(w); });
+      (s.kontrolle || []).forEach(function (m) { if (kontrolle.indexOf(m) < 0) kontrolle.push(m); });
+      if (s.ausserhalb && ausserhalb.indexOf(s.ausserhalb) < 0) ausserhalb.push(s.ausserhalb);
+      (s.quellen || []).forEach(function (q) { if (quellen.indexOf(q) < 0) quellen.push(q); });
+      return { key: k, daten: s, konvergiert: konv };
+    });
+
+    var unberuehrt = SIGNALWEGE.filter(function (w) {
+      return achsen.indexOf(w.id) < 0 && gegen.indexOf(w.id) < 0;
+    }).map(function (w) { return w.id; });
+
+    return {
+      kategorien: liste, eintraege: eintraege,
+      achsen: achsen, gegen: gegen, unberuehrt: unberuehrt,
+      ausserhalb: ausserhalb, konvergenz: konvergenz,
+      kontrolle: kontrolle, quellen: quellen
+    };
+  }
+
   /* ======================= DER TRIGGER-PLAN =================================
      Eine gewöhnliche Woche, in der jeder Weg wenigstens einmal bedient
      wird. Kein Idealbild — vier Einheiten, ein Alltag. */
@@ -998,6 +1150,8 @@
     vergleich: VERGLEICH,
     fragen: FRAGEN,
     status: STATUS,
+    substanzKategorien: SUBSTANZ_KATEGORIEN,
+    bewerteStack: bewerteStack,
     bewerte: bewerte,
     statusLabel: statusLabel,
     deckung: deckung,

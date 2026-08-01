@@ -212,6 +212,29 @@
     .am-oh-warum { margin: 8px 0 0; font-size: 0.88rem; line-height: 1.65; color: var(--muted); max-width: 64ch; }
     .am-oh-warum span { font-family: var(--font-mono); font-size: 0.56rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--status-attention); margin-right: 6px; }
 
+    /* ---- Stack-Abgleich (nur Enhanced) ---- */
+    .am-st-kern { margin: 20px 0 0; padding-left: 12px; border-left: 2px solid var(--accent-line);
+      font-size: 0.95rem; line-height: 1.7; color: var(--muted); max-width: 64ch; }
+    .am-st-kern strong { color: var(--text); }
+    .am-st-unber { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--hairline); }
+    .am-st-unber .k, .am-st-kontrolle .k { display: block; font-family: var(--font-mono); font-size: 0.58rem;
+      letter-spacing: 0.14em; text-transform: uppercase; color: var(--status-attention); margin-bottom: 8px; }
+    .am-st-unber p, .am-st-kontrolle p { margin: 10px 0 0; font-size: 0.88rem; line-height: 1.6; color: var(--muted-2); max-width: 64ch; }
+    .am-st-list { margin-top: 8px; }
+    .am-st-item { padding: 18px 0; border-top: 1px solid var(--hairline); }
+    .am-st-h { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+    .am-st-h h3 { margin: 0; font-size: 0.98rem; color: var(--text); }
+    .am-st-flag { font-family: var(--font-mono); font-size: 0.54rem; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--status-attention); border: 1px solid rgba(245,181,74,0.35); border-radius: 3px; padding: 2px 6px; }
+    .am-st-item.is-konvergent h3 { color: var(--muted); }
+    .am-st-w { margin: 8px 0 0; font-size: 0.9rem; line-height: 1.65; color: var(--muted); max-width: 64ch; }
+    .am-st-g { margin: 8px 0 0; font-size: 0.9rem; line-height: 1.65; color: var(--muted-2); max-width: 64ch; }
+    .am-st-g span { font-family: var(--font-mono); font-size: 0.56rem; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--status-flag); margin-right: 6px; }
+    .am-chip.is-gegen { color: var(--status-flag); border-color: rgba(240,106,106,0.3); }
+    .am-st-kontrolle { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--hairline); }
+    .am-st-kontrolle a { color: var(--accent-2); }
+
     /* ---- Trigger-Plan ---- */
     .am-tag { display: grid; grid-template-columns: 58px 1fr; gap: 16px; padding: 16px 0; border-top: 1px solid var(--hairline); }
     .am-tag-d { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.16em; color: var(--status-active); padding-top: 2px; }
@@ -488,6 +511,18 @@
     </div>
   </section>
 
+  <!-- ===================================== STACK-ABGLEICH (nur Enhanced) --
+       `hidden` bis der Score einen ausdruecklichen Enhanced-Kontext samt
+       Kategorien liefert. Fuer alle anderen existiert der Abschnitt nicht. -->
+  <section class="am-sec" id="amStack" hidden>
+    <div class="container">
+      <div class="mm-secthead"><span class="sys">MM / STACK</span><h2 class="t">Was dein Stack nicht abdeckt</h2></div>
+      <p class="am-lede">Du hast im Score einen Enhanced-Kontext angegeben. Diese Ansicht bildet die dort genannten <strong>Kategorien</strong> auf die Wege dieser Matrix ab — auf Kategorie-Ebene, wie der Score sie erhebt.</p>
+      <p class="small muted" style="max-width:64ch;margin-top:10px"><strong>Was das nicht ist:</strong> keine Planung, kein Vergleich einzelner Verbindungen, keine Dosis, keine Empfehlung für oder gegen eine Substanz. Und keine Messung: Es steht hier, worauf eine Kategorie pharmakologisch wirkt — nicht, was in deinem Körper gerade passiert. Substanzentscheidungen gehören zum Arzt.</p>
+      <div id="amStackBody" style="margin-top:22px"></div>
+    </div>
+  </section>
+
   <!-- ========================================================= TRIGGER-PLAN -->
   <section class="am-sec">
     <div class="container">
@@ -510,7 +545,7 @@
   <section class="am-sec">
     <div class="container">
       <div class="mm-secthead"><span class="sys">MM / EVIDENZ</span><h2 class="t">Quellen &amp; Evidenz</h2></div>
-      <p class="am-lede">Siebzehn verifizierte Arbeiten mit DOI und kanonischer Adresse. Wo für eine Aussage keine Landmark-Quelle vorliegt, steht das an der Aussage selbst — es wird keine erfunden. Der Evidenz-Standard dahinter: <a href="trust.html">Vertrauen &amp; Methodik</a>.</p>
+      <p class="am-lede">Achtzehn verifizierte Arbeiten mit DOI und kanonischer Adresse. Wo für eine Aussage keine Landmark-Quelle vorliegt, steht das an der Aussage selbst — es wird keine erfunden. Der Evidenz-Standard dahinter: <a href="trust.html">Vertrauen &amp; Methodik</a>.</p>
       <div class="am-quellen" id="amQuellen" style="margin-top:12px"></div>
     </div>
   </section>
