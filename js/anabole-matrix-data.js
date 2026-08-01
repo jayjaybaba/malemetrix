@@ -866,6 +866,41 @@
     };
   }
 
+  /* ======================= STACK MAL SELBSTCHECK ============================
+     Die eine Frage, die keine der beiden Ansichten allein beantwortet: Von
+     den Wegen, die kein Präparat der Liste berührt — welche adressiert das
+     eigene Verhalten?
+
+     Hier wird nichts neu bewertet und nichts gewichtet. Die unberührten Wege
+     kommen unverändert aus bewerteStack(), ihre Zustände unverändert aus
+     bewerteWeg(). Diese Funktion schneidet die beiden Mengen, mehr nicht.
+
+     „Offen" bleibt auch hier ein eigener Zustand. Ein Weg, zu dem keine Frage
+     beantwortet ist, zählt nicht als Versäumnis — sonst läse sich ein leerer
+     Selbstcheck wie ein Befund. */
+  function kreuzeStack(unberuehrt, antworten) {
+    var gueltig = SIGNALWEGE.map(function (w) { return w.id; });
+    var ids = [];
+    (Array.isArray(unberuehrt) ? unberuehrt : []).forEach(function (id) {
+      if (gueltig.indexOf(id) >= 0 && ids.indexOf(id) < 0) ids.push(id);
+    });
+
+    var zustaende = { stark: [], schwach: [], keiner: [], offen: [] };
+    ids.forEach(function (id) {
+      var z = bewerteWeg(id, antworten || {});
+      (zustaende[z] || zustaende.offen).push(id);
+    });
+
+    return {
+      ids: ids,
+      gesamt: ids.length,
+      zustaende: zustaende,
+      /* Beurteilt = nicht offen. Alle Prozentangaben wären hier falsch:
+         Die Rechnung ist multiplikativ, ein Anteil verwischt sie. */
+      beurteilt: ids.length - zustaende.offen.length
+    };
+  }
+
   /* ======================= DER TRIGGER-PLAN =================================
      Eine gewöhnliche Woche, in der jeder Weg wenigstens einmal bedient
      wird. Kein Idealbild — vier Einheiten, ein Alltag. */
@@ -1152,6 +1187,7 @@
     status: STATUS,
     substanzKategorien: SUBSTANZ_KATEGORIEN,
     bewerteStack: bewerteStack,
+    kreuzeStack: kreuzeStack,
     bewerte: bewerte,
     statusLabel: statusLabel,
     deckung: deckung,

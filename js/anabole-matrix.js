@@ -352,6 +352,10 @@
 
     put("amCheckFortschritt", r.beantwortet + " von " + r.gesamt + " beantwortet");
     renderCheckErgebnis(r);
+    /* Der Stack-Abgleich zeigt dieselben Zustände für die Wege, die keine
+       Substanz bedient. Bliebe er beim ersten Rendern stehen, widerspräche
+       er ab der ersten Antwort dem Selbstcheck. */
+    zeichneKreuz(r);
   }
 
   function renderCheckErgebnis(r) {
@@ -470,10 +474,11 @@
         " keine Achse, die nicht ohnehin offen wäre.</strong> Verschiedene Rezeptoren, dieselben Knoten — die Wirkungen laufen zusammen, die Nebenwirkungen nicht.</p>"
       : "";
 
+    /* Der Inhalt dieses Blocks wird nicht hier erzeugt, sondern bei jeder
+       Antwort im Selbstcheck neu — sonst stünde die Liste starr da, während
+       sich der Zustand darunter längst geändert hat. */
     var unber = '<div class="am-st-unber"><span class="k">Kein Präparat dieser Liste berührt</span>' +
-      '<div class="am-chips">' + r.unberuehrt.map(wegChip).join("") + "</div>" +
-      "<p>Das sind die Wege, die weiterhin nur über Reiz, Baumaterial, Kapazität und Erholung laufen. " +
-      "Der Selbstcheck weiter oben sagt dir, welche davon dein Verhalten aktuell adressiert.</p></div>";
+      '<div id="amStackKreuz"></div></div>';
 
     var kontrolle = r.kontrolle.length
       ? '<div class="am-st-kontrolle"><span class="k">Was dazu kontrolliert gehört</span>' +
@@ -485,7 +490,88 @@
     put("amStackBody",
       '<div class="mm-metric-row">' + kopf + "</div>" + konv + unber +
       '<div class="am-st-list">' + eintraege + "</div>" + kontrolle);
+    stackWege = r.unberuehrt;
+    zeichneKreuz();
     sec.hidden = false;
+  }
+
+  /* ---- Der Schnitt: unberührte Wege × eigene Angaben -------------------
+     Die beiden Ansichten sagen einzeln je die Hälfte. Der Stack-Abgleich
+     sagt, was keine Substanz der Liste bedient; der Selbstcheck sagt, was
+     das Verhalten adressiert. Erst zusammen beantworten sie die Frage, die
+     ein Enhanced-Nutzer tatsächlich hat.
+
+     `stackWege` bleibt null, solange kein Enhanced-Kontext bestätigt ist —
+     die Freischaltung liegt weiterhin an genau einer Stelle, in renderStack.
+     Hier wird sie gelesen, nicht ein zweites Mal entschieden. */
+  var stackWege = null;
+
+  function verbinde(teile) {
+    if (teile.length <= 1) return teile.join("");
+    return teile.slice(0, -1).join(", ") + " und " + teile[teile.length - 1];
+  }
+
+  function zeichneKreuz(check) {
+    var box = el("amStackKreuz");
+    if (!box || !stackWege) return;
+    var k = D.kreuzeStack(stackWege, antworten);
+    if (!k.gesamt) { box.innerHTML = ""; return; }
+    check = check || D.bewerte(antworten);
+
+    function chips(ids, z) {
+      return ids.map(function (id) {
+        var w = D.signalwege.filter(function (x) { return x.id === id; })[0];
+        return '<a class="am-chip" href="#' + esc(id) + '">' + esc(w ? w.kurz : id) +
+          (z ? " <em>" + esc(D.statusLabel(id, z)) + "</em>" : "") + "</a>";
+      }).join("");
+    }
+
+    /* Ohne eine einzige verwertbare Antwort wird hier nichts eingeschätzt.
+       Die Wege stehen neutral da, und der nächste Schritt ist benannt. */
+    if (!k.beurteilt) {
+      box.innerHTML = '<div class="am-chips">' + chips(k.ids, null) + "</div>" +
+        "<p>Das sind die Wege, die bei dir weiterhin nur über Reiz, Baumaterial, Kapazität und " +
+        'Erholung laufen. Welche davon dein Verhalten adressiert, beantwortet der <a href="#abgleich">' +
+        "Selbstcheck</a> — solange er leer ist, steht hier keine Einschätzung.</p>";
+      return;
+    }
+
+    var z = k.zustaende;
+    /* Der Satz nennt nur, was es tatsächlich gibt. „Null teilweise“ wäre
+       Füllwerk, und eine Quote wäre die Gesamtnote, die die Seite bewusst
+       nicht vergibt. */
+    var teile = [];
+    if (z.stark.length) teile.push(z.stark.length + " vollständig");
+    if (z.schwach.length) teile.push(z.schwach.length + " teilweise");
+    if (z.keiner.length) teile.push(z.keiner.length + " gar nicht");
+    var satz = "Von diesen " + k.gesamt + (k.gesamt === 1 ? " Weg " : " Wegen ") +
+      (teile.length ? "adressiert dein Verhalten " + verbinde(teile) + "." : "") +
+      (z.offen.length ? " " + z.offen.length + (z.offen.length === 1 ? " ist noch offen." : " sind noch offen.") : "");
+
+    /* Dieselbe Reihenfolge und dieselben Titel wie im Selbstcheck: Was hier
+       steht, ist derselbe Zustand desselben Weges — er darf nicht zweimal
+       anders heißen. */
+    var gruppen = ["keiner", "schwach", "stark", "offen"].map(function (zz) {
+      if (!z[zz].length) return "";
+      var titel = { keiner: "Dein Verhalten adressiert diese nicht", schwach: "Nur teilweise adressiert",
+        stark: "Adressiert", offen: "Noch offen — dazu fehlen Antworten" }[zz];
+      return '<div class="am-ck-grp ' + D.status[zz].klasse + '">' +
+        '<span class="am-ck-grp-k">' + esc(titel) + " · " + z[zz].length + "</span>" +
+        '<div class="am-chips">' + chips(z[zz], zz) + "</div></div>";
+    }).join("");
+
+    /* Dieselbe Einschränkung wie im Selbstcheck. Ohne sie läse sich ein zu
+       einem Drittel ausgefüllter Check hier wie ein fertiger Befund. */
+    var teilstand = check.vollstaendig ? ""
+      : '<p class="am-ck-teil">Stand aus ' + check.beantwortet + " von " + check.gesamt +
+        " beantworteten Fragen — die offenen Wege bleiben ausdrücklich unbewertet.</p>";
+
+    box.innerHTML =
+      '<p class="am-st-kern"><strong>' + esc(satz) + "</strong> " +
+      "Das sind die Wege, die bei dir weiterhin nur über Reiz, Baumaterial, Kapazität und Erholung laufen.</p>" +
+      '<div class="am-ck-wege">' + gruppen + "</div>" + teilstand +
+      '<p>Ein nächster Hebel wird hier nicht zusätzlich genannt — den benennt der ' +
+      '<a href="#abgleich">Selbstcheck</a> genau einmal, für alle dreizehn Wege zusammen.</p>';
   }
 
   /* ========================================================= TRIGGER-PLAN */

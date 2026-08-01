@@ -489,6 +489,95 @@ group("Stack-Abgleich · Konvergenz zeigen, nicht Eskalation belohnen");
   ok(/sec\.hidden = false;/.test(view), "und erst dann sichtbar gemacht");
 })();
 
+/* ===== 6d) Stack × Selbstcheck: der Schnitt, nicht eine dritte Bewertung ==
+   Die Ansicht beantwortet die Frage, die keine der beiden Seiten allein
+   beantwortet: Von den Wegen, die kein Präparat berührt — welche adressiert
+   das eigene Verhalten? Genau dabei darf sie nichts Eigenes erfinden. */
+group("Stack × Selbstcheck · schneiden, nicht neu bewerten");
+(function () {
+  var alleWege = D.signalwege.map(function (w) { return w.id; });
+  var stack = D.bewerteStack(["testosterone", "aas", "gh", "stimulants", "glp1"]);
+  var alleNull = {}, alleVoll = {};
+  D.hebel.forEach(function (h) { alleNull[h.id] = 0; alleVoll[h.id] = 2; });
+
+  /* --- Die Grundmenge ist exakt die des Stack-Abgleichs --- */
+  var k = D.kreuzeStack(stack.unberuehrt, alleVoll);
+  ok(k.gesamt === stack.unberuehrt.length,
+    "das Kreuz betrachtet genau die unberührten Wege (" + k.gesamt + ")");
+  var summe = ["stark", "schwach", "keiner", "offen"].reduce(function (a, z) { return a + k.zustaende[z].length; }, 0);
+  ok(summe === k.gesamt, "jeder Weg steht in genau einer Zustandsgruppe");
+  var doppelt = [];
+  ["stark", "schwach", "keiner", "offen"].forEach(function (z) {
+    k.zustaende[z].forEach(function (id) {
+      if (["stark", "schwach", "keiner", "offen"].filter(function (y) { return k.zustaende[y].indexOf(id) >= 0; }).length > 1) doppelt.push(id);
+    });
+  });
+  ok(doppelt.length === 0, "und in keiner zweiten" + (doppelt.length ? " (" + doppelt.join(", ") + ")" : ""));
+
+  /* --- Kein eigener Zustandsbegriff: identisch mit dem Selbstcheck --- */
+  [alleVoll, alleNull, { H01: 2, H05: 1 }, {}].forEach(function (a, i) {
+    var b = D.bewerte(a);
+    var kk = D.kreuzeStack(stack.unberuehrt, a);
+    var falsch = [];
+    Object.keys(kk.zustaende).forEach(function (z) {
+      kk.zustaende[z].forEach(function (id) { if (b.wege[id] !== z) falsch.push(id + ": " + z + " ≠ " + b.wege[id]); });
+    });
+    ok(falsch.length === 0, "Antwortlage #" + i + ": jeder Zustand stammt unverändert aus dem Selbstcheck" +
+      (falsch.length ? " (" + falsch.join(", ") + ")" : ""));
+  });
+
+  /* --- „Offen" bleibt eigenständig: leer heißt nicht versäumt --- */
+  var leer = D.kreuzeStack(stack.unberuehrt, {});
+  ok(leer.zustaende.offen.length === leer.gesamt, "ohne Antwort ist jeder Weg offen, keiner „nicht adressiert“");
+  ok(leer.beurteilt === 0, "… und nichts gilt als beurteilt");
+  ok(D.kreuzeStack(stack.unberuehrt, alleNull).beurteilt === stack.unberuehrt.length,
+    "mit Antworten auf null ist alles beurteilt — und damit erst bewertbar");
+
+  /* --- Reinheit --- */
+  var eingabe = stack.unberuehrt.slice();
+  var vorher = JSON.stringify(eingabe);
+  D.kreuzeStack(eingabe, alleVoll);
+  ok(JSON.stringify(eingabe) === vorher, "die Eingabe wird nicht verändert");
+  ok(JSON.stringify(D.kreuzeStack(eingabe, alleVoll)) === JSON.stringify(D.kreuzeStack(eingabe, alleVoll)), "deterministisch");
+  [null, undefined, "SW01", 7, [null, "quatsch", 3]].forEach(function (bad, i) {
+    var r; try { r = D.kreuzeStack(bad, alleVoll); } catch (e) { r = null; }
+    ok(r && r.gesamt === 0, "unbrauchbare Eingabe #" + i + " ergibt eine leere Menge statt einer Ausrede");
+  });
+  ok(D.kreuzeStack(["SW01", "SW01", "SW02"], alleVoll).gesamt === 2, "Doppelte werden nicht doppelt gezählt");
+  ok(D.kreuzeStack(alleWege, alleVoll).gesamt === D.signalwege.length, "und alle dreizehn Wege sind zulässig");
+
+  /* --- Die Darstellung: keine zweite Empfehlung, keine Quote --- */
+  var view = read("js/anabole-matrix.js");
+  var block = (view.split("Der Schnitt: unberührte Wege")[1] || "").split("TRIGGER-PLAN")[0];
+  ok(block.length > 500, "der Renderblock des Schnitts wurde für die Prüfung gefunden");
+  ok(/kreuzeStack/.test(block), "er rechnet über das Datenmodell, nicht selbst");
+  /* Geprüft wird, was die Seite ausgibt — nicht der Kommentar, der die Regel
+     begründet. Sonst verbietet die Erklärung sich selbst. */
+  var blockOhneKommentar = block.replace(/\/\*[\s\S]*?\*\//g, "");
+  ok(!/\d+\s*%|Prozent|Quote|Gesamtnote|Punktzahl/i.test(blockOhneKommentar),
+    "keine Quote und keine Note in der Ausgabe — die Rechnung ist multiplikativ");
+
+  /* Genau EIN nächster Hebel auf der Seite. Der Schnitt darf keinen zweiten
+     aufmachen, sonst stünden zwei „nächste Schritte“ nebeneinander. */
+  ok(/naechster|nächster Hebel wird hier nicht/.test(block), "der Schnitt spricht den nächsten Hebel an");
+  ok(!/D\.bewerte\(antworten\)\.naechster|\.naechster\.hebel/.test(block),
+    "… benennt aber keinen eigenen — der Selbstcheck bleibt die einzige Stelle");
+
+  /* Er hängt am Enhanced-Gate von renderStack und macht kein zweites auf. */
+  ok(!/enhancedStack|check_result/.test(block),
+    "der Schnitt entscheidet die Freischaltung nicht ein zweites Mal");
+  ok(/stackWege/.test(block), "sondern liest, was der Stack-Abgleich freigegeben hat");
+
+  /* Er muss bei jeder Antwort mitlaufen — sonst widerspricht er ab der
+     ersten Eingabe dem Selbstcheck direkt darüber. */
+  var ckJs2 = (view.split("SELBSTCHECK")[1] || "").split("Der Schnitt: unberührte Wege")[0];
+  ok(/zeichneKreuz\(r\)/.test(ckJs2), "und wird bei jeder Antwort im Selbstcheck neu gezeichnet");
+
+  var page = read("anabole-matrix.html");
+  ok(page.indexOf('id="amStackKreuz"') < 0, "der Aufhängepunkt steht nicht statisch in der Seite …");
+  ok(/id="amStackKreuz"/.test(view), "… sondern entsteht nur im Enhanced-Fall");
+})();
+
 /* ===== 7) Seite und Datenmodell hängen zusammen ===== */
 group("Seite · Auslieferung, Struktur, Index");
 (function () {

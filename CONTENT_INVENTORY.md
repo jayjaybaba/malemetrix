@@ -108,6 +108,28 @@ mit Substanzen.
   die Zahl der unberührten Wege nie erhöhen und die Kontrollmarker nie
   senken; beides prüft der Test.
 
+  **Der Schnitt Stack × Selbstcheck** (`kreuzeStack`, `#amStackKreuz`):
+  Beide Ansichten sagen einzeln je die Hälfte — der Stack-Abgleich, was
+  keine Substanz der Liste bedient; der Selbstcheck, was das Verhalten
+  adressiert. Zusammengelegt beantworten sie die Frage, die ein
+  Enhanced-Nutzer wirklich hat: *„Von diesen 8 Wegen adressiert dein
+  Verhalten 3 vollständig und 5 teilweise. 1 ist noch offen."* Die Liste
+  der unberührten Wege trägt dieselben Zustandsgruppen, dieselben Titel
+  und dieselben Farben wie der Selbstcheck — derselbe Zustand desselben
+  Weges darf nicht zweimal anders heißen.
+
+  **Geschnitten, nicht neu bewertet:** `kreuzeStack` legt zwei vorhandene
+  Mengen übereinander. Die Zustände kommen unverändert aus `bewerteWeg`,
+  die unberührten Wege unverändert aus `bewerteStack`; der Test prüft für
+  vier Antwortlagen, dass kein Zustand vom Selbstcheck abweicht. „Offen"
+  bleibt eigenständig — ohne Antworten steht dort keine Einschätzung,
+  sondern der Verweis auf den Selbstcheck. Bei unvollständigem Check steht
+  der Teilstand dabei. **Kein zweiter nächster Hebel:** Den benennt der
+  Selbstcheck genau einmal für alle dreizehn Wege; der Schnitt verweist
+  darauf, statt eine konkurrierende Empfehlung aufzumachen. Die
+  Freischaltung bleibt an genau einer Stelle (`renderStack`) — der Schnitt
+  liest sie, entscheidet sie nicht neu. Alles testgesichert.
+
 - **Einstiege:** Karte in `blog.html`, Kontextlink in
   `blog/testosteron-natuerlich-steigern.html`, Eintrag in `sitemap.xml`,
   kontextabhängige Karte auf der Score-Ergebnisseite (`js/matrix-cta.js`).
