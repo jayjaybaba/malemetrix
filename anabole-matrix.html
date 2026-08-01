@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Die anabole Matrix — alle Signalwege und wie du sie triggerst | MaleMetrix</title>
+  <meta name="description" content="Elf anabole und katabole Signalwege im Muskel — mTORC1, Mechanotransduktion, Androgenrezeptor, AMPK, Myostatin, FoxO — und die zwölf Hebel, mit denen du sie steuerst. Mit Dosis, Zeitfenster, Nachweis und ehrlicher Grenze.">
+  <link rel="stylesheet" href="css/fonts.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23070A0F'/%3E%3Cpath d='M8.5 8.5l5.5 5.5M8.5 23.5l5.5-5.5' stroke='%23F0EEE9' stroke-width='3.4' stroke-linecap='round' fill='none'/%3E%3Cpath d='M23.5 8.5l-5.5 5.5M23.5 23.5l-5.5-5.5' stroke='%2316C4F4' stroke-width='3.4' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+  <link rel="canonical" href="https://www.malemetrix.com/anabole-matrix.html">
+  <meta name="theme-color" content="#070A0F">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="MaleMetrix">
+  <meta property="og:locale" content="de_DE">
+  <meta property="og:title" content="Die anabole Matrix — alle Signalwege und wie du sie triggerst">
+  <meta property="og:description" content="Elf Signalwege, zwölf Hebel, eine Matrix: Was Muskelaufbau im Körper tatsächlich schaltet — mit Dosis, Zeitfenster, Nachweis und der ehrlichen Grenze gegenüber Substanzen.">
+  <meta property="og:url" content="https://www.malemetrix.com/anabole-matrix.html">
+  <meta property="og:image" content="https://www.malemetrix.com/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Die anabole Matrix — alle Signalwege und wie du sie triggerst">
+  <meta name="twitter:description" content="Elf Signalwege, zwölf Hebel, eine Matrix: Was Muskelaufbau im Körper tatsächlich schaltet — mit Dosis, Zeitfenster, Nachweis und der ehrlichen Grenze gegenüber Substanzen.">
+  <meta name="twitter:image" content="https://www.malemetrix.com/og-image.png">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Die anabole Matrix — alle Signalwege und wie du sie triggerst","description":"Elf anabole und katabole Signalwege im Muskel und die zwölf Hebel, mit denen sie sich steuern lassen — mit Dosis, Zeitfenster, Nachweis und ehrlicher Grenze gegenüber Substanzen.","datePublished":"2026-08-01","dateModified":"2026-08-01","author":{"@type":"Organization","name":"MaleMetrix"},"publisher":{"@type":"Organization","name":"MaleMetrix"},"mainEntityOfPage":"https://www.malemetrix.com/anabole-matrix.html"}</script>
+
+  <style>
+    /* ======================================================================
+       ANABOLE MATRIX — seiteneigene Komponenten.
+       Baut ausschließlich auf den zentralen Tokens aus css/style.css auf
+       (--hairline, --surface, --status-*, --font-mono). Keine neue Palette,
+       keine Variante bestehender Systemklassen.
+       ====================================================================== */
+    .am-head { padding: calc(var(--header-h) + 48px) 0 8px; }
+    .am-sec { padding: clamp(40px, 6vw, 72px) 0 0; }
+    .am-lede { max-width: 62ch; color: var(--muted); }
+
+    /* ---- Signalweg-Karte ---- */
+    .am-map { margin: 28px 0 0; border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--surface); padding: 18px 16px 12px; }
+    .am-map svg { display: block; width: 100%; height: auto; }
+    .am-map figcaption { margin-top: 12px; font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.04em; color: var(--muted-2); line-height: 1.7; }
+
+    /* ---- Die Matrix ---- */
+    .am-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 20px; border: 1px solid var(--hairline); border-radius: var(--radius); }
+    /* table-layout: fixed — sonst zieht die Beschriftungsspalte alle freie
+       Breite an sich und die Zellen stehen weit weg von ihrem Hebel. */
+    .am-table { border-collapse: collapse; table-layout: fixed; width: 100%; min-width: 980px; }
+    .am-table th, .am-table td { border-bottom: 1px solid var(--hairline); }
+    .am-table thead th { vertical-align: bottom; padding: 14px 6px 10px; border-bottom: 1px solid var(--line-strong); }
+    /* Die Beschriftungsspalte klebt links: Beim Querscrollen muss sichtbar
+       bleiben, zu welchem Hebel die Zelle gehört — sonst zeigt die Matrix
+       auf einem Telefon nur noch Punkte ohne Bezug. */
+    .am-corner, .am-row { position: sticky; left: 0; z-index: 2; background: var(--bg-0); box-shadow: 1px 0 0 var(--hairline); }
+    .am-corner { width: 292px; z-index: 3; text-align: left; padding-left: 16px !important; white-space: nowrap; }
+    .am-corner-t, .am-corner-b { display: block; font-family: var(--font-mono); font-size: 0.56rem; letter-spacing: 0.18em; }
+    .am-corner-t { color: var(--status-active); }
+    .am-corner-b { color: var(--muted-2); }
+    .am-col { width: auto; }
+    .am-col a { display: block; text-decoration: none; text-align: center; }
+    .am-col-id { display: block; font-family: var(--font-mono); font-size: 0.56rem; letter-spacing: 0.12em; color: var(--muted-2); }
+    /* Höhe trägt den längsten Kurznamen („Metabolischer Stress") ohne
+       Abschneiden — der Test hält die Namen auf dieser Länge. */
+    .am-col-n { display: block; margin: 6px auto 0; font-size: 0.7rem; line-height: 1.25; color: var(--muted); writing-mode: vertical-rl; transform: rotate(180deg); height: 152px; white-space: nowrap; }
+    .am-col.r-bremse .am-col-n { color: var(--status-flag); }
+    .am-col.r-kap .am-col-n { color: var(--status-attention); }
+    .am-col a:hover .am-col-n, .am-col a:focus-visible .am-col-n { color: var(--text); }
+    .am-row { width: 292px; text-align: left; padding: 0; }
+    .am-row a { display: block; padding: 11px 14px; text-decoration: none; }
+    .am-row-id { font-family: var(--font-mono); font-size: 0.56rem; letter-spacing: 0.14em; color: var(--muted-2); }
+    .am-row-n { display: block; font-size: 0.86rem; color: var(--text); }
+    .am-row a:hover .am-row-n, .am-row a:focus-visible .am-row-n { color: var(--status-active); }
+    .am-cell { text-align: center; font-size: 0.95rem; line-height: 1; color: var(--muted-2); }
+    .am-cell.is-direkt { color: var(--status-active); font-size: 1.05rem; }
+    .am-cell.is-indirekt { color: var(--muted); }
+    .am-cell.is-bremse { color: var(--status-improving); }
+    .am-cell.is-leer { color: rgba(255,255,255,0.12); }
+    .am-cell.is-col { background: rgba(255,255,255,0.035); }
+    tbody tr:hover .am-cell { background: rgba(255,255,255,0.02); }
+    body.am-only-direct .am-cell.is-indirekt,
+    body.am-only-direct .am-cell.is-bremse { opacity: 0.16; }
+
+    /* ---- Legende + Schalter ---- */
+    .am-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; margin-top: 16px; }
+    .am-leg { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.1em; color: var(--muted-2); }
+    .am-leg b { font-weight: 400; margin-right: 6px; }
+    .am-leg.l-direkt b { color: var(--status-active); }
+    .am-leg.l-bremse b { color: var(--status-improving); }
+    .am-sw { display: inline-flex; align-items: center; gap: 9px; background: none; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); cursor: pointer; padding: 8px 15px; min-height: 40px; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.14em; margin-left: auto; }
+    .am-sw[aria-pressed="true"] { border-color: var(--accent-2); color: var(--accent-2); }
+    .am-sw:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+
+    /* ---- Detailkarten (Signalwege + Hebel) ---- */
+    .am-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 0 40px; }
+    .am-item { padding: 24px 0; border-top: 1px solid var(--hairline); scroll-margin-top: calc(var(--header-h) + 16px); }
+    .am-item-h { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 12px; }
+    .am-item-h h3 { font-size: 1.05rem; margin: 0; color: var(--text); }
+    .am-id { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.16em; color: var(--muted-2); }
+    .am-rolle { font-family: var(--font-mono); font-size: 0.54rem; letter-spacing: 0.14em; border: 1px solid var(--line); border-radius: 3px; padding: 2px 6px; color: var(--muted-2); margin-left: auto; }
+    .am-rolle.r-gas { color: var(--status-active); border-color: var(--accent-line); }
+    .am-rolle.r-kap { color: var(--status-attention); border-color: rgba(245,181,74,0.35); }
+    .am-rolle.r-bremse { color: var(--status-flag); border-color: rgba(240,106,106,0.35); }
+    .am-sub { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.08em; color: var(--muted-2); margin: 6px 0 0; }
+    .am-defs { margin: 14px 0 0; }
+    .am-def { display: grid; grid-template-columns: 148px 1fr; gap: 14px; padding: 7px 0; }
+    .am-def dt { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted-2); padding-top: 3px; }
+    .am-def dd { margin: 0; font-size: 0.9rem; line-height: 1.65; color: var(--muted); max-width: 60ch; }
+    .am-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 14px; }
+    .am-ev { font-family: var(--font-mono); font-size: 0.54rem; letter-spacing: 0.14em; border: 1px solid var(--line); border-radius: 3px; padding: 2px 6px; color: var(--muted-2); }
+    .am-ev.ev-stark { color: var(--status-improving); border-color: rgba(45,212,167,0.35); }
+    .am-ev.ev-mittel { color: var(--status-attention); border-color: rgba(245,181,74,0.35); }
+    .am-ev.ev-schwach { color: var(--status-flag); border-color: rgba(240,106,106,0.35); }
+    .am-deck { font-family: var(--font-mono); font-size: 0.56rem; letter-spacing: 0.12em; color: var(--muted-2); }
+    .am-refs { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+    .am-ref { font-family: var(--font-mono); font-size: 0.56rem; letter-spacing: 0.06em; color: var(--accent-2); text-decoration: none; border-bottom: 1px dashed var(--accent-line); }
+    .am-ref:hover { color: var(--text); }
+    .am-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .am-chip { font-family: var(--font-mono); font-size: 0.56rem; letter-spacing: 0.08em; text-decoration: none; color: var(--muted-2); border: 1px solid var(--line); border-radius: 999px; padding: 4px 9px; }
+    .am-chip.is-direkt { color: var(--status-active); border-color: var(--accent-line); }
+    .am-chip.is-bremse { color: var(--status-improving); border-color: rgba(45,212,167,0.3); }
+    .am-chip:hover { color: var(--text); border-color: var(--line-strong); }
+    .am-note { margin: 12px 0 0; padding-left: 12px; border-left: 2px solid rgba(245,181,74,0.4); font-size: 0.84rem; line-height: 1.6; color: var(--muted-2); max-width: 62ch; }
+
+    /* ---- Trigger-Plan ---- */
+    .am-tag { display: grid; grid-template-columns: 58px 1fr; gap: 16px; padding: 16px 0; border-top: 1px solid var(--hairline); }
+    .am-tag-d { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.16em; color: var(--status-active); padding-top: 2px; }
+    .am-tag-b b { display: block; font-size: 0.95rem; color: var(--text); }
+    .am-tag-b p { margin: 4px 0 0; font-size: 0.88rem; line-height: 1.6; color: var(--muted); max-width: 62ch; }
+
+    /* ---- Ehrlicher Vergleich ---- */
+    .am-real { border: 1px solid rgba(240,106,106,0.28); border-radius: var(--radius); padding: clamp(22px, 4vw, 34px); background: rgba(240,106,106,0.03); }
+    .am-frage { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.14em; color: var(--status-flag); margin: 0 0 10px; }
+    .am-kern { font-family: var(--font-display); font-size: clamp(1.15rem, 3.4vw, 1.5rem); font-weight: 700; line-height: 1.35; color: var(--text); margin: 0 0 8px; max-width: 30ch; }
+    .am-vp { padding: 18px 0 0; border-top: 1px solid var(--hairline); margin-top: 18px; }
+    .am-vp b { display: block; font-size: 0.95rem; color: var(--text); margin-bottom: 6px; }
+    .am-vp p { margin: 0 0 8px; font-size: 0.9rem; line-height: 1.7; color: var(--muted); max-width: 64ch; }
+
+    /* ---- Quellen ---- */
+    .am-quellen ul { list-style: none; padding: 0; margin: 0; }
+    .am-quellen li { padding: 14px 0; border-top: 1px solid var(--hairline); font-size: 0.86rem; line-height: 1.6; scroll-margin-top: calc(var(--header-h) + 16px); }
+    .am-quellen li > div:first-child { color: var(--text); }
+    .am-quellen li > div { color: var(--muted-2); margin: 2px 0; overflow-wrap: anywhere; }
+    .am-quellen em { color: var(--muted); font-style: normal; }
+    .am-quellen a { color: var(--accent-2); }
+
+    @media (max-width: 720px) {
+      .am-def { grid-template-columns: 1fr; gap: 2px; }
+      .am-list { grid-template-columns: 1fr; }
+      .am-sw { margin-left: 0; }
+      /* Schmalere Beschriftung, damit neben ihr mehrere Wirkungsspalten
+         gleichzeitig im Bild sind statt einer einzigen. */
+      .am-table { min-width: 840px; }
+      .am-corner, .am-row { width: 164px; }
+      .am-row a { padding: 11px 12px 11px 14px; }
+      .am-row-n { font-size: 0.8rem; }
+      .am-corner { padding-left: 14px !important; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="site-header no-print" id="siteHeader">
+  <div class="container header-inner">
+    <a href="index.html" class="logo" aria-label="MaleMetrix Startseite"><span class="logo-word">MALEMETRI</span><svg class="logo-x" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path d="M22 22 42 42 M22 78 42 58" stroke="#F0EEE9" stroke-width="12" stroke-linecap="round" fill="none"/><path d="M78 22 58 42 M78 78 58 58" stroke="#16C4F4" stroke-width="12" stroke-linecap="round" fill="none"/></svg></a>
+    <nav class="main-nav" id="mainNav">
+      <a href="check.html" data-i18n="nav.check">Score</a>
+      <a href="protokoll.html" data-i18n="nav.protocol">Das Protokoll</a>
+      <a href="coaching.html" data-i18n="nav.coaching">1:1 Coaching</a>
+      <div class="nav-more">
+        <button class="nav-more-toggle" data-i18n="nav.more">Mehr</button>
+        <div class="nav-more-menu">
+          <span class="nav-more-label" data-i18n="nav.freeGroup">Kostenlos</span>
+          <a href="tracker.html" data-i18n="nav.trackerGym">Training &amp; Schlaf</a>
+          <a href="dinner.html" data-i18n="nav.trackerFood">Kalorien &amp; Protein</a>
+          <a href="labor.html" data-i18n="nav.trackerLabs">Blutwerte im Verlauf</a>
+          <a href="tools.html" data-i18n="nav.calc">Rechner &amp; Werkzeuge</a>
+          <span class="nav-more-label" data-i18n="nav.aboutGroup">MaleMetrix</span>
+          <a href="ueber.html" data-i18n="nav.aboutMM">Über MaleMetrix</a>
+          <a href="faq.html" data-i18n="nav.faq">FAQ</a>
+          <a href="kontakt.html" data-i18n="nav.contact">Kontakt</a>
+        </div>
+      </div>
+      <a href="mein-protokoll.html" class="nav-my" data-i18n="nav.mymm">My MaleMetrix</a>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-btn lang-btn" aria-label="Sprache wechseln / Switch language" title="DE / EN">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"/></svg>
+        <span class="lang-code">EN</span>
+      </button>
+      <button class="cart-btn" id="cartBtn" aria-label="Warenkorb öffnen">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span class="cart-count empty" id="cartCount">0</span>
+      </button>
+      <button class="nav-toggle" id="navToggle" aria-label="Menü öffnen">☰</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ================================================================ KOPF -->
+  <section class="am-head">
+    <div class="container">
+      <span class="eyebrow">MaleMetrix Referenz · Physiologie</span>
+      <h1 class="h-display" style="max-width:900px">Die anabole Matrix — <span class="text-grad">jeder Signalweg, jeder Hebel</span>.</h1>
+      <p class="lead am-lede" style="margin-top:18px">Muskelaufbau ist kein einzelner Schalter, sondern ein Netz aus elf Wegen: sechs, die Aufbau anschalten, zwei, die die Obergrenze setzen, und drei, die bremsen. Früher hat man dieses Netz mit der Chemiekeule überfahren. Diese Seite zeigt den anderen Weg — welcher Reiz welchen Weg tatsächlich schaltet, in welcher Dosis, in welchem Zeitfenster, und woran du erkennst, ob es gewirkt hat.</p>
+      <p class="small muted" style="margin-top:14px;max-width:62ch">Und weil eine ehrliche Seite die unbequeme Hälfte nicht auslässt: Weiter unten steht, was Substanzen anders machen und warum keine noch so gute Signalsteuerung das ersetzt. Ohne diese Passage wäre der Rest Werbung.</p>
+      <div class="mm-metric-row" id="amZahlen" style="margin-top:34px"></div>
+    </div>
+  </section>
+
+  <!-- ====================================================== SIGNALWEG-KARTE -->
+  <section class="am-sec">
+    <div class="container">
+      <div class="mm-secthead"><span class="sys">MM / KARTE</span><h2 class="t">Wie die Wege zusammenhängen</h2></div>
+      <p class="am-lede">Alles läuft auf eine einzige Rechnung hinaus: <strong>Zuwachs = Aufbau minus Abbau.</strong> mTORC1 ist der Knotenpunkt auf der Aufbau-Seite, die Bremsen greifen an genau drei Stellen an.</p>
+
+      <figure class="am-map">
+        <svg viewBox="0 0 900 442" role="img" aria-labelledby="amMapTitle amMapDesc">
+          <title id="amMapTitle">Signalweg-Karte des Muskelaufbaus</title>
+          <desc id="amMapDesc">Vier Eingänge — mechanischer Reiz, Leucin aus Protein, Energie und Insulin sowie Schlaf über Wachstumshormon und IGF-1 — laufen auf mTORC1 zu, teils über Akt. mTORC1 treibt die Muskelproteinsynthese. Drei Bremsen greifen ein: AMPK hemmt mTORC1 bei Energiemangel, Myostatin über Smad hemmt Akt, und Kortisol über FoxO treibt den Proteinabbau. Der Nettozuwachs ist Synthese minus Abbau, begrenzt durch die Kapazität aus Satellitenzellen und Myonuklei.</desc>
+          <defs>
+            <marker id="amArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="#7f95a8"/>
+            </marker>
+            <marker id="amArrowC" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="#16C4F4"/>
+            </marker>
+          </defs>
+
+          <!-- Bandbeschriftungen -->
+          <text x="16" y="14" font-family="ui-monospace,monospace" font-size="9" letter-spacing="2.4" fill="#6b7484">EINGÄNGE</text>
+          <text x="456" y="14" font-family="ui-monospace,monospace" font-size="9" letter-spacing="2.4" fill="#6b7484">INTEGRATION</text>
+          <text x="700" y="14" font-family="ui-monospace,monospace" font-size="9" letter-spacing="2.4" fill="#6b7484">ERGEBNIS</text>
+
+          <!-- Eingänge -->
+          <g font-family="Inter,system-ui,sans-serif">
+            <g>
+              <rect x="16" y="24" width="170" height="52" rx="9" fill="rgba(37,140,255,0.06)" stroke="rgba(37,140,255,0.34)"/>
+              <text x="30" y="46" font-size="13" fill="#F0EEE9">Mechanischer Reiz</text>
+              <text x="30" y="63" font-family="ui-monospace,monospace" font-size="9" letter-spacing="1.4" fill="#6b7484">SW01 · SPANNUNG</text>
+            </g>
+            <g>
+              <rect x="16" y="92" width="170" height="52" rx="9" fill="rgba(37,140,255,0.06)" stroke="rgba(37,140,255,0.34)"/>
+              <text x="30" y="114" font-size="13" fill="#F0EEE9">Leucin aus Protein</text>
+              <text x="30" y="131" font-family="ui-monospace,monospace" font-size="9" letter-spacing="1.4" fill="#6b7484">SW02 · LEUCIN-SCHWELLE</text>
+            </g>
+            <g>
+              <rect x="16" y="160" width="170" height="52" rx="9" fill="rgba(37,140,255,0.06)" stroke="rgba(37,140,255,0.34)"/>
+              <text x="30" y="182" font-size="13" fill="#F0EEE9">Energie &amp; Insulin</text>
+              <text x="30" y="199" font-family="ui-monospace,monospace" font-size="9" letter-spacing="1.4" fill="#6b7484">SW06 · ERLAUBEND</text>
+            </g>
+            <g>
+              <rect x="16" y="228" width="170" height="52" rx="9" fill="rgba(37,140,255,0.06)" stroke="rgba(37,140,255,0.34)"/>
+              <text x="30" y="250" font-size="13" fill="#F0EEE9">Schlaf → GH / IGF-1</text>
+              <text x="30" y="267" font-family="ui-monospace,monospace" font-size="9" letter-spacing="1.4" fill="#6b7484">SW03 · 7–9 STUNDEN</text>
+            </g>
+
+            <!-- Akt -->
+            <rect x="246" y="228" width="150" height="52" rx="9" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.16)"/>
+            <text x="260" y="250" font-size="13" fill="#F0EEE9">Akt / PI3K</text>
+            <text x="260" y="267" font-family="ui-monospace,monospace" font-size="9" letter-spacing="1.4" fill="#6b7484">AUFBAU AN · ABBAU AUS</text>
+
+            <!-- mTORC1 -->
+            <rect x="456" y="92" width="190" height="76" rx="11" fill="rgba(22,196,244,0.09)" stroke="#16C4F4" stroke-width="1.4"/>
+            <text x="472" y="122" font-size="17" font-weight="700" fill="#F0EEE9">mTORC1</text>
+            <text x="472" y="141" font-family="ui-monospace,monospace" font-size="9" letter-spacing="1.4" fill="#9fb0bd">DER ZENTRALE SCHALTER</text>
+            <text x="472" y="156" font-family="ui-monospace,monospace" font-size="9" letter-spacing="1.4" fill="#6b7484">SW02 · VIER EINGÄNGE</text>
+
+            <!-- Ergebnis -->
+            <rect x="700" y="92" width="184" height="52" rx="9" fill="rgba(45,212,167,0.07)" stroke="rgba(45,212,167,0.4)"/>
+            <text x="714" y="114" font-size="13" fill="#F0EEE9">Muskelprotein-Synthese</text>
+            <text x="714" y="131" font-family="ui-monospace,monospace" font-size="9" letter-spacing="1.4" fill="#6b7484">AUFBAU</text>
+
+            <rect x="700" y="228" width="184" height="52" rx="9" fill="rgba(240,106,106,0.07)" stroke="rgba(240,106,106,0.4)"/>
+            <text x="714" y="250" font-size="13" fill="#F0EEE9">Proteinabbau</text>
+            <text x="714" y="267" font-family="ui-monospace,monospace" font-size="9" letter-spacing="1.4" fill="#6b7484">MuRF1 · MAFbx</text>
+
+            <!-- Bremsen -->
+            <rect x="456" y="200" width="190" height="46" rx="9" fill="rgba(240,106,106,0.06)" stroke="rgba(240,106,106,0.34)"/>
+            <text x="470" y="220" font-size="12" fill="#f0a8a8">AMPK · Energiemangel</text>
+            <text x="470" y="235" font-family="ui-monospace,monospace" font-size="9" letter-spacing="1.4" fill="#6b7484">SW09 · HEMMT mTORC1</text>
+
+            <rect x="246" y="310" width="150" height="46" rx="9" fill="rgba(240,106,106,0.06)" stroke="rgba(240,106,106,0.34)"/>
+            <text x="260" y="330" font-size="12" fill="#f0a8a8">Myostatin → Smad</text>
+            <text x="260" y="345" font-family="ui-monospace,monospace" font-size="9" letter-spacing="1.4" fill="#6b7484">SW10 · HEMMT Akt</text>
+
+            <rect x="700" y="310" width="184" height="46" rx="9" fill="rgba(240,106,106,0.06)" stroke="rgba(240,106,106,0.34)"/>
+            <text x="714" y="330" font-size="12" fill="#f0a8a8">Kortisol → FoxO</text>
+            <text x="714" y="345" font-family="ui-monospace,monospace" font-size="9" letter-spacing="1.4" fill="#6b7484">SW11 · TREIBT ABBAU</text>
+          </g>
+
+          <!-- Verbindungen: Eingänge → mTORC1 / Akt -->
+          <g fill="none" stroke="#7f95a8" stroke-width="1.3" marker-end="url(#amArrow)">
+            <path d="M186 50 H 420 V 112 H 452"/>
+            <path d="M186 118 H 452"/>
+            <path d="M186 186 H 420 V 150 H 452"/>
+            <path d="M186 254 H 242"/>
+          </g>
+          <g fill="none" stroke="#16C4F4" stroke-width="1.6" marker-end="url(#amArrowC)">
+            <path d="M396 254 H 436 V 160 H 452"/>
+            <path d="M646 130 H 696"/>
+          </g>
+
+          <!-- Bremsverbindungen: stumpfer Balken statt Pfeilspitze -->
+          <g stroke="#f06a6a" stroke-width="1.6" fill="none">
+            <path d="M551 200 V 176"/><path d="M539 176 H 563"/>
+            <path d="M321 310 V 288"/><path d="M309 288 H 333"/>
+          </g>
+          <g fill="none" stroke="#f06a6a" stroke-width="1.4" marker-end="url(#amArrow)">
+            <path d="M792 310 V 286"/>
+          </g>
+
+          <!-- Netto-Band -->
+          <line x1="16" y1="386" x2="884" y2="386" stroke="rgba(255,255,255,0.09)"/>
+          <text x="16" y="412" font-family="ui-monospace,monospace" font-size="11" letter-spacing="1.8" fill="#16C4F4">NETTO-ZUWACHS = SYNTHESE − ABBAU</text>
+          <text x="16" y="430" font-family="ui-monospace,monospace" font-size="9.5" letter-spacing="1.2" fill="#6b7484">OBERGRENZE: SATELLITENZELLEN UND MYONUKLEI (SW05) — MONATE, NICHT WOCHEN</text>
+        </svg>
+        <figcaption>Blau = anaboler Fluss · Rot = Bremse · Der stumpfe Balken heißt „hemmt“, nicht „führt zu“. Wer nur die blauen Pfeile bedient und die roten ignoriert, addiert Reiz auf einen Körper, der ihn gerade nicht verarbeiten kann.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- =============================================================== MATRIX -->
+  <section class="am-sec">
+    <div class="container">
+      <div class="mm-secthead"><span class="sys">MM / MATRIX</span><h2 class="t">Zwölf Hebel gegen elf Signalwege</h2></div>
+      <p class="am-lede">Zeilen sind das, was du tust. Spalten sind das, was im Körper passiert. Eine leere Zelle ist eine Aussage: Dort gibt es keine belastbare Wirkung — und sie wird auch nicht behauptet.</p>
+
+      <div class="am-legend">
+        <span class="am-leg l-direkt"><b>●</b>schaltet direkt</span>
+        <span class="am-leg"><b>○</b>erlaubend — ohne ihn geht es nicht, allein löst er nichts aus</span>
+        <span class="am-leg l-bremse"><b>⊣</b>löst eine Bremse</span>
+        <span class="am-leg"><b>·</b>keine belastbare Wirkung</span>
+        <button class="am-sw" id="amOnlyDirect" type="button" aria-pressed="false"><span class="am-sw-l">ALLE WIRKUNGEN</span></button>
+      </div>
+
+      <div class="am-scroll" id="amMatrix"></div>
+      <p class="small muted" style="margin-top:14px">Auf dem Telefon lässt sich die Tabelle seitlich schieben. Kopfzeile und erste Spalte sind Sprungmarken — tippen führt direkt zum Detail.</p>
+    </div>
+  </section>
+
+  <!-- =========================================================== SIGNALWEGE -->
+  <section class="am-sec">
+    <div class="container">
+      <div class="mm-secthead"><span class="sys">MM / WEGE</span><h2 class="t">Die elf Signalwege im Einzelnen</h2></div>
+      <p class="am-lede">Jeder Weg mit demselben Raster: was er tut, was ihn schaltet, wie lange er braucht, woran du es prüfst, welcher Fehler am häufigsten passiert — und wo er aufhört.</p>
+      <div id="amWege" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <!-- ================================================================ HEBEL -->
+  <section class="am-sec">
+    <div class="container">
+      <div class="mm-secthead"><span class="sys">MM / HEBEL</span><h2 class="t">Die zwölf Hebel, dosiert</h2></div>
+      <p class="am-lede">Ein Hebel ohne Dosis und ohne Nachweis ist ein Ratschlag. Deshalb steht bei jedem beides — und die Zahl der Wege, die er tatsächlich bedient.</p>
+      <div id="amHebel" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <!-- ========================================================= TRIGGER-PLAN -->
+  <section class="am-sec">
+    <div class="container">
+      <div class="mm-secthead"><span class="sys">MM / WOCHE</span><h2 class="t">Der Trigger-Plan: eine gewöhnliche Woche</h2></div>
+      <p class="am-lede">Vier Krafteinheiten, ein Ausdauertag, zwei Erholungstage. Kein Idealbild — ein Alltag, in dem jeder der elf Wege mindestens einmal bedient wird.</p>
+      <div id="amWoche" style="margin-top:12px"></div>
+      <p class="small muted" style="margin-top:18px;max-width:62ch">Protein, Schlaf und Kreatin stehen bewusst in keiner Tageszeile: Sie laufen an jedem der sieben Tage gleich. Genau daran scheitern die meisten Pläne — nicht am Training.</p>
+    </div>
+  </section>
+
+  <!-- ========================================================= REALITY CHECK -->
+  <section class="am-sec">
+    <div class="container">
+      <div class="mm-secthead"><span class="sys">MM / GRENZE</span><h2 class="t">Was Substanzen anders machen</h2></div>
+      <div class="am-real" id="amVergleich" style="margin-top:8px"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================== QUELLEN -->
+  <section class="am-sec">
+    <div class="container">
+      <div class="mm-secthead"><span class="sys">MM / EVIDENZ</span><h2 class="t">Quellen &amp; Evidenz</h2></div>
+      <p class="am-lede">Elf verifizierte Arbeiten mit DOI und kanonischer Adresse. Wo für eine Aussage keine Landmark-Quelle vorliegt, steht das an der Aussage selbst — es wird keine erfunden. Der Evidenz-Standard dahinter: <a href="trust.html">Vertrauen &amp; Methodik</a>.</p>
+      <div class="am-quellen" id="amQuellen" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <!-- ================================================================== CTA -->
+  <section class="am-sec" style="padding-bottom:clamp(56px,8vw,96px)">
+    <div class="container">
+      <hr class="mm-hr">
+      <div class="mm-secthead"><span class="sys">MM / NÄCHSTER SCHRITT</span><h2 class="t">Welcher Hebel bei dir zuerst greift</h2></div>
+      <p class="am-lede">Diese Matrix zeigt alle Wege — sie sagt dir nicht, welcher bei dir gerade der Engpass ist. Genau das macht der Score: Er ordnet Training, Ernährung, Schlaf, Erholung und deine Marker ein und benennt den einen Bereich, an dem es hakt.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:22px">
+        <a href="check.html" class="btn btn-primary" data-track="score_start_click">Deinen Engpass finden — kostenlos</a>
+        <a href="protokoll.html" class="btn btn-dark">DAS PROTOKOLL ansehen</a>
+        <a href="tracker.html" class="btn btn-dark">Progression mitschreiben</a>
+      </div>
+      <p class="small muted" style="margin-top:26px;max-width:70ch">Allgemeine Information und Aufklärung, kein Ersatz für ärztliche Beratung, Diagnose oder Therapie. Keine Einnahme-, Dosierungs- oder Therapieempfehlung. Trainings-, Protein- und Schlafangaben sind Trainings- und Ernährungslehre mit den oben genannten Quellen; alles Pharmakologische gehört zum Arzt. Zuletzt geprüft: August 2026.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="index.html" class="logo" aria-label="MaleMetrix Startseite"><span class="logo-word">MALEMETRI</span><svg class="logo-x" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path d="M22 22 42 42 M22 78 42 58" stroke="#F0EEE9" stroke-width="12" stroke-linecap="round" fill="none"/><path d="M78 22 58 42 M78 78 58 58" stroke="#16C4F4" stroke-width="12" stroke-linecap="round" fill="none"/></svg></a>
+        <p data-i18n="foot.brand">Das Performance-System für Männer. Körper. Kraft. Energie. Blutwerte. Umsetzung.</p>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="foot.system">System</h4>
+        <ul>
+          <li><a href="check.html" data-i18n="foot.score">MaleMetrix Score</a></li>
+          <li><a href="coaching.html" data-i18n="foot.coaching">1:1 Coaching</a></li>
+          <li><a href="protokoll.html" data-i18n="foot.course">DAS PROTOKOLL (inkl. Programm)</a></li>
+          <li><a href="blutwerte.html" data-i18n="foot.blood">Blutwerte verstehen</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="foot.freecol">Kostenlos</h4>
+        <ul>
+          <li><a href="tools.html" data-i18n="foot.tools">Kostenlose Rechner</a></li>
+          <li><a href="tracker.html" data-i18n="foot.tracker">Training-Tracker</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="foot.info">Info</h4>
+        <ul>
+          <li><a href="ueber.html" data-i18n="foot.about">Über MaleMetrix</a></li>
+          <li><a href="faq.html" data-i18n="foot.faq">FAQ</a></li>
+          <li><a href="termin.html" data-i18n="foot.booking">Analysegespräch</a></li>
+          <li><a href="kontakt.html" data-i18n="foot.contact">Kontakt</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="foot.legal">Rechtliches</h4>
+        <ul>
+          <li><a href="impressum.html" data-i18n="foot.imprint">Impressum</a></li>
+          <li><a href="datenschutz.html" data-i18n="foot.privacy">Datenschutz</a></li>
+          <li><a href="agb.html" data-i18n="foot.terms">AGB &amp; Widerruf</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-disclaimer" data-i18n="foot.disclaimer">
+      MaleMetrix bietet Coaching, Lifestyle-Analyse und strukturierte Orientierung zu Training, Ernährung, Schlaf, Körperkomposition und allgemeinen Gesundheitsmarkern. MaleMetrix stellt keine medizinischen Diagnosen, ersetzt keine ärztliche Beratung und gibt keine Therapie- oder Medikamentenempfehlungen. Bei gesundheitlichen Beschwerden, auffälligen Laborwerten oder medizinischen Fragen wende dich bitte an einen Arzt.
+    </div>
+    <div class="footer-bottom">
+      <span>© <span data-year></span> MaleMetrix. <span data-i18n="foot.rights">Alle Rechte vorbehalten.</span></span>
+      <span data-i18n="foot.tagline">Made for Männer, die mehr wollen.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/analytics.js"></script>
+<script src="js/shop-data.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/main.js"></script>
+<script src="js/anabole-matrix-data.js"></script>
+<script src="js/anabole-matrix.js"></script>
+</body>
+</html>

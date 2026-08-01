@@ -27,6 +27,30 @@ Auditiert am tatsächlichen Repo-Stand `cdc96d9`. Frühere Berichte nicht vertra
 ¹ **noindex bei sonst indexierbarem Inhalt** — zu prüfen (evtl. lead-gated Alt-PDF-Variante).
 ² **noindex = bewusst (Alt-Version)**: `schlaf-energie`↔`schlaf-stack`, `training-system`↔`taeglich-trainieren`, `masterguide`↔`blueprint` — die neuere, benannte Fassung ist indexiert; die Alt-Fassung bleibt noindex, um Duplicate-Content-Abwertung zu vermeiden. **Nicht blind entfernen.**
 
+## Referenzseite — `anabole-matrix.html`
+
+Freie, indexierte Referenz: **11 Signalwege × 12 Hebel** als Matrix, dazu
+Signalweg-Karte (SVG), Detailraster je Weg und Hebel (Dosis · Zeitfenster ·
+Nachweis · häufigster Fehler · Grenze), Trigger-Plan über eine Woche und der
+ehrliche Vergleich mit Substanzen.
+
+- **Datengetrieben:** `js/anabole-matrix-data.js` (Inhalt) +
+  `js/anabole-matrix.js` (Darstellung). Inhalt wird nur in der Datendatei
+  geändert — der Test hält die Trennung fest.
+- **Evidenz:** 11 web-verifizierte Arbeiten mit DOI und kanonischer URL.
+  Fünf davon stehen identisch im Wissensgraph (Morton 2018, Schoenfeld 2017,
+  Kreider 2017, Watson 2015, Bhasin 2018), sechs sind für diese Seite ergänzt
+  (West 2012, Morton AR 2018, Leproult 2011, Refalo 2023, Bhasin 1996,
+  Bhasin 2001). Wo keine Landmark-Quelle vorliegt (SW05, SW09, SW10), steht
+  das als `evidenzNote` an der Aussage — es wird keine erfunden.
+- **Leitplanken** (`tools-dev/tests/anabole-matrix.test.js`, 62 Prüfungen):
+  keine Bremse als „schaltet direkt“, keine Evidenzstufe STARK ohne Quelle,
+  keine unbenutzte oder unvollständige Quelle, keine Dosieranweisung für
+  Substanzen — und die Passage „Was Substanzen anders machen“ kann nicht
+  still verschwinden.
+- **Einstiege:** Karte in `blog.html`, Kontextlink in
+  `blog/testosteron-natuerlich-steigern.html`, Eintrag in `sitemap.xml`.
+
 ## Blog (`blog.html`) — 11 Artikel
 Tirzepatid-Kosten · TRT-Telemedizin · Testosteron natürlich · Blutwerte ab 30 ·
 Abnehmen ohne Hunger · Schlaf & Testosteron · Ozempic/Wegovy/Mounjaro ·
