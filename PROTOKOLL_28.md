@@ -226,11 +226,97 @@ PROTOKOLL 28 muss der Standard **erweitert** werden, nicht gebogen:
 
 ---
 
-## 12 — Offene Entscheidungen
+## 12 — Entschieden
 
-1. **Garantie −8 cm** — oder vorsichtiger −6 cm für die erste Kohorte, bis
-   eigene Zahlen vorliegen?
-2. **79 €** bestätigen oder ändern.
-3. **Kohortengröße** — offen oder gedeckelt (z. B. 30, was die Knappheit echt
-   macht und die Betreuung tragbar hält)?
-4. **Name** — PROTOKOLL 28 oder etwas Härteres.
+| Punkt | Entscheidung |
+|---|---|
+| Garantie | **−8 cm** (nicht die vorsichtige Variante) |
+| Kohortengröße | **ungedeckelt** |
+| Preis | 79 € (wie vorgeschlagen) |
+| Name | PROTOKOLL 28 (wie vorgeschlagen) |
+
+Die Kohorte ist ungedeckelt — damit fällt die Knappheit als Verkaufsmechanik
+weg und der **Termin** trägt die Dringlichkeit allein. Das ist tragfähig, hat
+aber eine Folge für Block 2: Wenn 200 Männer gleichzeitig in Woche 2 sind,
+gibt es niemanden, der sie einzeln auffängt. Das Programm muss den
+Abbruchmoment deshalb **selbst** abfangen (Weekly Pulse, Troubleshooting im
+Tagestext) statt auf Betreuung zu bauen.
+
+---
+
+## 13 — Kollision mit den eigenen Wächtern
+
+Beim Bauen sind zwei Stellen aufgelaufen. Die erste ist erledigt, die zweite
+braucht deine Entscheidung.
+
+### 13.1 G5 war auf genau ein Produkt geschrieben — behoben
+
+`tools-dev/tests/security-guards.test.js` verglich den **ersten** `price:` aus
+`js/shop-data.js` gegen den **ersten** `priceCents:` aus `fulfillment.mjs`.
+Bei einem Ein-Produkt-Katalog reichte das. Ein zweites Produkt mit falschem
+Preis wäre **unbemerkt** durchgegangen — und ein auseinanderlaufender Preis
+lässt serverseitig jede Zahlung auflaufen (`validateProducts` rechnet die
+Summe aus dem Server-Katalog).
+
+Der Wächter liest jetzt **beide Kataloge vollständig** ein und vergleicht je
+Produkt-ID. Gegengeprüft: Ein absichtlich falscher Serverpreis (6900 statt
+7900) lässt die Suite jetzt scheitern — vorher nicht.
+
+### 13.2 Die −8 cm kollidieren mit dem Proof-Standard — offen
+
+`tools-dev/tests/proof-standard.test.js` prüft öffentliche Seiten gegen:
+
+```js
+var claims = /(\d+\s*(kg|cm)\s*(in|nach)\s*\d+\s*Wochen|garantierte[rs]?\s+Erfolg|…)/i;
+ok(anyPublished || !claims.test(src), "kein Ergebnisversprechen ohne hinterlegte Fallstudie");
+```
+
+`js/case-studies-data.js` ist leer, also greift die Regel. Die Verkaufsseite
+sagt **„−8 cm in 28 Tagen"** — exakt das, was die Regel verhindern soll.
+
+**Formal würde es durchgehen:** Der Ausdruck verlangt „Wochen", die Seite
+schreibt „Tagen". Diese Lücke zu benutzen wäre die unehrlichste verfügbare
+Option — Wächter bestanden, Standard gebrochen. Kommt nicht in Frage.
+
+Drei echte Wege:
+
+| Weg | Was passiert | Bewertung |
+|---|---|---|
+| **A** · Zahl erst nach Kohorte 1 | Start ohne „−8 cm", Garantie als reine Rückgabe-Zusage formuliert | sicher, aber nimmt dem Angebot die Schärfe genau dort, wo sie sitzt |
+| **B** · Zahl mit Offenlegung | Zahl bleibt, dazu auf derselben Seite: *„Dafür haben wir noch keine eigenen Ergebnisse. Deshalb die Garantie: entweder es passiert, oder du zahlst nichts."* Wächter wird auf genau dieses Muster erweitert | **empfohlen** |
+| **C** · Wächter aufweichen | Regel entschärfen | nein — das ist die Regel, die das Haus glaubwürdig macht |
+
+**Warum B und nicht A:** Ein Ergebnisversprechen und eine
+Rückgabe-Zusage sind nicht dasselbe. „Du verlierst 8 cm" ist eine Behauptung
+über den Käufer. „8 cm oder Geld zurück, und eigene Daten haben wir noch
+keine" ist ein **Angebot mit offengelegtem Risiko** — der Verkäufer trägt es,
+nicht der Käufer. Das ist stärker als eine vorsichtige Formulierung *und*
+ehrlicher als eine selbstbewusste.
+
+Der Wächter würde entsprechend erweitert: Eine Zahl ist erlaubt, **wenn** auf
+derselben Seite eine Rückgabe-Zusage und der Hinweis auf fehlende eigene
+Daten stehen. Fehlt eines von beiden, schlägt die Suite fehl. Das ist eine
+Verschärfung für alle anderen Seiten, keine Aufweichung.
+
+**Ohne deine Entscheidung baue ich die Verkaufsseite nicht.**
+
+---
+
+## 14 — Was jetzt gebaut ist
+
+| Baustein | Zustand |
+|---|---|
+| Server-Katalog `p28`, 7900 ct, Entitlement `p28` | ✅ `fulfillment.mjs` |
+| Fähigkeit `P28_PROGRAM` + Grant | ✅ `js/os/entitlements.js` |
+| Shop-Eintrag, 79 € | ✅ `js/shop-data.js` — **`hidden: true`** |
+| Wächter G5 mehrproduktfähig | ✅ mit Gegentest |
+| Testsuite | ✅ 35 Suiten, 2.896 Assertions, 0 Fehler |
+| Verkaufsseite `p28.html` | ⛔ wartet auf 13.2 |
+| Eignungs-Check | ⛔ wartet auf 13.2 |
+| 28 Tagestexte (Vault) | ⛔ die eigentliche Arbeit, noch nicht begonnen |
+| Kohorten-Logik | ⛔ offen |
+
+**`hidden: true` ist Absicht.** Preis und Rechte stehen auf Client und Server
+identisch, damit der Wächter greift — aber das Produkt taucht im Shop nicht
+auf, solange kein Inhalt existiert. Ein kaufbares Produkt ohne Inhalt wäre
+Geld gegen nichts.

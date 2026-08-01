@@ -98,26 +98,44 @@ group("G4 · Zustimmung zu digitalen Inhalten ist Pflicht");
 group("G5 · Kein Client-Produkt ohne serverseitiges Gegenstück");
 (function () {
   var shop = read("js/shop-data.js");
-  var clientIds = (shop.match(/id:\s*"([a-z0-9-]+)"/g) || []).map(function (m) { return m.split('"')[1]; });
   var srv = read("supabase/functions/mm-commerce/fulfillment.mjs");
-  var fehlend = clientIds.filter(function (id) { return srv.indexOf('"' + id + '"') < 0; });
+
+  /* Beide Kataloge vollstaendig einlesen: Produkt-ID → Preis. Frueher wurde
+     nur der ERSTE `price:` gegen den ERSTEN `priceCents:` geprueft. Das
+     genuegte, solange es genau ein Produkt gab — beim zweiten waere ein
+     auseinanderlaufender Preis unbemerkt durchgegangen, und genau daran
+     scheitert jede Zahlung serverseitig. Jetzt wird je Produkt verglichen. */
+  var clientPrices = {};
+  var reProd = /id:\s*"([a-z0-9-]+)"[\s\S]*?price:\s*([0-9]+(?:\.[0-9]+)?)/g, mProd;
+  while ((mProd = reProd.exec(shop))) clientPrices[mProd[1]] = parseFloat(mProd[2]);
+  var clientIds = Object.keys(clientPrices);
+
+  var srvPrices = {};
+  var reSrv = /"([a-z0-9-]+)":\s*\{\s*priceCents:\s*([0-9]+)/g, mSrv;
+  while ((mSrv = reSrv.exec(srv))) srvPrices[mSrv[1]] = parseInt(mSrv[2], 10);
+
+  var fehlend = clientIds.filter(function (id) { return !(id in srvPrices); });
   ok(clientIds.length > 0, "Client-Katalog gelesen (" + clientIds.length + " Produkte)");
   ok(fehlend.length === 0,
     "jedes Client-Produkt existiert serverseitig (fehlend: " + (fehlend.join(", ") || "keins") + ")");
 
   /* Client- und Serverpreis müssen übereinstimmen: Der Server prüft den
      gezahlten Betrag, ein Auseinanderlaufen lässt jede Zahlung auflaufen. */
-  var cP = (shop.match(/price:\s*([0-9]+(?:\.[0-9]+)?)/) || [])[1];
-  var sP = (srv.match(/priceCents:\s*([0-9]+)/) || [])[1];
-  ok(cP && sP && Math.round(parseFloat(cP) * 100) === parseInt(sP, 10),
-    "Client-Preis (" + cP + " €) und Server-Preis (" + sP + " Cent) stimmen überein");
+  var abweichend = clientIds.filter(function (id) {
+    return id in srvPrices && Math.round(clientPrices[id] * 100) !== srvPrices[id];
+  });
+  ok(clientIds.length > 0 && abweichend.length === 0,
+    "Client- und Serverpreis stimmen je Produkt überein (abweichend: " +
+    (abweichend.map(function (id) { return id + " " + clientPrices[id] + " € vs " + srvPrices[id] + " ct"; }).join("; ") || "keins") + ")");
 
   /* Sichtbare Preise werden in mehreren Schreibweisen gesetzt: "99 €",
      "99&nbsp;€" und im Englischen "€99". Eine frühere Preisänderung fasste
      nur die erste Form an, sodass auf mehreren Seiten der alte Preis
      stehen blieb. Daher wird hier jede Schreibweise gegen den Katalog
      geprüft — Versandschwellen und der Coaching-Monatspreis ausgenommen. */
-  var ERLAUBT = [cP.replace(/\.00$/, ""), "199", "50", "400", "3,90", "3.90"];
+  var ERLAUBT = clientIds
+    .map(function (id) { return String(clientPrices[id]); })
+    .concat(["199", "50", "400", "3,90", "3.90"]);
   var falsch = [];
   shipped([".html", ".js"]).forEach(function (f) {
     /* Kommentare zaehlen nicht: Ein Betrag in einer Erklaerung fuer den

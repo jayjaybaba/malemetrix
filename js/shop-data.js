@@ -58,5 +58,39 @@
     /* Das 12-Wochen-Programm ist seit der Zusammenlegung Teil von
        DAS PROTOKOLL (ein Kauf, ein Code) — kein eigenes Produkt mehr. */
 
+    /* ---------- PROTOKOLL 28 ----------
+       BEWUSST `hidden: true`. Der Katalogeintrag existiert, damit Preis und
+       Rechte auf Client und Server dieselben sind (Waechter G5) — kaufbar
+       wird das Produkt erst, wenn der Vault-Inhalt steht. Ein sichtbares
+       Produkt ohne Inhalt waere Geld gegen nichts.
+       Spezifikation: PROTOKOLL_28.md */
+    {
+      id: "p28",
+      hidden: true,
+      name: "PROTOKOLL 28 — der 28-Tage-Durchlauf",
+      cat: "digital", catLabel: "Digital · Durchlauf · Kohortenstart",
+      price: 79.00,
+      digital: true,
+      emoji: "⏱️",
+      badge: "28 Tage",
+      desc: "Vier Wochen mit festem Start, fester Struktur und einem Ende. Hoher Protein-Boden, hartes Defizit, zwei kurze Krafteinheiten pro Woche, 10.000 Schritte — mehr nicht. Drei Bloecke: KIPPEN, DER BLOCK, SICHERN. Der Eignungs-Check steht vor dem Kauf und lehnt ab, wenn das Produkt nicht passt.",
+      details: [
+        "28 Tage, ein Bildschirm pro Tag, eine Aufgabe, ein Haekchen — kein PDF",
+        "Protein-Boden 2,2–2,6 g pro kg Zielgewicht: daran haengt der Muskelerhalt",
+        "Zwei kurze Ganzkoerper-Krafteinheiten pro Woche, kein Zusatz-Cardio",
+        "Block SICHERN (Tag 22–28): der kontrollierte Ausstieg, den Crash-Diaeten auslassen",
+        "Eignungs-Check vor dem Kauf — mit echten Ablehnungen",
+        "Enthaelt ein Begleitkapitel zur Blutwert-Kontrolle unter hartem Defizit: keine Dosierungen, keine Bezugsquellen, keine Anwendungsanleitung",
+        "Die 79 € werden auf DAS PROTOKOLL angerechnet, wenn du danach kaufst"
+      ],
+      cta: { label: "Eignung pruefen →", href: "p28.html" },
+      svg: visual(
+        '<circle cx="200" cy="125" r="66" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="10"/>' +
+        '<circle cx="200" cy="125" r="66" fill="none" stroke="url(#pgGrad)" stroke-width="10" stroke-linecap="round" stroke-dasharray="300 115" transform="rotate(-90 200 125)"/>' +
+        '<text x="200" y="120" font-family="monospace" font-size="38" font-weight="bold" fill="#ffffff" text-anchor="middle">28</text>' +
+        '<text x="200" y="146" font-family="monospace" font-size="13" fill="rgba(255,255,255,0.55)" text-anchor="middle">TAGE</text>'
+      )
+    },
+
   ];
 })();

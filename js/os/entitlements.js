@@ -19,7 +19,8 @@
 
   // Fähigkeiten (§13) — was das Produkt kann, unabhängig von der Verpackung.
   var CAPS = ["PROGRAM", "TRACKING", "PROGRESS", "INTELLIGENCE", "ADVISOR", "FORESIGHT",
-    "LABS_INTELLIGENCE", "SIMULATOR", "ADVANCED_STACK", "ENHANCED", "REPORTS", "COACHING"];
+    "LABS_INTELLIGENCE", "SIMULATOR", "ADVANCED_STACK", "ENHANCED", "REPORTS", "COACHING",
+    "P28_PROGRAM"];
 
   // Entitlement → Fähigkeiten. PROTOKOLL (einmalig) schaltet heute das
   // Gesamtsystem frei (Phase-8-Positionierung: ein Kauf, ein System).
@@ -31,6 +32,10 @@
     protocol: ["PROGRAM", "TRACKING", "PROGRESS", "INTELLIGENCE", "ADVISOR", "FORESIGHT",
       "LABS_INTELLIGENCE", "SIMULATOR", "ADVANCED_STACK", "ENHANCED", "REPORTS"],
     advanced_library: ["LABS_INTELLIGENCE"],
+    // PROTOKOLL 28 ist ein eigener Durchlauf, kein Teilstueck des Protokolls:
+    // eigener Kauf, eigene Faehigkeit, eigenes Tracking. Wer nur p28 hat,
+    // bekommt ausdruecklich NICHT das 12-Wochen-Programm (PROGRAM).
+    p28: ["P28_PROGRAM", "TRACKING", "PROGRESS"],
     coaching: ["COACHING"],
     intelligence_sub: ["FORESIGHT", "ADVISOR", "REPORTS"]   // reserviert für spätere Abo-Stufe
   };

@@ -32,6 +32,11 @@
 // Server. Unbekannte IDs werden abgelehnt, nie still toleriert.
 export const PRODUCTS = {
   "protokoll": { priceCents: 9900, currency: "EUR", entitlements: ["protocol", "twelve_week"] },
+  // PROTOKOLL 28 (28-Tage-Durchlauf). Serverseitig bereits kanonisch, im
+  // Shop aber noch `hidden` — solange der Vault-Inhalt fehlt, darf das
+  // Produkt nicht kaufbar sein. Der Eintrag hier ist die Preis- und
+  // Rechte-Wahrheit, sobald er sichtbar geschaltet wird.
+  "p28": { priceCents: 7900, currency: "EUR", entitlements: ["p28"] },
 };
 
 // Erlaubte Zahlungsanbieter. Der Wert landet in orders.provider,
