@@ -94,12 +94,114 @@
   document.addEventListener("error", (ev) => {
     const el = ev.target;
     if (!el || el.tagName !== "IMG") return;
-    if (el.classList.contains("ex-thumb") || el.classList.contains("ex-pick-thumb") ||
-        (el.parentElement && el.parentElement.classList.contains("ex-detail-media"))) {
+    if (el.classList.contains("mm-anim-f")) {
+      el.removeAttribute("src");
+      const box = el.closest(".mm-anim");
+      if (box) { box.classList.add("ex-thumb-empty"); box.classList.remove("is-playing"); }
+      return;
+    }
+    if (el.classList.contains("ex-thumb") || el.classList.contains("ex-pick-thumb")) {
       el.removeAttribute("src");
       el.classList.add("ex-thumb-empty");
     }
   }, true);
+
+  /* ==========================================================================
+     BEWEGUNG STATT STANDBILD
+     --------------------------------------------------------------------------
+     Die Quelle liefert je Übung ZWEI Fotos — und zwar nicht zwei Ansichten,
+     sondern Anfang und Ende derselben Bewegung: Hantel oben / Hantel unten.
+     Im Wechsel abgespielt ergibt genau das die Bewegungsschleife, die eine
+     Übung erklärt. Kein Standbild, sondern die Wiederholung selbst.
+
+     Das ist der Grund, warum hier keine Videos liegen: die Animation steckt
+     bereits in den Daten. Sie gilt für ALLE 874 Übungen, kostet kein
+     zusätzliches Byte und funktioniert offline, sobald beide Bilder einmal
+     im Cache sind.
+
+     EIN Taktgeber für die ganze Seite. Zwanzig eigene Timer wären zwanzig
+     Gelegenheiten, den Akku zu leeren und aus dem Takt zu geraten.
+     ========================================================================== */
+  const ANIM_MS = 900;
+  let animTimer = null, animPhase = false;
+
+  function animTick() {
+    animPhase = !animPhase;
+    document.querySelectorAll(".mm-anim.is-playing").forEach(el => {
+      el.classList.toggle("frame-b", animPhase);
+    });
+    if (!document.querySelector(".mm-anim.is-playing")) stopAnimClock();
+  }
+  function startAnimClock() {
+    if (animTimer || document.hidden) return;
+    animTimer = setInterval(animTick, ANIM_MS);
+  }
+  function stopAnimClock() {
+    if (animTimer) { clearInterval(animTimer); animTimer = null; }
+  }
+  /* Im Hintergrund-Tab läuft nichts. */
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stopAnimClock();
+    else if (document.querySelector(".mm-anim.is-playing")) startAnimClock();
+  });
+
+  /* Wer "weniger Bewegung" eingestellt hat, bekommt Standbilder — bis er von
+     Hand auf Abspielen drückt. Die Wahl wird gemerkt. */
+  const reducedMotion = () => {
+    try { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; }
+  };
+  function animOn() { return MM.store.get("trk_anim", !reducedMotion()); }
+  function setAnimOn(v) { MM.store.set("trk_anim", !!v); }
+
+  /* Zwei-Bild-Schleife. eager=true lädt beide Bilder sofort (Detailansicht),
+     sonst kommt das zweite erst, wenn wirklich animiert wird. */
+  function animMarkup(slug, cls, eager) {
+    if (!slug) return '<span class="mm-anim ex-thumb-empty ' + cls + '" aria-hidden="true"></span>';
+    const load = eager ? "eager" : "lazy";
+    return '<span class="mm-anim ' + cls + '" data-anim="' + esc(slug) + '">' +
+      '<img class="mm-anim-f mm-anim-a" src="' + exImg(slug, 0) + '" alt="" loading="' + load + '" decoding="async">' +
+      (eager ? '<img class="mm-anim-f mm-anim-b" src="' + exImg(slug, 1) + '" alt="" loading="' + load + '" decoding="async">' : '') +
+      '</span>';
+  }
+
+  /* Hängt das zweite Bild nach, falls es noch fehlt, und startet die Schleife.
+     So zahlt eine Liste mit 60 Karten nicht 120 Bilder, sondern 60 — das
+     zweite kommt erst, wenn jemand hinschaut. */
+  function playAnim(box) {
+    if (!box || box.classList.contains("ex-thumb-empty")) return;
+    const slug = box.dataset.anim;
+    if (!slug) return;
+    if (!box.querySelector(".mm-anim-b")) {
+      const b = document.createElement("img");
+      b.className = "mm-anim-f mm-anim-b";
+      b.decoding = "async";
+      b.alt = "";
+      b.src = exImg(slug, 1);
+      box.appendChild(b);
+    }
+    box.classList.add("is-playing");
+    startAnimClock();
+  }
+  function pauseAnim(box) {
+    if (!box) return;
+    box.classList.remove("is-playing", "frame-b");
+  }
+
+  /* Karten in Listen animieren erst bei Berührung/Mauszeiger — 60 gleichzeitig
+     laufende Schleifen wären Unruhe, kein Nutzen. */
+  function bindHoverAnim(root) {
+    if (!animOn()) return;
+    root.querySelectorAll(".ex-card, .ex-pick").forEach(card => {
+      const box = card.querySelector(".mm-anim");
+      if (!box) return;
+      const on = () => playAnim(box), off = () => pauseAnim(box);
+      card.addEventListener("mouseenter", on);
+      card.addEventListener("mouseleave", off);
+      card.addEventListener("focusin", on);
+      card.addEventListener("focusout", off);
+      card.addEventListener("touchstart", on, { passive: true });
+    });
+  }
 
   let libState = "idle";            // idle | loading | ready | failed
   let guideState = "idle";
@@ -844,9 +946,14 @@
       const wLabel = isTime ? T("Sek.", "Sec") : massU();
       const rCol = isTime ? "" : '<th>' + T("Wdh.", "Reps") + '</th>';
 
-      html += '<div class="card" style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">' +
-        '<div><button class="ex-title-link" data-exdetail="' + ex.exId + '">' + tr(meta.name) + ' <span style="opacity:0.5">↗</span></button>' +
-        '<span class="ex-muscle-tag">' + muscleLabel(meta.muscle) + '</span></div>' +
+      /* Die Bewegungsschleife läuft hier dauerhaft: zwischen zwei Sätzen ist
+         der Blick auf die Ausführung genau das, was hilft — nicht erst nach
+         einem zusätzlichen Klick ins Detailfenster. */
+      html += '<div class="card" style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:12px">' +
+        '<div class="ex-head-live">' +
+        animMarkup(meta.src, "ex-live-thumb", false) +
+        '<div><button class="ex-title-link" data-exdetail="' + ex.exId + '">' + esc(tr(meta.name)) + ' <span style="opacity:0.5">↗</span></button>' +
+        '<span class="ex-muscle-tag">' + esc(muscleLabel(meta.muscle)) + '</span></div></div>' +
         '<button class="btn-link-del" data-delex="' + ei + '" style="background:none;border:none;color:var(--muted-2);font-size:0.8rem;text-decoration:underline;cursor:pointer">' + T("Entfernen", "Remove") + '</button></div>';
 
       if (meta.equip === "barbell" && !isTime) {
@@ -906,6 +1013,8 @@
     p.querySelector("#finishSess").addEventListener("click", finishSession);
     p.querySelector("#addExercise").addEventListener("click", openExercisePicker);
     p.querySelectorAll("[data-exdetail]").forEach(b => b.addEventListener("click", () => openExerciseDetail(b.dataset.exdetail)));
+    /* Nur die Übungen dieser Einheit — eine Handvoll, keine Liste. */
+    if (animOn()) p.querySelectorAll(".ex-live-thumb").forEach(playAnim);
     p.querySelectorAll("[data-plate]").forEach(b => b.addEventListener("click", () => {
       const ex = active.exercises[+b.dataset.plate];
       const lastSet = ex.sets[ex.sets.length - 1];
@@ -1027,13 +1136,11 @@
         return tr(a.name).localeCompare(tr(b.name));
       });
       const list = all.slice(0, PICK_MAX);
-      const rows = list.map(e => {
-        const img = exImg(e.src, 0);
-        return '<button class="ex-pick" data-pick="' + esc(e.id) + '">' +
-          (img ? '<img class="ex-pick-thumb" src="' + img + '" alt="" loading="lazy" decoding="async">' : '<span class="ex-pick-thumb ex-thumb-empty"></span>') +
+      const rows = list.map(e =>
+        '<button class="ex-pick" data-pick="' + esc(e.id) + '">' +
+          animMarkup(e.src, "ex-pick-thumb", false) +
           '<span class="ex-pick-name">' + (e.core ? '<span class="ex-pick-star">★</span> ' : '') + esc(tr(e.name)) + '</span>' +
-          '<span class="ex-muscle-tag">' + esc(muscleLabel(e.muscle)) + '</span></button>';
-      }).join("");
+          '<span class="ex-muscle-tag">' + esc(muscleLabel(e.muscle)) + '</span></button>').join("");
 
       modal.querySelector(".ex-picker-list").innerHTML =
         (rows || '<p class="muted" style="text-align:center;padding:20px">' +
@@ -1051,6 +1158,7 @@
         active.exercises.push({ exId: b.dataset.pick, sets: [{ weight: 0, reps: 0, done: false }] });
         S.saveActive(active); closeModal("exModal"); renderPanel();
       }));
+      bindHoverAnim(modal);
     };
     const chips = Object.keys(MM_TRK_MUSCLES).map(m =>
       '<button class="mfilter" data-mf="' + m + '">' + muscleLabel(m) + '</button>').join("");
@@ -1089,7 +1197,13 @@
       S.saveActive(active); closeModal("exModal"); renderPanel();
     });
   }
-  function closeModal(id) { const m = document.getElementById(id || "exModal"); if (m) m.classList.remove("open"); }
+  function closeModal(id) {
+    const m = document.getElementById(id || "exModal");
+    if (!m) return;
+    m.classList.remove("open");
+    /* Geschlossene Fenster dürfen den Taktgeber nicht am Leben halten. */
+    m.querySelectorAll(".mm-anim.is-playing").forEach(pauseAnim);
+  }
 
   /* ---------- Scheiben-Rechner ---------- */
   function openPlateCalc(prefillKg) {
@@ -1180,12 +1294,22 @@
         (metric.length >= 2 ? '<div style="margin:16px 0"><div class="muted small" style="margin-bottom:6px">' + (type === "weight_reps" ? T("Geschätztes 1RM über Zeit", "Estimated 1RM over time") : T("Beste Wiederholungen über Zeit", "Best reps over time")) + '</div>' + chart + '</div>' : '') +
         '<div style="margin-top:8px">' + rows + '</div>';
     }
-    /* Fotos: Start- und Endposition der Bewegung. Zwei Bilder sagen mehr über
-       die Ausführung als jeder Absatz Text — und sie brauchen keine Sprache. */
+    /* Die Bewegung läuft — links die Schleife aus Start- und Endposition,
+       rechts beide Positionen einzeln zum Vergleichen. Zusammen zeigt das
+       sowohl den Ablauf als auch die beiden Endpunkte, auf die es ankommt. */
     const media = meta.src
-      ? '<div class="ex-detail-media">' +
-          '<img src="' + exImg(meta.src, 0) + '" alt="' + esc(tr(meta.name)) + ' — ' + T("Startposition", "start position") + '" loading="lazy" decoding="async">' +
-          '<img src="' + exImg(meta.src, 1) + '" alt="' + esc(tr(meta.name)) + ' — ' + T("Endposition", "end position") + '" loading="lazy" decoding="async">' +
+      ? '<div class="ex-demo">' +
+          '<div class="ex-demo-main">' +
+            animMarkup(meta.src, "ex-demo-anim", true) +
+            '<button class="ex-demo-toggle" id="exdPlay" type="button" aria-pressed="' + (animOn() ? "true" : "false") + '">' +
+              (animOn() ? "❙❙ " + T("Pause", "Pause") : "▶ " + T("Abspielen", "Play")) + '</button>' +
+          '</div>' +
+          '<div class="ex-demo-frames">' +
+            '<figure><img src="' + exImg(meta.src, 0) + '" alt="' + esc(tr(meta.name)) + ' — ' + T("Startposition", "start position") + '" loading="lazy" decoding="async">' +
+              '<figcaption>' + T("Start", "Start") + '</figcaption></figure>' +
+            '<figure><img src="' + exImg(meta.src, 1) + '" alt="' + esc(tr(meta.name)) + ' — ' + T("Endposition", "end position") + '" loading="lazy" decoding="async">' +
+              '<figcaption>' + T("Ende", "End") + '</figcaption></figure>' +
+          '</div>' +
         '</div>'
       : '';
 
@@ -1210,6 +1334,19 @@
     modal.classList.add("open");
     modal.querySelector("#exdClose").addEventListener("click", () => closeModal("exDetailModal"));
     modal.addEventListener("click", e => { if (e.target === modal) closeModal("exDetailModal"); });
+
+    const demo = modal.querySelector(".ex-demo-anim");
+    const playBtn = modal.querySelector("#exdPlay");
+    if (demo && playBtn) {
+      if (animOn()) playAnim(demo);
+      playBtn.addEventListener("click", () => {
+        const nowOn = !demo.classList.contains("is-playing");
+        setAnimOn(nowOn);                       // Wahl gilt auch für alle anderen Ansichten
+        if (nowOn) playAnim(demo); else pauseAnim(demo);
+        playBtn.setAttribute("aria-pressed", nowOn ? "true" : "false");
+        playBtn.textContent = nowOn ? "❙❙ " + T("Pause", "Pause") : "▶ " + T("Abspielen", "Play");
+      });
+    }
 
     /* Ausführungsschritte liegen in einer eigenen, größeren Datei — die wird
        erst hier geholt, nicht beim Öffnen des Tabs. */
@@ -1250,10 +1387,7 @@
   /* Karte einer Übung: Foto (falls vorhanden), Name, Muskel, Gerät — und der
      eigene Rekord, sobald die Übung schon trainiert wurde. */
   function exCardHTML(e, pr) {
-    const img = exImg(e.src, 0);
-    const thumb = img
-      ? '<img class="ex-thumb" src="' + img + '" alt="" loading="lazy" decoding="async">'
-      : '<span class="ex-thumb ex-thumb-empty" aria-hidden="true">' + (e.core ? "★" : "—") + '</span>';
+    const thumb = animMarkup(e.src, "ex-thumb", false);
     return '<button class="ex-card" data-exdetail="' + esc(e.id) + '">' + thumb +
       '<span class="ex-card-body">' +
         '<span class="ex-card-name">' + esc(tr(e.name)) + '</span>' +
@@ -1323,6 +1457,7 @@
         : '');
 
     p.querySelectorAll("[data-exdetail]").forEach(b => b.addEventListener("click", () => openExerciseDetail(b.dataset.exdetail)));
+    bindHoverAnim(p);
 
     const search = p.querySelector("#exLibSearch");
     /* Neu zeichnen, ohne den Fokus zu verlieren — sonst schließt die

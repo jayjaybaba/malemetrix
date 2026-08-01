@@ -2462,11 +2462,72 @@ img.ex-thumb-empty { object-fit:none; }
 .ex-card-pr { font-size:0.7rem; color:var(--accent-2); }
 .ex-badge-core { position:absolute; top:8px; right:10px; color:var(--amber); font-size:0.78rem; }
 
-/* Detail-Fenster */
-.ex-detail-media { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; }
-.ex-detail-media img {
-  width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:10px;
+/* --------------------------------------------------------------------------
+   Bewegungsschleife: zwei Fotos (Start/Ende) im Wechsel = die Wiederholung.
+   Beide Bilder liegen übereinander, getauscht wird die Deckkraft — so gibt es
+   kein Nachladen und kein Flackern beim Wechsel.
+   -------------------------------------------------------------------------- */
+.mm-anim { position:relative; display:block; overflow:hidden; background:var(--bg-2); }
+.mm-anim-f {
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+  transition:opacity 0.3s ease;
+}
+.mm-anim-b { opacity:0; }
+.mm-anim.frame-b .mm-anim-a { opacity:0; }
+.mm-anim.frame-b .mm-anim-b { opacity:1; }
+/* Läuft die Schleife, zeigt ein ruhiger Punkt, dass das Bild lebt. */
+.mm-anim.is-playing::after {
+  content:""; position:absolute; right:5px; bottom:5px; width:5px; height:5px;
+  border-radius:50%; background:var(--accent); box-shadow:0 0 0 2px rgba(0,0,0,0.45);
+}
+@media (prefers-reduced-motion: reduce) {
+  .mm-anim-f { transition:none; }
+}
+
+/* Detail-Fenster: große Schleife links, beide Endpunkte rechts.
+   Die Höhe gibt die Schleife vor (aspect-ratio), die beiden Standbilder
+   teilen sich genau diese Höhe — sonst ragt die eine Spalte über die
+   andere hinaus und die Steuerung rutscht unter das Bild. */
+.ex-demo { display:grid; grid-template-columns:1.35fr 1fr; gap:10px; margin-bottom:14px; }
+.ex-demo-main { position:relative; aspect-ratio:4/3; }
+.ex-demo-anim {
+  position:absolute; inset:0; border-radius:10px; border:1px solid var(--accent-line);
+}
+.ex-demo-toggle {
+  position:absolute; left:8px; bottom:8px; z-index:2;
+  background:rgba(6,10,16,0.78); border:1px solid var(--line-strong); color:var(--text);
+  border-radius:100px; padding:5px 12px; font-size:0.72rem; cursor:pointer;
+  backdrop-filter:blur(3px);
+}
+.ex-demo-toggle:hover { border-color:var(--accent-line); }
+.ex-demo-frames { display:grid; grid-template-rows:1fr 1fr; gap:10px; min-height:0; }
+.ex-demo-frames figure { margin:0; position:relative; min-height:0; }
+/* contain statt cover: bei den beiden Endpunkten kommt es genau auf die
+   Körperposition an — ein beschnittener Rand kann den Unterschied kosten,
+   den das Bild zeigen soll. */
+.ex-demo-frames img {
+  width:100%; height:100%; object-fit:contain; border-radius:10px;
   background:var(--bg-2); border:1px solid var(--line);
+}
+.ex-demo-frames figcaption {
+  position:absolute; left:7px; top:7px;
+  font-family:var(--font-mono); font-size:0.58rem; letter-spacing:0.1em; text-transform:uppercase;
+  color:var(--text); background:rgba(6,10,16,0.72); border-radius:4px; padding:2px 7px;
+}
+
+/* Im laufenden Training: Schleife neben dem Übungsnamen */
+.ex-head-live { display:flex; align-items:flex-start; gap:12px; min-width:0; }
+.ex-live-thumb {
+  flex:0 0 64px; width:64px; height:64px; border-radius:10px;
+  border:1px solid var(--line); margin-top:2px;
+}
+
+@media (max-width:560px) {
+  .ex-demo { grid-template-columns:1fr; }
+  /* Untereinander tragen die Standbilder ihre Höhe wieder selbst. */
+  .ex-demo-frames { grid-template-rows:none; grid-template-columns:1fr 1fr; }
+  .ex-demo-frames img { height:auto; aspect-ratio:4/3; }
+  .ex-live-thumb { flex-basis:52px; width:52px; height:52px; }
 }
 .ex-detail-tags { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:12px; }
 .ex-muscle-tag.is-core { color:var(--amber); background:rgba(245,180,60,0.10); border-color:rgba(245,180,60,0.35); }
