@@ -41,14 +41,16 @@
       var r = ROLLE[w.rolle];
       kopf += '<th scope="col" class="am-col ' + r.klasse + '">' +
         '<a href="#' + esc(w.id) + '" title="' + esc(w.name) + '"><span class="am-col-id">' + esc(w.id) + "</span>" +
-        '<span class="am-col-n">' + esc(w.kurz) + "</span></a></th>";
+        '<span class="am-col-n">' + esc(w.kurz) + "</span>" +
+        '<span class="am-col-st" data-weg="' + esc(w.id) + '"></span></a></th>';
     });
 
     var zeilen = D.hebel.map(function (h) {
       var tds = D.signalwege.map(function (w) {
         var v = (D.matrix[h.id] || {})[w.id] || 0;
         var m = D.wirkung[String(v)];
-        return '<td class="am-cell ' + m.klasse + '" data-weg="' + esc(w.id) + '" data-hebel="' + esc(h.id) + '">' +
+        return '<td class="am-cell ' + m.klasse + '" data-weg="' + esc(w.id) + '" data-hebel="' + esc(h.id) +
+        '" data-stark="' + (v === 2 || v === -1 ? "1" : "0") + '">' +
           '<span aria-hidden="true">' + m.zeichen + "</span>" +
           '<span class="sr-only">' + esc(h.name + " — " + w.name + ": " + m.name) + "</span></td>";
       }).join("");
@@ -199,6 +201,194 @@
     }).join(""));
   }
 
+  /* ============================================================ SELBSTCHECK
+     Projiziert das eigene Trainings- und Regenerationsverhalten auf die
+     Matrix. Er misst nichts im Muskel — jede Formulierung hier bleibt bei
+     „dein Verhalten adressiert" und behauptet nie molekulare Aktivität.
+     Der Test in tools-dev/tests/anabole-matrix.test.js hält das fest. */
+  var SPEICHER = "anabolic_check";
+  var antworten = {};
+
+  function ladeAntworten() {
+    try {
+      var a = (window.MM && MM.store) ? MM.store.get(SPEICHER, {}) : {};
+      Object.keys(a || {}).forEach(function (k) {
+        if (typeof a[k] === "number" && a[k] >= 0 && a[k] <= 2) antworten[k] = a[k];
+      });
+    } catch (e) { /* Speicher blockiert — der Check läuft trotzdem */ }
+  }
+  function sichereAntworten() {
+    try { if (window.MM && MM.store) MM.store.set(SPEICHER, antworten); } catch (e) { /* noop */ }
+  }
+
+  /* ---- Übernahme aus dem Score ----------------------------------------
+     Nur lesend. Der Score bleibt unberührt: keine Rückschreibung, keine
+     Änderung an seiner Engine. Übernommen wird ausschließlich, was der
+     Score in vergleichbarer Auflösung erfasst — der Rest wird gefragt. */
+  function ausScore() {
+    var d = null;
+    try { d = (window.MM && MM.store) ? MM.store.get("check_draft", null) : null; } catch (e) { return {}; }
+    if (!d || typeof d !== "object") return {};
+    var v = {}, s;
+
+    if (Array.isArray(d.str_exercises)) {
+      var n = d.str_exercises.filter(function (x) { return x !== "keine" && x !== "core"; }).length;
+      v.H01 = n >= 4 ? 2 : (n >= 2 ? 1 : 0);
+    }
+    if (d.str_plan || d.str_log) {
+      var prog = d.str_plan === "progression", log = d.str_log === "app";
+      v.H05 = (prog && log) ? 2 : ((prog || log) ? 1 : 0);
+    }
+    s = { tracke: 2, "120to160": 2, gt160: 1, "80to120": 1, lt80: 0, keine_ahnung: 0 };
+    if (d.fuel_protein in s) v.H06 = s[d.fuel_protein];
+    s = { tracke: 2, gut: 2, grob: 1, nein: 0 };
+    if (d.fuel_calories in s) v.H07 = s[d.fuel_calories];
+    s = { gt8: 2, "7to8": 2, "6to7": 1, "5to6": 0, lt5: 0 };
+    if (d.rec_duration in s) v.H08 = s[d.rec_duration];
+    s = { nie: 2, "1x": 1, "2to3": 0 };
+    if (d.fuel_alcohol in s) v.H09 = s[d.fuel_alcohol];
+
+    var w = Number(d.waist), h = Number(d.height);
+    if (w > 0 && h > 0) { var q = w / h; v.H10 = q < 0.5 ? 2 : (q < 0.55 ? 1 : 0); }
+
+    return v;
+  }
+
+  function renderCheck() {
+    var wrap = el("amCheckFragen");
+    if (!wrap) return;
+    wrap.innerHTML = D.fragen.map(function (f, i) {
+      var h = D.hebel.filter(function (x) { return x.id === f.hebel; })[0];
+      return '<fieldset class="am-q" data-hebel="' + esc(f.hebel) + '">' +
+        '<legend><span class="am-q-n">' + (i + 1) + " / " + D.fragen.length + "</span>" +
+        '<span class="am-q-t">' + esc(f.frage) + "</span></legend>" +
+        '<div class="am-q-opts">' + f.optionen.map(function (o) {
+          return '<button type="button" class="am-opt" data-hebel="' + esc(f.hebel) + '" data-w="' + o.w + '"' +
+            ' aria-pressed="false">' + esc(o.label) + "</button>";
+        }).join("") + "</div>" +
+        '<a class="am-q-ref" href="#' + esc(f.hebel) + '">' + esc(h ? h.name : f.hebel) + " nachlesen</a>" +
+        "</fieldset>";
+    }).join("");
+
+    wrap.addEventListener("click", function (e) {
+      var b = e.target.closest(".am-opt");
+      if (!b) return;
+      antworten[b.getAttribute("data-hebel")] = Number(b.getAttribute("data-w"));
+      sichereAntworten();
+      zeichneCheck();
+    });
+
+    var reset = el("amCheckReset");
+    if (reset) reset.addEventListener("click", function () {
+      antworten = {};
+      sichereAntworten();
+      zeichneCheck();
+    });
+
+    var uebernahme = el("amCheckScore");
+    if (uebernahme) uebernahme.addEventListener("click", function () {
+      var v = ausScore();
+      Object.keys(v).forEach(function (k) { antworten[k] = v[k]; });
+      sichereAntworten();
+      zeichneCheck();
+    });
+  }
+
+  /* ---- Zeichnen: Auswahlzustand, Matrix-Einfärbung, Auswertung ---- */
+  function zeichneCheck() {
+    var r = D.bewerte(antworten);
+
+    document.querySelectorAll(".am-opt").forEach(function (b) {
+      var an = antworten[b.getAttribute("data-hebel")] === Number(b.getAttribute("data-w"));
+      b.classList.toggle("is-on", an);
+      b.setAttribute("aria-pressed", an ? "true" : "false");
+    });
+
+    /* Matrix einfärben: Zeilen nach der eigenen Antwort, Spaltenmarker nach
+       dem Zustand des Weges. Ohne eine einzige Antwort bleibt die Matrix
+       neutral — sie ist zuerst eine Referenz und erst dann ein Spiegel. */
+    var tbl = el("amMatrix");
+    if (tbl) {
+      tbl.classList.toggle("is-checked", r.beantwortet > 0);
+      tbl.querySelectorAll(".am-cell").forEach(function (c) {
+        var a = antworten[c.getAttribute("data-hebel")];
+        c.classList.remove("ck-2", "ck-1", "ck-0");
+        if (typeof a === "number") c.classList.add("ck-" + a);
+        var z = r.wege[c.getAttribute("data-weg")];
+        c.classList.toggle("ck-weg-keiner", z === "keiner");
+      });
+      tbl.querySelectorAll(".am-col-st").forEach(function (s) {
+        var id = s.getAttribute("data-weg"), z = r.wege[id];
+        s.className = "am-col-st " + D.status[z].klasse;
+        s.title = D.statusLabel(id, z);
+      });
+    }
+
+    put("amCheckFortschritt", r.beantwortet + " von " + r.gesamt + " beantwortet");
+    renderCheckErgebnis(r);
+  }
+
+  function renderCheckErgebnis(r) {
+    var box = el("amCheckResult");
+    if (!box) return;
+    if (!r.beantwortet) {
+      box.innerHTML = '<p class="am-ck-leer">Noch keine Antwort. Die Matrix oben bleibt neutral, bis du die erste Frage beantwortest — sie ist zuerst eine Referenz und erst dann ein Spiegel.</p>';
+      return;
+    }
+
+    /* Wege nach Zustand gruppiert. „Noch offen" steht eigenständig da und
+       wird nie als Versäumnis gezählt. */
+    var gruppen = ["keiner", "schwach", "stark", "offen"].map(function (z) {
+      var ids = D.signalwege.filter(function (w) { return r.wege[w.id] === z; });
+      if (!ids.length) return "";
+      var titel = { keiner: "Dein Verhalten adressiert diese nicht", schwach: "Nur teilweise adressiert",
+        stark: "Adressiert", offen: "Noch offen — dazu fehlen Antworten" }[z];
+      return '<div class="am-ck-grp ' + D.status[z].klasse + '">' +
+        '<span class="am-ck-grp-k">' + esc(titel) + " · " + ids.length + "</span>" +
+        '<div class="am-chips">' + ids.map(function (w) {
+          return '<a class="am-chip" href="#' + esc(w.id) + '">' + esc(w.kurz) +
+            ' <em>' + esc(D.statusLabel(w.id, z)) + "</em></a>";
+        }).join("") + "</div></div>";
+    }).join("");
+
+    var sw = r.schwaechster;
+    var faktor = sw
+      ? '<div class="am-ck-faktor"><span class="k">Schwächster Faktor der Rechnung</span>' +
+        "<b>" + esc(sw.name) + "</b><p>" + esc(sw.frage) + "</p>" +
+        (sw.bewertbar < sw.gesamt ? '<p class="am-ck-teil">Beurteilt aus ' + sw.bewertbar + " von " + sw.gesamt + " Wegen — der Rest ist noch offen.</p>" : "") +
+        "</div>"
+      : '<div class="am-ck-faktor"><span class="k">Schwächster Faktor der Rechnung</span>' +
+        "<b>Kein Faktor liegt zurück</b><p>Nach dem, was bisher beantwortet ist, steht keiner der Faktoren hinter den anderen. Ein „schwächster“ wird hier nicht benannt, solange es keinen gibt — sonst wäre es nur die Reihenfolge der Liste.</p></div>";
+
+    var n = r.naechster;
+    var wegNamen = n ? esc(n.oeffnet.map(function (id) {
+      var w = D.signalwege.filter(function (x) { return x.id === id; })[0];
+      return w ? w.name : id;
+    }).join(", ")) : "";
+    var eins = n && n.n === 1;
+    var wirkung = !n ? "" : (n.zustand === "keiner"
+      ? (eins ? "Er würde einen Weg erreichen, den dein Verhalten aktuell nicht adressiert: "
+              : "Er würde " + n.n + " Wege erreichen, die dein Verhalten aktuell nicht adressiert: ") + wegNamen + "."
+      : (eins ? "Er würde einen Weg vervollständigen, der bisher nur teilweise adressiert ist: "
+              : "Er würde " + n.n + " Wege vervollständigen, die bisher nur teilweise adressiert sind: ") + wegNamen + ".");
+
+    var naechster = n
+      ? '<div class="am-ck-next"><span class="k">Ein Hebel, nicht sieben</span>' +
+        "<b>" + esc(n.hebel.name) + "</b><p>" + esc(n.hebel.dosis) + "</p>" +
+        '<p class="am-ck-next-w">' + wirkung + '</p><a class="am-chip" href="#' + esc(n.hebel.id) + '">Hebel nachlesen</a></div>'
+      : (r.vollstaendig
+        ? '<div class="am-ck-next"><span class="k">Ein Hebel, nicht sieben</span><b>Aktuell keiner offen</b>' +
+          "<p>Nach deinen Angaben adressiert dein Verhalten jeden Weg, den die Hebel direkt bedienen. Das heißt nicht, dass nichts mehr geht — es heißt, dass der nächste Schritt Zeit ist und nicht eine weitere Maßnahme.</p></div>"
+        : '<div class="am-ck-next"><span class="k">Ein Hebel, nicht sieben</span><b>Noch nicht bestimmbar</b>' +
+          "<p>Dafür fehlen Antworten. Es wird hier kein Hebel empfohlen, solange die Grundlage dafür unvollständig ist — " + (r.gesamt - r.beantwortet) + " Fragen sind noch offen.</p></div>");
+
+    box.innerHTML =
+      '<p class="am-ck-hinweis"><span>Was das ist</span> Eine Projektion deiner eigenen Angaben auf die Matrix — kein Messwert und kein Rückschluss auf das, was in deinem Muskel tatsächlich passiert. Selbstauskunft überschätzt vor allem RIR und Satzzahl zuverlässig. Und es gibt bewusst keine Gesamtnote: Die Rechnung ist multiplikativ, ein Mittelwert würde genau das verwischen.</p>' +
+      faktor + naechster +
+      '<div class="am-ck-wege">' + gruppen + "</div>" +
+      (r.vollstaendig ? "" : '<p class="am-ck-teil">Noch nicht alle Fragen beantwortet — die offenen Wege bleiben ausdrücklich unbewertet, statt als Versäumnis zu zählen.</p>');
+  }
+
   /* ========================================================= TRIGGER-PLAN */
   function renderWoche() {
     put("amWoche", D.woche.map(function (t) {
@@ -283,6 +473,9 @@
     renderQuellen();
     wireFilter();
     wireCrosshair();
+    ladeAntworten();
+    renderCheck();
+    zeichneCheck();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

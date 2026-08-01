@@ -295,6 +295,106 @@ group("Ehrlichkeit · der Vergleich mit Substanzen bleibt stehen");
     "nirgends eine Einnahme- oder Dosieranweisung in der zweiten Person");
 })();
 
+/* ===== 6b) Der Selbstcheck: Verhalten projizieren, nicht Biologie messen =====
+   Die inhaltliche Kernregel dieses Moduls. Er darf sagen, was das Verhalten
+   adressiert — er darf nie behaupten, ein Signalweg sei im Muskel aktiv. */
+group("Selbstcheck · Projektion, keine Messung");
+(function () {
+  var F = D.fragen;
+  ok(F.length === D.hebel.length, "genau eine Frage je Hebel (" + F.length + " / " + D.hebel.length + ")");
+
+  var fremd = F.filter(function (f) { return hebelIds.indexOf(f.hebel) < 0; }).map(function (f) { return f.hebel; });
+  ok(fremd.length === 0, "jede Frage gehört zu einem echten Hebel" + (fremd.length ? " (" + fremd.join(", ") + ")" : ""));
+  var hIds = F.map(function (f) { return f.hebel; });
+  ok(hIds.filter(function (v, i) { return hIds.indexOf(v) !== i; }).length === 0, "kein Hebel wird doppelt gefragt");
+  var ohneFrage = hebelIds.filter(function (id) { return hIds.indexOf(id) < 0; });
+  ok(ohneFrage.length === 0, "kein Hebel bleibt ungefragt" + (ohneFrage.length ? " (" + ohneFrage.join(", ") + ")" : ""));
+
+  var schlecht = F.filter(function (f) {
+    var w = (f.optionen || []).map(function (o) { return o.w; });
+    return w.length !== 3 || w.join(",") !== "2,1,0" ||
+      (f.optionen || []).some(function (o) { return !o.label || o.label.length < 5; });
+  }).map(function (f) { return f.hebel; });
+  ok(schlecht.length === 0, "jede Frage hat drei beschriftete Stufen 2/1/0" + (schlecht.length ? " (" + schlecht.join(", ") + ")" : ""));
+
+  /* ---- Die Sprachregel ----
+     Geprüft wird nur, was der Selbstcheck ausgibt: seine Fragen, seine
+     Zustandsbezeichnungen, sein Renderblock und sein Seitenabschnitt. Die
+     Matrix selbst darf weiter von „schaltet direkt" sprechen — das ist eine
+     Aussage über den Mechanismus, keine über den Nutzer. */
+  var view = read("js/anabole-matrix.js");
+  var ckJs = (view.split("SELBSTCHECK")[1] || "").split("TRIGGER-PLAN")[0];
+  var page = read("anabole-matrix.html");
+  var ckHtml = (page.split('id="abgleich"')[1] || "").split("</section>")[0];
+  var ausgabe = JSON.stringify(D.fragen) + JSON.stringify(D.status) + ckJs + ckHtml;
+
+  ok(ckJs.length > 500, "der Renderblock des Selbstchecks wurde für die Prüfung gefunden");
+  ok(ckHtml.length > 200, "der Seitenabschnitt des Selbstchecks wurde für die Prüfung gefunden");
+
+  [/\baktiviert\b/i, /\bgetriggert\b/i, /\bangeschaltet\b/i, /\bhochreguliert\b/i,
+   /\bstimuliert\b/i, /dein mTOR/i, /deine? Signalweg\w* (ist|sind) aktiv/i].forEach(function (re) {
+    ok(!re.test(ausgabe), "der Selbstcheck behauptet nirgends molekulare Aktivität (" + re.source + ")");
+  });
+  ok(/adressiert/.test(ausgabe), "er spricht stattdessen davon, was das Verhalten adressiert");
+  ok(/kein Messwert|keine Messung/i.test(ausgabe), "und sagt ausdrücklich, dass es keine Messung ist");
+  ok(/Selbstauskunft|überschätz/i.test(ausgabe), "… inklusive der Verzerrung durch Selbstauskunft");
+
+  /* Kein Gesamtwert. Die Rechnung ist multiplikativ — ein Mittelwert wäre
+     genau die Verwischung, gegen die die ganze Seite argumentiert. */
+  ok(/keine Gesamtnote|kein Gesamtwert/i.test(ausgabe),
+    "er sagt ausdrücklich, dass es keine Gesamtnote gibt");
+  ok(!/\d+\s*%|\d+\s*Punkte|\bvon 100\b/.test(ausgabe),
+    "und gibt nirgends eine Zahl als Note aus — die Rechnung ist multiplikativ, ein Mittelwert würde sie verwischen");
+
+  /* ---- Zustände: vier, und Bremsen sprechen anders ---- */
+  ok(Object.keys(D.status).length === 4, "vier Zustände — „noch offen“ ist eigenständig, nicht „nicht adressiert“");
+  var bremsen = D.signalwege.filter(function (w) { return w.rolle === "bremse"; });
+  var falschesWort = [];
+  bremsen.forEach(function (w) {
+    ["stark", "schwach", "keiner"].forEach(function (z) {
+      if (/adressiert/.test(D.statusLabel(w.id, z))) falschesWort.push(w.id + "/" + z);
+    });
+  });
+  ok(falschesWort.length === 0, "eine Bremse wird nie „adressiert“, sondern entlastet" + (falschesWort.length ? " (" + falschesWort.join(", ") + ")" : ""));
+
+  /* ---- Auswertung: die Randfälle, in denen still gelogen würde ---- */
+  function alle(v) { var o = {}; D.fragen.forEach(function (f) { o[f.hebel] = v; }); return o; }
+  var leer = D.bewerte({});
+  ok(wegIds.every(function (id) { return leer.wege[id] === "offen"; }),
+    "ohne Antwort steht jeder Weg auf „offen“ — nie auf „nicht adressiert“");
+  ok(leer.naechster === null && leer.schwaechster === null,
+    "ohne Antwort wird weder ein Hebel noch ein schwächster Faktor behauptet");
+
+  var null0 = D.bewerte(alle(0));
+  ok(wegIds.every(function (id) { return null0.wege[id] === "keiner"; }), "bei durchweg 0 ist kein Weg adressiert");
+  ok(!!null0.naechster, "… und genau ein nächster Hebel wird benannt");
+
+  var voll = D.bewerte(alle(2));
+  ok(wegIds.every(function (id) { return voll.wege[id] === "stark"; }), "bei durchweg 2 ist jeder Weg adressiert");
+  ok(voll.schwaechster === null, "… und es wird kein schwächster Faktor erfunden, wenn keiner zurückliegt");
+  ok(voll.naechster === null, "… und kein nächster Hebel");
+
+  /* Ein einzelner erfüllter Hebel darf einen Weg nicht adressiert machen,
+     solange ein anderer direkt wirkender Hebel bei null steht. */
+  var einseitig = D.bewerte(Object.assign(alle(2), { H08: 0 }));
+  ok(einseitig.wege.SW04 !== "stark",
+    "der Androgenrezeptor gilt nicht als adressiert, wenn der Schlaf-Hebel bei null steht");
+  ok(einseitig.naechster && einseitig.naechster.hebel.id === "H08",
+    "… und der Schlaf wird als nächster Hebel benannt");
+
+  /* Ein unbeantworteter Hebel darf nie empfohlen werden. */
+  var teil = D.bewerte({ H01: 2, H06: 2, H08: 2 });
+  ok(teil.naechster === null,
+    "solange nur erfüllte Hebel beantwortet sind, wird nichts empfohlen — unbeantwortet heißt unbekannt");
+  ok(teil.beantwortet === 3 && teil.vollstaendig === false, "der Fortschritt wird ehrlich gezählt");
+
+  /* ---- Übernahme aus dem Score: nur lesend ---- */
+  ok(/check_draft/.test(ckJs), "die Übernahme liest den gespeicherten Score-Entwurf");
+  ok(!/MM\.store\.set\("check_|MM\.store\.set\('check_/.test(view),
+    "der Selbstcheck schreibt nie in die Speicherbereiche des Scores");
+  ok(!/check-data|CHECK_DATA|MM_CHECK/.test(view), "und rührt die kalibrierte Score-Engine nicht an");
+})();
+
 /* ===== 7) Seite und Datenmodell hängen zusammen ===== */
 group("Seite · Auslieferung, Struktur, Index");
 (function () {

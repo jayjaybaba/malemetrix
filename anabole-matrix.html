@@ -140,6 +140,64 @@
     .am-faktor-l span { font-family: var(--font-mono); font-size: 0.56rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--status-flag); margin-right: 6px; }
     .am-formel-folge { margin: 22px 0 0; padding-top: 18px; border-top: 1px solid var(--hairline); font-size: 0.95rem; line-height: 1.7; color: var(--muted); max-width: 64ch; }
 
+    /* ---- Selbstcheck: Fragebogen ---- */
+    .am-ck-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--hairline); }
+    .am-ck-fort { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.14em; color: var(--status-active); }
+    .am-ck-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+    .am-q { border: 0; border-top: 1px solid var(--hairline); margin: 0; padding: 20px 0 0; }
+    .am-q legend { display: block; width: 100%; padding: 0; margin-bottom: 12px; }
+    .am-q-n { display: block; font-family: var(--font-mono); font-size: 0.56rem; letter-spacing: 0.16em; color: var(--muted-2); margin-bottom: 5px; }
+    .am-q-t { display: block; font-size: 0.98rem; line-height: 1.5; color: var(--text); max-width: 60ch; }
+    .am-q-opts { display: flex; flex-wrap: wrap; gap: 8px; }
+    .am-opt { text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+      color: var(--muted); font: inherit; font-size: 0.87rem; line-height: 1.45; padding: 11px 14px; cursor: pointer;
+      flex: 1 1 260px; min-height: 44px; transition: border-color .15s, color .15s, background .15s; }
+    .am-opt:hover { border-color: var(--line-strong); color: var(--text); }
+    .am-opt.is-on { border-color: var(--accent-2); color: var(--text); background: rgba(22,196,244,0.07); }
+    .am-opt:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+    .am-q-ref { display: inline-block; margin-top: 10px; font-family: var(--font-mono); font-size: 0.56rem;
+      letter-spacing: 0.12em; color: var(--muted-2); text-decoration: none; border-bottom: 1px dashed var(--line); }
+    .am-q-ref:hover { color: var(--accent-2); }
+
+    /* ---- Selbstcheck: Auswertung ---- */
+    .am-ck-result { border: 1px solid var(--hairline); border-radius: var(--radius); padding: clamp(20px, 3.5vw, 30px); background: var(--surface); }
+    .am-ck-leer { margin: 0; color: var(--muted-2); font-size: 0.9rem; max-width: 60ch; }
+    .am-ck-hinweis { margin: 0 0 20px; padding-left: 12px; border-left: 2px solid rgba(245,181,74,0.45);
+      font-size: 0.86rem; line-height: 1.65; color: var(--muted-2); max-width: 66ch; }
+    .am-ck-hinweis span { display: block; font-family: var(--font-mono); font-size: 0.56rem; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--status-attention); margin-bottom: 4px; }
+    .am-ck-faktor, .am-ck-next { padding: 16px 0; border-top: 1px solid var(--hairline); }
+    .am-ck-faktor .k, .am-ck-next .k { display: block; font-family: var(--font-mono); font-size: 0.56rem;
+      letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted-2); margin-bottom: 5px; }
+    .am-ck-faktor b, .am-ck-next b { display: block; font-family: var(--font-display); font-size: 1.15rem; color: var(--text); }
+    .am-ck-faktor p, .am-ck-next p { margin: 5px 0 0; font-size: 0.9rem; line-height: 1.6; color: var(--muted); max-width: 62ch; }
+    .am-ck-next-w { color: var(--muted-2) !important; }
+    .am-ck-next .am-chip { margin-top: 10px; }
+    .am-ck-teil { margin: 10px 0 0; font-size: 0.82rem; color: var(--muted-2); max-width: 62ch; }
+    .am-ck-wege { margin-top: 6px; }
+    .am-ck-grp { padding: 14px 0; border-top: 1px solid var(--hairline); }
+    .am-ck-grp-k { display: block; font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted-2); margin-bottom: 8px; }
+    .am-ck-grp.st-keiner .am-ck-grp-k { color: var(--status-flag); }
+    .am-ck-grp.st-schwach .am-ck-grp-k { color: var(--status-attention); }
+    .am-ck-grp.st-stark .am-ck-grp-k { color: var(--status-improving); }
+    .am-ck-grp .am-chip em { font-style: normal; color: var(--muted-2); }
+    .am-ck-grp.st-keiner .am-chip { border-color: rgba(240,106,106,0.3); color: var(--status-flag); }
+    .am-ck-grp.st-stark .am-chip { border-color: rgba(45,212,167,0.3); color: var(--status-improving); }
+
+    /* ---- Matrix im Abgleich-Zustand ----
+       Ohne Antwort bleibt sie neutral. Mit Antworten treten die Zellen
+       zurück, deren Hebel nicht umgesetzt ist — der Blick fällt auf die
+       Spalten, die dadurch leer bleiben. */
+    .am-col-st { display: block; width: 6px; height: 6px; border-radius: 50%; margin: 8px auto 0; background: transparent; }
+    .is-checked .am-col-st.st-stark { background: var(--status-improving); }
+    .is-checked .am-col-st.st-schwach { background: var(--status-attention); }
+    .is-checked .am-col-st.st-keiner { background: var(--status-flag); }
+    .is-checked .am-col-st.st-offen { background: rgba(255,255,255,0.16); }
+    .is-checked .am-cell.ck-0 { opacity: 0.2; }
+    .is-checked .am-cell.ck-1 { opacity: 0.55; }
+    .is-checked .am-cell.ck-2 { opacity: 1; }
+
     /* ---- Wege ohne steuerbaren Hebel ---- */
     .am-oh { padding: 20px 0; border-top: 1px solid var(--hairline); scroll-margin-top: calc(var(--header-h) + 16px); }
     .am-oh-h { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
@@ -373,6 +431,27 @@
 
       <div class="am-scroll" id="amMatrix"></div>
       <p class="small muted" style="margin-top:14px">Auf dem Telefon lässt sich die Tabelle seitlich schieben. Kopfzeile und erste Spalte sind Sprungmarken — tippen führt direkt zum Detail.</p>
+    </div>
+  </section>
+
+  <!-- ========================================================== SELBSTCHECK -->
+  <section class="am-sec" id="abgleich">
+    <div class="container">
+      <div class="mm-secthead"><span class="sys">MM / ABGLEICH</span><h2 class="t">Was dein Verhalten aktuell adressiert</h2></div>
+      <p class="am-lede">Vierzehn Fragen — eine je Hebel, mit den Antwortstufen aus seiner dokumentierten Dosis. Danach färbt sich die Matrix oben mit deinen eigenen Angaben, und du siehst, welche Mechanismen dein Training und deine Erholung überhaupt erreichen.</p>
+      <p class="small muted" style="max-width:62ch;margin-top:10px"><strong>Was das nicht ist:</strong> eine Messung. Der Abgleich sagt nichts darüber, was in deinem Muskel tatsächlich passiert — er projiziert nur, was du über dein eigenes Verhalten angibst, auf die Wege oben. Es gibt bewusst keine Gesamtnote.</p>
+
+      <div class="am-ck-bar">
+        <span class="am-ck-fort" id="amCheckFortschritt">0 von 14 beantwortet</span>
+        <div class="am-ck-actions">
+          <button type="button" class="btn btn-dark btn-sm" id="amCheckScore">Antworten aus dem Score übernehmen</button>
+          <button type="button" class="btn btn-dark btn-sm" id="amCheckReset">Zurücksetzen</button>
+        </div>
+      </div>
+      <p class="small muted" style="margin-top:8px">Die Übernahme liest nur, was der Score ohnehin gespeichert hat, und ändert dort nichts. Sieben der vierzehn Fragen kann er nicht beantworten — RIR, Bewegungsamplitude, Sätze je Muskel, Satzpause, Ausdauer, Kreatin und Laborwerte fragt er nicht ab. Genau deshalb sind es zwei Instrumente.</p>
+
+      <div id="amCheckFragen" style="margin-top:22px"></div>
+      <div class="am-ck-result" id="amCheckResult" style="margin-top:26px"></div>
     </div>
   </section>
 

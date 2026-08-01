@@ -768,6 +768,194 @@
     ]
   };
 
+  /* ======================= DER SELBSTCHECK ==================================
+     WAS ER IST: Eine Projektion des eigenen Trainings- und Regenerations-
+     verhaltens auf die Matrix. Je Hebel eine Frage, deren Antwortstufen aus
+     der dokumentierten Dosis dieses Hebels stammen.
+
+     WAS ER NICHT IST — und was der Test erzwingt: keine Messung molekularer
+     Aktivität. Es wird nirgends behauptet, ein Signalweg sei „aktiviert",
+     „getriggert" oder „hochreguliert". Die Aussage lautet immer: Dein
+     Verhalten adressiert diesen Mechanismus — oder eben nicht.
+
+     Vier Zustände, nicht drei: „noch offen" ist etwas anderes als „nicht
+     adressiert". Eine unbeantwortete Frage darf nie als Versäumnis gelesen
+     werden. */
+  var STATUS = {
+    stark:   { gas: "adressiert",           bremse: "entlastet",           klasse: "st-stark" },
+    schwach: { gas: "teilweise adressiert", bremse: "teilweise entlastet", klasse: "st-schwach" },
+    keiner:  { gas: "nicht adressiert",     bremse: "nicht entlastet",     klasse: "st-keiner" },
+    offen:   { gas: "noch offen",           bremse: "noch offen",          klasse: "st-offen" }
+  };
+
+  /* Je Hebel genau eine Frage. Die drei Stufen entsprechen der Dosis im
+     Hebel selbst: 2 = wie dokumentiert umgesetzt, 1 = teilweise, 0 = nicht
+     oder nicht bekannt. „Weiß ich nicht" ist bewusst 0 und nicht 1 — was
+     nicht erfasst wird, lässt sich nicht steuern. */
+  var FRAGEN = [
+    { hebel: "H01", frage: "Wie oft stehen schwere Mehrgelenkübungen — Kniebeuge, Kreuzheben, Drücken, Ziehen — im Zentrum deiner Einheiten?", optionen: [
+      { w: 2, label: "In fast jeder Einheit" },
+      { w: 1, label: "In etwa der Hälfte" },
+      { w: 0, label: "Selten — überwiegend Maschinen und Isolation" } ] },
+    { hebel: "H02", frage: "Wie weit gehst du in deinen Arbeitssätzen?", optionen: [
+      { w: 2, label: "Bis 0–3 Wiederholungen in Reserve, und ich schreibe den RIR mit" },
+      { w: 1, label: "Ungefähr dorthin, aber ich schätze es nur" },
+      { w: 0, label: "Deutlich früher — oder ich weiß es nicht" } ] },
+    { hebel: "H03", frage: "Wie führst du die Wiederholungen aus?", optionen: [
+      { w: 2, label: "Volle Bewegungsbahn, kontrolliert in der gedehnten Position" },
+      { w: 1, label: "Meistens voll, bei schweren Sätzen verkürzt" },
+      { w: 0, label: "Teilbewegungen mit mehr Gewicht oder mit Schwung" } ] },
+    { hebel: "H04", frage: "Wie viele harte Arbeitssätze bekommt eine Muskelgruppe bei dir pro Woche?", optionen: [
+      { w: 2, label: "Etwa 10–20, verteilt auf zwei bis drei Einheiten" },
+      { w: 1, label: "Deutlich weniger als 10 oder deutlich mehr als 20" },
+      { w: 0, label: "Weiß ich nicht — ich zähle keine Sätze je Muskelgruppe" } ] },
+    { hebel: "H05", frage: "Kannst du an deinen Aufzeichnungen ablesen, dass Last oder Wiederholungen über die letzten vier bis sechs Wochen gestiegen sind?", optionen: [
+      { w: 2, label: "Ja, das steht schwarz auf weiß" },
+      { w: 1, label: "Ich schreibe mit, habe es aber nie verglichen" },
+      { w: 0, label: "Ich schreibe nicht mit" } ] },
+    { hebel: "H06", frage: "Wie sicher bist du bei deiner Proteinmenge und ihrer Verteilung über den Tag?", optionen: [
+      { w: 2, label: "1,6–2,2 g/kg auf drei bis fünf Mahlzeiten — nachgerechnet" },
+      { w: 1, label: "Wahrscheinlich genug, aber ungleich verteilt oder nie nachgerechnet" },
+      { w: 0, label: "Deutlich darunter oder keine Ahnung" } ] },
+    { hebel: "H07", frage: "Wie steht deine Energiezufuhr zu deinem Ziel?", optionen: [
+      { w: 2, label: "Erhalt bis leichter Überschuss, Gewichtstrend im 7-Tage-Schnitt im Blick" },
+      { w: 1, label: "Ungefähr Erhalt, aber ohne Kontrolle" },
+      { w: 0, label: "Dauerdefizit als Normalzustand" } ] },
+    { hebel: "H08", frage: "Wie viel schläfst du an einem gewöhnlichen Werktag?", optionen: [
+      { w: 2, label: "7–9 Stunden in einem festen Fenster" },
+      { w: 1, label: "6–7 Stunden oder stark schwankend" },
+      { w: 0, label: "Regelmäßig unter 6 Stunden" } ] },
+    { hebel: "H09", frage: "Wie steuerst du Belastung außerhalb des Trainings — Entlastungswochen, Alkohol, Stressphasen?", optionen: [
+      { w: 2, label: "Deload alle vier bis acht Wochen, Alkohol selten, Stressphasen fangen das Training ab" },
+      { w: 1, label: "Eines von den dreien läuft" },
+      { w: 0, label: "Keines davon — ich trainiere durch" } ] },
+    { hebel: "H10", frage: "Wie steht dein Bauchumfang zu deiner Körpergröße?", optionen: [
+      { w: 2, label: "Unter der Hälfte meiner Körpergröße" },
+      { w: 1, label: "Knapp darüber" },
+      { w: 0, label: "Deutlich darüber — oder ich messe ihn nicht" } ] },
+    { hebel: "H11", frage: "Nimmst du Kreatin-Monohydrat?", optionen: [
+      { w: 2, label: "3–5 g täglich, dauerhaft" },
+      { w: 1, label: "Unregelmäßig oder in Zyklen" },
+      { w: 0, label: "Nein, aktuell nicht" } ] },
+    { hebel: "H12", frage: "Kennst du deine Werte für Vitamin D, Ferritin, B12 und Schilddrüse?", optionen: [
+      { w: 2, label: "Gemessen — und was fehlte, ist ärztlich begleitet aufgefüllt" },
+      { w: 1, label: "Teilweise gemessen oder länger her" },
+      { w: 0, label: "Nie gemessen" } ] },
+    { hebel: "H13", frage: "Wie lange pausierst du zwischen schweren Arbeitssätzen?", optionen: [
+      { w: 2, label: "Zwei bis drei Minuten" },
+      { w: 1, label: "Etwa 60–90 Sekunden" },
+      { w: 0, label: "Unter einer Minute oder nach Gefühl ohne Uhr" } ] },
+    { hebel: "H14", frage: "Wie viel moderates Ausdauertraining läuft bei dir pro Woche?", optionen: [
+      { w: 2, label: "Zwei bis drei Einheiten, getrennt von der Krafteinheit" },
+      { w: 1, label: "Eine Einheit — oder direkt um das Krafttraining herum" },
+      { w: 0, label: "Keines" } ] }
+  ];
+
+  /* Ein Hebel wirkt „stark" auf einen Weg, wenn er ihn direkt schaltet (2)
+     oder — bei einer Bremse — sie direkt löst (−1). Die 1 ist in beiden
+     Fällen die erlaubende Wirkung. */
+  function istStark(effekt) { return effekt === 2 || effekt === -1; }
+
+  /* ANTWORTEN: { H01: 2, H04: 0, … } — fehlender Schlüssel heißt
+     unbeantwortet und wird nie als „macht er nicht" gewertet. */
+  function bewerteWeg(wegId, antworten) {
+    var relevant = HEBEL.filter(function (h) { return (MATRIX[h.id] || {})[wegId]; });
+    var beantwortet = relevant.filter(function (h) { return typeof antworten[h.id] === "number"; });
+    if (!beantwortet.length) return "offen";
+
+    /* „Adressiert" verlangt, dass ALLE direkt wirkenden Hebel beantwortet
+       und umgesetzt sind — nicht einer davon. Sonst stünde „Androgen-
+       rezeptor adressiert" bei fünf Stunden Schlaf, weil schwer trainiert
+       wird. Ein erfüllter Hebel neben einem Hebel bei null ist „teilweise",
+       nie „adressiert". */
+    var stark = relevant.filter(function (h) { return istStark(MATRIX[h.id][wegId]); });
+    var alleStarkErfuellt = stark.length > 0 && stark.every(function (h) { return antworten[h.id] === 2; });
+    if (alleStarkErfuellt) return "stark";
+
+    return beantwortet.some(function (h) { return antworten[h.id] >= 1; }) ? "schwach" : "keiner";
+  }
+
+  function bewerte(antworten) {
+    antworten = antworten || {};
+    var wege = {};
+    SIGNALWEGE.forEach(function (w) { wege[w.id] = bewerteWeg(w.id, antworten); });
+
+    /* Faktoren der Rechnung: Anteil der adressierten Wege je Faktor. Wege
+       im Zustand „offen" zählen weder positiv noch negativ — sie kürzen den
+       Nenner, damit ein halb ausgefüllter Check keinen Faktor schlechtredet. */
+    var GEWICHT = { stark: 1, schwach: 0.5, keiner: 0 };
+    var faktoren = FORMEL.faktoren.map(function (f) {
+      var bewertbar = f.wege.filter(function (id) { return wege[id] !== "offen"; });
+      var summe = bewertbar.reduce(function (a, id) { return a + GEWICHT[wege[id]]; }, 0);
+      return {
+        name: f.name,
+        frage: f.frage,
+        bewertbar: bewertbar.length,
+        gesamt: f.wege.length,
+        anteil: bewertbar.length ? summe / bewertbar.length : null
+      };
+    });
+
+    /* Ein „schwächster Faktor" wird nur benannt, wenn es tatsächlich eine
+       Lücke gibt. Stehen alle auf 1, wäre die Auswahl des ersten reine
+       Sortierreihenfolge — und damit eine erfundene Schwäche. */
+    var beurteilbar = faktoren.filter(function (f) { return f.anteil !== null; });
+    var sortiert = beurteilbar.slice().sort(function (a, b) { return a.anteil - b.anteil; });
+    var schwaechster = (sortiert.length && sortiert[0].anteil < 1) ? sortiert[0] : null;
+
+    /* Genau EIN nächster Hebel — nicht sieben. Gewählt wird der Hebel, der
+       die meisten aktuell nicht adressierten Wege direkt bedienen würde;
+       bei Gleichstand der mit der größeren Gesamtdeckung, dann der
+       vordere. Deterministisch, keine Gewichtungsmagie. */
+    function kandidatenFuer(zustand) {
+      /* Nur BEANTWORTETE Hebel unterhalb der vollen Umsetzung kommen in
+         Frage. Ein unbeantworteter Hebel darf nie als nächster Schritt
+         empfohlen werden — sein Zustand ist schlicht unbekannt, und eine
+         Empfehlung daraus wäre geraten. */
+      var k = HEBEL.filter(function (h) {
+        return typeof antworten[h.id] === "number" && antworten[h.id] !== 2;
+      }).map(function (h) {
+        var z = MATRIX[h.id] || {};
+        var oeffnet = Object.keys(z).filter(function (wid) {
+          return istStark(z[wid]) && wege[wid] === zustand;
+        });
+        return { hebel: h, oeffnet: oeffnet, n: oeffnet.length, deckung: deckung(h.id), zustand: zustand };
+      }).filter(function (x) { return x.n > 0; });
+      k.sort(function (a, b) {
+        return (b.n - a.n) || (b.deckung - a.deckung) ||
+          (HEBEL.indexOf(a.hebel) - HEBEL.indexOf(b.hebel));
+      });
+      return k;
+    }
+    /* Zuerst die Wege, die gar nicht adressiert sind. Gibt es keine mehr,
+       zählt der Hebel, der einen nur teilweise adressierten Weg vollständig
+       machen würde — sonst stünde bei halb ausgefülltem Check „nichts
+       offen", obwohl elf Fragen unbeantwortet sind. */
+    var kandidaten = kandidatenFuer("keiner");
+    if (!kandidaten.length) kandidaten = kandidatenFuer("schwach");
+
+    var beantwortet = FRAGEN.filter(function (f) { return typeof antworten[f.hebel] === "number"; }).length;
+
+    return {
+      wege: wege,
+      faktoren: faktoren,
+      schwaechster: schwaechster,
+      naechster: kandidaten.length ? kandidaten[0] : null,
+      beantwortet: beantwortet,
+      gesamt: FRAGEN.length,
+      vollstaendig: beantwortet === FRAGEN.length
+    };
+  }
+
+  /* Sichtbares Label für einen Zustand — Bremsen sprechen von „entlastet",
+     nie von „adressiert". Die Rolle entscheidet, nicht der Aufrufer. */
+  function statusLabel(wegId, zustand) {
+    var w = SIGNALWEGE.filter(function (x) { return x.id === wegId; })[0];
+    var s = STATUS[zustand];
+    if (!w || !s) return "";
+    return w.rolle === "bremse" ? s.bremse : s.gas;
+  }
+
   /* ======================= ABGELEITETE KENNZAHLEN ===========================
      Werden aus der Matrix gerechnet, nie von Hand gepflegt: Wenn eine Zelle
      sich ändert, ändern sich die Zahlen mit. */
@@ -808,6 +996,10 @@
     ohneHebel: OHNE_HEBEL,
     woche: WOCHE,
     vergleich: VERGLEICH,
+    fragen: FRAGEN,
+    status: STATUS,
+    bewerte: bewerte,
+    statusLabel: statusLabel,
     deckung: deckung,
     hebelFuer: hebelFuer,
     offeneWege: offeneWege,

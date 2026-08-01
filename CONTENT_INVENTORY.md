@@ -55,13 +55,37 @@ mit Substanzen.
   β₂-Adrenozeptor, GH/IGF-1/Insulin extern. Sie stehen bewusst außerhalb der
   Matrix — eine Zeile ohne Hebel wäre eine leere Zeile —, aber auf der Seite,
   weil unter genau diesen Namen Präparate verkauft werden.
-- **Leitplanken** (`tools-dev/tests/anabole-matrix.test.js`, 94 Prüfungen):
+- **Leitplanken** (`tools-dev/tests/anabole-matrix.test.js`, 129 Prüfungen):
   keine Bremse als „schaltet direkt“, keine Evidenzstufe STARK ohne Quelle,
   kein MECHANISMUS-Eintrag mit Studie, keine unbenutzte oder unvollständige
   Quelle, keine Dosieranweisung für Substanzen, jeder Signalweg gehört zu
   einem Faktor der Rechnung — und die Passagen „Was Substanzen anders machen“
   samt Konvergenz-Argument können nicht still verschwinden. Alle Zahlen im
   Fließtext werden gegen die Daten geprüft.
+- **Selbstcheck „Was dein Verhalten aktuell adressiert"** (`#abgleich`):
+  14 Fragen — eine je Hebel, Antwortstufen aus dessen dokumentierter Dosis.
+  Färbt die Matrix mit den eigenen Angaben ein, benennt den schwächsten der
+  fünf Faktoren und **genau einen** nächsten Hebel.
+
+  Rollentrennung, verbindlich: Der **Score** findet den übergeordneten
+  Engpass. Der **Selbstcheck** projiziert Trainings- und Regenerations­­-
+  verhalten auf die Matrix. Die **Rechner** liefern Zahlen. Die Matrixseite
+  erklärt die Biologie. Der Selbstcheck rührt die kalibrierte Score-Engine
+  nicht an — er liest `check_draft` nur lesend und füllt daraus 7 der 14
+  Fragen vor; die anderen 7 (RIR, Amplitude, Sätze je Muskel, Satzpause,
+  Ausdauer, Kreatin, Laborwerte) erfasst der Score gar nicht.
+
+  **Epistemische Leitplanken, testgesichert:** Es wird nirgends behauptet,
+  ein Signalweg sei „aktiviert“ oder „getriggert“ — die Aussage lautet
+  immer „dein Verhalten adressiert“ (Bremsen: „entlastet“). Vier Zustände
+  statt drei: „noch offen“ ist eigenständig, damit eine unbeantwortete
+  Frage nie als Versäumnis zählt. Ein Weg gilt nur dann als adressiert,
+  wenn **alle** direkt wirkenden Hebel erfüllt sind — sonst stünde
+  „Androgenrezeptor adressiert“ bei fünf Stunden Schlaf. Ein
+  unbeantworteter Hebel wird nie als nächster Schritt empfohlen. Kein
+  Gesamtwert, keine Prozentnote: Die Rechnung ist multiplikativ, ein
+  Mittelwert würde sie verwischen.
+
 - **Einstiege:** Karte in `blog.html`, Kontextlink in
   `blog/testosteron-natuerlich-steigern.html`, Eintrag in `sitemap.xml`.
 
