@@ -28,11 +28,15 @@ const CORE = [
   "js/os/intelligence/proof.js", "js/os/activation.js",
   "js/os/entitlements.js", "js/os/billing-machine.js", "js/os/production-status.js",
   "js/tracker.js", "js/tracker-data.js", "js/tracker-curated.js",
-  /* tracker-library.js (247 KB) und tracker-guide.js (592 KB) stehen bewusst
-     NICHT hier: der Tracker lädt sie erst, wenn jemand die Bibliothek
-     wirklich öffnet. Sie im Voraus zu holen würde jeden Erstbesuch bezahlen
-     lassen für etwas, das die meisten nie anfassen. Sie landen über die
-     Laufzeit-Strategie des Service Workers im Cache. */
+  /* tracker-library.js (247 KB), tracker-guide.js (592 KB) und die 1746
+     Übungsfotos in img/uebungen/ stehen bewusst NICHT hier: der Tracker lädt
+     sie erst, wenn jemand die Bibliothek wirklich öffnet. Sie im Voraus zu
+     holen würde jeden Erstbesuch 13 MB für etwas bezahlen lassen, das die
+     meisten nie anfassen.
+
+     Sie brauchen hier auch keinen Eintrag: der fetch-Handler unten cacht
+     JEDE erfolgreiche Anfrage der eigenen Origin. Angeschaute Übungen sind
+     danach offline verfügbar — genau die, die den Nutzer interessieren. */
   "js/food-db.js", "js/dinner.js",
   "js/shop-data.js",
   "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png"

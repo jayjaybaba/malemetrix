@@ -77,12 +77,24 @@
      Sätze loggen will, lädt sie nie. Erst wer sucht oder stöbert, holt sie —
      einmal pro Seitenaufruf, danach liegt sie im Speicher.
      ========================================================================== */
-  const LIB_BASE = "https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/";
+  /* Die Fotos liegen im eigenen Repository (img/uebungen/), nicht auf einem
+     fremden CDN. Drei Gründe, alle drei wichtiger als die 13 MB:
 
-  /* Fotos liegen bewusst NICHT im Repository: 873 Übungen × 2 Bilder sind
-     ~90 MB. Sie kommen vom CDN der (gemeinfreien) Quelle. Wer sie später
-     selbst hosten will, ändert genau diese eine Konstante. */
-  function exImg(srcSlug, n) { return srcSlug ? LIB_BASE + srcSlug + "/" + (n || 0) + ".jpg" : ""; }
+       · Ein fremder Bild-Host bekäme die IP-Adresse jedes Besuchers. Diese
+         Seite hostet ihre Schriften genau deshalb lokal — siehe
+         datenschutz.html, Abschnitt 8. Bei Fotos anders zu verfahren wäre
+         inkonsequent und auskunftspflichtig.
+       · Der Service Worker fasst fremde Origins bewusst nicht an
+         (sw.js: url.origin !== location.origin → return). Vom CDN geladene
+         Bilder landen also NIE im Offline-Cache — lokale schon, automatisch.
+         Der Tracker wirbt mit Offline-Betrieb; das muss auch hier gelten.
+       · Ein Kernfeature soll nicht an einem Dienst hängen, über den wir
+         nicht bestimmen.
+
+     320 px WebP, Ø 7,6 KB. Neu bauen: tools-dev/build-exercise-images.py */
+  const LIB_BASE = "img/uebungen/";
+
+  function exImg(srcSlug, n) { return srcSlug ? LIB_BASE + srcSlug + "-" + (n || 0) + ".webp" : ""; }
 
   /* Der Tracker läuft ausdrücklich offline — die Fotos kommen aber aus dem
      Netz. Ohne Verbindung zeigte der Browser sonst überall das Symbol für

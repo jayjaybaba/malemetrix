@@ -186,11 +186,34 @@ erzeugte Mischmasch wie „Prone Curls schräg". Und „Lat Pulldown", „Hip Th
 oder „Face Pull" sagt im deutschen Gym ohnehin jeder. Mehr Abdeckung gibt es
 über neue Einträge in den Wörterbüchern im Build-Skript.
 
-**Fotos liegen nicht im Repo.** 873 Übungen × 2 Bilder wären ~90 MB. Sie kommen
-vom jsDelivr-CDN der (gemeinfreien) Quelle; die Basis-URL ist die Konstante
-`LIB_BASE` in [js/tracker.js](js/tracker.js) — eine Zeile, falls du sie später
-selbst hosten willst. Ohne Verbindung fällt die Kachel still auf ihre leere
-Form zurück, statt ein kaputtes Bild zu zeigen; die Übung bleibt benutzbar.
+**Fotos liegen im Repo** — `img/uebungen/`, 1746 Dateien, 12,9 MB
+(320 px WebP, Ø 7,6 KB). Bewusst selbst gehostet statt vom CDN der Quelle:
+
+- **Datenschutz.** Ein fremder Bild-Host bekäme die IP jedes Besuchers. Diese
+  Seite hostet ihre Schriften genau deshalb lokal (`datenschutz.html`,
+  Abschnitt 8). Bei Fotos anders zu verfahren wäre inkonsequent — und
+  auskunftspflichtig.
+- **Offline.** Der Service Worker fasst fremde Origins bewusst nicht an
+  (`sw.js`: `url.origin !== location.origin` → return). Vom CDN geladene
+  Bilder landen also **nie** im Offline-Cache; lokale schon, automatisch über
+  die bestehende Network-first-Strategie. Der Tracker wirbt mit Offline-
+  Betrieb — das muss auch für die Bibliothek gelten.
+- **Unabhängigkeit.** Ein Kernfeature soll nicht an einem Dienst hängen, über
+  den wir nicht bestimmen.
+
+320 px reichen: die Kacheln sind 56–64 px, die große Schleife ~400 px breit.
+Im Original wären es ~120 MB gewesen.
+
+Bilder neu erzeugen (nur nötig, wenn die Quelle sich ändert):
+
+```bash
+pip install Pillow
+git clone --depth 1 https://github.com/yuhonas/free-exercise-db.git /tmp/fxdb
+python3 tools-dev/build-exercise-images.py /tmp/fxdb
+```
+
+Fehlt ein Bild trotzdem, fällt die Kachel still auf ihre leere Form zurück,
+statt ein kaputtes Bild zu zeigen; die Übung bleibt benutzbar.
 
 **Ladeverhalten:** Bibliothek (247 KB) und Ausführungstexte (592 KB) hängen
 **nicht** im `<head>`. Der Tracker holt sie erst, wenn jemand die Bibliothek
