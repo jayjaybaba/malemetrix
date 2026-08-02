@@ -492,6 +492,22 @@
       '<div class="am-st-list">' + eintraege + "</div>" + kontrolle);
     stackWege = r.unberuehrt;
     zeichneKreuz();
+
+    /* Direkt hinter den Selbstcheck. In der Quelltext-Reihenfolge liegen
+       drei lange Abschnitte dazwischen (Signalwege, Hebel, Wege ohne
+       Hebel) — der Nutzer beantwortet vierzehn Fragen und müsste an ihnen
+       vorbeiscrollen, bis er die Auswertung sieht, die genau darauf
+       antwortet. Der Schnitt oben liest dieselben Antworten; er gehört
+       neben sie.
+
+       Nur hier, also nur im bestätigten Enhanced-Fall. Für alle anderen
+       bleibt die Seite Zeichen für Zeichen dieselbe: Ohne Freischaltung
+       wird diese Zeile nie erreicht. */
+    var davor = el("abgleich");
+    if (davor && davor.parentNode && davor.nextElementSibling !== sec) {
+      davor.insertAdjacentElement("afterend", sec);
+    }
+
     sec.hidden = false;
   }
 

@@ -576,6 +576,25 @@ group("Stack × Selbstcheck · schneiden, nicht neu bewerten");
   var page = read("anabole-matrix.html");
   ok(page.indexOf('id="amStackKreuz"') < 0, "der Aufhängepunkt steht nicht statisch in der Seite …");
   ok(/id="amStackKreuz"/.test(view), "… sondern entsteht nur im Enhanced-Fall");
+
+  /* --- Die Reihenfolge: Auswertung neben die Fragen ---
+     Im Quelltext liegen drei Abschnitte zwischen Selbstcheck und Stack.
+     Die Umstellung passiert nur im Enhanced-Zweig — die ausgelieferte
+     Seite bleibt für alle anderen Zeichen für Zeichen dieselbe. */
+  var iAbgleich = page.indexOf('id="abgleich"');
+  var iStack = page.indexOf('id="amStack"');
+  ok(iAbgleich > -1 && iStack > iAbgleich, "im Markup steht der Stack weiterhin HINTER dem Selbstcheck");
+  var dazwischen = page.slice(iAbgleich, iStack).match(/<section class="am-sec"/g) || [];
+  ok(dazwischen.length >= 3, "… mit mehreren Abschnitten dazwischen (" + dazwischen.length + ") — deshalb die Umstellung");
+
+  var stackBlock = (view.split("STACK-ABGLEICH")[1] || "").split("Der Schnitt: unberührte Wege")[0];
+  ok(/insertAdjacentElement\("afterend", sec\)/.test(stackBlock),
+    "der Abschnitt wird hinter den Selbstcheck gesetzt");
+  var iGate = stackBlock.indexOf("if (!gate) return;");
+  var iMove = stackBlock.indexOf("insertAdjacentElement");
+  ok(iGate > -1 && iMove > iGate, "… und zwar erst NACH der Enhanced-Prüfung, nie davor");
+  ok(/davor\.nextElementSibling !== sec/.test(stackBlock),
+    "steht er schon dort, wird nicht erneut verschoben");
 })();
 
 /* ===== 7) Seite und Datenmodell hängen zusammen ===== */

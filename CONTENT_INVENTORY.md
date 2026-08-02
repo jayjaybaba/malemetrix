@@ -130,6 +130,16 @@ mit Substanzen.
   Freischaltung bleibt an genau einer Stelle (`renderStack`) — der Schnitt
   liest sie, entscheidet sie nicht neu. Alles testgesichert.
 
+  **Reihenfolge nur für Enhanced:** Im Markup steht `#amStack` weiterhin
+  hinter „Wege ohne Hebel" — drei lange Abschnitte nach dem Selbstcheck.
+  Ein Enhanced-Nutzer beantwortet vierzehn Fragen und müsste an ihnen
+  vorbeiscrollen, bis die Auswertung kommt, die genau darauf antwortet.
+  Deshalb setzt `renderStack` den Abschnitt per `insertAdjacentElement`
+  direkt hinter `#abgleich` — **erst nach** der Enhanced-Prüfung. Ohne
+  Freischaltung wird die Zeile nie erreicht: Für alle anderen bleibt die
+  ausgelieferte Seite Zeichen für Zeichen dieselbe. Der Test prüft beides —
+  die Markup-Reihenfolge und dass die Umstellung hinter dem Gate steht.
+
 - **Einstiege:** Karte in `blog.html`, Kontextlink in
   `blog/testosteron-natuerlich-steigern.html`, Eintrag in `sitemap.xml`,
   kontextabhängige Karte auf der Score-Ergebnisseite (`js/matrix-cta.js`).
