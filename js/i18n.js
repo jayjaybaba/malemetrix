@@ -32,10 +32,17 @@
     /* Gruppe heisst "Kostenlos", nicht "Tracker": die Rechner gehoeren dazu,
        sind aber keine Tracker. */
     "nav.freeGroup":    { de: "Kostenlos", en: "Free" },
+    "nav.matrix":       { de: "Anabole Matrix", en: "Anabolic Matrix" },
     "nav.calc":         { de: "Rechner & Werkzeuge", en: "Calculators & tools" },
     "nav.trackerGym":   { de: "Training & Schlaf", en: "Training & sleep" },
     "nav.trackerFood":  { de: "Kalorien & Protein", en: "Calories & protein" },
     "nav.trackerLabs":  { de: "Blutwerte im Verlauf", en: "Blood over time" },
+    /* Eigene Gruppe, weil das Ziel in der App liegt und nicht auf einer
+       freien Seite — „Kostenlos" wäre an dieser Stelle eine Zusage, die der
+       Stack Builder nicht einlöst. Der Produktname bleibt unübersetzt; er
+       steht so im OS und in MALEMETRIX_OS.md. */
+    "nav.myGroup":      { de: "My MaleMetrix", en: "My MaleMetrix" },
+    "nav.stackBuilder": { de: "Stack Builder", en: "Stack Builder" },
     "nav.aboutGroup":   { de: "MaleMetrix", en: "MaleMetrix" },
     "nav.aboutMM": { de: "Über MaleMetrix", en: "About MaleMetrix" },
     "nav.faq":     { de: "FAQ", en: "FAQ" },

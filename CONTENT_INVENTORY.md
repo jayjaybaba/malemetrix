@@ -140,9 +140,19 @@ mit Substanzen.
   ausgelieferte Seite Zeichen für Zeichen dieselbe. Der Test prüft beides —
   die Markup-Reihenfolge und dass die Umstellung hinter dem Gate steht.
 
-- **Einstiege:** Karte in `blog.html`, Kontextlink in
+- **Einstiege:** **Menüpunkt „Anabole Matrix"** unter „Kostenlos" im
+  Sammelmenü — auf allen 28 Seiten mit dieser Navigation, testgesichert wie
+  die Tracker. Dazu Karte in `blog.html`, Kontextlink in
   `blog/testosteron-natuerlich-steigern.html`, Eintrag in `sitemap.xml`,
   kontextabhängige Karte auf der Score-Ergebnisseite (`js/matrix-cta.js`).
+
+  **Eigene Gruppe für den Stack Builder.** Das Sammelmenü führt zusätzlich
+  „My MaleMetrix → Stack Builder" auf `mein-protokoll.html#plan` — dort
+  rendert `vPlan()` den Stack Builder 2.0. Bewusst **nicht** unter
+  „Kostenlos": Das Ziel liegt in der App hinter der Kontoschwelle, und
+  „Kostenlos" wäre an der Stelle eine Zusage, die er nicht einlöst. Der Test
+  prüft beides — die Gruppenzuordnung und dass `plan` eine echte Ansicht der
+  App ist, damit der Besucher nicht stillschweigend auf „today" landet.
 
   **Enhanced hat Vorrang, aus einem anderen Grund.** Die Karte wählt ihren
   Anlass sonst aus dem primären Engpass und den gerankten

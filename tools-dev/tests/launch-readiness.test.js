@@ -114,6 +114,39 @@ group("Navigation · Kernziele existieren, keine Dublette");
     if (!mehr || !trk) fehlt.push(f + (mehr ? "" : " [Titel]") + (trk ? "" : " [Tracker]"));
   });
   ok(fehlt.length === 0, "jede Seite trägt \"Mehr\" + die drei Tracker + die Rechner (fehlt: " + (fehlt.join(", ") || "nichts") + ")");
+
+  /* Anabole Matrix + Stack Builder gehören auf JEDE Seite mit dieser
+     Navigation, aus demselben Grund wie die Tracker: Eine neue Seite mit
+     altem Nav-Block schneidet den Besucher von beiden ab, ohne dass es
+     jemandem auffällt. Der Stack Builder zeigt bewusst auf die Plan-Ansicht
+     der App — dort wird er gerendert (vPlan in js/os/app.js). */
+  var fehltNeu = [];
+  seiten.forEach(function (f) {
+    var h = read(f);
+    var m = h.indexOf('<a href="anabole-matrix.html" data-i18n="nav.matrix">') !== -1;
+    var sb = h.indexOf('<a href="mein-protokoll.html#plan" data-i18n="nav.stackBuilder">') !== -1;
+    if (!m || !sb) fehltNeu.push(f + (m ? "" : " [Matrix]") + (sb ? "" : " [StackBuilder]"));
+  });
+  ok(fehltNeu.length === 0, "… und Anabole Matrix + Stack Builder (fehlt: " + (fehltNeu.join(", ") || "nichts") + ")");
+
+  /* Der Stack Builder steht NICHT unter „Kostenlos" — dort wäre er eine
+     Zusage, die er nicht einlöst. Eigene Gruppe, eigenes Label. */
+  var beispiel = read("index.html");
+  var frei = beispiel.split('data-i18n="nav.freeGroup"')[1].split('data-i18n="nav.myGroup"')[0];
+  ok(frei.indexOf("anabole-matrix.html") !== -1, "die Anabole Matrix steht unter \"Kostenlos\" — sie ist frei");
+  ok(frei.indexOf("mein-protokoll.html#plan") === -1, "der Stack Builder steht NICHT unter \"Kostenlos\"");
+
+  /* Das Ziel muss in der App wirklich eine Ansicht sein, sonst landet der
+     Besucher stillschweigend auf „today". */
+  var osApp = read("js/os/app.js");
+  var views = (osApp.match(/var VIEWS = \[([^\]]+)\]/) || ["", ""])[1];
+  ok(/"plan"/.test(views), "\"plan\" ist eine echte Ansicht der App");
+  ok(/--- STACK INTELLIGENCE ---/.test(osApp.split("function vPlan()")[1] || ""),
+    "und der Stack Builder wird genau dort gerendert");
+
+  ["nav.matrix", "nav.myGroup", "nav.stackBuilder"].forEach(function (k) {
+    ok(new RegExp('"' + k.replace(".", "\\.") + '":').test(read("js/i18n.js")), "i18n-Schlüssel vorhanden: " + k);
+  });
   // Die Übersetzungen müssen zu den neuen Schlüsseln existieren, sonst stünde
   // in der EN-Ansicht der deutsche Text.
   var i18n = read("js/i18n.js");
