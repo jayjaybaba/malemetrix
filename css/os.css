@@ -77,6 +77,10 @@
 .os-h2 { font-size: 0.78rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-2); margin: 0 0 14px; padding-left: 14px; position: relative; }
 .os-h2::before { content: ""; position: absolute; left: 0; top: 50%; width: 8px; height: 1px; background: var(--accent-2); }
 .os-sec { margin: 30px 0; }
+/* Gezielt angefahrene Abschnitte (#plan?f=stack) müssen unter dem festen
+   Kopf landen — sonst steht die Überschrift genau darunter und der Nutzer
+   sieht mitten im Abschnitt zu beginnen, ohne zu wissen, wo er ist. */
+.os-sec-stack { scroll-margin-top: calc(var(--header-h) + 14px); }
 .os-k { font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted-2); }
 .tag { display: inline-block; font-size: 0.62rem; letter-spacing: 0.14em; color: var(--accent-2); border: 1px solid rgba(22, 196, 244, 0.35); border-radius: 4px; padding: 2px 8px; margin-bottom: 8px; }
 

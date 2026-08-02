@@ -124,7 +124,7 @@ group("Navigation · Kernziele existieren, keine Dublette");
   seiten.forEach(function (f) {
     var h = read(f);
     var m = h.indexOf('<a href="anabole-matrix.html" data-i18n="nav.matrix">') !== -1;
-    var sb = h.indexOf('<a href="mein-protokoll.html#plan" data-i18n="nav.stackBuilder">') !== -1;
+    var sb = h.indexOf('<a href="mein-protokoll.html#plan?f=stack" data-i18n="nav.stackBuilder">') !== -1;
     if (!m || !sb) fehltNeu.push(f + (m ? "" : " [Matrix]") + (sb ? "" : " [StackBuilder]"));
   });
   ok(fehltNeu.length === 0, "… und Anabole Matrix + Stack Builder (fehlt: " + (fehltNeu.join(", ") || "nichts") + ")");
@@ -139,6 +139,12 @@ group("Navigation · Kernziele existieren, keine Dublette");
   /* Das Ziel muss in der App wirklich eine Ansicht sein, sonst landet der
      Besucher stillschweigend auf „today". */
   var osApp = read("js/os/app.js");
+
+  /* Der Menüpunkt heißt „Stack Builder" — dann muss er auch dort landen und
+     nicht oben in der Plan-Ansicht, wo zuerst Roadmap und Nutrition stehen. */
+  ok(/#plan\?f=stack/.test(beispiel), "der Menüpunkt fährt den Stack-Abschnitt gezielt an");
+  ok(/"os-sec-stack"\)/.test(osApp), "der Stack-Abschnitt trägt die Marke, die dafür angefahren wird");
+  ok(/hashParam\("f"\)/.test(osApp), "render wertet den Abschnitts-Parameter aus");
   var views = (osApp.match(/var VIEWS = \[([^\]]+)\]/) || ["", ""])[1];
   ok(/"plan"/.test(views), "\"plan\" ist eine echte Ansicht der App");
   ok(/--- STACK INTELLIGENCE ---/.test(osApp.split("function vPlan()")[1] || ""),

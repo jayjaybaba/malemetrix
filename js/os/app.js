@@ -1196,7 +1196,12 @@
       (strat.remove.length ? '<div class="os-remove"><span class="tag">STREICHEN — SPART GELD, KOSTET NICHTS</span>' + strat.remove.map(function (s) { return '<p><b>' + esc(s.name) + '</b> — ' + esc(s.why) + '</p>'; }).join("") + '</div>' : '') +
       (strat.diminishing ? '<p class="small muted" style="margin-top:8px">' + esc(strat.diminishing) + '</p>' : '') +
       '<div class="os-schedule">' + [["morning", "MORGENS"], ["with_food", "ZUM ESSEN"], ["pre_training", "PRE-TRAINING"], ["evening", "ABENDS"]].map(function (sl) { var arr = strat.schedule[sl[0]]; return arr.length ? '<div><span>' + sl[1] + '</span><b>' + arr.map(esc).join(" · ") + '</b></div>' : ''; }).join("") + '</div>' +
-      '<button class="btn btn-primary btn-sm" id="stSave">Als meine Stack-Routine übernehmen</button>');
+      '<button class="btn btn-primary btn-sm" id="stSave">Als meine Stack-Routine übernehmen</button>',
+      /* Anfahrbar machen: Die Plan-Ansicht beginnt mit Roadmap, Nutrition
+         und Training — der Stack steht weit darunter. Wer aus der
+         Navigation ausdrücklich auf „Stack Builder" klickt, landet sonst
+         oben und sieht von dem, was er angeklickt hat, nichts. */
+      "os-sec-stack");
 
     /* --- MASSNAHMENPRÜFUNG (Paket 7) ---
        Verbindet einen vorhandenen Stack-Eintrag bewusst mit einem
@@ -2425,26 +2430,31 @@
      selbst nach erfolgreicher Anmeldung nie dort an. */
   var RUECKKEHR = "os_return_view";
 
-  function merkeRueckkehr(v) {
-    if (!v || v === "today") { try { MM.store.remove(RUECKKEHR); } catch (e) {} return; }
-    try { MM.store.set(RUECKKEHR, v); } catch (e) {}
+  /* Gemerkt wird das ganze Fragment, nicht nur die Ansicht — sonst ginge
+     der Abschnitt aus „#plan?f=stack" bei der Anmeldung verloren und der
+     Nutzer stünde wieder oben in der Plan-Ansicht. */
+  function merkeRueckkehr() {
+    var frag = (location.hash || "").slice(1);
+    if (!frag || frag.split("?")[0] === "today") { try { MM.store.remove(RUECKKEHR); } catch (e) {} return; }
+    try { MM.store.set(RUECKKEHR, frag); } catch (e) {}
   }
 
   /* Genau einmal einlösen — sonst bliebe der Nutzer in der Ansicht gefangen
      und käme mit dem Today-Tab nicht mehr weg. */
   function loeseRueckkehrEin() {
-    var v = null;
-    try { v = MM.store.get(RUECKKEHR, null); } catch (e) { return false; }
-    if (!v || VIEWS.indexOf(v) < 0) return false;
+    var frag = null;
+    try { frag = MM.store.get(RUECKKEHR, null); } catch (e) { return false; }
+    if (typeof frag !== "string" || !frag) return false;
+    if (VIEWS.indexOf(frag.split("?")[0]) < 0) return false;
     try { MM.store.remove(RUECKKEHR); } catch (e) {}
     var jetzt = (location.hash || "").slice(1).split("?")[0];
-    if (jetzt === v || (jetzt && jetzt !== "today")) return false;   // aktueller Wunsch gewinnt
-    location.hash = "#" + v;
+    if (jetzt === frag || (jetzt && jetzt !== "today")) return false;   // aktueller Wunsch gewinnt
+    location.hash = "#" + frag;
     return true;
   }
 
   function signInScreen(gewuenscht) {
-    merkeRueckkehr(gewuenscht);
+    merkeRueckkehr();
     /* Sagen, wohin es geht. „Willkommen zurück" allein erklärt nicht, warum
        ein Klick auf „Stack Builder" hier endet — und liest sich für den, der
        ihn gerade gemacht hat, wie ein Fehlschlag. */
@@ -2474,6 +2484,16 @@
       v === "coach" ? vCoach() : v === "advisor" ? vAdvisor() : v === "review" ? vReview() : v === "twin" ? vTwin() : v === "simulator" ? vSimulator() : v === "experiments" ? vExperiments() : v === "protocol" ? vProtocol() : v === "timeline" ? vTimeline() : v === "memory" ? vMemory() : v === "map" ? vMap() : v === "learned" ? vLearned() : v === "grants" ? vGrants() : v === "usage" ? vUsage() : vToday(snap);
     var fab = (v !== "workout" && v !== "settings" && snap.state !== "signed_out") ? '<button class="os-fab" data-fab aria-label="Schnell erfassen">+</button>' : "";
     host.innerHTML = '<div class="os-shell os-env-' + (v === "progress" || v === "workout" ? "performance" : v === "plan" ? "metabolic" : v === "learn" && OS.pathway() === "enhanced" ? "clinical" : "instrument") + '">' + navBar(v) + '<div class="os-body" tabindex="-1">' + body + '</div>' + fab + '</div>';
+    /* Ausdrücklich angefahrener Abschnitt (#plan?f=stack). Der Parameter
+       nutzt dieselbe Mechanik wie #simulator?s=… — die Ansicht bleibt der
+       Hash, der Fokus ist ein Zusatz. Fehlt der Abschnitt, passiert nichts:
+       oben in der Ansicht zu stehen ist nie falsch, nur weniger genau. */
+    var fokus = hashParam("f");
+    if (fokus) {
+      var ziel = host.querySelector(".os-sec-" + fokus.replace(/[^a-z]/g, ""));
+      if (ziel) { try { ziel.scrollIntoView({ block: "start" }); } catch (e) { ziel.scrollIntoView(); } }
+    }
+
     if (v === "progress") loadPhotoCompare();
     // Nutzungsbericht beim Betreten der Ansicht einmal nachladen.
     if (v === "usage" && !usageData) usageLoad();

@@ -673,12 +673,18 @@ group("Q3 · Der gewünschte Bereich überlebt die Anmeldung");
   var fn = (app.split("function loeseRueckkehrEin()")[1] || "").split("\n  }")[0];
   ok(fn.length > 100, "die Einlöse-Funktion wurde für die Prüfung gefunden");
   ok(/MM\.store\.remove\(RUECKKEHR\)/.test(fn), "der Merker wird beim Einlösen gelöscht — keine Dauerumleitung");
-  ok(/VIEWS\.indexOf\(v\) < 0/.test(fn), "eine unbekannte Ansicht im Merker wird ignoriert, nicht angesprungen");
-  ok(/jetzt === v \|\| \(jetzt && jetzt !== "today"\)/.test(fn), "ein ausdrücklicher Hash gewinnt gegen den Merker");
+  ok(/VIEWS\.indexOf\(frag\.split\("\?"\)\[0\]\) < 0/.test(fn), "eine unbekannte Ansicht im Merker wird ignoriert, nicht angesprungen");
+  ok(/jetzt === frag \|\| \(jetzt && jetzt !== "today"\)/.test(fn), "ein ausdrücklicher Hash gewinnt gegen den Merker");
+
+  /* Gemerkt wird das ganze Fragment. Nur die Ansicht zu merken hieße: Der
+     Abschnitt aus „#plan?f=stack" geht bei der Anmeldung verloren und der
+     Nutzer steht wieder oben in der Plan-Ansicht. */
+  var merk = (app.split("function merkeRueckkehr()")[1] || "").split("\n  }")[0];
+  ok(/location\.hash \|\| ""\)\.slice\(1\)/.test(merk), "gemerkt wird das ganze Fragment, nicht nur die Ansicht");
 
   /* Der Menüpunkt und das Ziel müssen zusammenpassen — sonst führt die
      Navigation in eine Ansicht, die es nicht gibt. */
-  var ziel = (read("index.html").match(/href="mein-protokoll\.html#([a-z]+)" data-i18n="nav\.stackBuilder"/) || [])[1];
+  var ziel = (read("index.html").match(/href="mein-protokoll\.html#([a-z]+)[^"]*" data-i18n="nav\.stackBuilder"/) || [])[1];
   ok(!!ziel, "der Menüpunkt trägt ein Ziel");
   ok(new RegExp('"' + ziel + '"').test((app.match(/var VIEWS = \[([^\]]+)\]/) || ["", ""])[1]),
     "und das Ziel \"" + ziel + "\" ist eine echte Ansicht");

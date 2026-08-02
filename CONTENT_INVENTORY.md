@@ -147,8 +147,8 @@ mit Substanzen.
   kontextabhängige Karte auf der Score-Ergebnisseite (`js/matrix-cta.js`).
 
   **Eigene Gruppe für den Stack Builder.** Das Sammelmenü führt zusätzlich
-  „My MaleMetrix → Stack Builder" auf `mein-protokoll.html#plan` — dort
-  rendert `vPlan()` den Stack Builder 2.0. Bewusst **nicht** unter
+  „My MaleMetrix → Stack Builder" auf `mein-protokoll.html#plan?f=stack` —
+  dort rendert `vPlan()` den Stack Builder 2.0. Bewusst **nicht** unter
   „Kostenlos": Das Ziel liegt in der App hinter der Kontoschwelle, und
   „Kostenlos" wäre an der Stelle eine Zusage, die er nicht einlöst. Der Test
   prüft beides — die Gruppenzuordnung und dass `plan` eine echte Ansicht der
@@ -165,6 +165,16 @@ mit Substanzen.
   du direkt dort") und löst sie nach der Anmeldung **genau einmal** ein.
   Ein ausdrücklicher Hash gewinnt gegen den Merker, eine unbekannte Ansicht
   wird ignoriert; beides testgesichert (`fixes-audit.test.js`, Q3).
+
+  **Und er landet beim Werkzeug, nicht daneben.** `#plan` allein setzte den
+  Nutzer an den **Anfang** der Plan-Ansicht — dort stehen Roadmap, „What
+  if?", Nutrition OS und Training Engine; der Stack Builder liegt weit
+  darunter. Wer auf „Stack Builder" klickte, sah davon nichts. Der Parameter
+  `?f=stack` nutzt dieselbe Mechanik wie `#simulator?s=…` (`hashParam`): Die
+  Ansicht bleibt der Hash, der Abschnitt ist ein Zusatz. `render()` fährt
+  `.os-sec-<f>` an, `scroll-margin-top` hält ihn unter dem festen Kopf frei.
+  Fehlt der Abschnitt, passiert nichts — oben zu stehen ist nie falsch, nur
+  weniger genau.
 
   **Enhanced hat Vorrang, aus einem anderen Grund.** Die Karte wählt ihren
   Anlass sonst aus dem primären Engpass und den gerankten
