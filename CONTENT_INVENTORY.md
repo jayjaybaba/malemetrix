@@ -155,8 +155,19 @@ mit Substanzen.
   Substanzen selbst — und die gilt auch dann, wenn alle Bereiche gut stehen.
   Die Copy nennt bewusst **keine** Wege-Zahl: Wie viele Wege ein Stack
   bedient, hängt an den Kategorien; die rechnet erst die Matrixseite aus.
-  `medical_trt` und Enhanced ohne Kategorie fallen weiter auf die normale
-  Regel zurück.
+
+  **Zwei Fragen, die nicht dieselbe sind.** *Darf dieser Nutzer zur Matrix?*
+  hängt allein am Status (`istEnhanced`). *Kann der Stack-Abgleich etwas
+  zeigen?* verlangt zusätzlich echte Kategorien (`enhancedStack`). Anfangs
+  entschied die zweite Bedingung auch über die erste — wer bei „Welche
+  Kategorien sind aktuell beteiligt?" auf **„Möchte ich nicht angeben"**
+  ging, fiel damit auf die Engpass-Regel zurück, und weil der Engpass bei
+  Enhanced häufig `enhancedControl` oder `cardiovascular` lautet, bekamen
+  **44 %** dieser Gruppe gar keinen Übergang (3.000 Profile durch die echte
+  Engine). Jetzt zwei Kontexte: `enhanced` (Kategorien genannt, verweist auf
+  den Stack-Abgleich) und `enhanced_offen` (keine Angabe, verspricht ihn
+  nicht). `medical_trt`, `former_enhanced` und `uncertain` fallen weiter auf
+  die normale Regel zurück.
 
 ## Blog (`blog.html`) — 11 Artikel
 Tirzepatid-Kosten · TRT-Telemedizin · Testosteron natürlich · Blutwerte ab 30 ·

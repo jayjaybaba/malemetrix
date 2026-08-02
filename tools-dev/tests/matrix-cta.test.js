@@ -135,8 +135,25 @@ group("Enhanced · eigener Grund, eigener Vorrang");
     "Enhanced mit Kategorie liefert einen CTA, auch ohne passenden Engpass");
   ok(M.context(enh(["testosterone", "gh"], "training", ["strength", "fuel", "recovery"])) === "enhanced",
     "und schlaegt auch einen passenden Engpass — der Grund ist ein anderer");
-  ok(M.context(enh([])) === null, "Enhanced ohne Kategorie faellt auf die normale Regel zurueck");
-  ok(M.context(enh(["no_answer"])) === null, "„Moechte ich nicht angeben\" schaltet nichts frei");
+  /* Der Fehler, den ein zweiter echter Durchlauf aufgedeckt hat: Die
+     CTA-Sichtbarkeit hing an derselben Bedingung wie der Stack-Abgleich —
+     an genannten Kategorien. Wer bei „Welche Kategorien sind aktuell
+     beteiligt?" auf „Möchte ich nicht angeben" ging, fiel damit zurück auf
+     die Engpass-Regel; bei Engpass enhancedControl oder cardiovascular
+     blieb gar nichts. Das sind zwei verschiedene Fragen. */
+  ok(M.context(enh([])) === "enhanced_offen",
+    "Enhanced ohne Kategorie bekommt trotzdem einen CTA — der Status genügt");
+  ok(M.context(enh(["no_answer"])) === "enhanced_offen",
+    "„Moechte ich nicht angeben\" ebenso — die Frage nach dem Zugang ist eine andere");
+  ok(M.enhancedStack(enh(["no_answer"])) === null,
+    "… waehrend der Stack-Abgleich weiterhin echte Kategorien verlangt");
+  ok(M.enhancedStack(enh([])) === null, "… auch bei leerer Liste");
+  ["enhancedControl", "cardiovascular", "dataQuality", "movement"].forEach(function (d) {
+    ok(M.context(enh(["no_answer"], d)) === "enhanced_offen",
+      "auch bei Engpass " + d + ", der auf keinen Kontext zeigt");
+  });
+  ok(!/dein Stack|welche Wege dein/i.test(M.COPY.text.enhanced_offen),
+    "die Copy ohne Kategorien verspricht keinen Stack-Abgleich, den die Seite nicht zeigen kann");
 
   var trt = ergebnis("movement", [], {}, ["blood", "drive", "execution"]);
   trt.status = "medical_trt"; trt.answers.enh_categories = ["testosterone"];
@@ -166,7 +183,7 @@ group("Sicherheit · im Zweifel kein CTA");
   kaputt.forEach(function (k, i) {
     var r;
     try { r = M.context(k); } catch (e) { r = "EXCEPTION: " + e.message; }
-    ok(r === null || ["training", "nutrition", "recovery", "multiple", "enhanced"].indexOf(r) >= 0,
+    ok(r === null || ["training", "nutrition", "recovery", "multiple", "enhanced", "enhanced_offen"].indexOf(r) >= 0,
       "beschädigte Struktur #" + i + " wirft nicht (Ergebnis: " + r + ")");
   });
   ok(M.context({}) === null, "leeres Ergebnisobjekt → kein CTA");
@@ -376,7 +393,7 @@ group("Sprache · Einordnung, keine Messung");
   });
   ok(/adressiert/.test(text), "sie spricht von adressieren");
   ok(/wahrscheinlich/.test(text), "und bleibt bei wahrscheinlich statt sicher");
-  ["training", "nutrition", "recovery", "multiple", "enhanced"].forEach(function (k) {
+  ["training", "nutrition", "recovery", "multiple", "enhanced", "enhanced_offen"].forEach(function (k) {
     ok(typeof M.COPY.text[k] === "string" && M.COPY.text[k].length > 40, "Copy für " + k + " vorhanden");
   });
   ok(M.COPY.kicker === "Vertiefung · Muskelaufbau", "Kicker wie vorgegeben");

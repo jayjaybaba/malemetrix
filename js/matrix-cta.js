@@ -77,12 +77,18 @@
        viele es genau sind, rechnet die Matrixseite aus den Kategorien aus —
        hier ist es nicht bekannt und wird nicht behauptet.
 
-       Vorher fiel genau diese Gruppe durch: Ihr primärer Engpass ist häufig
-       `movement`, das bewusst auf keinen Kontext abgebildet ist, und die
-       Sekundärprioritäten scheiterten an der Schwäche-Bedingung. Damit gab
-       es für sie keinen Übergang — für die Gruppe, für die die Seite am
-       meisten hergibt. */
-    if (enhancedStack(result)) return "enhanced";
+       Vorher fiel genau diese Gruppe durch: Ihr primärer Engpass lautet
+       häufig `enhancedControl`, `cardiovascular` oder `movement` — alle
+       bewusst auf keinen Kontext abgebildet —, und die Sekundärprioritäten
+       scheiterten an der Schwäche-Bedingung. Damit gab es für sie keinen
+       Übergang, für die Gruppe, für die die Seite am meisten hergibt.
+
+       Der Status allein entscheidet. Ob der Nutzer seine Kategorien
+       genannt hat, ändert nur, WAS die Seite ihm zeigen kann — nicht, ob
+       er hingehört. Deshalb zwei Kontexte statt einer Bedingung. */
+    if (istEnhanced(result)) {
+      return enhancedStack(result) ? "enhanced" : "enhanced_offen";
+    }
 
     /* 1) Bestehender primärer Engpass. Die Engine hat ihn bereits bestimmt;
           hier wird er nur gelesen. */
@@ -177,17 +183,35 @@
   }
 
   /* ================================================== ENHANCED-KONTEXT ====
-     Freischaltung des Stack-Abgleichs. Er ist ausschließlich für Nutzer
-     gedacht, die im Score ausdrücklich „Enhanced" angegeben UND Kategorien
-     genannt haben — für alle anderen existiert der Abschnitt nicht.
+     ZWEI Fragen, die nicht dieselbe sind — und deren Vermischung genau ein
+     Loch erzeugt hat:
 
-     Bewusst NICHT freigeschaltet: `medical_trt` (ärztlich begleitete
+     1. Darf dieser Nutzer überhaupt zur Matrix geführt werden?
+        → `istEnhanced`. Hängt nur am Status. Der Grund, einen Enhanced-
+          Nutzer auf die Seite zu holen, ist die Reichweite seiner
+          Substanzen — der besteht unabhängig davon, ob er sie benennen
+          wollte.
+     2. Kann der Stack-Abgleich etwas anzeigen?
+        → `enhancedStack`. Braucht zusätzlich mindestens eine echte
+          Kategorie, denn ohne sie gibt es nichts abzubilden.
+
+     Vorher entschied (2) auch über (1). Wer bei „Welche Kategorien sind
+     aktuell beteiligt?" auf „Möchte ich nicht angeben" ging — die
+     naheliegende Wahl für jemanden, der seine Substanzen nicht auflisten
+     will —, fiel damit auf die Engpass-Regel zurück. Und weil der Engpass
+     bei Enhanced häufig `enhancedControl` oder `cardiovascular` lautet,
+     bekam knapp die Hälfte dieser Gruppe gar keinen Übergang.
+
+     Bewusst weiter NICHT enhanced: `medical_trt` (ärztlich begleitete
      Therapie ist ein anderer Kontext, dort entscheidet die Ärztin),
-     `former_enhanced` (nimmt nichts mehr) und `uncertain`/`unknown`.
-     „Möchte ich nicht angeben" wird nie als Kategorie gewertet. */
+     `former_enhanced` (nimmt nichts mehr) und `uncertain`/`unknown`. */
+  function istEnhanced(result) {
+    return istObjekt(result) && result.status === "enhanced";
+  }
+
+  /* Nur die genannten Kategorien — „Möchte ich nicht angeben" ist keine. */
   function enhancedStack(result) {
-    if (!istObjekt(result)) return null;
-    if (result.status !== "enhanced") return null;
+    if (!istEnhanced(result)) return null;
     var a = istObjekt(result.answers) ? result.answers : {};
     var k = Array.isArray(a.enh_categories) ? a.enh_categories : [];
     k = k.filter(function (x) { return typeof x === "string" && x && x !== "no_answer"; });
@@ -245,7 +269,11 @@
       /* Bewusst ohne Zahl: Wie viele Wege ein Stack bedient, hängt an den
          Kategorien — und die kennt die Ergebnisseite nicht. Die Matrixseite
          rechnet es aus, hier wird nichts behauptet. */
-      enhanced: "Deine Substanzen bedienen nur einen Teil dieser Matrix. Die Seite zeigt, welche Wege dein Stack offen lässt — und welche davon dein Verhalten adressiert."
+      enhanced: "Deine Substanzen bedienen nur einen Teil dieser Matrix. Die Seite zeigt, welche Wege dein Stack offen lässt — und welche davon dein Verhalten adressiert.",
+      /* Ohne genannte Kategorien kann die Seite den Stack-Abgleich nicht
+         zeigen. Diese Fassung verspricht ihn deshalb nicht — sie sagt, was
+         auch ohne jede Angabe gilt. */
+      enhanced_offen: "Substanzen bedienen immer nur einen Teil dieser Matrix. Der Rest läuft über Training, Ernährung und Erholung — die Seite zeigt, welche Wege das sind."
     },
     /* Nach abgeschlossenem Selbstcheck: kein zweites Mal als gleich starke
        Hauptempfehlung, aber der Zugang bleibt. */
