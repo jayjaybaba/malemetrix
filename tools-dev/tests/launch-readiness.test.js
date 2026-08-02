@@ -150,7 +150,49 @@ group("Navigation · Kernziele existieren, keine Dublette");
   ok(/--- STACK INTELLIGENCE ---/.test(osApp.split("function vPlan()")[1] || ""),
     "und der Stack Builder wird genau dort gerendert");
 
-  ["nav.matrix", "nav.myGroup", "nav.stackBuilder", "nav.ebooksGroup"].forEach(function (k) {
+  /* --- Vollständigkeit ---
+     Der Anspruch ist: Jede eigenständige Seite, die gebaut wurde, ist über
+     das Menü erreichbar. Was NICHT hineingehört, steht hier namentlich mit
+     Grund — damit eine neue Seite auffällt, statt still unerreichbar zu
+     bleiben. Wer eine Seite bewusst draußen lässt, trägt sie hier ein. */
+  var NICHT_IM_MENU = {
+    "index.html": "Startseite — über das Logo erreichbar",
+    "agb.html": "Rechtstext — steht im Footer",
+    "datenschutz.html": "Rechtstext — steht im Footer",
+    "impressum.html": "Rechtstext — steht im Footer",
+    "checkout.html": "Kasse — nur aus dem Warenkorb sinnvoll",
+    "lead-blutwerte.html": "Landing-Seite für Anzeigen, kein Reiseziel",
+    "report.html": "Druckansicht des Scores — ohne Ergebnis leer",
+    "intern.html": "intern",
+    "founder.html": "Weiterleitung",
+    "kurs.html": "Weiterleitung",
+    "stack-review.html": "Weiterleitung"
+  };
+  /* Gezählt wird die ganze Navigation, Hauptleiste und Sammelmenü — für den
+     Besucher ist beides „das Menü". */
+  var imMenu = {};
+  ((beispiel.match(/<nav class="main-nav"[\s\S]*?<\/nav>/) || [""])[0].match(/href="([^"]+)"/g) || []).forEach(function (h) {
+    imMenu[h.slice(6, -1).split("#")[0]] = true;
+  });
+  var unerreichbar = fs.readdirSync(ROOT)
+    .filter(function (x) { return /\.html$/.test(x); })
+    .filter(function (x) { return !imMenu[x] && !NICHT_IM_MENU[x]; });
+  ok(unerreichbar.length === 0,
+    "keine gebaute Seite fehlt im Menü (sonst hier mit Grund eintragen: " + (unerreichbar.join(", ") || "—") + ")");
+  /* Die Ausnahmeliste darf nicht zur Ablage verwaisen: Was dort steht, muss
+     es geben, und was im Menü steht, gehört nicht zusätzlich hinein. */
+  var geister = Object.keys(NICHT_IM_MENU).filter(function (x) { return !exists(x); });
+  ok(geister.length === 0, "die Ausnahmeliste nennt nur existierende Seiten" + (geister.length ? " (" + geister.join(", ") + ")" : ""));
+  var doppelt2 = Object.keys(NICHT_IM_MENU).filter(function (x) { return imMenu[x]; });
+  ok(doppelt2.length === 0, "keine Seite steht gleichzeitig im Menü und in der Ausnahmeliste" + (doppelt2.length ? " (" + doppelt2.join(", ") + ")" : ""));
+
+  /* Jedes Menüziel muss existieren — auch die neuen Produktseiten. */
+  var totLinks = Object.keys(imMenu).filter(function (h) {
+    return /\.html$/.test(h) && !/^https?:/.test(h) && !exists(h);
+  });
+  ok(totLinks.length === 0, "kein Menüziel zeigt ins Leere" + (totLinks.length ? " (" + totLinks.join(", ") + ")" : ""));
+
+  ["nav.matrix", "nav.myGroup", "nav.stackBuilder", "nav.ebooksGroup", "nav.productGroup"].forEach(function (k) {
     ok(new RegExp('"' + k.replace(".", "\\.") + '":').test(read("js/i18n.js")), "i18n-Schlüssel vorhanden: " + k);
   });
 

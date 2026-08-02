@@ -11,6 +11,31 @@ Auditiert am tatsächlichen Repo-Stand `cdc96d9`. Frühere Berichte nicht vertra
 > Index-Spalten der Tabelle beschreiben einen früheren Stand — sie sind
 > beim nächsten Content-Audit neu zu erheben, nicht zu übernehmen.
 
+## Die Navigation — vollständig und testgesichert
+
+Das Sammelmenü führt **jede eigenständige Seite** des Projekts, in fünf
+Gruppen: **Kostenlos** (Anabole Matrix · Blutwerte verstehen ·
+Blutwerte-Checkliste · Magazin · die drei Tracker · Rechner),
+**Produkte** (12-Wochen-Programm · Circle · Shop · Analysegespräch),
+**My MaleMetrix** (Stack Builder), **Ebooks** (17 Kapitel + Überblick),
+**MaleMetrix** (Über · Vertrauen & Methodik · Ergebnisse · Produktvorschau ·
+FAQ · Kontakt). Score, Das Protokoll, 1:1 Coaching und My MaleMetrix stehen
+weiterhin in der Hauptleiste.
+
+**Alle 28 Seiten tragen exakt dieselbe Fassung.** Vorher wichen
+`ergebnisse.html` und `vorschau.html` ab (sie führten sich selbst als
+Extra-Eintrag); das ist vereinheitlicht, sonst stünden dort Dubletten.
+
+**Die Vollständigkeit ist eine Prüfung, keine Absicht.**
+`launch-readiness.test.js` vergleicht alle `*.html` im Wurzelverzeichnis
+gegen die Navigation. Was bewusst draußen bleibt, steht namentlich mit
+Grund in `NICHT_IM_MENU` — Startseite (Logo), die drei Rechtstexte
+(Footer), Kasse (nur aus dem Warenkorb), `lead-blutwerte` (Anzeigen-
+Landing), `report` (Druckansicht des Scores, ohne Ergebnis leer), `intern`
+und drei Weiterleitungen. Eine neue Seite fällt damit auf, statt still
+unerreichbar zu bleiben. Der Test prüft zusätzlich, dass die Ausnahmeliste
+nicht verwaist und dass kein Menüziel ins Leere zeigt.
+
 ## Kapitel im Menü
 
 Das Sammelmenü führt unter **„Ebooks"** alle 17 eigenständigen

@@ -41,6 +41,7 @@
        freien Seite — „Kostenlos" wäre an dieser Stelle eine Zusage, die der
        Stack Builder nicht einlöst. Der Produktname bleibt unübersetzt; er
        steht so im OS und in MALEMETRIX_OS.md. */
+    "nav.productGroup": { de: "Produkte", en: "Products" },
     "nav.myGroup":      { de: "My MaleMetrix", en: "My MaleMetrix" },
     "nav.stackBuilder": { de: "Stack Builder", en: "Stack Builder" },
     /* Nur die Gruppenüberschrift bekommt einen Schlüssel. Die Kapiteltitel
