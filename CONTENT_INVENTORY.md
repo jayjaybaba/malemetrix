@@ -154,6 +154,18 @@ mit Substanzen.
   prüft beides — die Gruppenzuordnung und dass `plan` eine echte Ansicht der
   App ist, damit der Besucher nicht stillschweigend auf „today" landet.
 
+  **Der gewünschte Bereich überlebt die Anmeldung** (`os_return_view`).
+  Der Menüpunkt allein reichte nicht: Abgemeldet warf `render()` den Hash
+  weg und zeigte nur „Willkommen zurück", und weil der Magic Link fest auf
+  `/mein-protokoll.html` **ohne Hash** zurückführt, landete auch der
+  erfolgreich Angemeldete auf „today". Wer bereits auf der Seite stand, sah
+  überhaupt keine Veränderung — der Klick erzeugte nicht einmal ein
+  `hashchange`. Jetzt merkt sich der Anmeldeschirm die gewünschte Ansicht,
+  benennt sie („**Plan** liegt in My MaleMetrix — melde dich an, danach bist
+  du direkt dort") und löst sie nach der Anmeldung **genau einmal** ein.
+  Ein ausdrücklicher Hash gewinnt gegen den Merker, eine unbekannte Ansicht
+  wird ignoriert; beides testgesichert (`fixes-audit.test.js`, Q3).
+
   **Enhanced hat Vorrang, aus einem anderen Grund.** Die Karte wählt ihren
   Anlass sonst aus dem primären Engpass und den gerankten
   `secondaryPriorities`. Für Enhanced-Nutzer geht das an der Sache vorbei:

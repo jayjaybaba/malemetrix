@@ -2418,8 +2418,40 @@
 
   /* =========================== SIGN-IN / SKELETON (Bestand) =========================== */
   function skeleton() { host.innerHTML = '<div class="card" style="max-width:640px;margin:40px auto;text-align:center;color:var(--muted)">My MaleMetrix wird geladen…</div>'; }
-  function signInScreen() {
-    host.innerHTML = '<div class="section-head center" style="margin-top:24px"><span class="eyebrow">My MaleMetrix</span><h1 class="h-display" style="font-size:2rem">Willkommen zurück</h1><p class="lead">Melde dich mit deiner E-Mail an — wir schicken dir einen Magic Link, kein Passwort nötig.</p></div>' +
+  /* Speicher für die Ansicht, die vor der Anmeldung gewünscht war. Ohne ihn
+     landet jeder Anmeldevorgang auf „today": Der Magic Link führt fest auf
+     /mein-protokoll.html, und der Hash aus dem ursprünglichen Aufruf ist dann
+     verloren. Wer aus der Navigation auf „Stack Builder" klickt, käme also
+     selbst nach erfolgreicher Anmeldung nie dort an. */
+  var RUECKKEHR = "os_return_view";
+
+  function merkeRueckkehr(v) {
+    if (!v || v === "today") { try { MM.store.remove(RUECKKEHR); } catch (e) {} return; }
+    try { MM.store.set(RUECKKEHR, v); } catch (e) {}
+  }
+
+  /* Genau einmal einlösen — sonst bliebe der Nutzer in der Ansicht gefangen
+     und käme mit dem Today-Tab nicht mehr weg. */
+  function loeseRueckkehrEin() {
+    var v = null;
+    try { v = MM.store.get(RUECKKEHR, null); } catch (e) { return false; }
+    if (!v || VIEWS.indexOf(v) < 0) return false;
+    try { MM.store.remove(RUECKKEHR); } catch (e) {}
+    var jetzt = (location.hash || "").slice(1).split("?")[0];
+    if (jetzt === v || (jetzt && jetzt !== "today")) return false;   // aktueller Wunsch gewinnt
+    location.hash = "#" + v;
+    return true;
+  }
+
+  function signInScreen(gewuenscht) {
+    merkeRueckkehr(gewuenscht);
+    /* Sagen, wohin es geht. „Willkommen zurück" allein erklärt nicht, warum
+       ein Klick auf „Stack Builder" hier endet — und liest sich für den, der
+       ihn gerade gemacht hat, wie ein Fehlschlag. */
+    var ziel = (gewuenscht && gewuenscht !== "today" && VIEW_LABEL[gewuenscht]) ? VIEW_LABEL[gewuenscht] : "";
+    host.innerHTML = '<div class="section-head center" style="margin-top:24px"><span class="eyebrow">My MaleMetrix</span><h1 class="h-display" style="font-size:2rem">Willkommen zurück</h1>' +
+      (ziel ? '<p class="lead"><b>' + esc(ziel) + '</b> liegt in My MaleMetrix. Melde dich an — danach bist du direkt dort.</p>'
+            : '<p class="lead">Melde dich mit deiner E-Mail an — wir schicken dir einen Magic Link, kein Passwort nötig.</p>') + '</div>' +
       '<div class="card" style="max-width:420px;margin:0 auto"><label class="small" for="mmEmail" style="display:block;margin-bottom:6px;color:var(--muted)">E-Mail</label><input id="mmEmail" type="email" inputmode="email" autocomplete="email" placeholder="du@beispiel.de" style="width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;font-size:1rem;background:rgba(127,127,127,0.06);color:var(--text);margin-bottom:12px"><button id="mmGo" class="btn btn-primary btn-block">Weiter →</button><p id="mmAuthMsg" class="small" style="margin-top:12px;display:none"></p></div>';
     var em = document.getElementById("mmEmail"), go = document.getElementById("mmGo"), m = document.getElementById("mmAuthMsg");
     function submit() { var v = (em.value || "").trim(); if (!/.+@.+\..+/.test(v)) { em.focus(); return; } go.disabled = true; go.textContent = "Sende…"; MM.account.signIn(v).then(function (res) { m.style.display = "block"; m.style.color = res.ok ? "var(--green,#3ddc84)" : "var(--amber,#f5a623)"; m.textContent = res.message || (res.ok ? "Magic Link gesendet." : "Fehler."); go.disabled = false; go.textContent = "Weiter →"; if (res.ok && MM.track) MM.track("login_started", {}); }); }
@@ -2430,7 +2462,10 @@
   function render(navigated) {
     var snap = MM.account.snapshot();
     if (snap.state === "loading") { skeleton(); return; }
-    if (snap.configured && snap.state === "signed_out") { signInScreen(); return; }
+    if (snap.configured && snap.state === "signed_out") { signInScreen(view()); return; }
+    /* Angemeldet: die vor der Anmeldung gewünschte Ansicht nachholen. Der
+       Hash-Wechsel löst render() erneut aus, deshalb hier abbrechen. */
+    if (loeseRueckkehrEin()) return;
     OS.ensureCycle();   // Zyklus-Zustandsmaschine bei jedem Render konsistent halten
     if (MM.activation) { try { MM.activation.trackOnce(); } catch (e) {} }   // Funnel-Meilensteine, je genau 1×
     var v = view();

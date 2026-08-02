@@ -648,6 +648,44 @@ group("Q2 · Kontrast auf hellem Papier und auf gefüllten Schaltflächen");
   ok((read("protokoll.html").match(/class="pc-n" aria-hidden="true"/g) || []).length === 11, "die Kapitel-Geisterziffern ebenso");
 })();
 
+/* ===================================================================== Q3 */
+/* Gemeldet: „Wenn ich auf Stack Builder klicke, passiert nichts." Der
+   Menüpunkt zeigt auf mein-protokoll.html#plan. Abgemeldet warf render()
+   den gewünschten Hash weg und zeigte den Anmeldeschirm — und weil der
+   Magic Link fest auf /mein-protokoll.html zurückführt, landete auch der
+   erfolgreich Angemeldete auf „today" statt beim Stack Builder. Wer schon
+   auf der Seite stand, sah gar keine Veränderung. */
+group("Q3 · Der gewünschte Bereich überlebt die Anmeldung");
+(function () {
+  var app = read("js/os/app.js");
+
+  ok(/signInScreen\(view\(\)\)/.test(app), "render übergibt die gewünschte Ansicht an den Anmeldeschirm");
+  ok(/function signInScreen\(gewuenscht\)/.test(app), "… und der nimmt sie entgegen");
+  ok(/liegt in My MaleMetrix/.test(app), "der Anmeldeschirm benennt das Ziel, statt nur zu grüßen");
+
+  /* Der Merker muss VOR dem Rendern der Ansicht eingelöst werden, sonst
+     rendert die App einmal „today" und springt sichtbar um. */
+  var iEinloesen = app.indexOf("loeseRueckkehrEin()");
+  var iView = app.indexOf("var v = view();");
+  ok(iEinloesen > -1 && iView > -1 && iEinloesen < iView, "die Rückkehr wird vor dem Rendern eingelöst");
+
+  /* Genau einmal. Ohne remove bliebe der Nutzer in der Ansicht gefangen. */
+  var fn = (app.split("function loeseRueckkehrEin()")[1] || "").split("\n  }")[0];
+  ok(fn.length > 100, "die Einlöse-Funktion wurde für die Prüfung gefunden");
+  ok(/MM\.store\.remove\(RUECKKEHR\)/.test(fn), "der Merker wird beim Einlösen gelöscht — keine Dauerumleitung");
+  ok(/VIEWS\.indexOf\(v\) < 0/.test(fn), "eine unbekannte Ansicht im Merker wird ignoriert, nicht angesprungen");
+  ok(/jetzt === v \|\| \(jetzt && jetzt !== "today"\)/.test(fn), "ein ausdrücklicher Hash gewinnt gegen den Merker");
+
+  /* Der Menüpunkt und das Ziel müssen zusammenpassen — sonst führt die
+     Navigation in eine Ansicht, die es nicht gibt. */
+  var ziel = (read("index.html").match(/href="mein-protokoll\.html#([a-z]+)" data-i18n="nav\.stackBuilder"/) || [])[1];
+  ok(!!ziel, "der Menüpunkt trägt ein Ziel");
+  ok(new RegExp('"' + ziel + '"').test((app.match(/var VIEWS = \[([^\]]+)\]/) || ["", ""])[1]),
+    "und das Ziel \"" + ziel + "\" ist eine echte Ansicht");
+  ok(new RegExp("v === \"" + ziel + "\" \\? v" + ziel[0].toUpperCase() + ziel.slice(1) + "\\(\\)").test(app),
+    "… die render() auch wirklich zeichnet");
+})();
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 process.exit(failed ? 1 : 0);
