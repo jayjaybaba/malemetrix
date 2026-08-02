@@ -43,6 +43,11 @@
        steht so im OS und in MALEMETRIX_OS.md. */
     "nav.myGroup":      { de: "My MaleMetrix", en: "My MaleMetrix" },
     "nav.stackBuilder": { de: "Stack Builder", en: "Stack Builder" },
+    /* Nur die Gruppenüberschrift bekommt einen Schlüssel. Die Kapiteltitel
+       selbst bleiben ohne — wie „Ergebnisse" und „Produktvorschau" — und
+       laufen über die dynamische Übersetzung. Siebzehn feste EN-Strings
+       wären eine zweite Pflegestelle für Titel, die sich ändern können. */
+    "nav.ebooksGroup":  { de: "Ebooks", en: "Ebooks" },
     "nav.aboutGroup":   { de: "MaleMetrix", en: "MaleMetrix" },
     "nav.aboutMM": { de: "Über MaleMetrix", en: "About MaleMetrix" },
     "nav.faq":     { de: "FAQ", en: "FAQ" },

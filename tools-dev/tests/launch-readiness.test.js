@@ -150,9 +150,69 @@ group("Navigation · Kernziele existieren, keine Dublette");
   ok(/--- STACK INTELLIGENCE ---/.test(osApp.split("function vPlan()")[1] || ""),
     "und der Stack Builder wird genau dort gerendert");
 
-  ["nav.matrix", "nav.myGroup", "nav.stackBuilder"].forEach(function (k) {
+  ["nav.matrix", "nav.myGroup", "nav.stackBuilder", "nav.ebooksGroup"].forEach(function (k) {
     ok(new RegExp('"' + k.replace(".", "\\.") + '":').test(read("js/i18n.js")), "i18n-Schlüssel vorhanden: " + k);
   });
+
+  /* --- Die Kapitel im Menü ---
+     Ein Menüeintrag auf eine gelöschte oder umbenannte Kapitelseite ist ein
+     404, den niemand bemerkt, bis ein Besucher darauf klickt. */
+  /* Nur der Navigationsblock zählt — ebooks.html und protokoll.html
+     verlinken Kapitel auch im Seiteninhalt, das ist kein Menüeintrag. */
+  function menuBlock(h) { return (h.match(/<div class="nav-more-menu">[\s\S]*?<\/div>/) || [""])[0]; }
+  var kap = (menuBlock(beispiel).match(/href="ebooks\/[a-z0-9-]+\.html"/g) || [])
+    .map(function (h) { return h.slice(6, -1); });
+  ok(kap.length >= 15, "das Menü führt die Kapitel (" + kap.length + ")");
+  var tot = kap.filter(function (h) { return !exists(h); });
+  ok(tot.length === 0, "jedes Kapitel im Menü existiert als Datei" + (tot.length ? " (" + tot.join(", ") + ")" : ""));
+  var dop = kap.filter(function (h, i) { return kap.indexOf(h) !== i; });
+  ok(dop.length === 0, "kein Kapitel steht doppelt im Menü" + (dop.length ? " (" + dop.join(", ") + ")" : ""));
+
+  /* Die drei Alt-Fassungen sind bewusst draußen: Sie zeigen denselben Inhalt
+     wie ihre kanonische Fassung und stehen nur deshalb noch im Repo (siehe
+     CONTENT_INVENTORY, Duplicate-Content-Schutz). Zwei Menüzeilen auf
+     dasselbe Kapitel wären für den Besucher schlicht falsch. */
+  ["ebooks/masterguide.html", "ebooks/schlaf-stack.html", "ebooks/training-system.html"].forEach(function (alt) {
+    ok(kap.indexOf(alt) < 0, "die Alt-Fassung " + alt.replace("ebooks/", "") + " steht NICHT im Menü");
+  });
+  /* Das Gesamtwerk ist kein Kapitel — es hängt am Produkt, nicht an der Liste. */
+  ok(kap.indexOf("ebooks/protokoll.html") < 0, "das gekaufte Gesamtwerk steht nicht zwischen den Kapiteln");
+
+  /* Jede kanonische Kapitelseite der Engine muss auch im Menü stehen —
+     sonst fehlt ein Kapitel, das das Produkt selbst führt. */
+  var engine2 = read("js/check-data.js");
+  var kanon = (engine2.match(/href: "ebooks\/[a-z0-9-]+\.html"/g) || [])
+    .map(function (h) { return h.slice(7, -1); });
+  var fehlend = kanon.filter(function (h) { return kap.indexOf(h) < 0; });
+  ok(kanon.length > 0 && fehlend.length === 0,
+    "jedes Kapitel aus C.CHAPTERS steht im Menü" + (fehlend.length ? " (fehlt: " + fehlend.join(", ") + ")" : " (" + kanon.length + ")"));
+
+  /* Auf jeder Seite dieselben Kapitel — eine Seite mit altem Block würde den
+     Besucher wieder abschneiden, ohne dass es auffällt. */
+  var abweichend = [];
+  seiten.forEach(function (f) {
+    var h = read(f);
+    var k2 = (menuBlock(h).match(/href="ebooks\/[a-z0-9-]+\.html"/g) || []).length;
+    if (k2 !== kap.length) abweichend.push(f + " (" + k2 + ")");
+  });
+  ok(abweichend.length === 0, "alle Seiten führen dieselben Kapitel" + (abweichend.length ? " (" + abweichend.join(", ") + ")" : ""));
+
+  /* Ohne Deckel wächst das Menü mit dreißig Zeilen über den Bildrand. */
+  var css = read("css/style.css");
+  ok(/\.nav-more-menu \{[\s\S]{0,600}max-height:/.test(css), "das Untermenü hat eine Höhenbegrenzung");
+  ok(/\.nav-more-menu \{[\s\S]{0,600}overflow-y: auto/.test(css), "… und scrollt, statt abzuschneiden");
+
+  /* Der mobile Fall ist der schlimmere: Das Schubfach ist `fixed`, wandert
+     also beim Seiten-Scrollen NICHT mit. Ohne eigenen Deckel ragte es mit
+     den Kapiteln 1960px hoch in ein 844px-Fenster — alles ab Eintrag zwölf
+     war unerreichbar, und kein Scrollen der Seite half. */
+  /* Es gibt mehrere `.main-nav`-Regeln; gemeint ist die mit dem Schubfach.
+     Über `position: fixed` gefunden statt über die Reihenfolge im Sheet. */
+  var mobil = (css.match(/\.main-nav \{[^}]*position: fixed[^}]*\}/) || [""])[0];
+  ok(mobil.length > 100, "der mobile Navigationsblock wurde für die Prüfung gefunden");
+  ok(/position: fixed/.test(mobil), "das Schubfach ist weiterhin fixiert");
+  ok(/max-height: calc\(100vh - var\(--header-h\)\)/.test(mobil), "… und deshalb auf Fensterhöhe gedeckelt");
+  ok(/overflow-y: auto/.test(mobil), "… und in sich scrollbar");
   // Die Übersetzungen müssen zu den neuen Schlüsseln existieren, sonst stünde
   // in der EN-Ansicht der deutsche Text.
   var i18n = read("js/i18n.js");

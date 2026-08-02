@@ -2,7 +2,43 @@
 
 Auditiert am tatsächlichen Repo-Stand `cdc96d9`. Frühere Berichte nicht vertraut.
 
-## Ebook-Bestand (`ebooks/`)
+> **Achtung, die Tabelle unten ist überholt.** Am tatsächlichen Stand sind
+> die Dateien in `ebooks/` **keine** frei lesbaren Ebooks mit 3.000–6.500
+> Wörtern mehr, sondern **Kapitelseiten von rund 250 Wörtern** mit
+> `robots: noindex, follow`: Inhaltsverzeichnis des Kapitels plus Hinweis,
+> dass DAS PROTOKOLL (99 €, einmalig) es freischaltet. Der volle Text liegt
+> in `ebooks/protokoll.html` (≈700 KB, zugangsbeschränkt). Die Wort- und
+> Index-Spalten der Tabelle beschreiben einen früheren Stand — sie sind
+> beim nächsten Content-Audit neu zu erheben, nicht zu übernehmen.
+
+## Kapitel im Menü
+
+Das Sammelmenü führt unter **„Ebooks"** alle 17 eigenständigen
+Kapitelseiten, nummeriert nach der Zählung aus `C.CHAPTERS`
+(`js/check-data.js`): `Start here` · 01–10 · `Abschluss` · fünf
+`Vertiefung`-Seiten (Protein, Fettabbau, Longevity & Risk, Modafinil,
+Selank). Die Beschriftung ist die Kapitelüberschrift, nur in der
+Groß-/Kleinschreibung für eine Menüzeile normalisiert.
+
+**Bewusst nicht im Menü:** die drei Alt-Fassungen `masterguide`
+(↔ blueprint), `schlaf-stack` (↔ schlaf-energie) und `training-system`
+(↔ taeglich-trainieren) — zwei Menüzeilen auf denselben Inhalt wären für
+den Besucher falsch. Ebenso `ebooks/protokoll.html`: Das ist das gekaufte
+Gesamtwerk, kein Kapitel, und hängt am Produkt.
+
+**Testgesichert** (`launch-readiness.test.js`): jedes Ziel existiert, keins
+doppelt, jede Seite trägt dieselbe Liste, jedes Kapitel aus `C.CHAPTERS`
+ist enthalten, die drei Alt-Fassungen sind es nicht.
+
+**Zwei Höhenbegrenzungen, ohne die es bricht.** Mit den Kapiteln hat das
+Menü rund dreißig Zeilen. Am Desktop bekam `.nav-more-menu` deshalb
+`max-height` + `overflow-y: auto`. Kritischer war mobil: `.main-nav` ist
+`position: fixed` und wandert beim Seiten-Scrollen **nicht** mit — das
+Schubfach war 1960 px hoch in einem 844-px-Fenster, alles ab Eintrag zwölf
+schlicht unerreichbar. Es ist jetzt auf Fensterhöhe gedeckelt und scrollt
+selbst. Beides prüft der Test.
+
+## Ebook-Bestand (`ebooks/`) — Stand des früheren Audits
 
 | Ebook | Wörter | Struktur | Bilder | Zugang | Index | Evidenz-Sektion |
 |---|---|---|---|---|---|---|

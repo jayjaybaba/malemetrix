@@ -300,6 +300,15 @@ h1[tabindex="-1"]:focus, section[tabindex="-1"]:focus, .os-body[tabindex="-1"]:f
     border-bottom: 1px solid var(--line);
     padding: 12px 24px 24px;
     display: none;
+    /* Das Schubfach ist `fixed` — es wandert beim Seiten-Scrollen NICHT mit.
+       Ohne eigenen Deckel ragt es mit aufgeklappten Kapiteln weit über den
+       unteren Bildrand hinaus, und alles darunter ist schlicht nicht
+       erreichbar: kein Scrollen der Seite bringt es zurück. Deshalb scrollt
+       es selbst. */
+    max-height: calc(100vh - var(--header-h));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
   .main-nav.open { display: flex; }
   .main-nav a:not(.btn) { padding: 14px 4px; font-size: 1.05rem; border-bottom: 1px solid var(--line); }
@@ -1800,6 +1809,11 @@ input[type="range"]::-moz-range-thumb {
   background: var(--bg-1); border: 1px solid var(--line-strong);
   border-radius: 14px; padding: 8px; min-width: 210px;
   box-shadow: var(--shadow); display: none; flex-direction: column; gap: 2px; z-index: 120;
+  /* Mit den Kapiteln sind es rund dreißig Zeilen. Ohne Deckel wächst das
+     Menü über den unteren Bildrand hinaus und die letzten Einträge sind
+     nicht mehr erreichbar. Im mobilen Schubfach (unten) gilt das nicht —
+     dort scrollt die Navigation selbst. */
+  max-height: calc(100vh - var(--header-h) - 32px); overflow-y: auto; overscroll-behavior: contain;
 }
 .nav-more-menu.open { display: flex; }
 .nav-more-menu a {
@@ -1848,7 +1862,9 @@ input[type="range"]::-moz-range-thumb {
   /* Chevron dreht, wenn aufgeklappt */
   .nav-more:has(.nav-more-menu.open) .nav-more-toggle::after { transform: rotate(180deg); }
   /* Eingeklappt: Sekundaer-Liste ausgeblendet; .open klappt sie auf */
-  .nav-more-menu { position: static; display: none; box-shadow: none; border: none; padding: 0; min-width: 0; background: none; }
+  /* Im Schubfach scrollt die Navigation als Ganzes — ein eigener Deckel auf
+     dem Untermenü würde eine zweite Scrollfläche in der ersten erzeugen. */
+  .nav-more-menu { position: static; display: none; box-shadow: none; border: none; padding: 0; min-width: 0; background: none; max-height: none; overflow-y: visible; }
   .nav-more-menu.open { display: flex; }
   .nav-more-menu a {
     border-bottom: 1px solid var(--line) !important;
