@@ -692,6 +692,53 @@ group("Q3 · Der gewünschte Bereich überlebt die Anmeldung");
     "… die render() auch wirklich zeichnet");
 })();
 
+/* ===================================================================== Q4 */
+/* Die Intelligence-Suite war monatelang mit vier Faellen rot — und niemand,
+   ich eingeschlossen, hat hingesehen, weil "vorbestehend rot" schnell zur
+   Gewohnheit wird. Die Ursache war keine Regression, sondern ein Kalender:
+   Die Szenarien setzten feste Datumsangaben (2026-07-01 …) als Messdaten.
+   Als die reale Zeit weiterlief, fielen sie aus dem Frischefenster der
+   Engine, `metricTrend` lieferte null, und der Advisor antwortete "mir
+   fehlen Daten" — auf Daten, die im Szenario vorhanden waren.
+
+   Eine rote Suite, die mit dem Datum kommt statt mit einer Aenderung, ist
+   schlimmer als gar keine Suite: Sie erzieht dazu, Rot zu ignorieren. */
+group("Q4 · Keine Zeitbomben in den Szenariodaten");
+(function () {
+  var intel = read("tools-dev/tests/intelligence.test.js");
+
+  ok(/function vorTagen\(n\)/.test(intel), "die Suite verankert ihre Zeitpunkte relativ zu heute");
+  ok(/new Date\(Date\.now\(\) - n \* 86400000\)/.test(intel), "… gerechnet ab jetzt, nicht ab einem festen Tag");
+
+  /* Absolute Datumsangaben sind nur noch dort erlaubt, wo sie GERADE das
+     Testobjekt sind: „uralt" und „in der Zukunft". Alles andere im
+     Umkreis der Gegenwart ist eine Bombe mit Zuendschnur. */
+  var jahr = new Date().getFullYear();
+  var erlaubt = [String(jahr - 2), String(jahr - 1), "2099"];
+  var verdaechtig = (intel.match(/"(\d{4})-\d{2}-\d{2}"/g) || [])
+    .map(function (x) { return x.slice(1, -1); })
+    .filter(function (d) { return erlaubt.indexOf(d.slice(0, 4)) < 0; });
+  ok(verdaechtig.length === 0,
+    "kein festes Datum aus der Gegenwart als Szenariodatum" +
+    (verdaechtig.length ? " (" + verdaechtig.join(", ") + ")" : ""));
+
+  /* Das Standard-Startdatum der Gewichtsreihe darf nicht wieder fest werden. */
+  ok(/var d = new Date\(startDate \? startDate : vorTagen\(days\)\);/.test(intel),
+    "die Gewichtsreihe endet immer am gestrigen Tag, nicht an einem Kalenderdatum");
+
+  /* Und die Suite muss heute wirklich gruen sein — sonst ist die Regel
+     Papier. Geprueft wird die Zusammenfassungszeile ihres eigenen Laufs. */
+  var out = "";
+  try {
+    out = require("node:child_process")
+      .execFileSync(process.execPath, [path.join(ROOT, "tools-dev/tests/intelligence.test.js")],
+        { encoding: "utf8", timeout: 120000, maxBuffer: 40 * 1024 * 1024 });
+  } catch (e) { out = String((e && e.stdout) || "") + String((e && e.stderr) || ""); }
+  var m = out.match(/(\d+) passed, (\d+) failed/);
+  ok(!!m, "die Intelligence-Suite liefert eine Zusammenfassung");
+  ok(m && m[2] === "0", "… und sie ist grün (" + (m ? m[1] + " ok, " + m[2] + " rot" : "?") + ")");
+})();
+
 console.log("\n==============================");
 console.log("PASS: " + passed + "  FAIL: " + failed);
 process.exit(failed ? 1 : 0);

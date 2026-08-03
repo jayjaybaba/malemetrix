@@ -35,8 +35,20 @@ function env(dash, seed) {
 function dashOf(o) { return Object.assign({ name: "T", hasScore: true, score: 60, mode: "recomp", bottleneck: "", bottleneckName: "", program: { active: false }, access: { twelve_week: true } }, o); }
 function prog(o) { return Object.assign({ active: true, notStarted: false, over: false, week: 6, day: 38, phase: 2, consistency: 85, active_days: 32, nextReviewDays: 10 }, o); }
 // dichte tägliche Messreihe erzeugen (damit rollende Trends greifen).
+/* ---------- Zeitanker ----------
+   Die Szenarien beschreiben relative Zeitraeume ("die letzten 15 Tage",
+   "Taille vor drei Wochen"). Frueher standen dafuer feste Datumsangaben im
+   Test. Das war eine Zeitbombe: Die Suite war gruen, als sie geschrieben
+   wurde, und wurde still rot, sobald die Daten aus dem Frischefenster der
+   Engine fielen — genau die Art roter Suite, die man zu ignorieren lernt.
+   Jetzt sind alle Zeitpunkte relativ zu heute. */
+function vorTagen(n) {
+  var d = new Date(Date.now() - n * 86400000);
+  return d.toISOString().slice(0, 10);
+}
+
 function seedWeights(MM, from, perDay, days, startDate) {
-  var d = startDate ? new Date(startDate) : new Date("2026-07-01");
+  var d = new Date(startDate ? startDate : vorTagen(days));
   for (var i = 0; i < days; i++) { var dt = new Date(d.getTime() + i * 86400000); var ymd = dt.toISOString().slice(0, 10); MM.os.logMetric("weight", Math.round((from + perDay * i) * 10) / 10, "kg", ymd); }
 }
 
@@ -137,13 +149,13 @@ test("leverage-stopdoing", function () {
 
 /* ======================= WEEKLY REVIEW ======================= */
 test("weekly-review-immutable", function () {
-  var MM = env(dashOf({ mode: "recomp", program: prog({ week: 5, day: 33 }) }), function (MM) { seedWeights(MM, 80, -0.02, 14); MM.os.logMetric("waist", 84, "cm", "2026-07-01"); MM.os.logMetric("waist", 82.5, "cm", "2026-07-14"); });
+  var MM = env(dashOf({ mode: "recomp", program: prog({ week: 5, day: 33 }) }), function (MM) { seedWeights(MM, 80, -0.02, 14); MM.os.logMetric("waist", 84, "cm", vorTagen(20)); MM.os.logMetric("waist", 82.5, "cm", vorTagen(7)); });
   var r1 = MM.intelligence.review.generate();
   eq(r1.week, 5, "review for week 5");
   ok(r1.verdict, "review has verdict");
   ok(r1.confidence.level, "review has confidence");
   // Immutability: re-generate returns same snapshot even if data changes.
-  MM.os.logMetric("weight", 90, "kg", "2026-07-20");
+  MM.os.logMetric("weight", 90, "kg", vorTagen(1));
   var r2 = MM.intelligence.review.generate();
   eq(r2.id, r1.id, "same week returns immutable review (not rewritten)");
   ok(r1.doNotChange.length >= 0, "review lists do-not-change");
@@ -280,8 +292,8 @@ test("protocol-versioning", function () {
 });
 
 test("timeline-idempotent", function () {
-  var MM = env(dashOf({ mode: "build", program: prog() }), function (MM) { MM.store.set("c2_start", "2026-06-01"); });
-  MM.labs.addResult({ name: "ApoB", value: 90, unit: "mg/dL", date: "2026-06-15" });
+  var MM = env(dashOf({ mode: "build", program: prog() }), function (MM) { MM.store.set("c2_start", vorTagen(50)); });
+  MM.labs.addResult({ name: "ApoB", value: 90, unit: "mg/dL", date: vorTagen(36) });
   MM.intelligence.memory.recordDecision({ domain: "nutrition", title: "kcal change", type: "change" });
   var tl1 = MM.intelligence.timeline.build();
   var n1 = tl1.length;
@@ -297,7 +309,7 @@ test("persona-A-fatloss-stall-no-cut", function () {
   var MM = env(dashOf({ mode: "cut", program: prog({ consistency: 90 }) }), function (MM) {
     MM.store.set("os_nutrition_plan", { kcal: 2200, protein: 190 });
     seedWeights(MM, 80, 0, 15);                          // weight flat
-    MM.os.logMetric("waist", 88, "cm", "2026-07-01"); MM.os.logMetric("waist", 86, "cm", "2026-07-20"); // waist down
+    MM.os.logMetric("waist", 88, "cm", vorTagen(20)); MM.os.logMetric("waist", 86, "cm", vorTagen(1)); // waist down
   });
   var a = MM.intelligence.advisor.answer("Warum verliere ich kein Fett?");
   ok(/recomp|rekomp|waage steht|fortschritt/i.test(a.answer + JSON.stringify(a.whatItMeans)), "recognizes recomposition, not plateau");
@@ -309,7 +321,7 @@ test("persona-B-build-plateau-adjust", function () {
   var MM = env(dashOf({ mode: "build", program: prog({ consistency: 90 }) }), function (MM) {
     MM.store.set("os_nutrition_plan", { kcal: 2800, protein: 190 });
     seedWeights(MM, 82, 0, 20);
-    MM.store.set("os_workout_logs", { bench: [{ date: "2026-06-01", sets: [{ w: 100, r: 5 }] }, { date: "2026-07-15", sets: [{ w: 100, r: 5 }] }], _sessions: [{ date: "2026-07-15" }] });
+    MM.store.set("os_workout_logs", { bench: [{ date: vorTagen(50), sets: [{ w: 100, r: 5 }] }, { date: vorTagen(6), sets: [{ w: 100, r: 5 }] }], _sessions: [{ date: vorTagen(6) }] });
   });
   var dec = MM.intelligence.decision.decide();
   ok(dec.bottleneck.domain === "nutrition" || /nutrition|essen|energie|kalorien/i.test(dec.primary.title + dec.primary.reason), "build plateau → nutrition adjustment candidate");
@@ -327,11 +339,11 @@ test("persona-D-enhanced-hematocrit-monitoring", function () {
   // Enhanced, hematocrit rising, ApoB worsens → monitoring priority, no drug dosing.
   var MM = env(dashOf({ mode: "build", program: prog() }), function (MM) {
     MM.os.setP("pathway", "enhanced");
-    MM.labs.addResult({ name: "Hämatokrit", value: 48, unit: "%", date: "2026-01-01" });
-    MM.labs.addResult({ name: "Hämatokrit", value: 52, unit: "%", date: "2026-04-01" });
-    MM.labs.addResult({ name: "Hämatokrit", value: 54, unit: "%", date: "2026-07-01" });
-    MM.labs.addResult({ name: "ApoB", value: 90, unit: "mg/dL", date: "2026-01-01" });
-    MM.labs.addResult({ name: "ApoB", value: 110, unit: "mg/dL", date: "2026-07-01" });
+    MM.labs.addResult({ name: "Hämatokrit", value: 48, unit: "%", date: vorTagen(201) });
+    MM.labs.addResult({ name: "Hämatokrit", value: 52, unit: "%", date: vorTagen(111) });
+    MM.labs.addResult({ name: "Hämatokrit", value: 54, unit: "%", date: vorTagen(20) });
+    MM.labs.addResult({ name: "ApoB", value: 90, unit: "mg/dL", date: vorTagen(201) });
+    MM.labs.addResult({ name: "ApoB", value: 110, unit: "mg/dL", date: vorTagen(20) });
   });
   var dec = MM.intelligence.decision.decide();
   ok(/prüf|check|labor|hämatokrit|ärztlich/i.test(dec.primary.title + dec.primary.reason) || dec.bottleneck.domain === "medical", "critical hematocrit → medical/check priority");
@@ -353,8 +365,8 @@ test("persona-F-recomp-no-change", function () {
   var MM = env(dashOf({ mode: "recomp", program: prog({ consistency: 88 }) }), function (MM) {
     MM.store.set("os_nutrition_plan", { kcal: 2500, protein: 190 });
     seedWeights(MM, 80, 0, 15);
-    MM.os.logMetric("waist", 86, "cm", "2026-07-01"); MM.os.logMetric("waist", 84, "cm", "2026-07-20");
-    MM.store.set("os_workout_logs", { squat: [{ date: "2026-06-01", sets: [{ w: 100, r: 5 }] }, { date: "2026-07-15", sets: [{ w: 108, r: 5 }] }], _sessions: [{ date: "2026-07-15" }] });
+    MM.os.logMetric("waist", 86, "cm", vorTagen(20)); MM.os.logMetric("waist", 84, "cm", vorTagen(1));
+    MM.store.set("os_workout_logs", { squat: [{ date: vorTagen(50), sets: [{ w: 100, r: 5 }] }, { date: vorTagen(6), sets: [{ w: 108, r: 5 }] }], _sessions: [{ date: vorTagen(6) }] });
   });
   var a = MM.intelligence.advisor.answer("Was hat sich verändert?");
   ok(a.whatISee.length > 0 && !a.unsure, "recomp progress visible");
@@ -369,7 +381,7 @@ test("persona-G-travel-overlay", function () {
 test("persona-H-poor-sleep-recovery-bottleneck", function () {
   var MM = env(dashOf({ mode: "build", program: prog({ consistency: 85 }) }), function (MM) {
     MM.os.setP("recovery.sleepHours", 5.8); MM.store.set("c2_pulse", { "6": { inp: { energy: 2, sleep: "schlecht" } } });
-    MM.store.set("os_workout_logs", { bench: [{ date: "2026-06-01", sets: [{ w: 100, r: 5 }] }, { date: "2026-07-15", sets: [{ w: 100, r: 5 }] }], _sessions: [{ date: "2026-07-15" }] });
+    MM.store.set("os_workout_logs", { bench: [{ date: vorTagen(50), sets: [{ w: 100, r: 5 }] }, { date: vorTagen(6), sets: [{ w: 100, r: 5 }] }], _sessions: [{ date: vorTagen(6) }] });
   });
   var dec = MM.intelligence.decision.decide();
   eq(dec.bottleneck.domain, "recovery", "poor sleep + stalled strength → recovery bottleneck");
@@ -445,8 +457,8 @@ test("privacy-no-values-in-events", function () {
 test("ai-eval-groundedness", function () {
   var MM = env(dashOf({ mode: "build", bottleneck: "recovery", program: prog({ consistency: 90 }) }), function (MM) {
     MM.os.setP("recovery.sleepHours", 6.3); MM.store.set("os_nutrition_plan", { kcal: 2800, protein: 190 });
-    seedWeights(MM, 82, 0.0, 15); MM.store.set("os_workout_logs", { bench: [{ date: "2026-06-01", sets: [{ w: 80, r: 8 }] }, { date: "2026-07-15", sets: [{ w: 85, r: 8 }] }], _sessions: [{ date: "2026-07-15" }] });
-    MM.labs.addResult({ name: "ApoB", value: 90, unit: "mg/dL", date: "2026-01-01" }); MM.labs.addResult({ name: "ApoB", value: 105, unit: "mg/dL", date: "2026-06-01" });
+    seedWeights(MM, 82, 0.0, 15); MM.store.set("os_workout_logs", { bench: [{ date: vorTagen(50), sets: [{ w: 80, r: 8 }] }, { date: vorTagen(6), sets: [{ w: 85, r: 8 }] }], _sessions: [{ date: vorTagen(6) }] });
+    MM.labs.addResult({ name: "ApoB", value: 90, unit: "mg/dL", date: vorTagen(201) }); MM.labs.addResult({ name: "ApoB", value: 105, unit: "mg/dL", date: vorTagen(50) });
   });
   var qs = ["Warum verliere ich kein Gewicht?", "Soll ich mehr essen?", "Warum ist mein Bankdrücken stehengeblieben?", "Was ändern meine Labs?", "Was soll ich heute fokussieren?"];
   qs.forEach(function (q) {
