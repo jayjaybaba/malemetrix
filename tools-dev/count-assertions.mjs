@@ -46,9 +46,13 @@ console.log(zeile + (fehler ? "  (" + fehler + " Suiten mit Fehlern)" : "  Alle 
 if (process.argv.includes("--write")) {
   const sw = (readFileSync(path.join(ROOT, "sw.js"), "utf8").match(/const VERSION = "(mm-v\d+)"/) || [])[1] || "";
   const doc = readFileSync(DOC, "utf8");
-  const neu = doc.replace(/Gesamt \d+ Assertions über \d+ Suiten\. SW: mm-v\d+\./,
-    zeile + " SW: " + sw + ".");
-  if (neu === doc) { console.error("Auditzeile nicht gefunden — nichts geschrieben."); process.exit(1); }
+  /* Vorhandensein und Änderung getrennt prüfen. Vorher galt "unverändert"
+     als "nicht gefunden" — wer die Zahl schon korrekt hatte, bekam einen
+     Fehlalarm samt Exit-Code 1. */
+  const muster = /Gesamt \d+ Assertions über \d+ Suiten\. SW: mm-v\d+\./;
+  if (!muster.test(doc)) { console.error("Auditzeile nicht gefunden — nichts geschrieben."); process.exit(1); }
+  const neu = doc.replace(muster, zeile + " SW: " + sw + ".");
+  if (neu === doc) { console.log("Auditzeile bereits aktuell — nichts zu schreiben."); process.exit(0); }
   writeFileSync(DOC, neu);
   console.log("MALEMETRIX_OS.md aktualisiert: " + zeile + " SW: " + sw + ".");
 }
