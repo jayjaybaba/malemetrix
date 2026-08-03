@@ -1,7 +1,13 @@
 # SUPABASE PRODUCTION AUDIT (Phase 9.5, §2.1)
 
-Statischer Audit aller 8 Migrationen + 5 Edge Functions. **Runtime-Verifikation
-BLOCKED** (keine Projekt-Credentials) — nichts wird als live behauptet.
+Statischer Audit von 8 Migrationen + 5 Edge Functions — dem Stand zur Zeit
+dieses Audits (Phase 9.5). **Runtime-Verifikation BLOCKED** (keine
+Projekt-Credentials) — nichts wird als live behauptet.
+
+> **Nicht mehr vollständig.** Das Repo enthält inzwischen **14 Migrationen
+> und 10 Edge Functions**. Die Differenz ist von diesem Audit *nicht*
+> geprüft. Die Zahl hier wurde bewusst nicht hochgesetzt: Das würde eine
+> Prüfung behaupten, die nie stattgefunden hat.
 
 ## Migrationen
 

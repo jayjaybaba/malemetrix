@@ -651,7 +651,10 @@
 
     var pill = document.createElement("a");
     pill.id = "todayHint";
-    pill.href = (location.pathname.indexOf("/blog/") !== -1 ? "../" : "") + "tracker.html";
+    /* Ebenen zählen statt Ordner aufzählen — sonst zeigt der Hinweis in
+       jedem neuen Unterverzeichnis ins Leere. Auf /lp/ tat er das. */
+    var ebenen = location.pathname.replace(/^\/+/, "").split("/").slice(0, -1).filter(Boolean).length;
+    pill.href = "../".repeat(ebenen) + "tracker.html";
     pill.className = "today-hint no-print";
     pill.innerHTML = label + " →";
     document.body.appendChild(pill);

@@ -1579,7 +1579,19 @@
        Wiederholungs-Hinweis. Der Score lebt vom Vergleich; ein Ergebnis von
        vor zwei Monaten beschreibt niemanden mehr. Rein lokal: kein Konto,
        keine E-Mail, keine Übertragung. */
-    const existing = MM.store.get("check_result", null);
+    /* Ein beschädigtes Ergebnis ist schlimmer als keins: Der Balken zeigte
+       wörtlich „undefined/100 · undefined", und „Letztes Ergebnis ansehen"
+       warf beim Klick eine TypeError und tat nichts. Geprüft wird genau
+       das, was renderResult ungeprüft liest — ist es unvollständig, gilt
+       es als nicht vorhanden und der Nutzer sieht den normalen Einstieg. */
+    const gespeichert = MM.store.get("check_result", null);
+    const brauchbar = !!gespeichert && typeof gespeichert === "object" && !Array.isArray(gespeichert)
+      && typeof gespeichert.total === "number" && isFinite(gespeichert.total)
+      && typeof gespeichert.level === "string" && !!gespeichert.level
+      && !!gespeichert.scores && typeof gespeichert.scores === "object"
+      && !!gespeichert.archetype && typeof gespeichert.archetype === "object"
+      && !!gespeichert.bottleneck && typeof gespeichert.bottleneck === "object";
+    const existing = brauchbar ? gespeichert : null;
     if (existing) {
       const banner = $("#existingResult");
       if (banner) {

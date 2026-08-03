@@ -73,7 +73,7 @@ Die Seite trackt die wichtigsten Funnel-Schritte (Check gestartet/abgeschlossen,
 ## SEO ist eingebaut
 
 - **Open-Graph- & Twitter-Card-Tags** auf allen Seiten (schöne Link-Vorschauen) mit eigenem Bild `og-image.png`.
-- **`sitemap.xml`** (12 öffentliche Seiten) + **`robots.txt`** (verweist auf die Sitemap).
+- **`sitemap.xml`** (30 öffentliche Seiten) + **`robots.txt`** (verweist auf die Sitemap).
 - **Structured Data (JSON-LD):** Organization + WebSite + Service auf der Startseite, FAQ-Schema auf [faq.html](faq.html) → Chance auf Rich Results bei Google.
 - **Canonical-URLs** auf allen Seiten.
 

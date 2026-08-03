@@ -1,6 +1,6 @@
 # KNOWLEDGE AUDIT (Phase 9.5, §9)
 
-18 Objekte, 5 real verifizierte Landmark-Quellen (DOI+URL), Publikations-Gate
+18 Objekte, 7 real verifizierte Landmark-Quellen (DOI+URL), Publikations-Gate
 aktiv. **Nichts erfunden** — Objekte ohne aufgelöste Quelle stehen ehrlich als
 REVIEWED und tragen öffentlich KEIN Zitat.
 
@@ -39,7 +39,7 @@ Leitlinie ausgegeben.
 
 ## Versionierung (§30)
 
-Knowledge-Version `KV = 2`. Entscheidungs-Snapshots referenzieren die zum
+Knowledge-Version `KV = 3`. Entscheidungs-Snapshots referenzieren die zum
 Entscheidungszeitpunkt gültige Version → das Auflösen von Quellen schreibt
 historische Begründungen nicht um.
 

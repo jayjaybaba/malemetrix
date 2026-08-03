@@ -1,6 +1,6 @@
 /* ==========================================================================
    MALEMETRIX — DIE ANABOLE MATRIX (Datenmodell)
-   Elf anabole und katabole Signalwege, zwölf steuerbare Hebel und die
+   Dreizehn anabole und katabole Signalwege, vierzehn steuerbare Hebel und die
    Zuordnung dazwischen. Reine Daten, keine Darstellung, kein Zustand.
 
    REGELN FÜR DIESE DATEI (nicht verhandelbar, vgl. PROOF_STANDARD.md §0):

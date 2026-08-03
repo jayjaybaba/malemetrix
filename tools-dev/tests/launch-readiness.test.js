@@ -186,6 +186,61 @@ group("Navigation · Kernziele existieren, keine Dublette");
   var doppelt2 = Object.keys(NICHT_IM_MENU).filter(function (x) { return imMenu[x]; });
   ok(doppelt2.length === 0, "keine Seite steht gleichzeitig im Menü und in der Ausnahmeliste" + (doppelt2.length ? " (" + doppelt2.join(", ") + ")" : ""));
 
+  /* --- Sprungziele ---
+     Gefunden bei einer Prüfung der Seite: blutwerte.html schickte
+     „Premium ansehen" auf coaching.html#pakete — ein Anker, den es dort nie
+     gegeben hat. Der Klick lädt die Seite, der Sprung bleibt aus, und
+     niemand merkt es, weil die Datei ja existiert. Die bestehende
+     Nav-Prüfung schnitt Fragmente ausdrücklich ab.
+
+     Unterschieden wird zwischen echten Ankern (müssen als id/name im Ziel
+     stehen) und den Hash-ROUTEN der App — mein-protokoll.html#plan ist
+     kein Element, sondern eine Ansicht. */
+  var HASH_ROUTEN = { "mein-protokoll.html": true };
+  var idCache = {};
+  function zielIds(rel) {
+    if (!idCache[rel]) {
+      var t = "";
+      try { t = read(rel); } catch (e) { t = ""; }
+      var menge = {};
+      (t.match(/\bid="([^"]+)"/g) || []).forEach(function (x) { menge[x.slice(4, -1)] = true; });
+      (t.match(/\bname="([^"]+)"/g) || []).forEach(function (x) { menge[x.slice(6, -1)] = true; });
+      idCache[rel] = menge;
+    }
+    return idCache[rel];
+  }
+  var pathMod = require("node:path");
+  var toteAnker = [];
+  function seitenMitAnkern() {
+    var out = [];
+    ["", "blog", "ebooks", "lp"].forEach(function (dir) {
+      var abs = dir ? path.join(ROOT, dir) : ROOT;
+      var eintraege = [];
+      try { eintraege = fs.readdirSync(abs); } catch (e) { return; }
+      eintraege.filter(function (x) { return /\.html$/.test(x); })
+        .forEach(function (x) { out.push(dir ? dir + "/" + x : x); });
+    });
+    return out;
+  }
+  seitenMitAnkern().forEach(function (seite) {
+    var inhalt = "";
+    try { inhalt = read(seite); } catch (e) { return; }
+    var basis = pathMod.dirname(seite);
+    (inhalt.match(/href="([^"]*#[^"]+)"/g) || []).forEach(function (roh) {
+      var href = roh.slice(6, -1);
+      if (/^(https?:|mailto:|tel:)/.test(href)) return;
+      var teile = href.split("#"), zielDatei = teile[0], anker = teile.slice(1).join("#");
+      if (!anker) return;
+      var ziel = zielDatei === "" ? seite : pathMod.normalize(pathMod.join(basis, zielDatei));
+      if (!/\.html$/.test(ziel) || !exists(ziel)) return;   // fehlende Datei prüft ein anderer Test
+      var name = ziel.split("/").pop();
+      if (HASH_ROUTEN[name]) return;                        // Ansicht, kein Element
+      if (!zielIds(ziel)[anker]) toteAnker.push(seite + " → " + href);
+    });
+  });
+  ok(toteAnker.length === 0,
+    "kein Sprungziel zeigt ins Leere" + (toteAnker.length ? " (" + toteAnker.slice(0, 6).join("; ") + ")" : ""));
+
   /* Jedes Menüziel muss existieren — auch die neuen Produktseiten. */
   var totLinks = Object.keys(imMenu).filter(function (h) {
     return /\.html$/.test(h) && !/^https?:/.test(h) && !exists(h);

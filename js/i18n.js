@@ -391,9 +391,14 @@
     if (phrasesState === "loading") { document.addEventListener("mm:phrases", function h() { document.removeEventListener("mm:phrases", h); cb(); }); return; }
     phrasesState = "loading";
     cacheLaden();
-    const tief = istPremiumReader() || location.pathname.indexOf("/blog/") !== -1;
+    /* Tiefe aus dem Pfad rechnen statt Verzeichnisse aufzuzählen. Die alte
+       Liste kannte /ebooks/ und /blog/, aber nicht /lp/ — auf allen 13
+       Landingpages lief der Glossar-Nachschlag deshalb auf lp/js/i18n-en.js
+       und lieferte 404. Englische Besucher verloren dort alle 60 Einträge.
+       Eine Liste bekannter Ordner geht bei jedem neuen Ordner wieder kaputt. */
+    var ebenen = location.pathname.replace(/^\/+/, "").split("/").slice(0, -1).filter(Boolean).length;
     const s = document.createElement("script");
-    s.src = (tief ? "../" : "") + "js/i18n-en.js";
+    s.src = "../".repeat(ebenen) + "js/i18n-en.js";
     const fertig = (ok) => {
       if (ok && window.MM_I18N_EN) Object.assign(PHRASES, window.MM_I18N_EN);
       phrasesState = "ready";     // auch ohne Glossar arbeitsfähig: Dienst + Cache
