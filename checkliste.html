@@ -23,11 +23,18 @@
     .paper .c-meta { font-family: var(--font-mono); font-size: 0.72rem; color: #6b7484; text-align: right; line-height: 1.8; }
     .paper p { color: #3a4150; font-size: 0.92rem; line-height: 1.65; }
     .paper .c-cat { margin: 26px 0; page-break-inside: avoid; }
-    .paper .c-cat h2 { font-family: var(--font-mono); font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.1em; color: #258CFF; border-bottom: 1.5px solid #e3e6eb; padding-bottom: 8px; margin-bottom: 4px; }
+    /* #258CFF erreichte auf Weiss nur 3,35:1 — bei 15,2px fett gilt die
+       Normalschrift-Schwelle von 4,5:1, nicht die 3:1 fuer Grossschrift.
+       #1E6FD9 liegt bei 4,85:1 und bleibt am naechsten am Markenblau.
+       Die reinen Zierelemente (Logo-Punkt, Zeilenmarker) bleiben unveraendert:
+       sie tragen keine Information. */
+    .paper .c-cat h2 { font-family: var(--font-mono); font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.1em; color: #1E6FD9; border-bottom: 1.5px solid #e3e6eb; padding-bottom: 8px; margin-bottom: 4px; }
     .paper table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
     .paper th, .paper td { text-align: left; padding: 9px 10px; border-bottom: 1px solid #e9edf2; color: #3a4150; }
-    .paper th { font-family: var(--font-mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: #9aa3b2; font-weight: 500; }
-    .paper td:first-child { width: 26px; font-size: 1rem; color: #258CFF; }
+    .paper th { font-family: var(--font-mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: #646c7c; font-weight: 500; }
+    /* Das ☐ ist der anzukreuzende Inhalt, keine Zierde — es faellt unter die
+       Kontrastregel wie jeder andere Text. */
+    .paper td:first-child { width: 26px; font-size: 1rem; color: #1E6FD9; }
     .paper td:nth-child(2) { font-weight: 600; color: #16181d; }
     .paper td.write { border-bottom: 1px solid #c9cfd8; min-width: 90px; }
     .paper .c-note { background: #fff8ec; border: 1px solid #f3e3c0; border-radius: 10px; padding: 16px 18px; font-size: 0.8rem; color: #7a6a45; margin-top: 26px; }
@@ -213,7 +220,7 @@
           <tr><td>☐</td><td>PSA gesamt (nach Alter / Risiko / ärztl. Empfehlung)</td><td class="write"></td><td class="write"></td><td class="write"></td><td class="write"></td></tr>
           <tr><td>☐</td><td>Freies PSA (+ Quotient frei/gesamt)</td><td class="write"></td><td class="write"></td><td class="write"></td><td class="write"></td></tr>
         </table>
-        <p style="font-size:0.78rem;color:#9aa3b2;margin-top:8px">Hinweis: <strong>Blutdruck</strong> und <strong>Bauchumfang</strong> sind keine Blutwerte. Sie gehören in deine Körper-Baseline — trag sie im MaleMetrix Tracker ein, nicht in diese Laborliste.</p>
+        <p style="font-size:0.78rem;color:#646c7c;margin-top:8px">Hinweis: <strong>Blutdruck</strong> und <strong>Bauchumfang</strong> sind keine Blutwerte. Sie gehören in deine Körper-Baseline — trag sie im MaleMetrix Tracker ein, nicht in diese Laborliste.</p>
       </div>
 
       <div class="c-cat">

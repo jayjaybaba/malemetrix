@@ -2112,7 +2112,7 @@ input[type="range"]::-moz-range-thumb {
 .doc-cover .kick { font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.16em; text-transform: uppercase; color: #1a56c4; }
 .doc-cover h1 { font-size: clamp(1.9rem, 5vw, 2.8rem); margin: 12px 0 10px; letter-spacing: -0.02em; }
 .doc-cover .sub { color: #5b6472; font-size: 1.05rem; }
-.doc-cover .brand { font-family: var(--font-mono); font-size: 0.72rem; color: #9aa3b2; margin-top: 16px; }
+.doc-cover .brand { font-family: var(--font-mono); font-size: 0.72rem; color: #646c7c; margin-top: 16px; }
 .doc-paper h2 { font-size: 1.35rem; margin: 38px 0 12px; padding-top: 8px; }
 .doc-paper h3 { font-size: 1.08rem; margin: 24px 0 8px; }
 .doc-paper p, .doc-paper li { color: #3a4150; font-size: 0.97rem; line-height: 1.75; margin-bottom: 12px; }
@@ -2137,7 +2137,7 @@ input[type="range"]::-moz-range-thumb {
 .doc-callout.warn strong { color: #7a6420; }
 .doc-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 16px 0; }
 .doc-table th, .doc-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #e9edf2; color: #3a4150; }
-.doc-table th { font-family: var(--font-mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: #9aa3b2; }
+.doc-table th { font-family: var(--font-mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: #646c7c; }
 .doc-table td:first-child { font-weight: 600; color: #16181d; }
 .doc-footer { margin-top: 44px; padding-top: 20px; border-top: 1.5px solid #e3e6eb; font-family: var(--font-mono); font-size: 0.72rem; color: #646c7c;   /* #9aa3b2 erreichte auf weiss nur 2,54:1 */ display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 .doc-disclaimer { font-size: 0.78rem; color: #8893a7; margin-top: 14px; line-height: 1.6; }
@@ -2163,7 +2163,7 @@ input[type="range"]::-moz-range-thumb {
 /* Ebook-Bilder */
 .doc-figure { margin: 26px 0; }
 .doc-figure img { display: block; width: 100%; height: auto; border-radius: 14px; box-shadow: 0 6px 24px rgba(13,15,19,0.12); }
-.doc-figure figcaption { margin-top: 10px; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.03em; color: #9aa3b2; text-align: center; }
+.doc-figure figcaption { margin-top: 10px; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.03em; color: #646c7c; text-align: center; }
 .doc-figure.hero { margin: 4px 0 34px; }
 .doc-figure.hero img { border-radius: 16px; aspect-ratio: 16 / 9; object-fit: cover; }
 /* Story-Format-Grafiken (hochkant) sinnvoll begrenzt, zentriert */
@@ -2234,7 +2234,7 @@ input[type="range"]::-moz-range-thumb {
 /* Ebook-Diagramme (Inline-SVG, erklären Konzepte statt Stimmung zu setzen) */
 .doc-diagram { margin: 26px 0; background: #f7f9fc; border: 1px solid #e6eaf1; border-radius: 14px; text-align: center; padding: 22px 20px 16px; }
 .doc-diagram svg { display: block; width: 100%; max-width: 560px; height: auto; margin: 0 auto; }
-.doc-diagram figcaption { margin-top: 12px; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.03em; color: #9aa3b2; text-align: center; }
+.doc-diagram figcaption { margin-top: 12px; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.03em; color: #646c7c; text-align: center; }
 
 @media print {
   body { background: #fff; color: #111; }

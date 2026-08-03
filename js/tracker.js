@@ -921,7 +921,10 @@
     let modal = document.getElementById("plateModal");
     if (!modal) { modal = document.createElement("div"); modal.id = "plateModal"; modal.className = "modal-overlay"; document.body.appendChild(modal); }
     const cfg = window.MM_TRK_PLATES || { barKg: 20, platesKg: [25, 20, 15, 10, 5, 2.5, 1.25] };
-    const barKg = S.barPref();
+    /* Nicht einfrieren: Der Nutzer kann die Stange im Dialog aendern, und
+       das muss sich im Ergebnis niederschlagen. Vorher blieb der Wert vom
+       Oeffnen stehen und das Feld war wirkungslos. */
+    let barKg = S.barPref();
 
     function compute(totalKg) {
       const perSide = (totalKg - barKg) / 2;
@@ -955,7 +958,12 @@
     modal.addEventListener("click", e => { if (e.target === modal) closeModal("plateModal"); });
     const totalIn = modal.querySelector("#plTotal"), barIn = modal.querySelector("#plBar");
     totalIn.addEventListener("input", () => draw(totalIn.value));
-    barIn.addEventListener("input", () => { S.saveBarPref(toKg(parseFloat(barIn.value) || 20)); draw(totalIn.value); });
+    barIn.addEventListener("input", () => {
+      const v = parseFloat(barIn.value);
+      barKg = isFinite(v) && v > 0 ? toKg(v) : ((window.MM_TRK_PLATES || {}).barKg || 20);
+      S.saveBarPref(barKg);
+      draw(totalIn.value);
+    });
     draw(totalIn.value);
     setTimeout(() => { totalIn.focus(); totalIn.select(); }, 50);
   }
@@ -1359,7 +1367,10 @@
       if (!dist || !dur) { MM.toast(T("Distanz und Dauer angeben", "Enter distance and duration")); return; }
       const distKm = units() === "imperial" ? dist * 1.609344 : dist;
       const list = S.cardio();
-      list.push({ id: "c" + Date.now(), date: document.getElementById("cdDate").value, type: document.getElementById("cdType").value, distanceKm: distKm, durationMin: dur });
+      /* Leeres Datumsfeld hiess bisher leerer String — der Eintrag stand danach
+         dauerhaft als "Invalid Date" in der Liste. Heute ist die richtige
+         Annahme, wie im Schlaf-Logger. */
+      list.push({ id: "c" + Date.now(), date: document.getElementById("cdDate").value || localYmd(new Date()), type: document.getElementById("cdType").value, distanceKm: distKm, durationMin: dur });
       S.saveCardio(list);
       MM.toast(T("Cardio gespeichert", "Cardio saved"));
       renderPanel();

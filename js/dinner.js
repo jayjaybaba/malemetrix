@@ -439,9 +439,12 @@
         n: (document.getElementById("mNm").value || "Eigenes Lebensmittel").trim(),
         unit: "Portion", qty: 1, t: "stk",
         kcal: kc,
-        p: parseFloat(document.getElementById("mP").value) || 0,
-        c: parseFloat(document.getElementById("mC").value) || 0,
-        f: parseFloat(document.getElementById("mF").value) || 0
+        /* Wie beim kcal-Wert eine Zeile darueber: negative Makros ergaben
+           negative Tagessummen und damit eine Anzeige, die sich selbst
+           widerspricht. */
+        p: Math.max(0, parseFloat(document.getElementById("mP").value) || 0),
+        c: Math.max(0, parseFloat(document.getElementById("mC").value) || 0),
+        f: Math.max(0, parseFloat(document.getElementById("mF").value) || 0)
       });
       closeModal();
     });

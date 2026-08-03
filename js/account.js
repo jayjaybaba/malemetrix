@@ -264,9 +264,24 @@
   function loadSdk() {
     return new Promise(function (resolve, reject) {
       if (window.supabase && window.supabase.createClient) return resolve(window.supabase);
-      var s = document.createElement("script");
+      /* Ein blockiertes CDN (Werbeblocker, Firmennetz, schlechtes Netz)
+         loest KEIN onerror aus — die Anfrage haengt einfach. Ohne Frist
+         blieb das Versprechen ewig offen: My MaleMetrix und labor.html
+         zeigten dauerhaft "wird geladen…", ohne Hinweis, ohne Ausweg.
+         Mit Frist greift der vorhandene catch-Zweig und die App faellt in
+         den lokalen Modus — der ohne Konto ohnehin funktioniert. */
+      var s = document.createElement("script"), erledigt = false;
+      var frist = setTimeout(function () {
+        if (!erledigt) { erledigt = true; reject(new Error("sdk_load_timeout")); }
+      }, 8000);
+      function fertig(fn, arg) {
+        if (erledigt) return;
+        erledigt = true; clearTimeout(frist); fn(arg);
+      }
       s.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js";
-      s.async = true; s.onload = function () { resolve(window.supabase); }; s.onerror = function () { reject(new Error("sdk_load_failed")); };
+      s.async = true;
+      s.onload = function () { fertig(resolve, window.supabase); };
+      s.onerror = function () { fertig(reject, new Error("sdk_load_failed")); };
       document.head.appendChild(s);
     });
   }

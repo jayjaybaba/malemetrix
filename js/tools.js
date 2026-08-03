@@ -332,13 +332,24 @@
         const base = M.weight * 33;            // ml
         const add = (parseFloat(M.activity) - 1.2) * 700;
         const ml = base + add;
-        const fmtV = units === "imperial" ? (ml / 1000 * 33.814).toFixed(0) + " fl oz" : (ml / 1000).toFixed(1) + " L";
+        /* Wert und Einheit getrennt fuehren. Vorher wurde ein String per
+           split(" ") zerlegt — bei "fl oz" blieb davon "fl" uebrig, und die
+           Detailzeilen rechneten unabhaengig davon weiter in Litern. */
+        const imp = units === "imperial";
+        const ozProL = 33.814, ozProGlas = 8;   // 250 ml ≈ 8,45 fl oz → Glas = 8 oz
+        const wert = imp ? (ml / 1000 * ozProL).toFixed(0) : (ml / 1000).toFixed(1);
+        const einheit = imp ? "fl oz" : "L";
+        const menge = (mlWert) => imp
+          ? (mlWert / 1000 * ozProL).toFixed(0) + " fl oz"
+          : (mlWert / 1000).toFixed(1) + " L";
         return {
-          primary: { value: fmtV.split(" ")[0], unit: fmtV.split(" ")[1], label: { de: "Wasser pro Tag", en: "Water per day" } },
+          primary: { value: wert, unit: einheit, label: { de: "Wasser pro Tag", en: "Water per day" } },
           subs: [
-            { label: { de: "Grundbedarf (33 ml/kg)", en: "Base (33 ml/kg)" }, value: (base / 1000).toFixed(1) + " L" },
-            { label: { de: "Aktivitäts-Zuschlag", en: "Activity add-on" }, value: "+" + (add / 1000).toFixed(1) + " L" },
-            { label: { de: "Gläser (250 ml)", en: "Glasses (250 ml)" }, value: Math.round(ml / 250) + "" }
+            { label: { de: "Grundbedarf (33 ml/kg)", en: "Base (33 ml/kg)" }, value: menge(base) },
+            { label: { de: "Aktivitäts-Zuschlag", en: "Activity add-on" }, value: "+" + menge(add) },
+            imp
+              ? { label: { de: "Gläser (8 fl oz)", en: "Glasses (8 fl oz)" }, value: Math.round(ml / 1000 * ozProL / ozProGlas) + "" }
+              : { label: { de: "Gläser (250 ml)", en: "Glasses (250 ml)" }, value: Math.round(ml / 250) + "" }
           ],
           interpret: { de: "Richtwert: ~33 ml pro kg Körpergewicht plus Zuschlag für Training und Hitze. Über den Tag verteilt trinken; Kaffee und Tee zählen mit. Dunkler Urin ist ein Zeichen für zu wenig.", en: "Guide: ~33 ml per kg body weight plus extra for training and heat. Spread over the day; coffee and tea count. Dark urine signals too little." }
         };

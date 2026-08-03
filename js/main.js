@@ -42,6 +42,42 @@
     }
   };
 
+  /* ---------- Fokus in einer geöffneten Schicht halten ----------
+     Ein Overlay, das den Hintergrund verdeckt, muss auch den Fokus halten.
+     Sonst tabbt man in Inhalt, den man nicht sieht — und Escape, das
+     überall sonst schließt, tut nichts. Bewusst klein gehalten: eine
+     Tab-Umleitung am Rand der Schicht und Escape, mehr nicht. */
+  MM.fokusFangen = function (schicht, beimSchliessen) {
+    if (!schicht || schicht._fokusHandler) return;
+    const waehlbar = () => [...schicht.querySelectorAll(
+      'a[href],button:not([disabled]),input:not([disabled]):not([type=hidden]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+    )].filter(e => e.offsetParent !== null || e === document.activeElement);
+    const handler = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        (beimSchliessen || (() => { const b = schicht.querySelector("[data-close],.cart-close,#cartClose"); if (b) b.click(); }))();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const el = waehlbar();
+      if (!el.length) return;
+      const erst = el[0], letzt = el[el.length - 1];
+      if (e.shiftKey && document.activeElement === erst) { e.preventDefault(); letzt.focus(); }
+      else if (!e.shiftKey && document.activeElement === letzt) { e.preventDefault(); erst.focus(); }
+      else if (!schicht.contains(document.activeElement)) { e.preventDefault(); erst.focus(); }
+    };
+    schicht._fokusHandler = handler;
+    document.addEventListener("keydown", handler, true);
+    const el = waehlbar();
+    if (el.length) setTimeout(() => { try { el[0].focus(); } catch (e) {} }, 30);
+  };
+
+  MM.fokusFreigeben = function (schicht) {
+    if (!schicht || !schicht._fokusHandler) return;
+    document.removeEventListener("keydown", schicht._fokusHandler, true);
+    schicht._fokusHandler = null;
+  };
+
   MM.toast = function (msg) {
     let t = document.querySelector(".toast");
     if (!t) {
@@ -240,16 +276,44 @@
       badge.classList.toggle("empty", count === 0);
     },
 
+    /* Der Schubladen-Warenkorb sperrt das Scrollen und legt ein Overlay
+       darueber — der Tastaturfokus wanderte aber weiter durch den
+       verdeckten Hintergrund, Escape schloss nicht, und bis zum
+       Schliessen-Knopf waren Dutzende Tab-Anschlaege noetig. */
     open() {
-      document.getElementById("cartDrawer").classList.add("open");
+      const drawer = document.getElementById("cartDrawer");
+      MM.cart._zurueck = document.activeElement;
+      drawer.classList.add("open");
       document.getElementById("cartOverlay").classList.add("open");
       document.body.style.overflow = "hidden";
+      drawer.setAttribute("aria-hidden", "false");
+      const btn = document.getElementById("cartBtn");
+      if (btn) btn.setAttribute("aria-expanded", "true");
+      MM.fokusFangen(drawer);
     },
 
     close() {
-      document.getElementById("cartDrawer").classList.remove("open");
+      const drawer = document.getElementById("cartDrawer");
+      drawer.classList.remove("open");
       document.getElementById("cartOverlay").classList.remove("open");
       document.body.style.overflow = "";
+      drawer.setAttribute("aria-hidden", "true");
+      const btn = document.getElementById("cartBtn");
+      if (btn) btn.setAttribute("aria-expanded", "false");
+      MM.fokusFreigeben(drawer);
+      /* Zurueck, wo der Nutzer war — sonst faellt der Fokus auf <body>
+         und der Screenreader steht wieder am Seitenanfang. */
+      /* Zurueck auf das Element, das geoeffnet hat — ist es inzwischen aus
+         dem DOM (der Warenkorb rendert seine Knoepfe neu), auf das
+         Warenkorb-Symbol im Kopf. Sonst faellt der Fokus auf <body>. */
+      let z = MM.cart._zurueck;
+      if (!z || !document.contains(z) || z.offsetParent === null) z = document.getElementById("cartBtn");
+      /* Erst im naechsten Frame: Solange die Schublade noch schliesst, nimmt
+         der Browser den Fokus wieder weg und er faellt auf <body>. */
+      if (z && typeof z.focus === "function") {
+        setTimeout(function () { try { z.focus(); } catch (e) {} }, 0);
+      }
+      MM.cart._zurueck = null;
     },
 
     renderDrawer() {
@@ -516,9 +580,25 @@
     const toggle = document.getElementById("navToggle");
     const nav = document.getElementById("mainNav");
     if (toggle && nav) {
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.setAttribute("aria-controls", "mainNav");
+      const schliessen = () => {
+        nav.classList.remove("open");
+        toggle.textContent = "☰";
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.setAttribute("aria-label", T("nav.openMenu", "Menü öffnen"));
+        MM.fokusFreigeben(nav);
+        try { toggle.focus(); } catch (e) {}
+      };
       toggle.addEventListener("click", () => {
         const open = nav.classList.toggle("open");
         toggle.textContent = open ? "✕" : "☰";
+        /* Das aria-label sagte auch bei offenem Menü noch "Menü öffnen",
+           und der Fokus sprang am deckenden Schubfach vorbei in den
+           verdeckten Inhalt. */
+        toggle.setAttribute("aria-expanded", open ? "true" : "false");
+        toggle.setAttribute("aria-label", open ? T("nav.closeMenu", "Menü schließen") : T("nav.openMenu", "Menü öffnen"));
+        if (open) MM.fokusFangen(nav, schliessen); else schliessen();
       });
     }
 
@@ -686,11 +766,20 @@
       (unlocked
         ? '<a href="lead-blutwerte.html" class="btn btn-primary btn-lg btn-arrow">Cheat-Sheet öffnen</a>'
         : '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;max-width:520px;margin:0 auto">' +
-          '<input type="email" id="leadEmail" placeholder="deine@email.de" autocomplete="email" ' +
+          /* Beschriftung statt nur Platzhalter: Ein placeholder ist kein
+             zugaenglicher Name — er verschwindet beim Tippen und wird von
+             Screenreadern nicht zuverlaessig als Feldbezeichnung gelesen.
+             aria-describedby verknuepft die Fehlermeldung dauerhaft. */
+          '<input type="email" id="leadEmail" name="email" ' +
+          'aria-label="E-Mail-Adresse für das Gratis-Cheat-Sheet" aria-describedby="leadErr" ' +
+          'placeholder="deine@email.de" autocomplete="email" ' +
           'style="flex:1;min-width:220px;padding:13px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card-2);color:var(--text);font-size:1rem">' +
           '<button class="btn btn-primary btn-lg" id="leadSubmit">Gratis holen</button></div>' +
           '<p class="small" style="color:var(--muted-2);margin-top:12px">Dazu gelegentliche, ehrliche Tipps für Männer. Kein Spam, jederzeit abbestellbar. Mit dem Absenden akzeptierst du die <a href="datenschutz.html" style="text-decoration:underline">Datenschutzerklärung</a>.</p>' +
-          '<p id="leadErr" class="small" style="color:var(--red);display:none;margin-top:8px"></p>'
+          /* role="alert" — sonst erscheint der Fehler nur sichtbar und wird
+             nie angesagt. Text und display werden im selben Tick gesetzt,
+             genau das loest die Ansage aus. */
+          '<p id="leadErr" class="small" role="alert" style="color:var(--red);display:none;margin-top:8px"></p>'
       ) +
       '</div></div>';
     footer.parentNode.insertBefore(band, footer);

@@ -56,7 +56,10 @@
     if (!markerId) return { ok: false, reason: "unknown_marker", raw: input.name };
     var m = LD().marker(markerId);
     var value = parseFloat(input.value);
-    if (isNaN(value)) return { ok: false, reason: "invalid_value" };
+    /* Alle 48 Marker sind Konzentrationen, Zaehlungen, Prozente oder Raten.
+       Ein negativer Wert ist bei keinem davon eine gueltige Messung — er
+       wurde bisher kommentarlos mit "Gespeichert." angenommen. */
+    if (isNaN(value) || value < 0) return { ok: false, reason: "invalid_value" };
     var date = input.date || todayYmd();
     var canonical = LD().toCanonical(markerId, value, input.unit || m.unit);
     // §72 Duplikat: gleicher Marker + Datum + (≈)Wert existiert schon

@@ -24,6 +24,8 @@
        praktisch unauffindbar. Beides liegt jetzt hier zusammen, und der
        Punkt heißt entsprechend "Mehr". */
     "nav.more":    { de: "Mehr", en: "More" },
+    "nav.openMenu":  { de: "Menü öffnen", en: "Open menu" },
+    "nav.closeMenu": { de: "Menü schließen", en: "Close menu" },
     "nav.ebooks":  { de: "Library", en: "Library" },
     "nav.library": { de: "Kapitelübersicht", en: "Chapter index" },
     "nav.protocol": { de: "Das Protokoll", en: "The Protocol" },
