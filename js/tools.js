@@ -101,10 +101,17 @@
       desc: { de: "Schätzt deinen Körperfettanteil mit der Standard-US-Navy-Umfangformel.", en: "Estimates your body fat using the standard US Navy circumference formula." },
       fields: ["sex", "height", "neck", "waist", "hip"],
       compute(M) {
+        /* METRISCHE Fassung der Navy-Formel. Vorher stand hier die
+           Zoll-Fassung (86.010/70.041/36.76 bzw. 163.205/97.684/78.387),
+           angesetzt auf die Zentimeterwerte, die gatherMetric liefert —
+           das ergab systematisch rund 6,5 Prozentpunkte zu viel
+           (180/39/90 → 25,7 % statt 19,1 %). Die Umrechnung gehoert nicht
+           in den Eingabepfad: gatherMetric normalisiert bewusst alles nach
+           cm und bedient damit auch BMI, WHtR, LBM und die uebrigen. */
         const h = M.height, log = Math.log10;
         let bf;
-        if (M.sex === "female") bf = 163.205 * log(M.waist + M.hip - M.neck) - 97.684 * log(h) - 78.387;
-        else bf = 86.010 * log(M.waist - M.neck) - 70.041 * log(h) + 36.76;
+        if (M.sex === "female") bf = 495 / (1.29579 - 0.35004 * log(M.waist + M.hip - M.neck) + 0.22100 * log(h)) - 450;
+        else bf = 495 / (1.0324 - 0.19077 * log(M.waist - M.neck) + 0.15456 * log(h)) - 450;
         bf = Math.max(2, Math.min(60, bf));
         const male = M.sex !== "female";
         const b = band(bf, male
@@ -632,7 +639,10 @@
         if (u === "imperial") {
           const ft = parseFloat(get("height_ft")) || 0, inch = parseFloat(get("height_in")) || 0;
           const cm = (ft * 12 + inch) * 2.54;
-          if (!ft && !inch) missing = true; M.height = cm;
+          /* Leer heisst unbekannt, nicht null. Mit M.height = 0 lief die
+             Pflichtfeldpruefung (isNaN) ins Leere und die Rechner teilten
+             durch null — BMI „Infinity", Berkhan „−220,5 lb". */
+          if (!ft && !inch) { missing = true; M.height = NaN; } else { M.height = cm; }
         } else { const v = parseFloat(get("height")); if (isNaN(v)) missing = true; M.height = v; }
         return;
       }

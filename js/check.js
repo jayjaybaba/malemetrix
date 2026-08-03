@@ -270,6 +270,11 @@
         $("#sliderVal").textContent = input.value;
         state.answers[q.id] = parseInt(input.value, 10);
         saveDraft();
+        /* Wie bei den anderen Antworttypen: Die Schrittliste haengt von den
+           Antworten ab. Ohne diese Zeile blieb sie nach einer Schieber-
+           antwort stehen — wer bei der Umsetzungsbereitschaft 8, 9 oder 10
+           waehlte, landete in einer Sackgasse und bekam nie ein Ergebnis. */
+        resyncSteps(q.id);
       });
       if (state.answers[q.id] === undefined) state.answers[q.id] = parseInt(input.value, 10);
     } else if (q.type === "fields") {
