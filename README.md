@@ -9,6 +9,8 @@
 | **MaleMetrix Score-Check** — adaptiver Fragebogen, 12 gewichtete Bereiche (Score V2; im Profil zu 7 Säulen verdichtet), Engpass-Algorithmus, 7 Archetypen, Red-Flag-System, Radar-Chart, 7-Tage-Plan | ✅ läuft komplett im Browser |
 | **19 kostenlose Rechner** ([tools.html](tools.html)) — BMI, Körperfett (US Navy & Caliper), WHtR, LBM, Berkhan, BMR/TDEE/Cunningham, Protein, Makros, Wasser, FFMI, Idealgewicht, Casey-Butt-Muskelpotenzial, 1RM, Herzfrequenz, Wilks-2, Scheibenrechner | ✅ wissenschaftliche Formeln, metrisch/imperial |
 | **Training-Tracker** ([tracker.html](tracker.html)) — Sätze loggen mit Auto-Vorschlag aus dem letzten Mal, PRs, e1RM, Rest-Timer, Cardio (Pace/Tempo), Körpermaße + Gewichtschart, eigene & fertige Pläne, JSON-Export/Import | ✅ voll funktionsfähige Fitness-App, offline |
+| **Übungsbibliothek** — **874 Übungen** (49 kuratierte Programm-Übungen + 825 aus der Bibliothek), **animierte Bewegungsschleife** je Übung, primäre/sekundäre Muskeln, Suche und Filter nach Muskel & Gerät | ✅ siehe „Übungsbibliothek" unten |
+| **Muskelkarte** — Körperansicht vorn/hinten, eingefärbt nach den Sätzen der letzten 7 Tage; benennt ausdrücklich, was diese Woche **keinen** Satz bekommen hat | ✅ im Insights-Tab |
 | **Kostenlose Ebooks** ([ebooks.html](ebooks.html)) — 4 Guides inkl. Flaggschiff-Masterguide. Lesen offen (SEO), **PDF-Download per E-Mail freigeschaltet** | ✅ |
 | **PDF-Report** ([report.html](report.html)) — jetzt mit **personalisierten Zielwerten** (BMR, TDEE, Protein-Gramm, Ziel-Bauchumfang aus den Check-Antworten) | ✅ über Browser-Druck |
 | **Shop** — 9 Produkte inkl. **9-€-Express-Plan (Tripwire)**, Filter, Warenkorb, Checkout | ✅ Bestellungen sofort möglich |
@@ -121,6 +123,103 @@ Ein Online-Programm zum Selbermachen — dasselbe System wie das Coaching, aber 
 - **Keine erfundenen Testimonials**, klare medizinische Grenze (keine Diagnosen/TRT-Beratung) — überall verankert. Wann ein Ergebnis veröffentlicht werden darf, regelt `PROOF_STANDARD.md`; erfasst wird es im Abschlussbericht des 12-Wochen-Programms (`js/case-study.js`), veröffentlicht auf `ergebnisse.html`.
 - **Bauchumfang/Blutdruck** stehen nicht mehr in der Blutwerte-Checkliste (sind keine Blutwerte) → in den Tracker verschoben.
 
+## Übungsbibliothek (874 Übungen mit Fotos)
+
+Der Tracker kennt zwei Sorten Übungen, und das ist Absicht:
+
+1. **49 kuratierte Programm-Übungen** — stehen in [js/tracker-data.js](js/tracker-data.js),
+   sind handgepflegt (deutscher Name, Gerätewahl, Reihenfolge) und tragen im
+   Tracker einen Stern ★. Das sind die, die das MaleMetrix-Programm vorgibt.
+   Sie stehen in Suche und Auswahl immer oben.
+2. **825 Bibliotheks-Übungen** — für alles andere, was im Gym vorkommt.
+
+**Datenquelle:** [free-exercise-db](https://github.com/yuhonas/free-exercise-db),
+Lizenz **Unlicense** (gemeinfrei, kommerzielle Nutzung erlaubt, keine
+Namensnennung nötig — wir nennen sie trotzdem). Sie liefert je Übung zwei
+Fotos (Start-/Endposition), primäre und sekundäre Muskeln sowie
+Ausführungsschritte.
+
+### Animierte Bewegungsschleife
+
+Die zwei Fotos je Übung sind nicht zwei Ansichten, sondern **Anfang und Ende
+derselben Bewegung** — Hantel oben / Hantel unten. Im Wechsel abgespielt
+(900 ms, weiche Überblendung) ergibt genau das die Wiederholung. Damit ist
+jede der 874 Übungen animiert, ohne ein einziges zusätzliches Byte und ohne
+Videodateien.
+
+Wo animiert wird — bewusst unterschiedlich, weil 60 gleichzeitig laufende
+Schleifen Unruhe wären, kein Nutzen:
+
+| Ort | Verhalten |
+| --- | --- |
+| Detailfenster | läuft dauerhaft, groß, daneben beide Endpunkte einzeln; Pause-Knopf |
+| Laufendes Training | läuft dauerhaft neben dem Übungsnamen — zwischen zwei Sätzen ist genau das der hilfreiche Blick |
+| Bibliothek & Auswahl | Standbild; startet bei Mauszeiger, Tastaturfokus oder Berührung |
+
+Technisch: **ein** Taktgeber für die ganze Seite (`ANIM_MS` in
+[js/tracker.js](js/tracker.js)) statt eines Timers pro Bild — hält alles im
+Gleichtakt und den Akku in Ruhe. Im Hintergrund-Tab steht er still. Das
+zweite Bild einer Listenkarte wird erst geladen, wenn wirklich animiert wird:
+eine Liste mit 60 Karten kostet 60 Bilder, nicht 120.
+
+Wer im Betriebssystem **„Bewegung reduzieren"** eingestellt hat, bekommt
+Standbilder — bis er von Hand auf Abspielen drückt. Die Wahl wird gemerkt
+(`trk_anim`) und gilt dann überall.
+
+**Neu bauen** (z. B. wenn die Quelle aktualisiert wurde):
+
+```bash
+node tools-dev/build-exercise-library.mjs           # holt die Quelle aus dem Netz
+node tools-dev/build-exercise-library.mjs --report  # zusätzlich: was blockiert eine Übersetzung?
+```
+
+Das erzeugt `js/tracker-library.js`, `js/tracker-guide.js` und
+`js/tracker-curated.js`. **Diese drei Dateien nicht von Hand bearbeiten.**
+Die Zuordnung „kuratierte Übung ↔ Quelle" steht in
+[tools-dev/exercise-curated-map.json](tools-dev/exercise-curated-map.json).
+
+**Deutsche Namen:** 43 % der Bibliothek bekommen einen sauber übersetzten
+deutschen Namen, der Rest bleibt bewusst englisch. Das ist kein Rest-Todo,
+sondern die Entscheidung: Der Übersetzer ist streng — steht auch nur ein Wort
+nicht im Katalog, bleibt der ganze Name englisch. Die lockere Variante
+erzeugte Mischmasch wie „Prone Curls schräg". Und „Lat Pulldown", „Hip Thrust"
+oder „Face Pull" sagt im deutschen Gym ohnehin jeder. Mehr Abdeckung gibt es
+über neue Einträge in den Wörterbüchern im Build-Skript.
+
+**Fotos liegen im Repo** — `img/uebungen/`, 1746 Dateien, 12,9 MB
+(320 px WebP, Ø 7,6 KB). Bewusst selbst gehostet statt vom CDN der Quelle:
+
+- **Datenschutz.** Ein fremder Bild-Host bekäme die IP jedes Besuchers. Diese
+  Seite hostet ihre Schriften genau deshalb lokal (`datenschutz.html`,
+  Abschnitt 8). Bei Fotos anders zu verfahren wäre inkonsequent — und
+  auskunftspflichtig.
+- **Offline.** Der Service Worker fasst fremde Origins bewusst nicht an
+  (`sw.js`: `url.origin !== location.origin` → return). Vom CDN geladene
+  Bilder landen also **nie** im Offline-Cache; lokale schon, automatisch über
+  die bestehende Network-first-Strategie. Der Tracker wirbt mit Offline-
+  Betrieb — das muss auch für die Bibliothek gelten.
+- **Unabhängigkeit.** Ein Kernfeature soll nicht an einem Dienst hängen, über
+  den wir nicht bestimmen.
+
+320 px reichen: die Kacheln sind 56–64 px, die große Schleife ~400 px breit.
+Im Original wären es ~120 MB gewesen.
+
+Bilder neu erzeugen (nur nötig, wenn die Quelle sich ändert):
+
+```bash
+pip install Pillow
+git clone --depth 1 https://github.com/yuhonas/free-exercise-db.git /tmp/fxdb
+python3 tools-dev/build-exercise-images.py /tmp/fxdb
+```
+
+Fehlt ein Bild trotzdem, fällt die Kachel still auf ihre leere Form zurück,
+statt ein kaputtes Bild zu zeigen; die Übung bleibt benutzbar.
+
+**Ladeverhalten:** Bibliothek (247 KB) und Ausführungstexte (592 KB) hängen
+**nicht** im `<head>`. Der Tracker holt sie erst, wenn jemand die Bibliothek
+öffnet bzw. ein Detail anschaut. Wer nur Sätze loggt, lädt sie nie — die Seite
+startet so schnell wie vorher.
+
 ## Spätere Upgrades
 
 - **Stripe Payment Links:** pro Produkt in `js/config.js` unter `stripeLinks`.
@@ -133,7 +232,7 @@ Ein Online-Programm zum Selbermachen — dasselbe System wie das Coaching, aber 
 - Reines HTML/CSS/JS, keine Abhängigkeiten, kein Build.
 - Schriften lokal in `fonts/` (kein Google-Request, DSGVO-sauber, offline-fähig).
 - Vorschau lokal: `python serve.py 4173` → http://127.0.0.1:4173
-- Design-System: [css/style.css](css/style.css) · geteilte Logik: [js/main.js](js/main.js) · Sprache: [js/i18n.js](js/i18n.js) · Rechner: [js/tools.js](js/tools.js) · Tracker: [js/tracker.js](js/tracker.js) + [js/tracker-data.js](js/tracker-data.js) · Ebooks: [js/ebooks-data.js](js/ebooks-data.js) (Inhalt) + [js/ebooks.js](js/ebooks.js) (Renderer) · Programm: [js/course-data.js](js/course-data.js) (Inhalt) + [js/course.js](js/course.js) (Zugang/Fortschritt).
+- Design-System: [css/style.css](css/style.css) · geteilte Logik: [js/main.js](js/main.js) · Sprache: [js/i18n.js](js/i18n.js) · Rechner: [js/tools.js](js/tools.js) · Tracker: [js/tracker.js](js/tracker.js) + [js/tracker-data.js](js/tracker-data.js) (kuratiert) + `js/tracker-library.js` / `js/tracker-guide.js` / `js/tracker-curated.js` (erzeugt, siehe „Übungsbibliothek") · Ebooks: [js/ebooks-data.js](js/ebooks-data.js) (Inhalt) + [js/ebooks.js](js/ebooks.js) (Renderer) · Programm: [js/course-data.js](js/course-data.js) (Inhalt) + [js/course.js](js/course.js) (Zugang/Fortschritt).
 - Score-Logik: 12 gewichtete Bereiche (Score V2, kanonische Engine in [js/check-data.js](js/check-data.js)); Gewichte, Schwellen und Leitplanken in [SCORE_V2_LOGIC.md](SCORE_V2_LOGIC.md). Die 7 Profil-Säulen (Radar/Report) sind eine daraus abgeleitete, verdichtete Anzeige.
 
 ## Wichtiger Hinweis
