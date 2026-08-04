@@ -117,9 +117,16 @@ d.text((px + 22, py + 13 - ptb[1]), pt, font=pill_f, fill=GREEN)
 
 # --- URL rechts unten ---
 uf = mono(26)
-ut = "malemetrix.de"
+# Die Website liegt auf www.malemetrix.com (CNAME). malemetrix.de ist die
+# Mail-Domain und beantwortet keine Web-Anfrage — im Teilen-Bild stand also
+# eine Adresse, unter der niemand ankommt.
+ut = "malemetrix.com"
 utb = d.textbbox((0, 0), ut, font=uf)
 d.text((W - PAD - (utb[2] - utb[0]), 560), ut, font=uf, fill=GRAY)
 
-img.save(r"C:\Users\uralb\malemetrix\og-image.png", "PNG")
-print("OG-Bild erstellt:", img.size)
+import os
+# Relativ zum Skript statt fest auf ein Windows-Laufwerk — sonst laesst sich
+# das Bild auf keinem anderen Rechner neu erzeugen.
+ziel = os.path.join(os.path.dirname(os.path.abspath(__file__)), "og-image.png")
+img.save(ziel, "PNG")
+print("OG-Bild erstellt:", ziel, img.size)

@@ -13,7 +13,11 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'fs';
 
 const ROOT = new URL('..', import.meta.url).pathname;
-const SITE = 'https://malemetrix.de';
+/* Die Website laeuft auf www.malemetrix.com (siehe CNAME); malemetrix.de
+   ist die Mail-Domain. Mit der falschen Basis schrieb der naechste
+   Generatorlauf canonical, og:url und og:image aller 13 lp/-Seiten auf
+   eine Adresse, unter der die Seiten nicht liegen. */
+const SITE = 'https://www.malemetrix.com';
 
 /* ---- Ebook-Daten aus der zentralen Quelle laden (Browser-Global evaluieren) ---- */
 function loadEbooks() {

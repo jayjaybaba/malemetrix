@@ -801,6 +801,14 @@
   }
 
   async function submit() {
+    /* Wird der Warenkorb waehrend des Ausfuellens geleert, blieb das Formular
+       aktiv und erzeugte eine Bestellung ueber 0,00 EUR ohne Artikel — samt
+       Erfolgsseite. Erst pruefen, was ueberhaupt bestellt wird. */
+    if (!items().length) {
+      MM.toast("Dein Warenkorb ist leer.");
+      renderForm(); renderSummary(); renderPayAction();
+      return;
+    }
     if (!validateForm()) { MM.toast("Bitte prüfe die markierten Felder, die AGB und die Zustimmung zu digitalen Inhalten"); return; }
     const btn = $("#coSubmit");
     if (btn) { btn.disabled = true; btn.textContent = "Bestellung wird übermittelt…"; }
@@ -1080,6 +1088,14 @@
     renderStripeReturn();
   } else {
     renderForm();
+    /* Der Warenkorb kann sich waehrend der Kasse aendern — im Schubfach
+       daneben, in einem zweiten Tab. Ohne dieses Nachzeichnen nannte der
+       Bezahl-Knopf weiter den alten Betrag und loeste eine Bestellung ueber
+       einen anderen aus. */
+    document.addEventListener("mm:cart", function () {
+      try { renderSummary(); renderPayAction(); renderForm(); } catch (e) {}
+    });
+
     if (stripeWiederaufnahme) {
       const hinweis = document.createElement("div");
       hinweis.className = "alert alert-warn";

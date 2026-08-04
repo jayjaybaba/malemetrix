@@ -223,12 +223,26 @@
       MM.store.set("cart", items);
       MM.cart.renderBadge();
       MM.cart.renderDrawer();
+      /* Die Kasse rendert ihre Zusammenfassung und den Bezahl-Knopf einmal
+         beim Laden. Ohne dieses Ereignis nannte der Knopf noch den alten
+         Betrag, nachdem der Warenkorb daneben geändert wurde — und löste
+         eine Bestellung über einen anderen aus. */
+      try { document.dispatchEvent(new CustomEvent("mm:cart", { detail: { items: items } })); } catch (e) {}
     },
 
+    /* Digitale Produkte sind Einzellizenzen. Ohne Deckel liess sich dasselbe
+       Ebook zweimal in den Warenkorb legen: PayPal wurde mit 2 x 99 EUR
+       belastet, waehrend der Server exakt 9900 Cent erwartet und die
+       Freischaltung mit amount_mismatch ablehnt — bezahlt und nichts
+       bekommen. Der Stripe-Pfad hatte diesen Schutz schon. */
     add(productId, qty) {
       const items = MM.cart.items();
+      const prod = MM.cart.product(productId);
       const found = items.find(i => i.id === productId);
-      if (found) found.qty += (qty || 1);
+      if (prod && prod.digital) {
+        if (!found) items.push({ id: productId, qty: 1 });
+        else { found.qty = 1; MM.cart.open(); return; }
+      } else if (found) found.qty += (qty || 1);
       else items.push({ id: productId, qty: qty || 1 });
       MM.cart.save(items);
       const p = MM.cart.product(productId);
@@ -239,6 +253,8 @@
 
     setQty(productId, qty) {
       let items = MM.cart.items();
+      const prod = MM.cart.product(productId);
+      if (prod && prod.digital && qty > 1) qty = 1;      // Einzellizenz
       if (qty <= 0) items = items.filter(i => i.id !== productId);
       else items.forEach(i => { if (i.id === productId) i.qty = qty; });
       MM.cart.save(items);
