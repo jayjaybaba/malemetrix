@@ -3156,3 +3156,13 @@ body > * { position: relative; z-index: 0; }
   color: var(--muted-2); text-decoration: underline; font: inherit; font-size: .85rem;
 }
 .trk-focus-drop:hover { color: var(--text); }
+
+/* ---------- Sprungziele unter der festen Kopfzeile ----------
+   Die Kopfzeile ist position:fixed. Ohne Reserve landet jedes #anker-Ziel
+   genau darunter: Auf coaching.html verschwand die Zeile "Schritt 1 ·
+   Kostenlos & unverbindlich" beim Sprung auf #buchen hinter dem Kopf.
+   Gilt für Abschnitte und Überschriften, nicht für beliebige Elemente —
+   sonst verschiebt die Regel auch Dinge, die niemand anspringt. */
+section[id], article[id], h1[id], h2[id], h3[id], .cta-band[id], [id][data-anchor] {
+  scroll-margin-top: calc(var(--header-h) + 14px);
+}
