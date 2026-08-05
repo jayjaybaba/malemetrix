@@ -31,6 +31,7 @@
   /* ================= Zustand ================= */
   var state = {
     photo: null,            // Data-URI (nur im Speicher — bewusst nie persistiert)
+    goal: "cut",            // cut | bulk — Richtung der Transformation
     currentKg: null,
     targetA: null,
     targetB: null,
@@ -49,7 +50,7 @@
   // Aktive Prozent-Chips je Ziel (A/B). Manuelle Eingabe löst den Chip.
   var activePct = { a: 0.2, b: 0.3 };
 
-  var PERSIST = ["currentKg", "targetA", "targetB", "heightCm", "age", "activity",
+  var PERSIST = ["goal", "currentKg", "targetA", "targetB", "heightCm", "age", "activity",
     "months", "look", "exp", "days", "mode", "equip", "chosen"];
   function loadSaved() {
     try {
@@ -226,7 +227,10 @@
   var FEHLERTEXT = {
     not_signed_in: "Bitte melde dich zuerst an — die Bildgenerierung braucht ein Konto.",
     no_cloud: "Account-Sync ist auf diesem Gerät nicht aktiv — ohne Cloud-Konto keine Bildgenerierung.",
-    rate_limited: "Stundenlimit erreicht (12 Bilder). Versuch es in einer Stunde wieder.",
+    rate_limited: "Stundenlimit erreicht. Versuch es in einer Stunde wieder.",
+    score_required: "Erst der Score, dann die Transformation: Der Score findet in ~7 Minuten deinen größten Engpass und kalibriert deinen Plan. Danach ist die Bildgenerierung freigeschaltet.",
+    free_quota_exhausted: "Dein Gratis-Kontingent (4 Bilder) ist aufgebraucht. Als PROTOKOLL- oder Coaching-Kunde generierst du weiter.",
+    daily_capacity: "Das Tageskontingent der Seite ist erreicht (Kostenschutz) — versuch es morgen wieder.",
     provider_not_configured: "Die Bildgenerierung ist serverseitig noch nicht freigeschaltet (API-Key fehlt).",
     provider_balance: "Die Bildgenerierung ist vorübergehend nicht verfügbar (Kontingent aufgebraucht) — versuch es später erneut.",
     provider_auth_failed: "Der Bild-Dienst lehnt unseren Schlüssel ab — wir kümmern uns darum.",
@@ -291,7 +295,18 @@
   /* --- Schritt 2: Ziele + Transformations-Fragen --- */
   var s2 = el("section", "trf-step");
   s2.appendChild(secthead("MM / TRANSFORM · 02", "Deine Transformation"));
-  s2.appendChild(el("p", "trf-hint", "Zwei Ziele, zwei Vorschauen — die Prozent-Marken rechnen vom aktuellen Gewicht, jedes Feld ist frei überschreibbar (auch nach oben, für Aufbau). Die Fragen darunter sind keine Deko: Jede Antwort verändert deinen Plan — und der Wunsch-Look fließt in die Bilder ein."));
+  s2.appendChild(el("p", "trf-hint", "Erst die Richtung, dann zwei Ziele, zwei Vorschauen — die Prozent-Marken rechnen vom aktuellen Gewicht, jedes Feld ist frei überschreibbar. Die Fragen darunter sind keine Deko: Jede Antwort verändert deinen Plan — und der Wunsch-Look fließt in die Bilder ein."));
+
+  /* Richtung: Abnehmen oder Muskelaufbau. Steuert die Prozent-Chips
+     (−10/−20/−30 vs. +5/+10/+15 — mehr als ~15 % Aufbau ist kein seriöses
+     Bild mehr), die zulässigen Zielrichtungen UND die Look-Auswahl:
+     „Massiv" bei gleichzeitigem Abnehmen wäre ein Widerspruch — massiver
+     wird man im Aufbau, im Defizit gibt es Definition. */
+  var GOALS = {
+    cut:  { sign: -1, pcts: [0.10, 0.20, 0.30], defaults: { a: 0.20, b: 0.30 } },
+    bulk: { sign: +1, pcts: [0.05, 0.10, 0.15], defaults: { a: 0.05, b: 0.10 } }
+  };
+  if (!GOALS[state.goal]) state.goal = "cut";
 
   var io = el("div", "trf-io");
   function bigInput(labelHtml, value) {
@@ -312,35 +327,45 @@
   var fA = bigInput("ZIEL A", state.targetA);
   var fB = bigInput("ZIEL B", state.targetB);
 
-  var PCTS = [0.10, 0.20, 0.30];
-  function makeChips(cell, key, input) {
-    var row = el("div", "trf-chips");
-    PCTS.forEach(function (p) {
-      var b = el("button", "trf-chip", "−" + Math.round(p * 100) + " %");
-      b.type = "button";
-      b.addEventListener("click", function () {
-        activePct[key] = p;
-        applyPct(key, input);
-        syncChips();
-      });
-      row.appendChild(b);
-    });
-    input.addEventListener("input", function () { activePct[key] = null; syncChips(); });
-    cell.appendChild(row);
-    return row;
-  }
+  function goalCfg() { return GOALS[state.goal] || GOALS.cut; }
   function applyPct(key, input) {
     var c = num(fCur.input.value);
     if (!c || !activePct[key]) return;
-    input.value = Math.round(c * (1 - activePct[key]));
+    var g = goalCfg();
+    input.value = Math.round(c * (1 + g.sign * activePct[key]));
+  }
+  function makeChips(cell, key, input) {
+    var row = el("div", "trf-chips");
+    cell.appendChild(row);
+    input.addEventListener("input", function () { activePct[key] = null; syncChips(); });
+    return row;
   }
   var chipsA = makeChips(fA.cell, "a", fA.input);
   var chipsB = makeChips(fB.cell, "b", fB.input);
+  function renderPctChips() {
+    var g = goalCfg();
+    [[chipsA, "a", fA.input], [chipsB, "b", fB.input]].forEach(function (trip) {
+      var row = trip[0], key = trip[1], input = trip[2];
+      row.innerHTML = "";
+      g.pcts.forEach(function (p) {
+        var b = el("button", "trf-chip", (g.sign < 0 ? "−" : "+") + Math.round(p * 100) + " %");
+        b.type = "button";
+        b.addEventListener("click", function () {
+          activePct[key] = p;
+          applyPct(key, input);
+          syncChips();
+        });
+        row.appendChild(b);
+      });
+    });
+    syncChips();
+  }
   function syncChips() {
+    var g = goalCfg();
     [[chipsA, "a"], [chipsB, "b"]].forEach(function (pair) {
       var kids = pair[0].querySelectorAll(".trf-chip");
       for (var i = 0; i < kids.length; i++) {
-        kids[i].classList.toggle("is-on", activePct[pair[1]] === PCTS[i]);
+        kids[i].classList.toggle("is-on", activePct[pair[1]] === g.pcts[i]);
       }
     });
   }
@@ -349,9 +374,41 @@
     applyPct("b", fB.input);
   });
   io.appendChild(fCur.cell); io.appendChild(fA.cell); io.appendChild(fB.cell);
+
+  /* Richtungs-Toggle VOR den Zielfeldern — er bestimmt, was die Chips und
+     die Look-Frage überhaupt anbieten. */
+  var goalCell = el("div", "trf-io-cell trf-q-cell");
+  goalCell.appendChild(el("span", "trf-k", "Richtung — was ist dein Ziel?"));
+  var goalRow = el("div", "trf-chips");
+  var GOAL_OPTIONS = [
+    { v: "cut", label: "ABNEHMEN" },
+    { v: "bulk", label: "MUSKELAUFBAU" }
+  ];
+  GOAL_OPTIONS.forEach(function (o) {
+    var b = el("button", "trf-chip", o.label);
+    b.type = "button";
+    b.addEventListener("click", function () {
+      if (state.goal === o.v) return;
+      state.goal = o.v;
+      save();
+      var kids = goalRow.querySelectorAll(".trf-chip");
+      for (var i = 0; i < kids.length; i++) kids[i].classList.toggle("is-on", GOAL_OPTIONS[i].v === o.v);
+      // Neue Richtung → neue Chip-Sätze mit sinnvollen Voreinstellungen.
+      activePct.a = goalCfg().defaults.a;
+      activePct.b = goalCfg().defaults.b;
+      renderPctChips();
+      applyPct("a", fA.input); applyPct("b", fB.input);
+      renderLookGroup();
+    });
+    if (state.goal === o.v) b.classList.add("is-on");
+    goalRow.appendChild(b);
+  });
+  goalCell.appendChild(goalRow);
+  s2.appendChild(goalCell);
+
   s2.appendChild(io);
+  renderPctChips();
   if (state.currentKg) { applyPct("a", fA.input); applyPct("b", fB.input); }
-  syncChips();
 
   /* Fragebogen: Chip-Gruppen, single-select, jede Antwort wird persistiert. */
   function chipGroup(label, key, options) {
@@ -373,13 +430,28 @@
     cell.appendChild(row);
     return cell;
   }
+
+  /* Wunsch-Look, gefiltert nach Richtung: „Massiv" gibt es nur im Aufbau —
+     wer abnimmt, wird definierter, nicht massiver. Beim Umschalten auf
+     Abnehmen fällt ein gewählter Massiv-Look auf Athletisch zurück. */
+  var lookHost = el("div");
+  function renderLookGroup() {
+    var opts = state.goal === "bulk"
+      ? [{ v: "lean", label: "DEFINIERT" }, { v: "athletic", label: "ATHLETISCH" }, { v: "muscular", label: "MASSIV" }]
+      : [{ v: "lean", label: "DEFINIERT" }, { v: "athletic", label: "ATHLETISCH" }];
+    if (state.goal !== "bulk" && state.look === "muscular") { state.look = "athletic"; save(); }
+    lookHost.innerHTML = "";
+    lookHost.appendChild(chipGroup(
+      state.goal === "bulk" ? "Wunsch-Look (fließt ins Bild)" : "Wunsch-Look (fließt ins Bild) — massiv gibt es nur im Aufbau",
+      "look", opts));
+  }
+  renderLookGroup();
+
   var q = el("div", "trf-q");
   q.appendChild(chipGroup("Zeitraum — bis wann?", "months", [
     { v: 3, label: "3 MONATE" }, { v: 6, label: "6 MONATE" }, { v: 12, label: "12 MONATE" }, { v: null, label: "OFFEN" }
   ]));
-  q.appendChild(chipGroup("Wunsch-Look (fließt ins Bild)", "look", [
-    { v: "lean", label: "DEFINIERT" }, { v: "athletic", label: "ATHLETISCH" }, { v: "muscular", label: "MASSIV" }
-  ]));
+  q.appendChild(lookHost);
   q.appendChild(chipGroup("Trainingserfahrung", "exp", [
     { v: "neu", label: "< 1 JAHR" }, { v: "mid", label: "1-4 JAHRE" }, { v: "pro", label: "4+ JAHRE" }
   ]));
@@ -426,9 +498,21 @@
   var runBtn = el("button", "btn btn-primary", "Beide Ziele visualisieren");
   runBtn.id = "trfRun";
   var runErr = el("p", "trf-error"); runErr.style.display = "none"; runErr.style.marginTop = "12px";
+  var quotaNote = el("span", "trf-quota"); quotaNote.style.display = "none";
   var stage = el("div", "trf-stage");
-  s3.appendChild(gate); s3.appendChild(runBtn); s3.appendChild(runErr); s3.appendChild(stage);
+  s3.appendChild(gate); s3.appendChild(runBtn); s3.appendChild(quotaNote); s3.appendChild(runErr); s3.appendChild(stage);
   root.appendChild(s3);
+
+  /* Gratis-Kontingent-Zähler: mm-transform meldet Nicht-Kunden ihr
+     Rest-Kontingent — die Seite sagt es VOR der Wand, nicht erst dahinter. */
+  function updateQuota(rem) {
+    if (rem == null) return;
+    quotaNote.style.display = "";
+    quotaNote.classList.toggle("is-low", rem <= 1);
+    quotaNote.textContent = rem > 0
+      ? "NOCH " + rem + " VON 4 GRATIS-BILDERN AUF DIESEM KONTO"
+      : "GRATIS-KONTINGENT AUFGEBRAUCHT — WEITER GEHT ES ALS KUNDE";
+  }
 
   /* --- Schritt 4: Pläne --- */
   var s4 = el("section", "trf-step");
@@ -436,17 +520,55 @@
   s4.style.display = "none";
   root.appendChild(s4);
 
-  /* ================= Login-Gate ================= */
+  /* ================= Score-Gate + Login-Gate =================
+     Reihenfolge des Funnels: 1. Score (kalibriert den Plan UND filtert
+     Spielkinder raus, bevor Bild-Kosten entstehen) → 2. Konto → 3. Bilder.
+     Kunden (aktives Entitlement) überspringen das Score-Gate — wer gekauft
+     hat, wird nicht durch einen Fragebogen geschickt. Die Edge Function
+     prüft dieselbe Bedingung serverseitig (score_results) — das Gate hier
+     ist UX, die Durchsetzung passiert am Server. */
+  function hasScoreDone() {
+    try {
+      if (window.MM && MM.account && MM.account.getDashboardState) {
+        var d = MM.account.getDashboardState();
+        if (d && d.hasScore) return true;
+        if (d && d.access && (d.access.protocol || d.access.twelve_week || d.access.coaching || d.access.advanced_library)) return true;
+      }
+    } catch (e) {}
+    try {
+      var r = window.MM && MM.store ? MM.store.get("check_result", null) : null;
+      return !!(r && typeof r.total === "number" && isFinite(r.total));
+    } catch (e) { return false; }
+  }
+  var scoreGateSeen = false;
+  function renderScoreGate() {
+    var g = el("div", "trf-scoregate");
+    g.appendChild(el("span", "gk", "MM / GATE · SCHRITT 0 — DEIN SCORE"));
+    g.appendChild(el("p", null,
+      "Die Transformation rechnet mit deinen Daten — nicht mit Fantasie. <strong>Zuerst der MaleMetrix-Score</strong> (~7 Minuten, kostenlos): Er findet deinen größten Engpass und kalibriert den Plan, der unter deinen Bildern steht. Danach ist die Bildgenerierung freigeschaltet."));
+    var a = el("a", "btn btn-primary", "Score jetzt starten — ~7 Min");
+    a.href = "check.html";
+    a.setAttribute("data-track", "transform_gate_score_click");
+    g.appendChild(a);
+    if (!scoreGateSeen) { scoreGateSeen = true; track("transform_gate_score_view"); }
+    return g;
+  }
+
   var accountState = "unknown";
   function renderGate() {
     gate.innerHTML = "";
+    if (!hasScoreDone()) {
+      runBtn.disabled = true;
+      gate.appendChild(renderScoreGate());
+      return;
+    }
     if (accountState === "signed_in") { runBtn.disabled = !state.photo; return; }
     runBtn.disabled = true;
     if (accountState === "local") {
       gate.appendChild(el("p", "trf-hint", "Auf diesem Gerät ist kein Cloud-Konto aktiv — die Bildgenerierung läuft über dein My-MaleMetrix-Konto."));
       return;
     }
-    var p = el("p", "trf-hint", "Die Bildgenerierung braucht ein kostenloses My-MaleMetrix-Konto (Magic Link, kein Passwort) — sie ist pro Nutzer auf 12 Bilder/Stunde begrenzt, weil jedes Bild echtes Geld kostet.");
+    var p = el("p", "trf-hint", "Score erledigt ✓ — jetzt noch ein kostenloses My-MaleMetrix-Konto (Magic Link, kein Passwort). Gratis sind 4 Bilder (2 komplette Läufe); als Kunde generierst du mit Stundenlimit weiter, weil jedes Bild echtes Geld kostet.");
     var row = el("div", "trf-login");
     var mail = el("input"); mail.type = "email"; mail.placeholder = "deine@email.de"; mail.autocomplete = "email";
     var btn = el("button", "btn btn-dark btn-sm", "Magic Link senden");
@@ -468,6 +590,10 @@
     MM.account.onChange(function (snap) { accountState = snap.state; renderGate(); });
     MM.account.whenReady().then(function (snap) { accountState = snap.state; renderGate(); }).catch(function () { renderGate(); });
   }
+  // Score kann in einem anderen Tab (check.html) entstehen: beide Kanäle
+  // hören — mm:store (gleiche Seite) und storage (anderer Tab).
+  document.addEventListener("mm:store", function () { renderGate(); });
+  window.addEventListener("storage", function (ev) { if (ev && ev.key === "mm_check_result") renderGate(); });
   renderGate();
 
   /* ================= Bühnen-Panels ================= */
@@ -497,6 +623,30 @@
     view.appendChild(wrap);
   }
   function track(ev) { try { if (window.MM && MM.track) MM.track(ev); } catch (e) {} }
+
+  /* Sticky-Leiste: Nach der Zielwahl bleibt das Angebot beim Scrollen im
+     Bild — mit den eigenen Zahlen, nicht generisch. Einmal wegklickbar pro
+     Sitzung; Kunden sehen sie nie (removeSticky im Kunden-Zweig). */
+  var stickyEl = null, stickyDismissed = false;
+  function removeSticky() {
+    if (stickyEl && stickyEl.parentNode) stickyEl.parentNode.removeChild(stickyEl);
+    stickyEl = null;
+  }
+  function renderSticky(t, p) {
+    removeSticky();
+    if (stickyDismissed) return;
+    stickyEl = el("div", "trf-sticky");
+    stickyEl.appendChild(el("span", "sk", "DEIN ZIEL: " + t + " KG IN " + p.realWeeks + " WOCHEN — <strong>DAS PROTOKOLL · 99 €</strong>"));
+    var go = el("a", "btn btn-primary btn-sm", "Jetzt starten");
+    go.href = "protokoll.html";
+    go.setAttribute("data-track", "transform_sticky_cta");
+    var x = el("button", "close", "×");
+    x.type = "button";
+    x.setAttribute("aria-label", "Leiste schließen");
+    x.addEventListener("click", function () { stickyDismissed = true; removeSticky(); });
+    stickyEl.appendChild(go); stickyEl.appendChild(x);
+    document.body.appendChild(stickyEl);
+  }
 
   /* ================= Wasserzeichen & Teilen (Monetarisierung #5) =================
      Jedes generierte Bild trägt ein dezentes MALEMETRIX-Wasserzeichen, und der
@@ -655,6 +805,8 @@
       if (!z || z < 40 || z > 300) return "Bitte beide Zielgewichte angeben (40-300 kg).";
       if (z === state.currentKg) return "Ein Ziel ist identisch mit deinem aktuellen Gewicht — das wäre kein Vorher/Nachher.";
       if (Math.abs(state.currentKg - z) > state.currentKg * 0.6) return "Mehr als 60 % Differenz ergibt kein glaubwürdiges Bild — bitte ein realistischeres Ziel wählen.";
+      if (state.goal === "bulk" && z < state.currentKg) return "Richtung ist MUSKELAUFBAU — beide Ziele müssen über deinem aktuellen Gewicht liegen (oder stell oben auf ABNEHMEN um).";
+      if (state.goal !== "bulk" && z > state.currentKg) return "Richtung ist ABNEHMEN — beide Ziele müssen unter deinem aktuellen Gewicht liegen (oder stell oben auf MUSKELAUFBAU um).";
     }
     if (state.targetA === state.targetB) return "Die beiden Ziele sind identisch — wähle zwei unterschiedliche, damit der Vergleich etwas zeigt.";
     return null;
@@ -699,6 +851,7 @@
           p.foot.innerHTML = "";
           if (r && r.ok && r.data && r.data.image_url) {
             var raw = r.data.image_url;
+            if (r.data.free_remaining != null) updateQuota(r.data.free_remaining);
             return watermark(raw).then(function (wm) {
               var afterSrc = wm || raw;
               state.results[t] = { url: raw, after: afterSrc };
@@ -715,7 +868,23 @@
             var code = (r && r.code) || "unbekannt";
             state.results[t] = { error: code };
             showError(p.view, code);
-            p.foot.appendChild(el("span", "mono-note", "FEHLGESCHLAGEN"));
+            // Kontingent- und Score-Fehler sind keine Sackgassen, sondern
+            // Weggabelungen — der nächste Schritt steht direkt im Panel.
+            if (code === "free_quota_exhausted") {
+              updateQuota(0);
+              track("transform_quota_wall");
+              var buy = el("a", "btn btn-primary btn-sm", "DAS PROTOKOLL — 99 €");
+              buy.href = "protokoll.html";
+              buy.setAttribute("data-track", "transform_quota_cta");
+              p.foot.appendChild(buy);
+            } else if (code === "score_required") {
+              var toScore = el("a", "btn btn-primary btn-sm", "Score starten — ~7 Min");
+              toScore.href = "check.html";
+              toScore.setAttribute("data-track", "transform_gate_score_click");
+              p.foot.appendChild(toScore);
+            } else {
+              p.foot.appendChild(el("span", "mono-note", "FEHLGESCHLAGEN"));
+            }
           }
         })
         .catch(function () {
@@ -861,30 +1030,66 @@
 
     s4.appendChild(grid);
 
-    /* --- Die Brücke zum Protokoll (Monetarisierung #1) ---
-       Der Moment nach der Zielwahl ist der heißeste Punkt im Funnel. Wer das
-       Protokoll schon besitzt, bekommt statt Verkauf den Weg in die App —
-       Quelle der Wahrheit sind die server-vergebenen Entitlements. */
-    var hasProto = false;
-    try { hasProto = !!(window.MM && MM.account && MM.account.hasAccess && MM.account.hasAccess("protocol")); } catch (e) {}
-    var cta = el("div", "trf-cta");
-    cta.appendChild(el("span", "ck", "MM / NEXT"));
-    if (hasProto) {
+    /* --- Konversions-Staffel (Kern des Funnels) ---
+       Der Moment nach der Zielwahl ist der heißeste Punkt der Seite: Der
+       Nutzer hat sein Zukunfts-Ich gesehen und einen ehrlichen Plan davor.
+       Bestandskunden bekommen den Weg in die App (kein Verkauf an Käufer);
+       alle anderen die dreistufige Staffel Protokoll / Circle / Coaching —
+       mit einer Empfehlung aus ihren eigenen Antworten, nicht generisch. */
+    var access = {};
+    try { if (window.MM && MM.account && MM.account.getDashboardState) access = MM.account.getDashboardState().access || {}; } catch (e) {}
+    var isCustomer = !!(access.protocol || access.twelve_week || access.coaching);
+    if (isCustomer) {
+      var cta = el("div", "trf-cta");
+      cta.appendChild(el("span", "ck", "MM / NEXT"));
       cta.appendChild(el("h3", "ct", "Dein Ziel gehört ins System."));
-      cta.appendChild(el("p", "cp", "Du hast DAS PROTOKOLL. Trag dein Ziel " + t + " kg in My MaleMetrix ein — Programm, Tracker und Intelligence arbeiten dann " + p.realWeeks + " Wochen lang genau darauf hin, mit Wochen-Reviews statt guter Vorsätze."));
+      cta.appendChild(el("p", "cp", "Du bist Kunde. Trag dein Ziel " + t + " kg in My MaleMetrix ein — Programm, Tracker und Intelligence arbeiten dann " + p.realWeeks + " Wochen lang genau darauf hin, mit Wochen-Reviews statt guter Vorsätze."));
       var goApp = el("a", "btn btn-primary", "Weiter in My MaleMetrix");
       goApp.href = "mein-protokoll.html";
       goApp.setAttribute("data-track", "transform_cta_mymm");
       cta.appendChild(goApp);
+      s4.appendChild(cta);
+      removeSticky();
     } else {
-      cta.appendChild(el("h3", "ct", "Das ist die Landkarte. DAS PROTOKOLL ist das Fahrzeug."));
-      cta.appendChild(el("p", "cp", "Der Plan oben sagt, was zu tun ist. Das Protokoll sorgt dafür, dass es " + p.realWeeks + " Wochen lang wirklich passiert: 12-Wochen-Programm, Tracker mit Progression, Wochen-Reviews und Intelligence — auf dein Ziel " + t + " kg. <strong>99 €, einmalig, kein Abo.</strong>"));
-      var goProto = el("a", "btn btn-primary", "DAS PROTOKOLL ansehen");
-      goProto.href = "protokoll.html";
-      goProto.setAttribute("data-track", "transform_cta_protokoll");
-      cta.appendChild(goProto);
+      // Empfehlung aus den eigenen Antworten: enhanced oder ein unrealistischer
+      // Wunsch-Zeitraum → 1:1-Betreuung; sonst das Protokoll als Standardweg.
+      var reco = (p.enh || p.verdict === "unreal") ? "coaching" : "protokoll";
+      var intro = el("div", "trf-cta");
+      intro.appendChild(el("span", "ck", "MM / NEXT — DEIN WEG ZU " + t + " KG"));
+      intro.appendChild(el("h3", "ct", "Die Bilder zeigen, wohin. Jetzt entscheidet sich, ob du ankommst."));
+      intro.appendChild(el("p", "cp", "Dein Plan steht: <strong>" + p.delta + " kg bis " + t + " kg, ehrlich gerechnet " + p.realWeeks + " Wochen.</strong> Allein durchziehen scheitert bei den meisten zwischen Woche 3 und 6 — nicht am Wissen, sondern an System und Accountability. Dafür gibt es drei Wege:"));
+
+      var offers = el("div", "trf-offers");
+      function offer(key, name, price, desc, btnLabel, href, trackId) {
+        var o = el("div", "trf-offer" + (reco === key ? " is-reco" : ""));
+        if (reco === key) o.appendChild(el("span", "badge", "FÜR DEIN ZIEL EMPFOHLEN"));
+        o.appendChild(el("h4", "on", name));
+        o.appendChild(el("span", "op", price));
+        o.appendChild(el("p", "od", desc));
+        var b = el("a", "btn " + (reco === key ? "btn-primary" : "btn-dark"), btnLabel);
+        b.href = href;
+        b.setAttribute("data-track", trackId);
+        o.appendChild(b);
+        return o;
+      }
+      offers.appendChild(offer("protokoll", "DAS PROTOKOLL", "99 € · EINMALIG · KEIN ABO",
+        "Das System hinter deinem Plan: <strong>12-Wochen-Programm, Tracker mit Progression, Wochen-Reviews und Intelligence</strong> — gerechnet auf dein Ziel " + t + " kg. Einmal kaufen, komplett besitzen.",
+        "DAS PROTOKOLL holen", "protokoll.html", "transform_offer_protokoll"));
+      // Circle-Preis aus der Konfiguration, wie auf circle.html — die
+      // Preis-Wahrheit lebt in MM_CONFIG, nicht in Seitentexten (Guard G5).
+      var circlePrice = 15;
+      try { circlePrice = (window.MM_CONFIG && MM_CONFIG.circle && MM_CONFIG.circle.priceMonthly) || circlePrice; } catch (e) {}
+      offers.appendChild(offer("circle", "MALEMETRIX CIRCLE", circlePrice + " € / MONAT · JEDERZEIT KÜNDBAR",
+        "Accountability schlägt Motivation: Männer mit demselben Ziel, wöchentliche Check-ins, direkte Antworten. <strong>" + p.realWeeks + " Wochen sind lang, wenn niemand hinschaut.</strong>",
+        "In den Circle", "circle.html", "transform_offer_circle"));
+      offers.appendChild(offer("coaching", "1:1 COACHING", "199 € / MONAT · MONATLICH KÜNDBAR",
+        "Der schnellste Weg: <strong>persönliche 1:1-Betreuung</strong> — Plan, Anpassung und Kontrolle jede Woche, bis " + t + " kg erreicht sind." + (p.enh ? " Gerade enhanced gehört Monitoring in erfahrene Hände." : "") + " <strong>Erstgespräch kostenlos.</strong>",
+        "Erstgespräch buchen — kostenlos", "coaching.html", "transform_offer_coaching"));
+      intro.appendChild(offers);
+      s4.appendChild(intro);
+      track("transform_offers_view");
+      renderSticky(t, p);
     }
-    s4.appendChild(cta);
 
     s4.appendChild(el("p", "trf-hint trf-plan-note",
       "Kein medizinischer Rat: Bei Vorerkrankungen, Medikamenten oder einem Ziel unter BMI 20 zuerst ärztlich abklären. " +

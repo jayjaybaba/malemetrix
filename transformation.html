@@ -160,6 +160,33 @@
     .trf-cta .cp strong { color: var(--text); }
     .trf-cta .btn { margin-top: 18px; }
 
+    /* --- Score-Gate: erst der Score, dann die Bilder --- */
+    .trf-scoregate { margin: 14px 0 4px; padding: 16px 18px; border-left: 2px solid var(--accent-2); background: var(--surface); }
+    .trf-scoregate .gk { display: block; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.2em; color: var(--accent-2); margin-bottom: 8px; }
+    .trf-scoregate p { color: var(--muted); font-size: 0.92rem; line-height: 1.55; max-width: 62ch; margin: 0 0 12px; }
+    .trf-scoregate p strong { color: var(--text); }
+
+    /* --- Gratis-Kontingent-Zähler unter dem Generieren-Button --- */
+    .trf-quota { display: block; margin-top: 10px; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.16em; color: var(--muted-2); }
+    .trf-quota.is-low { color: var(--status-attention); }
+
+    /* --- Angebots-Staffel nach der Zielwahl --- */
+    .trf-offers { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: clamp(14px, 2vw, 22px); margin-top: 18px; }
+    .trf-offer { display: flex; flex-direction: column; position: relative; border: 1px solid var(--hairline); background: var(--surface); padding: 22px 20px 20px; }
+    .trf-offer.is-reco { border-color: var(--accent-2); }
+    .trf-offer .badge { position: absolute; top: -9px; left: 16px; font-family: var(--font-mono); font-size: 0.55rem; letter-spacing: 0.16em; color: var(--bg-0); background: var(--accent-2); padding: 3px 8px; }
+    .trf-offer .on { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; letter-spacing: -0.01em; margin: 0 0 2px; }
+    .trf-offer .op { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.12em; color: var(--accent-2); margin-bottom: 10px; }
+    .trf-offer .od { color: var(--muted); font-size: 0.88rem; line-height: 1.55; flex: 1; }
+    .trf-offer .od strong { color: var(--text); }
+    .trf-offer .btn { margin-top: 14px; width: 100%; }
+
+    /* --- Sticky-Leiste nach der Zielwahl (nur Nicht-Kunden) --- */
+    .trf-sticky { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; padding: 10px 14px; background: rgba(7, 10, 15, 0.92); backdrop-filter: blur(6px); border-top: 1px solid var(--accent-line); }
+    .trf-sticky .sk { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.14em; color: var(--text); }
+    .trf-sticky .sk strong { color: var(--accent-2); }
+    .trf-sticky .close { background: transparent; border: 0; color: var(--muted-2); font-size: 1rem; line-height: 1; cursor: pointer; padding: 4px 8px; }
+
     @media (max-width: 700px) {
       .trf-stage { grid-template-columns: 1fr; }
       .trf-row { grid-template-columns: 78px 1fr; }

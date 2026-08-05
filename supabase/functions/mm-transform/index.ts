@@ -23,6 +23,47 @@ import { corsHeaders, jsonResponse, preflight, requireUser } from "../_shared/ed
 // Bewusst knapper als mm-ai (30/h): ein Bild kostet ~4 Cent statt Bruchteilen.
 const RATE_LIMIT_PER_HOUR = 12;
 
+// ---------------------------------------------------------------------------
+// Missbrauchsschutz in Schichten (05.08.2026). Das Stundenlimit allein
+// schützt nicht: Magic Link = beliebig viele Wegwerf-Konten. Deshalb:
+//
+// 1. SCORE-PFLICHT: Die Transformation ist die Kundengewinnungs-Maschine,
+//    nicht ein anonymer Bild-Generator. Wer generieren will, hat den
+//    MaleMetrix-Score absolviert (score_results-Zeile am Konto) — echte
+//    Kunden (aktives Entitlement) sind ausgenommen.
+// 2. FREIKONTINGENT: Nicht-Kunden haben ein LIFETIME-Kontingent von
+//    FREE_LIFETIME_IMAGES erfolgreichen Bildern (fehlgeschlagene zählen
+//    nicht). Danach: Kauf (Protokoll/Coaching) statt weiterer Gratisbilder.
+//    Kunden behalten das normale Stundenlimit.
+// 3. IP-LIMIT: Wegwerf-Konten laufen meist über EINE Leitung. Pro IP
+//    (SHA-256 mit serverseitigem Schlüssel — die rohe IP wird nie
+//    gespeichert) gilt ein eigenes Stundenlimit über alle Konten hinweg.
+// 4. TAGES-DECKEL: Globale Kosten-Notbremse über alle Nutzer. Bei ~4 Cent
+//    pro Bild deckelt GLOBAL_DAILY_CAP den schlimmsten Tag auf ~16 €.
+// ---------------------------------------------------------------------------
+const FREE_LIFETIME_IMAGES = 4;        // = 2 komplette Läufe à 2 Ziele
+const IP_LIMIT_PER_HOUR = 24;          // über alle Konten einer IP
+const GLOBAL_DAILY_CAP = 400;          // Bilder/24h gesamt, Notbremse
+
+// Entitlements, die als "Kunde" zählen (Score-Pflicht + Freikontingent
+// entfallen; das Stundenlimit bleibt). Muss zur Kauf-Pipeline passen:
+// mm-commerce vergibt protocol + twelve_week, coaching ist manuell.
+const CUSTOMER_KEYS = new Set(["protocol", "twelve_week", "coaching", "advanced_library"]);
+
+// IP pseudonymisieren: SHA-256 über serverseitigen Schlüssel + IP. Einweg,
+// nur für Ratenzählung — die rohe IP verlässt den Handler nie.
+async function hashIp(ip: string): Promise<string | null> {
+  if (!ip) return null;
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "mm";
+  const data = new TextEncoder().encode(`${key}:transform-ip:${ip}`);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+function clientIp(req: Request): string {
+  const fwd = req.headers.get("x-forwarded-for") || "";
+  return (fwd.split(",")[0] || "").trim() || req.headers.get("cf-connecting-ip") || "";
+}
+
 // Foto als Data-URI. Der Client verkleinert auf max. 1280 px JPEG (~200-500 KB
 // Base64); 8 MB ist die harte Grenze gegen Roh-Uploads direkt aus der Kamera.
 const MAX_BODY_BYTES = 8_000_000;
@@ -134,12 +175,53 @@ Deno.serve(async (req) => {
     if (authRes.errorResponse) return authRes.errorResponse;
     const user = authRes.user;
 
+    // --- Kunde oder Interessent? Entscheidet über Score-Pflicht + Kontingent ---
+    const { data: entRows } = await admin.from("entitlements")
+      .select("product_key,status").eq("user_id", user.id).eq("status", "active");
+    const isCustomer = (entRows ?? []).some((e: { product_key: string }) => CUSTOMER_KEYS.has(e.product_key));
+
+    // --- Score-Pflicht für Nicht-Kunden: die Transformation gibt es nur
+    //     nach dem Score. Der Client synchronisiert den Score beim Login
+    //     automatisch (account.js hydrate → markDirty → flush). ---
+    if (!isCustomer) {
+      const { count: scoreCount } = await admin.from("score_results")
+        .select("user_id", { count: "exact", head: true }).eq("user_id", user.id);
+      if ((scoreCount ?? 0) < 1) return json({ error: "score_required" }, 403);
+    }
+
     // --- Rate-Limit pro Nutzer (nur die eigenen Transform-Aufrufe zählen,
     //     damit Intelligence-Fragen das Bild-Kontingent nicht auffressen) ---
     const oneHourAgo = new Date(Date.now() - 3600_000).toISOString();
     const { count } = await admin.from("ai_request_log").select("id", { count: "exact", head: true })
       .eq("user_id", user.id).eq("task", "BODY_TRANSFORM").gte("created_at", oneHourAgo);
     if ((count ?? 0) >= RATE_LIMIT_PER_HOUR) return json({ error: "rate_limited" }, 429);
+
+    // --- Lifetime-Freikontingent für Nicht-Kunden (nur ERFOLGREICHE Bilder
+    //     zählen — ein Provider-Fehler frisst kein Gratiskontingent) ---
+    let freeUsed = 0;
+    if (!isCustomer) {
+      const { count: okCount } = await admin.from("ai_request_log")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id).eq("task", "BODY_TRANSFORM").eq("ok", true);
+      freeUsed = okCount ?? 0;
+      if (freeUsed >= FREE_LIFETIME_IMAGES) return json({ error: "free_quota_exhausted" }, 403);
+    }
+
+    // --- IP-Limit über alle Konten: Wegwerf-Konten teilen sich die Leitung ---
+    const ipHash = await hashIp(clientIp(req));
+    if (ipHash) {
+      const { count: ipCount } = await admin.from("ai_request_log")
+        .select("id", { count: "exact", head: true })
+        .eq("ip_hash", ipHash).eq("task", "BODY_TRANSFORM").gte("created_at", oneHourAgo);
+      if ((ipCount ?? 0) >= IP_LIMIT_PER_HOUR) return json({ error: "rate_limited" }, 429);
+    }
+
+    // --- Globaler Tages-Deckel: Kosten-Notbremse, unabhängig vom Nutzer ---
+    const oneDayAgo = new Date(Date.now() - 86_400_000).toISOString();
+    const { count: dayCount } = await admin.from("ai_request_log")
+      .select("id", { count: "exact", head: true })
+      .eq("task", "BODY_TRANSFORM").gte("created_at", oneDayAgo);
+    if ((dayCount ?? 0) >= GLOBAL_DAILY_CAP) return json({ error: "daily_capacity" }, 503);
 
     // --- Payload-Validierung: genau drei Felder, alle hart geprüft ---
     const currentKg = Number(body.current_kg);
@@ -179,7 +261,7 @@ Deno.serve(async (req) => {
     });
 
     if (!r.ok) {
-      await admin.from("ai_request_log").insert({ user_id: user.id, task: "BODY_TRANSFORM", model: FAL_MODEL, ok: false });
+      await admin.from("ai_request_log").insert({ user_id: user.id, task: "BODY_TRANSFORM", model: FAL_MODEL, ok: false, ip_hash: ipHash });
       const errBody = await r.text().catch(() => "");
       // 422 = das Modell lehnt den Inhalt ab (z. B. komplett unbekleidetes
       // Foto). Dem Nutzer ehrlich sagen, statt "Serverfehler" zu heucheln.
@@ -194,13 +276,16 @@ Deno.serve(async (req) => {
     const d = await r.json();
     const url = d?.images?.[0]?.url ?? null;
     if (!url) {
-      await admin.from("ai_request_log").insert({ user_id: user.id, task: "BODY_TRANSFORM", model: FAL_MODEL, ok: false });
+      await admin.from("ai_request_log").insert({ user_id: user.id, task: "BODY_TRANSFORM", model: FAL_MODEL, ok: false, ip_hash: ipHash });
       return json({ error: "provider_error" }, 502);
     }
 
     // --- Observability ohne Bilddaten (§23/§253) ---
-    await admin.from("ai_request_log").insert({ user_id: user.id, task: "BODY_TRANSFORM", model: FAL_MODEL, ok: true });
-    return json({ image_url: url, target_kg: targetKg, model: FAL_MODEL });
+    await admin.from("ai_request_log").insert({ user_id: user.id, task: "BODY_TRANSFORM", model: FAL_MODEL, ok: true, ip_hash: ipHash });
+    // Nicht-Kunden sehen ihr Rest-Kontingent — die Seite macht daraus einen
+    // ehrlichen Zähler ("noch X Gratis-Bilder") statt einer Überraschungswand.
+    const freeRemaining = isCustomer ? null : Math.max(0, FREE_LIFETIME_IMAGES - freeUsed - 1);
+    return json({ image_url: url, target_kg: targetKg, model: FAL_MODEL, free_remaining: freeRemaining });
   } catch (e) {
     return json({ error: "internal", detail: String((e as Error)?.message ?? e).slice(0, 200) }, 500);
   }
