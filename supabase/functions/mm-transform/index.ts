@@ -73,6 +73,21 @@ function lookFragment(cut: boolean, look: string, enhanced: boolean): string {
   return "Athletic build: fuller chest, shoulders and arms, balanced proportions. ";
 }
 
+// Definition skaliert MIT dem Gewichtsverlust. Live-Befund 05.08.2026:
+// Ohne diese Staffel machte das Modell −16 kg „insgesamt dünner", aber
+// WEICHER als −8 kg — physiologisch verkehrt herum. Je größer das Defizit,
+// desto niedriger das Körperfett, desto härter die Definition.
+function cutIntensity(pct: number): string {
+  if (pct >= 15) {
+    return "At this large loss he is VERY lean (low body fat): a sharply defined six-pack, " +
+      "clear muscle separation, visible veins on the arms, tight chest and a leaner, more angular face. ";
+  }
+  if (pct >= 8) {
+    return "He is now lean: clearly visible abs, defined waist, noticeably slimmer face. ";
+  }
+  return "He is moderately leaner: flatter stomach, first hints of abs. ";
+}
+
 function buildPrompt(currentKg: number, targetKg: number, look: string, enhanced: boolean): string {
   const delta = Math.round(Math.abs(currentKg - targetKg));
   const pct = Math.round((delta / currentKg) * 100);
@@ -85,8 +100,11 @@ function buildPrompt(currentKg: number, targetKg: number, look: string, enhanced
     return (
       `Edit this photo: show the exact same man as if he weighed ${targetKg} kg ` +
       `instead of his current ${currentKg} kg — he has lost ${delta} kg (about ${pct}% ` +
-      `of his body weight) through training and nutrition. Visibly reduced body fat: ` +
-      `slimmer waist, flatter stomach, reduced chest and face fat. ` +
+      `of his body weight) through training and nutrition. He kept his muscle: the ` +
+      `weight lost is body fat. ` + cutIntensity(pct) +
+      `IMPORTANT: muscle definition INCREASES with the amount of weight lost — at this ` +
+      `weight he must look MORE defined than at any smaller loss. Never soften or smooth ` +
+      `the abdominal area. ` +
       lookFragment(true, look, enhanced) + identity
     );
   }
