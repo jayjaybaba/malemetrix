@@ -18,7 +18,7 @@ set -uo pipefail
 
 BASE="${SUPABASE_FUNCTIONS_URL:-https://vczhfyxltiyvtvppfodt.supabase.co/functions/v1}"
 ORIGIN="https://www.malemetrix.com"
-FUNCS="mm-commerce resolve-product-access mm-ai delete-account score-telemetry send-brief"
+FUNCS="mm-commerce resolve-product-access mm-ai delete-account score-telemetry send-brief mm-transform"
 
 printf "MaleMetrix — Edge Functions, live gemessen (%s)\n" "$(date -u +%Y-%m-%dT%H:%MZ)"
 printf "%-26s %-10s %s\n" "FUNCTION" "STATUS" "BEFUND"
