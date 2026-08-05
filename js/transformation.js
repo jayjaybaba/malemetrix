@@ -123,7 +123,7 @@
     rate_limited: "Stundenlimit erreicht (12 Bilder). Versuch es in einer Stunde wieder.",
     provider_not_configured: "Die Bildgenerierung ist serverseitig noch nicht freigeschaltet (API-Key fehlt).",
     provider_auth_failed: "Der Bild-Dienst lehnt unseren Schlüssel ab — wir kümmern uns darum.",
-    content_rejected: "Das Bildmodell hat dieses Foto abgelehnt. Nutz ein Foto in Unterwäsche oder Sportkleidung — vollständig unbekleidete Fotos werden vom Modell blockiert.",
+    content_rejected: "Das Bildmodell hat dieses Foto abgelehnt. Oberkörperfrei ist kein Problem — nur komplett nackte Fotos (ganz ohne Unterwäsche) blockiert das Modell. Zieh Shorts oder Unterwäsche an und versuch es erneut.",
     invalid_image: "Das Foto konnte nicht verarbeitet werden. Bitte JPG/PNG verwenden.",
     payload_too_large: "Das Foto ist zu groß. Bitte ein kleineres Foto wählen.",
     unreachable: "Server nicht erreichbar — Verbindung prüfen und erneut versuchen."
@@ -138,8 +138,8 @@
   var s1 = el("section", "trf-step");
   s1.appendChild(el("h2", "h-sub", "1 · Dein Foto"));
   s1.appendChild(el("p", "small trf-hint",
-    "Frontal, gut beleuchtet, ganzer Oberkörper oder ganzer Körper. Unterwäsche oder enge Sportkleidung reicht völlig — " +
-    "<strong>vollständig unbekleidete Fotos lehnt das Bildmodell ab</strong> und das Ergebnis wäre dasselbe. " +
+    "<strong>Oberkörperfrei ist ideal</strong> — frontal, gut beleuchtet, in Shorts oder Unterwäsche. So sieht das Modell Bauch, Taille und Brust direkt, und die Transformation wird maximal realistisch. " +
+    "Einzige Grenze: komplett nackte Fotos (ganz ohne Unterwäsche) lehnt das Bildmodell ab. " +
     "Dein Foto wird <strong>nicht gespeichert</strong>: Es geht einmalig zur Generierung an den Bild-Dienst und bleibt sonst auf deinem Gerät."));
   var drop = el("div", "trf-drop");
   drop.innerHTML = '<span class="trf-drop-text">Foto hierher ziehen oder klicken</span>';

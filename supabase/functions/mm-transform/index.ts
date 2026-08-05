@@ -42,9 +42,10 @@ function buildPrompt(currentKg: number, targetKg: number): string {
   const delta = Math.round(Math.abs(currentKg - targetKg));
   const pct = Math.round((delta / currentKg) * 100);
   const identity =
-    "Keep the SAME person and identity: identical face, same pose, same clothing, " +
-    "same background, same lighting and camera angle. Photorealistic, natural skin " +
-    "texture. Change nothing except his body composition.";
+    "Keep the SAME person and identity: identical face, same pose, same clothing " +
+    "(if any — do NOT add clothing to a bare torso), same background, same lighting " +
+    "and camera angle. Photorealistic, natural skin texture. Change nothing except " +
+    "his body composition.";
   if (targetKg < currentKg) {
     return (
       `Edit this photo: show the exact same man as if he weighed ${targetKg} kg ` +
