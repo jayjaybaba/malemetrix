@@ -1,30 +1,61 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MaleMetrix Score — Finde deinen größten Engpass | Natural, TRT & Enhanced</title>
-  <meta name="description" content="Der MaleMetrix Score: Finde in wenigen Minuten deinen größten Engpass in Training, Ernährung, Schlaf und Blutwerten — kostenlos.">
+  <title>Körper-Transformation visualisieren — sieh dich mit deinem Zielgewicht | MaleMetrix</title>
+  <meta name="description" content="Foto hochladen, zwei Zielgewichte wählen — und dich selbst mit 10 oder 20 kg weniger sehen. Danach: Ernährungs-, Trainings- und Supplementplan exakt für dein gewähltes Ziel.">
   <link rel="stylesheet" href="css/fonts.css">
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23070A0F'/%3E%3Cpath d='M8.5 8.5l5.5 5.5M8.5 23.5l5.5-5.5' stroke='%23F0EEE9' stroke-width='3.4' stroke-linecap='round' fill='none'/%3E%3Cpath d='M23.5 8.5l-5.5 5.5M23.5 23.5l-5.5-5.5' stroke='%2316C4F4' stroke-width='3.4' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
-  <link rel="canonical" href="https://www.malemetrix.com/check.html">
+  <link rel="canonical" href="https://www.malemetrix.com/transformation.html">
   <meta name="theme-color" content="#070A0F">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="MaleMetrix">
   <meta property="og:locale" content="de_DE">
-  <meta property="og:title" content="MaleMetrix Score — Finde deinen größten Engpass | Natural, TRT & Enhanced">
-  <meta property="og:description" content="Kostenloser Score in ca. 7 Minuten: 12 Bereiche, dein primärer Engpass und deine Datenlücken. Adaptiv für Natural, frühere Anwendung, ärztliche TRT und Enhanced — ohne Anmeldung, ohne E-Mail.">
-  <meta property="og:url" content="https://www.malemetrix.com/check.html">
+  <meta property="og:title" content="Körper-Transformation visualisieren — sieh dich mit deinem Zielgewicht | MaleMetrix">
+  <meta property="og:description" content="Foto hochladen, zwei Zielgewichte wählen — und dich selbst mit 10 oder 20 kg weniger sehen. Danach: Ernährungs-, Trainings- und Supplementplan exakt für dein Ziel.">
+  <meta property="og:url" content="https://www.malemetrix.com/transformation.html">
   <meta property="og:image" content="https://www.malemetrix.com/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="MaleMetrix Score — Finde deinen größten Engpass | Natural, TRT & Enhanced">
-  <meta name="twitter:description" content="Kostenloser Score in ca. 7 Minuten: 12 Bereiche, dein primärer Engpass und deine Datenlücken. Adaptiv für Natural, frühere Anwendung, ärztliche TRT und Enhanced — ohne Anmeldung, ohne E-Mail.">
-  <meta name="twitter:image" content="https://www.malemetrix.com/og-image.png"></head>
+  <meta name="twitter:title" content="Körper-Transformation visualisieren | MaleMetrix">
+  <meta name="twitter:description" content="Sieh dich selbst mit deinem Zielgewicht — dann verfolge genau dieses Ziel mit Ernährungs-, Trainings- und Supplementplan.">
+  <meta name="twitter:image" content="https://www.malemetrix.com/og-image.png">
+  <style>
+    /* Seiten-eigene Bausteine — bewusst schmal, alles andere kommt aus style.css */
+    .trf-step { margin: 34px 0; }
+    .trf-hint { color: var(--muted-2); max-width: 68ch; }
+    .trf-error { color: #ff7a6e; display: block; }
+    .trf-drop { border: 1px dashed var(--line, #2a3140); border-radius: 12px; padding: 34px 18px; text-align: center; cursor: pointer; margin-top: 14px; transition: border-color .15s; }
+    .trf-drop.is-over, .trf-drop:hover { border-color: #16C4F4; }
+    .trf-preview { max-width: 240px; max-height: 320px; border-radius: 10px; margin-top: 14px; display: block; }
+    .file-hidden { display: none; }
+    .trf-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 14px; max-width: 720px; }
+    .trf-field span { display: block; font-size: .72rem; color: var(--muted-2); margin-bottom: 5px; font-family: var(--font-mono); letter-spacing: .06em; }
+    .trf-field input, .trf-field select { width: 100%; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--line, #2a3140); background: rgba(255,255,255,.03); color: inherit; font: inherit; }
+    .trf-login { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+    .trf-login input { padding: 10px 12px; border-radius: 9px; border: 1px solid var(--line, #2a3140); background: rgba(255,255,255,.03); color: inherit; font: inherit; min-width: 240px; }
+    .trf-gate { margin-bottom: 14px; }
+    #trfRun { margin-top: 6px; }
+    .trf-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 22px; }
+    .trf-card { border: 1px solid var(--line, #2a3140); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+    .trf-card-title { font-family: var(--font-mono); font-size: .78rem; letter-spacing: .1em; color: var(--muted-2); }
+    .trf-card-img { min-height: 220px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.02); border-radius: 9px; overflow: hidden; }
+    .trf-card-img img { max-width: 100%; max-height: 360px; display: block; }
+    .trf-spinner { width: 26px; height: 26px; border: 3px solid rgba(255,255,255,.15); border-top-color: #16C4F4; border-radius: 50%; animation: trfspin 0.9s linear infinite; }
+    @keyframes trfspin { to { transform: rotate(360deg); } }
+    .trf-plan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 18px; }
+    .trf-plan-card { border: 1px solid var(--line, #2a3140); border-radius: 12px; padding: 18px; }
+    .trf-plan-title { font-size: 1.05rem; margin-bottom: 10px; }
+    .trf-plan-card ul { padding-left: 18px; margin: 8px 0; }
+    .trf-plan-card li { margin: 6px 0; font-size: .92rem; line-height: 1.45; }
+    .trf-macros li { list-style: none; margin-left: -18px; }
+  </style>
+</head>
 <body>
 
 <header class="site-header" id="siteHeader">
@@ -100,53 +131,23 @@
 
 <main>
 
-  <!-- ============================ INTRO ============================ -->
-  <section class="page-head" id="checkIntro">
-  <div class="mm-ambient" aria-hidden="true"><video muted loop playsinline preload="none" poster="assets/hero/mm-home-hero.jpg"><source src="assets/hero/mm-home-hero.mp4" type="video/mp4"><source src="assets/hero/mm-home-hero.webm" type="video/webm"></video><div class="scrim"></div></div>
+  <section class="page-head" style="padding-bottom:18px">
     <div class="hero-bg"></div>
-    <div class="hero-grid-bg"></div>
-    <div class="container-narrow" style="position:relative">
-
-      <!-- P15: VS2-Instrument statt Legacy-Alert (kein Emoji, Mono-Systemzeile) -->
-      <div id="existingResult" style="display:none;margin-bottom:28px;border-top:1px solid var(--hairline);border-bottom:1px solid var(--hairline);padding:16px 0">
-        <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
-          <span style="font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.2em;color:var(--status-active)">MM / SCORE · GESPEICHERT</span>
-          <span data-score class="mono" style="font-weight:700"></span>
-          <button class="btn btn-sm btn-dark" data-show style="margin-left:auto">Letztes Ergebnis ansehen</button>
-        </div>
-      </div>
-
-      <span class="eyebrow">Kostenlos · ca. 7 Minuten · sofortiges Ergebnis</span>
-      <h1 class="h-display">Finde deinen <span class="text-grad">größten Engpass</span>.</h1>
-      <p class="lead" style="margin:20px 0 34px">Der MaleMetrix Score analysiert Training, Körperkomposition, Schlaf, Stoffwechsel und deinen individuellen Kontext.</p>
-
-      <button class="btn btn-primary btn-lg btn-arrow" id="btnStartCheck" data-track="score_start_click">SCORE STARTEN</button>
-      <p class="small" style="color:var(--muted-2);margin-top:16px">Der Score dient der Orientierung und ersetzt keine medizinische Diagnose oder ärztliche Beratung.</p>
+    <div class="container" style="position:relative">
+      <div class="os14-sysline">MM / TRANSFORM</div>
+      <h1 class="h-display" style="max-width:840px;font-size:clamp(2.4rem,7vw,4.2rem);line-height:0.98"><span data-i18n="trf.h1a">Sieh dein Ziel,</span> <span class="text-grad" data-i18n="trf.h1b">bevor du startest</span>.</h1>
+      <p class="lead" style="max-width:56ch;margin-top:18px" data-i18n="trf.lead">Lade ein Foto von dir hoch und sieh dich selbst mit zwei verschiedenen Zielgewichten — fotorealistisch, generiert aus deinem eigenen Bild. Dann wählst du EIN Ziel, und genau dafür bekommst du Ernährungsplan, Trainingsplan und Supplementplan.</p>
+      <p class="small" style="color:var(--muted-2);margin-top:12px;font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.16em" data-i18n="trf.eyebrow">Foto wird nicht gespeichert · Pläne deterministisch berechnet</p>
     </div>
   </section>
 
-  <!-- ============================ WIZARD ============================ -->
-  <section class="page-head" id="checkWizard" style="display:none">
-    <div class="wizard-wrap" style="position:relative">
-      <div class="wizard-progress">
-        <div class="wizard-progress-top">
-          <span id="wizModule">—</span>
-          <span id="wizCount">—</span>
-        </div>
-        <div class="bar-track"><div class="bar-fill high" id="wizBar" style="width:0%"></div></div>
-      </div>
-
-      <div id="wizBody"></div>
-
-      <div class="wizard-nav">
-        <button class="btn btn-ghost" id="wizBack">← Zurück</button>
-        <button class="btn btn-primary" id="wizNext">Weiter →</button>
+  <section class="section-tight" style="padding-top:8px">
+    <div class="container" style="max-width:980px">
+      <div id="mmTransform">
+        <noscript><p>Diese Seite braucht JavaScript.</p></noscript>
+        <p class="small" style="color:var(--muted-2)">Wird geladen …</p>
       </div>
     </div>
-  </section>
-
-  <!-- ============================ ERGEBNIS ============================ -->
-  <section class="page-head" id="checkResult" style="display:none">
   </section>
 
 </main>
@@ -208,14 +209,6 @@
 <script src="js/i18n.js"></script>
 <script src="js/main.js"></script>
 <script src="js/account.js"></script>
-<script>try{window.MM&&MM.account&&MM.account.init();}catch(e){}</script>
-<script src="js/score-telemetry.js"></script>
-<script src="js/focus.js"></script>
-<script src="js/points.js"></script>
-<script src="js/check-data.js"></script>
-<!-- Übergang zur Anabolen Matrix: reine Lese-/Darstellungsschicht, keine
-     Score-Logik. Muss vor check.js stehen, weil renderResult() sie liest. -->
-<script src="js/matrix-cta.js"></script>
-<script src="js/check.js"></script>
+<script src="js/transformation.js"></script>
 </body>
 </html>

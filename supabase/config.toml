@@ -66,6 +66,13 @@ verify_jwt = false
 [functions.send-brief]
 verify_jwt = false
 
+# mm-transform: identischer ES256-Fall wie mm-ai (P0.6) — der Handler
+# validiert den Bearer-Token selbst über service.auth.getUser(jwt) und
+# rate-limitiert pro Nutzer (Bildgenerierung kostet echtes Geld).
+# verify_jwt=false macht die Function NICHT öffentlich.
+[functions.mm-transform]
+verify_jwt = false
+
 # mm-translate: bewusst ÖFFENTLICH — anonyme Besucher haben keinen Token, und
 # ein Login-Zwang nur zum Lesen der englischen Fassung wäre absurd. Schutz über
 # Origin-Allowlist, harte Größengrenzen pro Anfrage, Monats- und Stundenbudget
