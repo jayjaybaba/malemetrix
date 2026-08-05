@@ -48,8 +48,8 @@ const GLOBAL_DAILY_CAP = 400;          // Bilder/24h gesamt, Notbremse
 
 // "Kunde" = irgendein aktives Entitlement ODER die server-vergebene
 // Owner-Rolle (user_roles — der Betreiber testet viel und kauft nicht bei
-// sich selbst). Kunden überspringen Score-Pflicht und Freikontingent;
-// Stundenlimit, IP-Limit und Tages-Deckel gelten weiter für alle.
+// sich selbst). Kunden überspringen das Freikontingent; Stundenlimit,
+// IP-Limit und Tages-Deckel gelten weiter für alle.
 
 // IP pseudonymisieren: SHA-256 über serverseitigen Schlüssel + IP. Einweg,
 // nur für Ratenzählung — die rohe IP verlässt den Handler nie.
@@ -218,7 +218,12 @@ Deno.serve(async (req) => {
       .eq("task", "BODY_TRANSFORM").gte("created_at", oneDayAgo);
     if ((dayCount ?? 0) >= GLOBAL_DAILY_CAP) return json({ error: "daily_capacity" }, 503);
 
-    // --- Payload-Validierung: genau drei Felder, alle hart geprüft ---
+    // --- Einwilligung (P0): ohne aktive Bestätigung im Client (18+, eigenes
+    //     Foto, Nutzungsrecht, Verarbeitung) wird nichts generiert. Der
+    //     Server erzwingt das Merkmal, gespeichert wird es nicht. ---
+    if (body.consent !== true) return json({ error: "consent_required" }, 400);
+
+    // --- Payload-Validierung: alle Felder hart geprüft ---
     const currentKg = Number(body.current_kg);
     const targetKg = Number(body.target_kg);
     const image = String(body.image ?? "");
@@ -244,9 +249,21 @@ Deno.serve(async (req) => {
     if (!falKey) return json({ error: "provider_not_configured" }, 503);
 
     // --- Provider-Aufruf (synchron; fal.run wartet auf das Ergebnis) ---
+    // Datensparsamkeit (P0, fal-Doku "Data Retention" + "Media Expiration"):
+    // · x-fal-store-io: 0 → die Request-Payloads (inkl. Foto-Data-URI) werden
+    //   bei fal NICHT gespeichert (Standard wäre 30 Tage).
+    // · x-fal-object-lifecycle-preference → generierte CDN-Bilder verfallen
+    //   nach 1 Stunde statt der Standard-Mindestdauer von 7 Tagen.
+    // Header-Versand ist Code-Fakt; die tatsächliche Löschung beim Anbieter
+    // ist extern und hier nicht messbar — so auch dokumentiert.
     const r = await fetch(FAL_URL, {
       method: "POST",
-      headers: { "content-type": "application/json", authorization: `Key ${falKey}` },
+      headers: {
+        "content-type": "application/json",
+        authorization: `Key ${falKey}`,
+        "x-fal-store-io": "0",
+        "x-fal-object-lifecycle-preference": JSON.stringify({ expiration_duration_seconds: 3600 }),
+      },
       body: JSON.stringify({
         prompt: buildPrompt(currentKg, targetKg, look, enhanced),
         image_urls: [image],

@@ -125,13 +125,26 @@
         <li>Du kannst deine Einwilligung jederzeit mit Wirkung für die Zukunft widerrufen (formlos per E-Mail).</li>
       </ul>
 
-      <h2>5. Kontaktformular, Terminanfrage, Bestellungen</h2>
+      <h2>5. Transformation (KI-Körpervisualisierung)</h2>
+      <p>Auf <a href="transformation.html">transformation.html</a> kannst du ein Foto von dir hochladen und daraus KI-Visualisierungen möglicher Zielzustände deines Körpers erstellen lassen. Dafür gilt:</p>
+      <ul>
+        <li><strong>Zweck:</strong> Erstellung einer KI-Bildvisualisierung („mögliches Ziel“) auf Basis deines Fotos sowie Berechnung von Zielvorschlägen und Plänen aus deinen Angaben. Die Visualisierung ist eine <strong>KI-Darstellung einer möglichen Richtung — kein echtes Zukunftsfoto und keine Ergebnisgarantie</strong>.</li>
+        <li><strong>Verarbeitete Daten:</strong> dein hochgeladenes Foto (im Browser verkleinert), Angaben wie Gewicht, Größe, Taillenumfang, Körperform-Einschätzung und Zielwerte, sowie dein MaleMetrix-Konto (die Generierung erfordert ein Konto und wird deinem Nutzer zugeordnet).</li>
+        <li><strong>Übertragung:</strong> Das Foto wird über unsere Server-Funktion (Supabase Edge Function, EU-Region) an den externen Bildverarbeitungsdienst <strong>fal.ai</strong> (Features and Labels, Inc., USA) übertragen, der das Zielbild berechnet. Dabei kann eine Verarbeitung in einem Drittland (USA) stattfinden.</li>
+        <li><strong>Rechtsgrundlage:</strong> deine <strong>ausdrückliche Einwilligung</strong> (Art. 6 Abs. 1 lit. a, bei Körperdaten Art. 9 Abs. 2 lit. a DSGVO), die du vor jeder Generierung aktiv bestätigst (Alter 18+, eigenes Foto, Nutzungsberechtigung, Verarbeitung). Ohne Bestätigung findet keine Übertragung statt. Du kannst die Einwilligung jederzeit mit Wirkung für die Zukunft widerrufen (formlos per E-Mail); bereits erfolgte Generierungen bleiben davon unberührt.</li>
+        <li><strong>Speicherung bei MaleMetrix:</strong> Wir speichern das hochgeladene Foto <strong>nicht dauerhaft</strong> — es existiert bei uns nur im Arbeitsspeicher der Server-Funktion während der Anfrage. In unseren Sicherheits-Protokollen landen ausschließlich technische Angaben ohne Bilddaten (Aufgabe, Modellname, Erfolg/Fehler, Zeitpunkt, pseudonymisierter IP-Hash zur Missbrauchsabwehr).</li>
+        <li><strong>Speicherung beim Bildverarbeitungsdienst:</strong> Wir senden an fal.ai technische Anweisungen, die Anfrage-Daten nicht zu speichern (<code>x-fal-store-io: 0</code>) und generierte Bilder nach <strong>einer Stunde</strong> verfallen zu lassen (<code>x-fal-object-lifecycle-preference</code>). Diese Anweisungen entsprechen der Dokumentation des Anbieters; die tatsächliche Löschung liegt technisch beim Anbieter. Es gelten zusätzlich die Datenschutzhinweise von fal.ai.</li>
+        <li><strong>Generierte Bilder:</strong> werden dir im Browser angezeigt und von uns nicht dauerhaft gespeichert; die Seite persistiert keine Bild-Adressen. Lädst du ein Bild herunter oder teilst es, liegt die weitere Verwendung bei dir — jedes generierte Bild ist sichtbar als KI-Visualisierung gekennzeichnet.</li>
+        <li><strong>Lokal gespeichert (localStorage):</strong> deine Zielwerte und Rahmenangaben, damit die Seite deinen Stand behalten kann — nicht das Foto.</li>
+      </ul>
+
+      <h2>6. Kontaktformular, Terminanfrage, Bestellungen</h2>
       <p>Wenn du uns über ein Formular kontaktierst, einen Termin anfragst oder bestellst, verarbeiten wir die von dir angegebenen Daten (z.&nbsp;B. Name, E-Mail-Adresse, Anschrift, Bestelldaten) zur Bearbeitung deiner Anfrage bzw. zur Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO). Für den technischen Versand der Formulardaten nutzen wir den Dienst <strong>FormSubmit</strong> (formsubmit.co); dabei werden die Formularinhalte an deren Server übertragen und an unsere E-Mail-Adresse weitergeleitet. Alternativ (Fallback) öffnet die Website dein eigenes E-Mail-Programm — dann findet keine Übertragung an Dritte statt.</p>
 
-      <h2>6. Hosting / Server-Logs</h2>
+      <h2>7. Hosting / Server-Logs</h2>
       <p>Beim Aufruf der Website verarbeitet der Hosting-Anbieter automatisch technisch notwendige Daten (IP-Adresse, Datum/Uhrzeit, abgerufene Datei, Browsertyp), um die Website auszuliefern und die Sicherheit zu gewährleisten (Art. 6 Abs. 1 lit. f DSGVO). Hosting-Anbieter: GitHub, Inc. (GitHub Pages), 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, USA. Die Verarbeitung erfolgt auf Grundlage des GitHub Data Protection Agreement inkl. EU-Standardvertragsklauseln. Server-Logs verbleiben bei GitHub; wir haben darauf keinen Zugriff.</p>
 
-      <h2>7. Reichweitenmessung (optional)</h2>
+      <h2>8. Reichweitenmessung (optional)</h2>
       <p>Wir messen die Nutzung dieser Website <strong>ohne Cookies</strong> und <strong>ohne personenbezogene Profile</strong>. Rechtsgrundlage ist unser berechtigtes Interesse an einer statistischen Auswertung der Websitenutzung (Art.&nbsp;6 Abs.&nbsp;1 lit.&nbsp;f DSGVO). Im Einsatz sind — je nach Konfiguration — folgende Bausteine:</p>
       <ul>
         <li><strong>Eigene Nutzungsmessung (MaleMetrix, Supabase-Server in der EU).</strong> Wir erfassen anonyme Ereignisse wie „Seite aufgerufen“ oder „Rechner benutzt“. Gespeichert werden ausschließlich: eine <strong>Zufalls-Kennung pro Browser-Sitzung</strong> (nicht geräteübergreifend, keiner Person zuzuordnen), der Name des Ereignisses, ein Seiten-Kürzel, die Geräteklasse (Mobil/Tablet/Desktop) sowie der <strong>Host</strong> der verweisenden Seite (z.&nbsp;B. „google.com“). Ausdrücklich <strong>nicht</strong> gespeichert werden: IP-Adresse, Browser-Kennung (User-Agent), Cookies, Konto- oder Nutzerkennung, vollständige Adressen der verweisenden Seite und damit auch <strong>keine Suchbegriffe</strong>. Es gibt kein Freitextfeld; jedes Feld ist technisch auf ein festes Muster begrenzt. Die Daten sind für uns nur in aggregierter Form (Summen und Ranglisten) einsehbar und werden nach spätestens 180&nbsp;Tagen gelöscht.</li>
@@ -141,24 +154,24 @@
       </ul>
       <p><strong>Hinweis:</strong> Welche dieser Bausteine aktiv sind, steuert die Konfiguration in <code>js/config.js</code>; ohne hinterlegten Dienst findet die jeweilige Messung nicht statt.</p>
 
-      <h2>8. Schriftarten</h2>
+      <h2>9. Schriftarten</h2>
       <p>Alle Schriftarten dieser Website sind <strong>lokal eingebunden</strong>. Es findet keine Verbindung zu Google Fonts oder anderen externen Schriftdiensten statt; deine IP-Adresse wird dafür an niemanden übertragen.</p>
 
-      <h2>9. Zahlung</h2>
+      <h2>10. Zahlung</h2>
       <p>Bei Zahlung per Überweisung erhalten wir die von deiner Bank übermittelten Daten.</p>
       <p>Bei Zahlung per <strong>PayPal</strong> findet die Zahlung auf der Plattform von PayPal statt; es gelten zusätzlich die Datenschutzhinweise von PayPal.</p>
       <p>Wählst du <strong>Apple&nbsp;Pay, Google&nbsp;Pay, Kreditkarte oder Klarna</strong>, leiten wir dich auf eine Bezahlseite von <strong>Stripe</strong> (Stripe Payments Europe, Ltd., Dublin, Irland) weiter. Dabei werden deine E-Mail-Adresse und deine Bestellnummer an Stripe übermittelt, damit sich die Zahlung deiner Bestellung zuordnen lässt; alle Zahlungsdaten — insbesondere Karten- und Gerätedaten — gibst du ausschließlich bei Stripe ein und sie werden uns zu keinem Zeitpunkt bekannt. Rechtsgrundlage ist die Erfüllung des Kaufvertrags (Art.&nbsp;6 Abs.&nbsp;1 lit.&nbsp;b DSGVO). Es gelten zusätzlich die <a href="https://stripe.com/de/privacy" target="_blank" rel="noopener" style="text-decoration:underline">Datenschutzhinweise von Stripe</a>.</p>
 
-      <h2>10. Speicherdauer</h2>
+      <h2>11. Speicherdauer</h2>
       <p>Wir speichern personenbezogene Daten nur so lange, wie es für die genannten Zwecke erforderlich ist oder gesetzliche Aufbewahrungspflichten (z.&nbsp;B. 10 Jahre für Rechnungsdaten nach § 147 AO) bestehen.</p>
 
-      <h2>11. Deine Rechte</h2>
+      <h2>12. Deine Rechte</h2>
       <p>Du hast das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) und Widerspruch (Art. 21). Außerdem kannst du dich bei einer Datenschutz-Aufsichtsbehörde beschweren. Für alle Anliegen genügt eine formlose E-Mail an <a data-mm-email href="mailto:coaching@malemetrix.de">coaching@malemetrix.de</a>.</p>
 
-      <h2>12. Keine automatisierte Entscheidungsfindung</h2>
+      <h2>13. Keine automatisierte Entscheidungsfindung</h2>
       <p>Der MaleMetrix Score ist eine Selbsteinschätzungs-Hilfe ohne Rechtswirkung. Es findet keine automatisierte Entscheidungsfindung im Sinne von Art. 22 DSGVO statt.</p>
 
-      <p class="small" style="margin-top:32px;color:var(--muted-2)">Stand: Juni 2026</p>
+      <p class="small" style="margin-top:32px;color:var(--muted-2)">Stand: August 2026</p>
     </div>
   </section>
 </main>

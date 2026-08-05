@@ -228,6 +228,7 @@
     not_signed_in: "Bitte melde dich zuerst an — die Bildgenerierung braucht ein Konto.",
     no_cloud: "Account-Sync ist auf diesem Gerät nicht aktiv — ohne Cloud-Konto keine Bildgenerierung.",
     rate_limited: "Stundenlimit erreicht. Versuch es in einer Stunde wieder.",
+    consent_required: "Ohne bestätigte Einwilligung wird nichts generiert — bitte bestätige die vier Punkte unter deinem Foto.",
     score_required: "Erst der Score, dann die Transformation: Der Score findet in ~7 Minuten deinen größten Engpass und kalibriert deinen Plan. Danach ist die Bildgenerierung freigeschaltet.",
     free_quota_exhausted: "Dein Gratis-Kontingent (4 Bilder) ist aufgebraucht. Als PROTOKOLL- oder Coaching-Kunde generierst du weiter.",
     daily_capacity: "Das Tageskontingent der Seite ist erreicht (Kostenschutz) — versuch es morgen wieder.",
@@ -249,16 +250,15 @@
   var s1 = el("section", "trf-step");
   s1.appendChild(secthead("MM / TRANSFORM · 01", "Dein Foto"));
   s1.appendChild(el("p", "trf-hint",
-    "<strong>Oberkörperfrei ist ideal</strong> — frontal, gut beleuchtet, in Shorts oder Unterwäsche. So sieht das Modell Bauch, Taille und Brust direkt, und die Transformation wird maximal realistisch. " +
-    "Einzige Grenze: komplett nackte Fotos (ganz ohne Unterwäsche) lehnt das Bildmodell ab. " +
-    "Dein Foto wird <strong>nicht gespeichert</strong>: Es geht einmalig zur Generierung an den Bild-Dienst und bleibt sonst auf deinem Gerät."));
+    "<strong>Frontal, gut beleuchtet, mindestens Kopf bis Hüfte</strong> — ideal oberkörperfrei oder in eng anliegender Sportkleidung, mit Shorts oder Unterwäsche. Keine vollständige Nacktheit, keine weiteren Personen im Bild. " +
+    "Zur Erstellung der KI-Visualisierung wird dein Foto über unseren Server an unseren Bildverarbeitungsdienst übertragen. MaleMetrix speichert das hochgeladene Foto nicht dauerhaft; Details zur Verarbeitung und Löschung stehen in der <a href=\"datenschutz.html\">Datenschutzerklärung</a>."));
   var drop = el("div", "trf-drop");
   drop.innerHTML =
     '<span class="tick tl"></span><span class="tick tr"></span><span class="tick bl"></span><span class="tick br"></span>' +
     '<div class="trf-drop-inner">' +
       '<svg class="trf-drop-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 20h16"/></svg>' +
       '<span class="trf-drop-text">FOTO HIER ABLEGEN — ODER KLICKEN</span>' +
-      '<span class="trf-drop-sub">JPG · PNG · WEBP &nbsp;·&nbsp; BLEIBT AUF DEINEM GERÄT</span>' +
+      '<span class="trf-drop-sub">JPG · PNG · WEBP &nbsp;·&nbsp; NUR ZUR GENERIERUNG ÜBERTRAGEN</span>' +
     '</div>';
   var fileIn = el("input");
   fileIn.type = "file"; fileIn.accept = "image/jpeg,image/png,image/webp"; fileIn.className = "file-hidden";
@@ -290,6 +290,39 @@
     });
   }
   s1.appendChild(drop); s1.appendChild(fileIn); s1.appendChild(photoErr);
+
+  /* --- Einwilligung (P0): VOR jeder Übertragung, keine Checkbox vorausgewählt.
+     Das Einwilligungsmerkmal lebt nur im Seitenzustand dieser Sitzung —
+     dauerhaft gespeichert wird nichts; der Server verlangt zusätzlich
+     consent:true im Payload (keine Generierung ohne Bestätigung). */
+  var consent = { age: false, self: false, rights: false, processing: false };
+  function consentOk() { return consent.age && consent.self && consent.rights && consent.processing; }
+  var consentBox = el("div", "trf-consent");
+  consentBox.appendChild(el("span", "trf-k", "Einwilligung — Pflicht vor der Generierung"));
+  var CONSENT_ITEMS = [
+    ["age", "Ich bin mindestens 18 Jahre alt."],
+    ["self", "Das Foto zeigt ausschließlich mich."],
+    ["rights", "Ich bin berechtigt, dieses Foto zu verwenden."],
+    ["processing", "Ich bin damit einverstanden, dass mein Foto zur Erstellung einer KI-Visualisierung wie in der <a href=\"datenschutz.html\">Datenschutzerklärung</a> beschrieben verarbeitet wird."]
+  ];
+  CONSENT_ITEMS.forEach(function (item) {
+    var lab = el("label", "trf-consent-item");
+    var cb = el("input");
+    cb.type = "checkbox";
+    cb.checked = false;
+    cb.addEventListener("change", function () {
+      consent[item[0]] = cb.checked;
+      if (consentOk() && !consentBox.dataset.tracked) {
+        consentBox.dataset.tracked = "1";
+        track("transform_consent_confirmed");
+      }
+      renderGate();
+    });
+    var span = el("span", null, item[1]);
+    lab.appendChild(cb); lab.appendChild(span);
+    consentBox.appendChild(lab);
+  });
+  s1.appendChild(consentBox);
   root.appendChild(s1);
 
   /* --- Schritt 2: Ziele + Transformations-Fragen --- */
@@ -544,7 +577,7 @@
   var accountState = "unknown";
   function renderGate() {
     gate.innerHTML = "";
-    if (accountState === "signed_in") { runBtn.disabled = !state.photo; return; }
+    if (accountState === "signed_in") { runBtn.disabled = !(state.photo && consentOk()); return; }
     runBtn.disabled = true;
     if (accountState === "local") {
       gate.appendChild(el("p", "trf-hint", "Auf diesem Gerät ist kein Cloud-Konto aktiv — die Bildgenerierung läuft über dein My-MaleMetrix-Konto."));
@@ -672,8 +705,21 @@
     ctx.fillText("X", x + w + size * 0.06, y);
     ctx.restore();
   }
-  // Wasserzeichen unten rechts auf das generierte Bild (liefert Data-URL
-  // oder null, wenn das CDN kein Cross-Origin-Canvas erlaubt).
+  // KI-Kennzeichnung oben links (P0 — jedes generierte Bild trägt sie im
+  // Pixelmaterial, auch nach Download) + Marken-Wasserzeichen unten rechts.
+  // Liefert Data-URL oder null, wenn das CDN kein Cross-Origin-Canvas erlaubt.
+  var AI_LABEL = "KI-VISUALISIERUNG · KEIN ECHTES ZUKUNFTSFOTO";
+  function drawAiLabel(x, cw, fs) {
+    x.save();
+    x.textBaseline = "alphabetic"; x.textAlign = "left";
+    x.font = "600 " + fs + "px 'JetBrains Mono', monospace";
+    var tw = x.measureText(AI_LABEL).width;
+    x.fillStyle = "rgba(7,10,15,0.72)";
+    x.fillRect(0, 0, Math.min(cw, tw + fs * 1.6), fs * 2.1);
+    x.fillStyle = "rgba(240,238,233,0.95)";
+    x.fillText(AI_LABEL, fs * 0.8, fs * 1.45);
+    x.restore();
+  }
   function watermark(url) {
     return loadImg(url, true).then(function (img) {
       var c = document.createElement("canvas");
@@ -689,6 +735,7 @@
       x.fillRect(c.width - tw - fs * 1.6, c.height - fs * 2.2, tw + fs * 1.6, fs * 2.2);
       x.restore();
       drawBrand(x, c.width - tw - fs * 0.8, c.height - fs * 0.75, fs);
+      drawAiLabel(x, c.width, Math.max(11, Math.round(c.width * 0.016)));
       return c.toDataURL("image/jpeg", 0.9);
     }).catch(function () { return null; });
   }
@@ -700,14 +747,15 @@
       c.width = W; c.height = H;
       var x = c.getContext("2d");
       x.fillStyle = "#070A0F"; x.fillRect(0, 0, W, H);
-      // Kopfzeile im Systemstil
+      // Kopfzeile im Systemstil — ehrlich: mögliche Zielvisualisierung,
+      // keine behauptete bereits eingetretene Transformation.
       x.font = "500 26px 'JetBrains Mono', monospace";
       x.fillStyle = "#16C4F4";
       x.fillText("MM / TRANSFORM", 48, 76);
       x.fillStyle = "rgba(255,255,255,0.35)";
-      x.fillText("BODY PREVIEW", 48, 112);
+      x.fillText("MÖGLICHE ZIELVISUALISIERUNG", 48, 112);
       // Zwei Panels
-      var top = 150, bh = 1000, gap = 10, bw = (W - 96 - gap) / 2;
+      var top = 150, bh = 980, gap = 10, bw = (W - 96 - gap) / 2;
       drawCover(x, imgs[0], 48, top, bw, bh);
       drawCover(x, imgs[1], 48 + bw + gap, top, bw, bh);
       x.strokeStyle = "rgba(255,255,255,0.14)";
@@ -722,7 +770,11 @@
         x.fillText(label, tx + 14, top + 48);
       }
       tag(48 + 18, "VORHER · " + curKg + " KG");
-      tag(48 + bw + gap + 18, "ZIEL · " + targetKg + " KG");
+      tag(48 + bw + gap + 18, "MÖGLICHES ZIEL · " + targetKg + " KG");
+      // KI-Kennzeichnung: gut sichtbar, Teil des Bildmaterials (P0).
+      x.font = "600 24px 'JetBrains Mono', monospace";
+      x.fillStyle = "#16C4F4";
+      x.fillText("KI-VISUALISIERUNG · KEIN ECHTES ZUKUNFTSFOTO", 48, top + bh + 44);
       // Fußzeile: Marke + Domain
       drawBrand(x, 48, H - 84, 44);
       x.font = "500 26px 'JetBrains Mono', monospace";
@@ -737,13 +789,13 @@
     track("transform_share");
     buildShareCard(state.photo, afterSrc, state.currentKg, t).then(function (blob) {
       if (!blob) throw new Error("blob");
-      var file = new File([blob], "malemetrix-transformation.jpg", { type: "image/jpeg" });
+      var file = new File([blob], "malemetrix-zielvisualisierung.jpg", { type: "image/jpeg" });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        return navigator.share({ files: [file], title: "Meine Transformation", text: "Meine Transformation mit MaleMetrix — malemetrix.com/transformation.html" }).catch(function () {});
+        return navigator.share({ files: [file], title: "Meine mögliche Zielvisualisierung", text: "Meine mögliche Zielvisualisierung mit MaleMetrix (KI-Visualisierung) — malemetrix.com/transformation.html" }).catch(function () {});
       }
       var a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = "malemetrix-transformation.jpg";
+      a.download = "malemetrix-zielvisualisierung.jpg";
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function () { URL.revokeObjectURL(a.href); }, 30000);
     }).catch(function () {
@@ -758,11 +810,12 @@
     view.innerHTML = "";
     view.classList.add("trf-ba");
     view.style.setProperty("--ba", "50%");
-    var b = el("img"); b.src = beforeSrc; b.alt = "Vorher"; b.draggable = false;
-    var a = el("img", "after"); a.src = afterSrc; a.alt = "Nachher"; a.draggable = false;
+    var b = el("img"); b.src = beforeSrc; b.alt = "Vorher: dein Ausgangsfoto"; b.draggable = false;
+    var a = el("img", "after"); a.src = afterSrc; a.alt = "KI-Visualisierung deines möglichen Ziels — kein echtes Zukunftsfoto"; a.draggable = false;
     view.appendChild(b); view.appendChild(a);
     view.appendChild(el("div", "trf-ba-handle"));
-    view.appendChild(el("div", "trf-ba-tags", "<span>VORHER</span><span>NACHHER</span>"));
+    view.appendChild(el("div", "trf-ba-tags", "<span>VORHER</span><span>MÖGLICHES ZIEL</span>"));
+    view.appendChild(el("div", "trf-ai-tag", "KI-VISUALISIERUNG · KEIN ECHTES ZUKUNFTSFOTO"));
     function setFrom(e) {
       var r = view.getBoundingClientRect();
       var pct = Math.max(0, Math.min(100, ((e.clientX - r.left) / r.width) * 100));
@@ -789,6 +842,7 @@
   }
   function validateInputs() {
     if (!state.photo) return "Bitte zuerst ein Foto hochladen.";
+    if (!consentOk()) return "Bitte bestätige zuerst alle vier Einwilligungspunkte unter deinem Foto — ohne sie wird nichts übertragen.";
     if (!state.currentKg || state.currentKg < 40 || state.currentKg > 300) return "Bitte dein aktuelles Gewicht angeben (40-300 kg).";
     var t = [state.targetA, state.targetB];
     for (var i = 0; i < 2; i++) {
@@ -836,7 +890,8 @@
 
       MM.account.invokeFunction("mm-transform", {
         image: state.photo, current_kg: state.currentKg, target_kg: t,
-        look: state.look, enhanced: state.mode === "enhanced"
+        look: state.look, enhanced: state.mode === "enhanced",
+        consent: true
       })
         .then(function (r) {
           p.foot.innerHTML = "";

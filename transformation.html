@@ -160,6 +160,16 @@
     .trf-cta .cp strong { color: var(--text); }
     .trf-cta .btn { margin-top: 18px; }
 
+    /* --- Einwilligung (P0): Pflicht-Checkboxen vor der Übertragung --- */
+    .trf-consent { margin-top: 22px; padding: 16px 18px; border: 1px solid var(--hairline); background: var(--surface); }
+    .trf-consent .trf-k { margin-bottom: 12px; }
+    .trf-consent-item { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; cursor: pointer; font-size: 0.9rem; line-height: 1.5; color: var(--muted); }
+    .trf-consent-item input { margin-top: 3px; width: 16px; height: 16px; flex: 0 0 auto; accent-color: var(--accent-2); }
+    .trf-consent-item a { text-decoration: underline; }
+
+    /* --- KI-Kennzeichnung auf jedem Ergebnisbild (P0) --- */
+    .trf-ai-tag { position: absolute; left: 0; bottom: 0; z-index: 2; pointer-events: none; font-family: var(--font-mono); font-size: 0.55rem; letter-spacing: 0.12em; color: rgba(240, 238, 233, 0.95); background: rgba(7, 10, 15, 0.78); padding: 5px 9px; }
+
     /* --- Score-Gate: erst der Score, dann die Bilder --- */
     .trf-scoregate { margin: 14px 0 4px; padding: 16px 18px; border-left: 2px solid var(--accent-2); background: var(--surface); }
     .trf-scoregate .gk { display: block; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.2em; color: var(--accent-2); margin-bottom: 8px; }
@@ -273,11 +283,11 @@
     <div class="container" style="position:relative">
       <div class="os14-sysline">MM / TRANSFORM · BODY PREVIEW ENGINE</div>
       <h1 class="h-display" style="max-width:920px;font-size:clamp(2.5rem,7vw,4.4rem);line-height:0.98"><span data-i18n="trf.h1a">Dein Körper in der Zukunft.</span><br><span class="text-grad" data-i18n="trf.h1b">Heute sichtbar.</span></h1>
-      <p class="lead" style="max-width:56ch;margin-top:22px" data-i18n="trf.lead">Ein Foto von dir, zwei Zielgewichte — und du siehst dich selbst, wie du nach der Transformation aussiehst. Fotorealistisch, aus deinem eigenen Bild. Dann wählst du EIN Ziel, und genau dafür bekommst du Ernährungs-, Trainings- und Supplementplan.</p>
+      <p class="lead" style="max-width:56ch;margin-top:22px" data-i18n="trf.lead">Ein Foto von dir — und MaleMetrix erstellt zwei realistische KI-Visualisierungen möglicher Zielzustände, aus deinem eigenen Bild. Du wählst EIN Ziel, und MaleMetrix baut den Weg dorthin: Ernährung, Training, System.</p>
       <div class="mm-metric-row trf-hero-metrics">
         <div class="mm-metric"><span class="v">2<small>&nbsp;VERSIONEN</small></span><span class="k">von dir selbst</span></div>
         <div class="mm-metric"><span class="v">~30<small>&nbsp;SEK</small></span><span class="k">pro Vorschau</span></div>
-        <div class="mm-metric"><span class="v">0<small>&nbsp;FOTOS</small></span><span class="k">gespeichert</span></div>
+        <div class="mm-metric"><span class="v">KI</span><span class="k">jede Visualisierung klar gekennzeichnet</span></div>
       </div>
     </div>
   </section>

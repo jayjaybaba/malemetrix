@@ -96,14 +96,41 @@ Paket → Angebot.**
   `transform_sticky_cta`, `transform_quota_wall`, `transform_quota_cta`,
   `transform_cta_mymm`.
 
-## Datenfluss & Datenschutz (bewusste Entscheidungen)
+## Datenfluss & Datenschutz (P0-Stand, ehrlich dokumentiert)
 
-- Das Foto wird **nirgends gespeichert**: nicht im localStorage, nicht in
-  Supabase. Es geht als Data-URI (clientseitig auf 1280 px JPEG verkleinert)
-  durch die Edge Function an fal.ai und existiert bei uns nur im Speicher der
-  Anfrage. In `ai_request_log` landen nur `task/model/ok`.
-- Generierte Bilder liegen auf dem fal.ai-CDN (deren Aufbewahrung); die Seite
-  persistiert nur Gewichte/Ziel/Rahmendaten (`mm_transform_v1`), nie Bild-URLs.
+- **Tatsächlicher Datenfluss:** Das Foto wird clientseitig auf 1280 px JPEG
+  verkleinert und als Data-URI über die Edge Function an **fal.ai (USA)**
+  übertragen — die Seite sagt das dem Nutzer VOR dem Upload so (keine
+  „bleibt auf deinem Gerät"-Behauptungen mehr). Bei MaleMetrix existiert das
+  Foto nur im Arbeitsspeicher der Anfrage: nicht im localStorage, nicht in
+  Supabase-Tabellen. In `ai_request_log` landen nur `task/model/ok/ip_hash`
+  — nie Bilddaten oder Bild-URLs.
+- **Datensparsamkeit bei fal.ai (implementiert, Header-Versand = Code-Fakt):**
+  `x-fal-store-io: 0` (Request-Payloads werden laut fal-Doku „Data
+  Retention" nicht gespeichert; Standard wären 30 Tage) und
+  `x-fal-object-lifecycle-preference: {"expiration_duration_seconds":3600}`
+  (generierte CDN-Bilder verfallen laut fal-Doku „Media Expiration" nach
+  1 h statt ≥7 Tagen). **Offener Punkt:** die tatsächliche Löschung passiert
+  beim Anbieter und ist von uns nicht direkt messbar — dokumentiert, nicht
+  behauptet.
+- **Einwilligung (Pflicht):** Vier nicht vorausgewählte Checkboxen (18+,
+  eigenes Foto, Nutzungsrecht, Verarbeitung) VOR jeder Übertragung; der
+  Client blockiert ohne sie, der Server verlangt zusätzlich `consent:true`
+  (`consent_required`, 400). Das Merkmal lebt nur im Sitzungszustand und
+  wird nicht dauerhaft gespeichert.
+- **KI-Kennzeichnung:** „KI-VISUALISIERUNG · KEIN ECHTES ZUKUNFTSFOTO" liegt
+  als DOM-Badge auf jedem Ergebnis-Panel UND wird in das Pixelmaterial
+  gerendert (Wasserzeichen-Canvas → auch Downloads tragen es) sowie auf die
+  Share-Card gezeichnet. Share-Wortlaut: „Meine mögliche Zielvisualisierung"
+  — nie „meine Transformation" im Sinne eines eingetretenen Ergebnisses.
+- Die Seite persistiert nur Gewichte/Ziel/Rahmendaten (`mm_transform_v1`,
+  `mm_transform_goal`), nie Bild-URLs. Bild-Ergebnisse leben pro Sitzung;
+  durch den 1-h-Verfall beim CDN sind alte URLs ohnehin tot.
+- Datenschutzerklärung: eigener Abschnitt „5. Transformation
+  (KI-Körpervisualisierung)" in `datenschutz.html` (Stand August 2026) —
+  Zweck, Datenarten, Drittland, Rechtsgrundlage, Widerruf, Speicher- und
+  Löschverhalten, KI-Hinweis. Die rechtliche Bewertung bleibt extern zu
+  prüfen; die technischen Aussagen dort entsprechen dem Code.
 - Der Prompt wird **serverseitig aus validierten Zahlen** gebaut — der Client
   liefert keinen Freitext ans Bildmodell (keine Prompt-Injection-Fläche).
   `look` ist Enum-validiert (lean/athletic/muscular, sonst athletic),
