@@ -37,8 +37,27 @@ const FAL_MODEL = "fal-ai/nano-banana/edit";
 const FAL_URL = `https://fal.run/${FAL_MODEL}`;
 
 // Prompt auf Englisch — Bildmodelle folgen englischen Anweisungen messbar
-// präziser. Die Zahlen sind validiert, der Text ist konstant.
-function buildPrompt(currentKg: number, targetKg: number): string {
+// präziser. Die Zahlen sind validiert; `look` und `enhanced` kommen als
+// Enum/Boolean und werden auf KONSTANTE Fragmente abgebildet — der Client
+// liefert nie Freitext ans Bildmodell (keine Prompt-Injection-Fläche).
+const LOOKS = new Set(["lean", "athletic", "muscular"]);
+
+function lookFragment(cut: boolean, look: string, enhanced: boolean): string {
+  if (cut) {
+    if (look === "lean") return "Very lean and defined: visible abs, tight waist, clear muscle separation. ";
+    if (look === "muscular") return "Recomposition: leaner AND visibly more muscular at the same time — tighter waist with fuller shoulders and arms. ";
+    return "Athletic and fit: slimmer waist, flat stomach, healthy defined build. ";
+  }
+  if (look === "lean") return "Lean-muscle build: added muscle stays defined, waist stays tight. ";
+  if (look === "muscular") {
+    return enhanced
+      ? "Significantly more muscular: dense, powerful physique with broad shoulders, thick chest, arms and legs. "
+      : "Noticeably more muscular and broader, still a natural achievable look. ";
+  }
+  return "Athletic build: fuller chest, shoulders and arms, balanced proportions. ";
+}
+
+function buildPrompt(currentKg: number, targetKg: number, look: string, enhanced: boolean): string {
   const delta = Math.round(Math.abs(currentKg - targetKg));
   const pct = Math.round((delta / currentKg) * 100);
   const identity =
@@ -51,15 +70,15 @@ function buildPrompt(currentKg: number, targetKg: number): string {
       `Edit this photo: show the exact same man as if he weighed ${targetKg} kg ` +
       `instead of his current ${currentKg} kg — he has lost ${delta} kg (about ${pct}% ` +
       `of his body weight) through training and nutrition. Visibly reduced body fat: ` +
-      `slimmer waist, flatter stomach, reduced chest and face fat, slightly more ` +
-      `visible muscle definition. ` + identity
+      `slimmer waist, flatter stomach, reduced chest and face fat. ` +
+      lookFragment(true, look, enhanced) + identity
     );
   }
   return (
     `Edit this photo: show the exact same man as if he weighed ${targetKg} kg ` +
     `instead of his current ${currentKg} kg — he has gained ${delta} kg of lean ` +
-    `muscle mass (about ${pct}%) through strength training. Broader shoulders, ` +
-    `fuller chest and arms, athletic build, still natural looking. ` + identity
+    `muscle mass (about ${pct}%) through strength training. ` +
+    lookFragment(false, look, enhanced) + identity
   );
 }
 
@@ -106,6 +125,9 @@ Deno.serve(async (req) => {
     if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(image)) {
       return json({ error: "invalid_image" }, 400);
     }
+    // Wunsch-Look: Enum-validiert, unbekannte Werte fallen auf "athletic".
+    const look = LOOKS.has(String(body.look)) ? String(body.look) : "athletic";
+    const enhanced = body.enhanced === true;
 
     const falKey = Deno.env.get("FAL_KEY");
     if (!falKey) return json({ error: "provider_not_configured" }, 503);
@@ -115,7 +137,7 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Key ${falKey}` },
       body: JSON.stringify({
-        prompt: buildPrompt(currentKg, targetKg),
+        prompt: buildPrompt(currentKg, targetKg, look, enhanced),
         image_urls: [image],
         num_images: 1,
         output_format: "jpeg",

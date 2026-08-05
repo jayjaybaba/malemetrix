@@ -73,6 +73,24 @@
     .trf-chip { font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.1em; color: var(--muted); background: transparent; border: 1px solid var(--hairline); padding: 7px 11px; cursor: pointer; transition: border-color .15s, color .15s; }
     .trf-chip:hover { border-color: var(--accent-line); color: var(--text); }
     .trf-chip.is-on { border-color: var(--accent-2); color: var(--accent-2); }
+    /* --- Fragebogen: Antworten als Chip-Gruppen --- */
+    .trf-q { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 22px clamp(18px, 3vw, 34px); margin-top: 34px; padding-top: 22px; border-top: 1px solid var(--hairline); }
+    .trf-q-cell .trf-chips { margin-top: 0; }
+
+    /* --- Zeitrahmen-Urteil --- */
+    .trf-verdict { display: flex; flex-direction: column; gap: 4px; margin: 18px 0 6px; padding: 14px 16px; border-left: 2px solid var(--status-neutral, #888); background: var(--surface); }
+    .trf-verdict .vk { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.18em; }
+    .trf-verdict .vt { font-size: 0.92rem; color: var(--muted); line-height: 1.55; }
+    .trf-verdict .vt strong { color: var(--text); }
+    .trf-verdict.is-ok { border-left-color: var(--status-improving); }
+    .trf-verdict.is-ok .vk { color: var(--status-improving); }
+    .trf-verdict.is-tight { border-left-color: var(--status-attention); }
+    .trf-verdict.is-tight .vk { color: var(--status-attention); }
+    .trf-verdict.is-unreal { border-left-color: var(--status-flag); }
+    .trf-verdict.is-unreal .vk { color: var(--status-flag); }
+    .trf-verdict.is-open { border-left-color: var(--status-active); }
+    .trf-verdict.is-open .vk { color: var(--status-active); }
+
     .trf-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-top: 30px; padding-top: 18px; border-top: 1px solid var(--hairline); max-width: 720px; }
     .trf-meta label span { display: block; font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.16em; color: var(--muted-2); text-transform: uppercase; margin-bottom: 7px; }
     .trf-meta input, .trf-meta select { width: 100%; background: var(--surface); border: 1px solid var(--hairline); color: var(--text); font: inherit; font-variant-numeric: tabular-nums; padding: 9px 11px; outline: none; }
