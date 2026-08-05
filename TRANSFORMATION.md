@@ -80,26 +80,28 @@ Stand: 05.08.2026 · Seite: `transformation.html` · Logik: `js/transformation.j
 - Payload-Grenzen: 8 MB Body, Gewichte 40-300 kg, max. 60 % Differenz
   (mehr ergibt kein glaubwürdiges Bild und verbrennt nur Geld).
 
-## Aktivieren (CONFIG REQUIRED — nur noch das Secret)
+## Aktivierung — Stand 05.08.2026: SCHARF
 
-Die Function ist **deployt und live nachgemessen** (05.08.2026: OPTIONS→204
-mit P10-Allowlist, POST ohne Auth→401 `auth_missing`). Es fehlt genau EIN
-Schritt:
+Beide Voraussetzungen sind erfüllt und live gemessen:
+
+- **FAL_KEY:** liegt verschlüsselt im **Supabase-Vault** (Wert bewusst nicht
+  im Repo). Die Function löst den Key auf: Function-Secret `FAL_KEY` (falls
+  gesetzt, gewinnt) → sonst Vault über `public.mm_get_fal_key()` — SECURITY
+  DEFINER, ausführbar NUR für service_role (Migration
+  `20260805000015_mm_transform_vault_fal_key.sql`; verifiziert: service_role
+  liest, anon → permission denied). Key-Rotation: neuen Wert per
+  `vault.update_secret` setzen ODER Function-Secret `FAL_KEY` anlegen.
+- **fal.ai-Guthaben:** Konto war am 05.08. gesperrt („Exhausted balance“),
+  ist inzwischen aufgeladen — der Key authentifiziert und das Konto ist
+  aktiv (Testaufruf antwortet mit normaler Validierung statt 403). Läuft
+  das Guthaben wieder leer, antwortet die Function mit `provider_balance`
+  und die Seite zeigt „Kontingent aufgebraucht“ statt eines falschen
+  Schlüssel-Fehlers.
 
 ```bash
-# Secret setzen (Key aus dem fal.ai-Dashboard, Format "key_id:key_secret") —
-# im Supabase-Dashboard unter Edge Functions → Secrets, oder per CLI:
-supabase secrets set FAL_KEY=...
-
-# Danach live nachmessen statt glauben:
+# Live nachmessen statt glauben:
 bash tools-dev/check-functions.sh    # mm-transform ist in der Messliste
 ```
-
-**Zweite Voraussetzung — Guthaben bei fal.ai:** Live gemessen am 05.08.2026:
-Der vorhandene Key authentifiziert korrekt, aber das fal.ai-Konto war
-gesperrt („Exhausted balance“). Ohne Guthaben unter fal.ai → Dashboard →
-Billing schlägt jede Generierung mit 403 fehl — unabhängig vom Secret.
-Der Key selbst gehört NUR ins Supabase-Secret, nie ins Repo oder den Client.
 
 Ohne Secret antwortet die Function ehrlich mit `provider_not_configured` —
 die Seite zeigt dann „serverseitig noch nicht freigeschaltet“ an, es gibt
@@ -110,4 +112,5 @@ keinen stillen Fake-Modus.
 `auth_missing/auth_invalid_token` 401 · `rate_limited` 429 ·
 `invalid_current_kg/invalid_target_kg/invalid_target_range/invalid_image` 400 ·
 `payload_too_large` 413 · `provider_not_configured` 503 ·
-`content_rejected` 422 · `provider_auth_failed`/`provider_error` 502.
+`provider_balance` 503 (fal-Guthaben leer) · `content_rejected` 422 ·
+`provider_auth_failed`/`provider_error` 502.
