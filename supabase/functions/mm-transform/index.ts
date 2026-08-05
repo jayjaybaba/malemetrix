@@ -24,22 +24,23 @@ import { corsHeaders, jsonResponse, preflight, requireUser } from "../_shared/ed
 const RATE_LIMIT_PER_HOUR = 12;
 
 // ---------------------------------------------------------------------------
-// Missbrauchsschutz in Schichten (05.08.2026). Das Stundenlimit allein
+// Missbrauchsschutz in Schichten (05.08.2026, v9). Das Stundenlimit allein
 // schützt nicht: Magic Link = beliebig viele Wegwerf-Konten. Deshalb:
 //
-// 1. SCORE-PFLICHT: Die Transformation ist die Kundengewinnungs-Maschine,
-//    nicht ein anonymer Bild-Generator. Wer generieren will, hat den
-//    MaleMetrix-Score absolviert (score_results-Zeile am Konto) — echte
-//    Kunden (aktives Entitlement) sind ausgenommen.
-// 2. FREIKONTINGENT: Nicht-Kunden haben ein LIFETIME-Kontingent von
+// 1. FREIKONTINGENT: Nicht-Kunden haben ein LIFETIME-Kontingent von
 //    FREE_LIFETIME_IMAGES erfolgreichen Bildern (fehlgeschlagene zählen
 //    nicht). Danach: Kauf (Protokoll/Coaching) statt weiterer Gratisbilder.
 //    Kunden behalten das normale Stundenlimit.
-// 3. IP-LIMIT: Wegwerf-Konten laufen meist über EINE Leitung. Pro IP
+// 2. IP-LIMIT: Wegwerf-Konten laufen meist über EINE Leitung. Pro IP
 //    (SHA-256 mit serverseitigem Schlüssel — die rohe IP wird nie
 //    gespeichert) gilt ein eigenes Stundenlimit über alle Konten hinweg.
-// 4. TAGES-DECKEL: Globale Kosten-Notbremse über alle Nutzer. Bei ~4 Cent
+// 3. TAGES-DECKEL: Globale Kosten-Notbremse über alle Nutzer. Bei ~4 Cent
 //    pro Bild deckelt GLOBAL_DAILY_CAP den schlimmsten Tag auf ~16 €.
+//
+// BEWUSST KEINE Score-Pflicht mehr vor der Generierung (v9): Der Funnel ist
+// Bild → Zielwahl → Score → Paket. Die Bilder sind der Haken und durch das
+// 4-Bilder-Kontingent gedeckelt; der Score sitzt clientseitig vor dem
+// maßgeschneiderten Paket (js/transformation.js, Paket-Gate).
 // ---------------------------------------------------------------------------
 const FREE_LIFETIME_IMAGES = 4;        // = 2 komplette Läufe à 2 Ziele
 const IP_LIMIT_PER_HOUR = 24;          // über alle Konten einer IP
@@ -182,15 +183,6 @@ Deno.serve(async (req) => {
       .select("user_id", { count: "exact", head: true })
       .eq("user_id", user.id).eq("status", "active");
     const isCustomer = roleRow?.role === "owner" || (entCount ?? 0) > 0;
-
-    // --- Score-Pflicht für Nicht-Kunden: die Transformation gibt es nur
-    //     nach dem Score. Der Client synchronisiert den Score beim Login
-    //     automatisch (account.js hydrate → markDirty → flush). ---
-    if (!isCustomer) {
-      const { count: scoreCount } = await admin.from("score_results")
-        .select("user_id", { count: "exact", head: true }).eq("user_id", user.id);
-      if ((scoreCount ?? 0) < 1) return json({ error: "score_required" }, 403);
-    }
 
     // --- Rate-Limit pro Nutzer (nur die eigenen Transform-Aufrufe zählen,
     //     damit Intelligence-Fragen das Bild-Kontingent nicht auffressen) ---

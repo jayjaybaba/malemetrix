@@ -520,13 +520,13 @@
   s4.style.display = "none";
   root.appendChild(s4);
 
-  /* ================= Score-Gate + Login-Gate =================
-     Reihenfolge des Funnels: 1. Score (kalibriert den Plan UND filtert
-     Spielkinder raus, bevor Bild-Kosten entstehen) → 2. Konto → 3. Bilder.
-     Kunden (aktives Entitlement) überspringen das Score-Gate — wer gekauft
-     hat, wird nicht durch einen Fragebogen geschickt. Die Edge Function
-     prüft dieselbe Bedingung serverseitig (score_results) — das Gate hier
-     ist UX, die Durchsetzung passiert am Server. */
+  /* ================= Login-Gate + Paket-Gate =================
+     Funnel-Reihenfolge (bewusst so herum): 1. Konto → 2. Bilder (der
+     emotionale Haken — max. 4 Gratis-Bilder, serverseitig gedeckelt) →
+     3. Zielwahl → 4. SCORE → 5. maßgeschneidertes Paket. Der Score sitzt
+     also nicht vor den Bildern, sondern vor dem Paket: Wer sein Zukunfts-Ich
+     gesehen und gewählt hat, füllt den Score aus, um den Weg dorthin zu
+     bekommen. Kunden (Entitlement) überspringen das Paket-Gate. */
   function hasScoreDone() {
     try {
       if (window.MM && MM.account && MM.account.getDashboardState) {
@@ -540,35 +540,17 @@
       return !!(r && typeof r.total === "number" && isFinite(r.total));
     } catch (e) { return false; }
   }
-  var scoreGateSeen = false;
-  function renderScoreGate() {
-    var g = el("div", "trf-scoregate");
-    g.appendChild(el("span", "gk", "MM / GATE · SCHRITT 0 — DEIN SCORE"));
-    g.appendChild(el("p", null,
-      "Die Transformation rechnet mit deinen Daten — nicht mit Fantasie. <strong>Zuerst der MaleMetrix-Score</strong> (~7 Minuten, kostenlos): Er findet deinen größten Engpass und kalibriert den Plan, der unter deinen Bildern steht. Danach ist die Bildgenerierung freigeschaltet."));
-    var a = el("a", "btn btn-primary", "Score jetzt starten — ~7 Min");
-    a.href = "check.html";
-    a.setAttribute("data-track", "transform_gate_score_click");
-    g.appendChild(a);
-    if (!scoreGateSeen) { scoreGateSeen = true; track("transform_gate_score_view"); }
-    return g;
-  }
 
   var accountState = "unknown";
   function renderGate() {
     gate.innerHTML = "";
-    if (!hasScoreDone()) {
-      runBtn.disabled = true;
-      gate.appendChild(renderScoreGate());
-      return;
-    }
     if (accountState === "signed_in") { runBtn.disabled = !state.photo; return; }
     runBtn.disabled = true;
     if (accountState === "local") {
       gate.appendChild(el("p", "trf-hint", "Auf diesem Gerät ist kein Cloud-Konto aktiv — die Bildgenerierung läuft über dein My-MaleMetrix-Konto."));
       return;
     }
-    var p = el("p", "trf-hint", "Score erledigt ✓ — jetzt noch ein kostenloses My-MaleMetrix-Konto (Magic Link, kein Passwort). Gratis sind 4 Bilder (2 komplette Läufe); als Kunde generierst du mit Stundenlimit weiter, weil jedes Bild echtes Geld kostet.");
+    var p = el("p", "trf-hint", "Die Bildgenerierung braucht ein kostenloses My-MaleMetrix-Konto (Magic Link, kein Passwort). Gratis sind 4 Bilder (2 komplette Läufe), weil jedes Bild echtes Geld kostet — dein maßgeschneidertes Paket schaltet danach dein Score frei.");
     var row = el("div", "trf-login");
     var mail = el("input"); mail.type = "email"; mail.placeholder = "deine@email.de"; mail.autocomplete = "email";
     var btn = el("button", "btn btn-dark btn-sm", "Magic Link senden");
@@ -590,10 +572,19 @@
     MM.account.onChange(function (snap) { accountState = snap.state; renderGate(); });
     MM.account.whenReady().then(function (snap) { accountState = snap.state; renderGate(); }).catch(function () { renderGate(); });
   }
-  // Score kann in einem anderen Tab (check.html) entstehen: beide Kanäle
-  // hören — mm:store (gleiche Seite) und storage (anderer Tab).
-  document.addEventListener("mm:store", function () { renderGate(); });
-  window.addEventListener("storage", function (ev) { if (ev && ev.key === "mm_check_result") renderGate(); });
+  // Der Score kann in einem anderen Tab (check.html) entstehen: beide Kanäle
+  // hören — mm:store (gleiche Seite) und storage (anderer Tab). Kommt der
+  // Score an, während ein Ziel gewählt ist, ersetzt das Paket sein Gate.
+  function onScoreMaybeChanged() {
+    renderGate();
+    if (state.chosen && state.currentKg) renderPlans();
+  }
+  document.addEventListener("mm:store", function (ev) {
+    var k = ev && ev.detail && ev.detail.key;
+    if (k && k !== "check_result") return;   // nur Score-Änderungen interessieren
+    onScoreMaybeChanged();
+  });
+  window.addEventListener("storage", function (ev) { if (ev && ev.key === "mm_check_result") onScoreMaybeChanged(); });
   renderGate();
 
   /* ================= Bühnen-Panels ================= */
@@ -903,6 +894,17 @@
     state.chosen = targetKg;
     save();
     track("transform_goal");
+    /* Das gewählte Ziel ist ab hier SYSTEM-Zustand, nicht Seiten-Zustand:
+       mm_transform_goal (MM.store) lesen auch andere Seiten — die
+       Score-Ergebnisseite baut daraus die Brücke zurück zum Paket. */
+    try {
+      MM.store.set("transform_goal", {
+        date: new Date().toISOString(),
+        current_kg: state.currentKg, target_kg: targetKg,
+        direction: state.goal, months: state.months, look: state.look,
+        exp: state.exp, days: state.days, mode: state.mode, equip: state.equip
+      });
+    } catch (e) {}
     Object.keys(panels).forEach(function (k) {
       panels[k].root.classList.toggle("is-chosen", Number(k) === Number(targetKg));
     });
@@ -946,12 +948,36 @@
     return v;
   }
 
+  var packageGateSeen = false;
   function renderPlans() {
     var t = state.chosen;
     var p = calcPlan(state, t);
     var LOOK_LABEL = { lean: "definiert", athletic: "athletisch", muscular: "massiv" };
     s4.innerHTML = "";
-    s4.appendChild(secthead("MM / PROTOCOL · 04", "Dein Plan für " + t + " kg"));
+
+    /* --- Paket-Gate: Das Ziel ist gewählt, aber das maßgeschneiderte Paket
+       gibt es erst MIT Score — er liefert den Engpass, auf den Ernährung,
+       Training und Supplemente kalibriert werden. Das ist der Kern des
+       Funnels: Bild gesehen → Ziel gewählt → Score → Paket. --- */
+    if (!hasScoreDone()) {
+      s4.appendChild(secthead("MM / PROTOCOL · 04", "Dein Paket für " + t + " kg"));
+      var gGate = el("div", "trf-scoregate");
+      gGate.appendChild(el("span", "gk", "MM / GATE — DEIN SCORE SCHNÜRT DAS PAKET"));
+      gGate.appendChild(el("p", null,
+        "Dein Ziel <strong>" + t + " kg</strong> ist gespeichert. Dein maßgeschneidertes Paket daraus — Ernährungsplan, Trainingsplan, Supplementplan" +
+        (state.mode === "enhanced" ? ", Enhanced-Monitoring" : "") +
+        " — wird aus deinem <strong>MaleMetrix-Score</strong> gebaut: Er findet in ~7 Minuten deinen größten Engpass und kalibriert das Paket darauf. Kostenlos. Danach steht hier alles bereit — automatisch."));
+      var aGate = el("a", "btn btn-primary", "Score starten — Paket freischalten");
+      aGate.href = "check.html";
+      aGate.setAttribute("data-track", "transform_package_gate_click");
+      gGate.appendChild(aGate);
+      s4.appendChild(gGate);
+      if (!packageGateSeen) { packageGateSeen = true; track("transform_package_gate_view"); }
+      removeSticky();   // vor dem Score wird nichts verkauft — erst der Score
+      return;
+    }
+
+    s4.appendChild(secthead("MM / PROTOCOL · 04", "Dein Paket für " + t + " kg"));
     s4.appendChild(el("p", "trf-hint",
       "Gerechnet aus deinen Antworten: " + state.currentKg + " kg → " + t + " kg · Look " + (LOOK_LABEL[state.look] || "athletisch") + " · " +
       (state.months ? state.months + " Monate" : "ohne Zieldatum") + " · " + state.days + " Trainingstage · " +
@@ -961,6 +987,27 @@
       ". Grundumsatz (Mifflin-St-Jeor): " + p.bmr + " kcal · Erhaltungsbedarf: ca. " + p.tdee + " kcal."));
 
     s4.appendChild(verdictBlock(p, state.months));
+
+    /* --- Score-Kalibrierung: Der Engpass aus dem Score steht IM Paket —
+       das ist der Unterschied zwischen einem generischen Plan und einem
+       maßgeschneiderten. Quelle: lokales/Cloud-Ergebnis, neuestes gewinnt. */
+    var scoreRes = null;
+    try {
+      scoreRes = (window.MM && MM.account && MM.account.getLatestScoreResult)
+        ? MM.account.getLatestScoreResult()
+        : (window.MM && MM.store ? MM.store.get("check_result", null) : null);
+    } catch (e) { try { scoreRes = MM.store.get("check_result", null); } catch (e2) {} }
+    if (scoreRes && scoreRes.bottleneck && scoreRes.bottleneck.name) {
+      var sb = el("div", "trf-verdict is-open");
+      sb.appendChild(el("span", "vk", "DEIN SCORE" +
+        (typeof scoreRes.total === "number" ? " " + scoreRes.total + "/100" : "") +
+        " — ENGPASS: " + esc(String(scoreRes.bottleneck.name)).toUpperCase()));
+      sb.appendChild(el("span", "vt",
+        esc(String(scoreRes.bottleneck.text || "")) +
+        " <strong>Das Paket unten rechnet diesen Engpass mit ein — er entscheidet, ob deine " +
+        p.realWeeks + " Wochen funktionieren oder in Woche 4 kippen.</strong>"));
+      s4.appendChild(sb);
+    }
 
     var mrow = el("div", "mm-metric-row trf-plan-metrics");
     function metric(v, unit, k, cls) {
@@ -1020,13 +1067,27 @@
       ["MAGNESIUM", "300-400 mg abends"]
     ];
     if (p.cut) rowsS.push(["KOFFEIN", "Vor dem Training — der einzige legale „Fatburner“, der wirkt. Der Rest im Fatburner-Regal ist Dekoration."]);
-    if (p.enh) {
-      rowsS.push(["MONITORING", "Enhanced ohne Daten ist Blindflug: <strong>großes Blutbild, Lipide, Leberwerte, Hämatokrit, Blutdruck alle 8-12 Wochen</strong> + ärztliche Begleitung. Nicht optional."]);
-      rowsS.push(["SUBSTANZEN", "Bewusst <strong>keine</strong> Substanz- oder Dosierungsempfehlungen — die nüchterne Einordnung von Wirkstoffen, Risiken und Mythen liefert die <a href=\"anabole-matrix.html\">Anabole Matrix</a>."]);
-    }
     rowsS.push(["EHRLICH", "Supplemente sind die letzten 5 % — die ersten 95 % stehen in den beiden Spalten links."]);
     colS.appendChild(rows(rowsS));
     grid.appendChild(colS);
+
+    /* --- Enhanced: Stack-Rahmen & Monitoring (eigene Spalte) ---
+       Haus-Regel bleibt: KEINE Substanz- oder Dosierungsempfehlungen auf
+       dieser Seite — das wäre medizinisch und rechtlich verantwortungslos.
+       Was das Paket liefert, ist der RAHMEN, der enhanced überlebensfähig
+       macht (Messplan, Warnsignale, Begleitung) — die Einordnung der
+       Wirkstoffe selbst liefert die Anabole Matrix. */
+    if (p.enh) {
+      var colX = el("div", "trf-plan-col");
+      colX.appendChild(el("h3", null, "Enhanced — Stack-Rahmen & Monitoring"));
+      colX.appendChild(rows([
+        ["VOR START", "<strong>Basis-Blutbild</strong>: großes Blutbild, Lipide, Leberwerte, Hämatokrit, Testosteron/E2, Blutdruck. Ohne Ausgangswerte ist keine Veränderung bewertbar."],
+        ["ALLE 8-12 WO", "Dieselben Werte erneut, mit <strong>ärztlicher Begleitung</strong>. Enhanced ohne Daten ist Blindflug — das ist nicht optional."],
+        ["WÖCHENTLICH", "Blutdruck, Ruhepuls, Schlaf in den Tracker — die frühesten Warnsignale sind banal messbar."],
+        ["STACK", "Bewusst <strong>keine Substanz- oder Dosierungsempfehlungen</strong> in diesem Paket. Welcher Wirkstoff was tut, Risiken, Wechselwirkungen, Mythen — nüchtern eingeordnet in der <a href=\"anabole-matrix.html\">Anabolen Matrix</a>."]
+      ]));
+      grid.appendChild(colX);
+    }
 
     s4.appendChild(grid);
 

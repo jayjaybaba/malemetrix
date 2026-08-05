@@ -42,19 +42,35 @@ Stand: 05.08.2026 · Seite: `transformation.html` · Logik: `js/transformation.j
    Kreatin, D3 nach Blutwert, Omega-3, Magnesium — bewusst ohne
    Fatburner-Märchen; enhanced zusätzlich Monitoring-Pflichtzeile).
 
-## Funnel & Monetarisierung (Kundengewinnungs-Maschine, Stand v6)
+## Funnel & Monetarisierung (Kundengewinnungs-Maschine, Stand v7)
 
-Die Transformation ist bewusst KEIN freies Spielzeug, sondern der zentrale
-Akquise-Funnel: **Score → Konto → Bilder → Plan → Angebot.**
+Die Transformation ist KEIN freies Spielzeug, sondern der zentrale
+Akquise-Funnel — und seit v7 fester System-Bestandteil:
+**Konto → Bilder (der Haken) → Zielwahl → SCORE → maßgeschneidertes
+Paket → Angebot.**
 
-- **Score-Gate (Schritt 0):** Ohne absolvierten MaleMetrix-Score keine
-  Bildgenerierung. Client: `.trf-scoregate` mit CTA zu `check.html`
-  (Events `transform_gate_score_view/_click`); Server: `mm-transform`
-  verweigert Nicht-Kunden ohne `score_results`-Zeile mit `score_required`
-  (403) — das Gate ist serverseitig durchgesetzt, die UI nur die Erklärung.
-  Der Score synchronisiert beim Login automatisch (account.js: hydrate →
-  markDirty("score") → flush). Kunden (aktives Entitlement) überspringen
-  das Gate.
+- **Paket-Gate statt Score-Gate (v7):** Die Bilder kommen ZUERST (auf
+  4 Gratis-Bilder gedeckelt — der emotionale Haken darf nicht hinter einem
+  Fragebogen verhungern). Nach der Zielwahl verlangt das PAKET den Score:
+  `renderPlans()` zeigt ohne Score das Gate `.trf-scoregate` („Dein Score
+  schnürt das Paket") mit CTA zu `check.html` (Events
+  `transform_package_gate_view/_click`). Kommt der Score an — auch aus
+  einem anderen Tab (mm:store/storage-Listener) — ersetzt das Paket sein
+  Gate automatisch. Kunden (Entitlement) überspringen das Gate.
+- **Ziel als System-Zustand:** Die Zielwahl schreibt `mm_transform_goal`
+  (MM.store: Ziel-kg, Richtung, Zeitraum, Look, Erfahrung, Tage,
+  natural/enhanced, Equipment). Die Score-Ergebnisseite (`js/check.js`)
+  liest es und rendert direkt unter dem Score-Hero die Brücke „Dein Paket
+  für X kg ist jetzt freigeschaltet" → `transformation.html#trfPlanSec`
+  (Event `score_to_transform_click`). Die Schleife Bild → Score → Paket
+  ist damit in beide Richtungen geschlossen.
+- **Maßgeschneidertes Paket:** Mit Score rendert der Plan zusätzlich den
+  Kalibrierungs-Block „DEIN SCORE X/100 — ENGPASS: …" (Name + Text des
+  primären Engpasses aus dem Score-Ergebnis) über den Spalten. Enhanced
+  bekommt eine EIGENE vierte Spalte „Enhanced — Stack-Rahmen & Monitoring"
+  (Basis-Blutbild, 8-12-Wochen-Messplan, Wochen-Warnsignale). Haus-Regel
+  unverändert: KEINE Substanz-/Dosierungsempfehlungen — die Einordnung
+  liefert die Anabole Matrix.
 - **Gratis-Kontingent:** Nicht-Kunden haben LIFETIME 4 erfolgreiche Bilder
   (= 2 komplette Läufe). Die Antwort liefert `free_remaining`, die Seite
   zeigt den Zähler unter dem Button (`.trf-quota`). Danach `free_quota_
@@ -73,11 +89,12 @@ Akquise-Funnel: **Score → Konto → Bilder → Plan → Angebot.**
   Vorher/Nachher-Composite (1080×1350, Systemlook, malemetrix.com) und nutzt
   die Web-Share-API (Fallback: Download; Composite unmöglich → Link teilen).
 - **Funnel-Messung** über die bestehende anonyme Telemetrie: `transform_run`,
-  `transform_goal`, `transform_share`, `transform_gate_score_view`,
-  `transform_gate_score_click`, `transform_offers_view`,
-  `transform_offer_protokoll`, `transform_offer_circle`,
-  `transform_offer_coaching`, `transform_sticky_cta`, `transform_quota_wall`,
-  `transform_quota_cta`, `transform_cta_mymm`.
+  `transform_goal`, `transform_share`, `transform_package_gate_view`,
+  `transform_package_gate_click`, `score_to_transform_click` (check.js),
+  `transform_offers_view`, `transform_offer_protokoll`,
+  `transform_offer_circle`, `transform_offer_coaching`,
+  `transform_sticky_cta`, `transform_quota_wall`, `transform_quota_cta`,
+  `transform_cta_mymm`.
 
 ## Datenfluss & Datenschutz (bewusste Entscheidungen)
 
@@ -96,26 +113,26 @@ Akquise-Funnel: **Score → Konto → Bilder → Plan → Angebot.**
   Bildmodell ab (Antwort 422 → `content_rejected`, als Klartext im UI) —
   die Seite sagt das VOR dem Upload, nicht erst als Fehlermeldung.
 
-## Schutz & Kosten (Schichten, Stand v6)
+## Schutz & Kosten (Schichten, Stand v7/Function v9)
 
 - Auth im Handler (P0.6-Standard), CORS-Allowlist (P0.7),
   `verify_jwt = false` in `config.toml` (macht nichts öffentlich).
-- **Schicht 1 — Score-Pflicht:** Nicht-Kunden ohne `score_results`-Zeile
-  → `score_required` (403). Filtert anonyme Spielkinder raus, BEVOR Kosten
-  entstehen (und füttert gleichzeitig den Funnel).
-- **Schicht 2 — Stundenlimit pro Nutzer:** 12 Bilder/Stunde, gezählt über
+- Seit v9 bewusst KEINE Score-Pflicht mehr VOR der Generierung — der Score
+  sitzt clientseitig vor dem Paket (Funnel-Abschnitt oben). Die
+  Kostenbremse übernimmt vollständig das Freikontingent.
+- **Schicht 1 — Stundenlimit pro Nutzer:** 12 Bilder/Stunde, gezählt über
   `ai_request_log` task `BODY_TRANSFORM` — getrennt vom mm-ai-Kontingent.
-- **Schicht 3 — Lifetime-Freikontingent:** Nicht-Kunden max. 4 erfolgreiche
+- **Schicht 2 — Lifetime-Freikontingent:** Nicht-Kunden max. 4 erfolgreiche
   Bilder insgesamt (`free_quota_exhausted`, 403). Fehlgeschlagene Bilder
   zählen nicht. „Kunde" = irgendein aktives Entitlement ODER die
   server-vergebene Owner-Rolle (user_roles). Gegenmittel gegen
   Wegwerf-Konten: das Konto ist gratis, aber pro Konto gibt es nur noch
   4 Bilder statt 288/Tag.
-- **Schicht 4 — IP-Limit:** 24 Bilder/Stunde pro IP über ALLE Konten
+- **Schicht 3 — IP-Limit:** 24 Bilder/Stunde pro IP über ALLE Konten
   (Wegwerf-Konten teilen sich die Leitung). Die IP wird NIE roh gespeichert —
   nur SHA-256 mit serverseitigem Schlüssel (`ip_hash` in `ai_request_log`,
   Migration `20260805000016_mm_transform_abuse_guards.sql`).
-- **Schicht 5 — Globaler Tages-Deckel:** 400 Bilder/24h über alle Nutzer
+- **Schicht 4 — Globaler Tages-Deckel:** 400 Bilder/24h über alle Nutzer
   (`daily_capacity`, 503). Kosten-Notbremse: schlimmster Tag ≈ 16 €.
 - Bewusst KEINE Gesichtserkennung: unverhältnismäßig (biometrische Daten,
   Art. 9 DSGVO) und leicht umgehbar — die Schichten oben schützen die
@@ -152,7 +169,7 @@ keinen stillen Fake-Modus.
 
 ## Fehlercodes (Function → UI-Klartext in js/transformation.js)
 
-`auth_missing/auth_invalid_token` 401 · `score_required` 403 (Score-Gate) ·
+`auth_missing/auth_invalid_token` 401 ·
 `free_quota_exhausted` 403 (Gratis-Kontingent aufgebraucht) ·
 `rate_limited` 429 (Nutzer- ODER IP-Limit) · `daily_capacity` 503
 (globaler Tages-Deckel) ·
