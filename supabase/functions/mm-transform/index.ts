@@ -3,12 +3,8 @@
 // Körper-Transformation als Bild: Der Nutzer lädt ein Foto von sich hoch und
 // bekommt eine fotorealistische Vorschau, wie er mit einem Zielgewicht
 // aussehen würde. Provider: fal.ai (Bild-Editing-Modell). Der API-Key lebt
-// NUR hier als Function-Secret (FAL_KEY) — nie im Repo/Client/Log.
-//
-// STATUS: CODE COMPLETE · CONFIG REQUIRED (Secret + Deploy):
-//   supabase secrets set FAL_KEY=...        (Key von fal.ai → Dashboard)
-//   supabase functions deploy mm-transform
-// Ohne Secret antwortet die Function ehrlich mit provider_not_configured.
+// NUR serverseitig — Function-Secret FAL_KEY oder Supabase-Vault
+// (public.mm_get_fal_key, service_role-only) — nie im Repo/Client/Log.
 //
 // Sicherheit & Datenfluss:
 // · Auth IM HANDLER (ES256, P0.6): Bearer → service.auth.getUser(jwt),
@@ -35,6 +31,26 @@ const MAX_BODY_BYTES = 8_000_000;
 // gezielt die Körperkomposition. Nachfolger einfach hier tauschen.
 const FAL_MODEL = "fal-ai/nano-banana/edit";
 const FAL_URL = `https://fal.run/${FAL_MODEL}`;
+
+// FAL_KEY-Auflösung: Function-Secret (Standardweg) → Vault-Fallback.
+// Der Vault-Getter public.mm_get_fal_key() ist SECURITY DEFINER und
+// AUSSCHLIESSLICH für service_role ausführbar (Migration
+// mm_transform_vault_fal_key) — Clients kommen strukturell nicht an den Key.
+// Modul-Cache: eine RPC pro Isolate, nicht pro Anfrage.
+let falKeyCache: string | null = null;
+async function resolveFalKey(admin: { rpc: (fn: string) => Promise<{ data: unknown; error: unknown }> }): Promise<string | null> {
+  const env = Deno.env.get("FAL_KEY");
+  if (env) return env;
+  if (falKeyCache) return falKeyCache;
+  try {
+    const { data, error } = await admin.rpc("mm_get_fal_key");
+    if (!error && typeof data === "string" && data.length > 10) {
+      falKeyCache = data;
+      return data;
+    }
+  } catch (_e) { /* fällt unten auf provider_not_configured */ }
+  return null;
+}
 
 // Prompt auf Englisch — Bildmodelle folgen englischen Anweisungen messbar
 // präziser. Die Zahlen sind validiert; `look` und `enhanced` kommen als
@@ -129,7 +145,7 @@ Deno.serve(async (req) => {
     const look = LOOKS.has(String(body.look)) ? String(body.look) : "athletic";
     const enhanced = body.enhanced === true;
 
-    const falKey = Deno.env.get("FAL_KEY");
+    const falKey = await resolveFalKey(admin);
     if (!falKey) return json({ error: "provider_not_configured" }, 503);
 
     // --- Provider-Aufruf (synchron; fal.run wartet auf das Ergebnis) ---
@@ -146,9 +162,13 @@ Deno.serve(async (req) => {
 
     if (!r.ok) {
       await admin.from("ai_request_log").insert({ user_id: user.id, task: "BODY_TRANSFORM", model: FAL_MODEL, ok: false });
+      const errBody = await r.text().catch(() => "");
       // 422 = das Modell lehnt den Inhalt ab (z. B. komplett unbekleidetes
       // Foto). Dem Nutzer ehrlich sagen, statt "Serverfehler" zu heucheln.
       if (r.status === 422) return json({ error: "content_rejected" }, 422);
+      // fal meldet ein leeres Konto als 403 "Exhausted balance" — das ist
+      // KEIN Schlüsselproblem und verdient eine eigene, ehrliche Meldung.
+      if (r.status === 403 && /balance|locked/i.test(errBody)) return json({ error: "provider_balance" }, 503);
       if (r.status === 401 || r.status === 403) return json({ error: "provider_auth_failed" }, 502);
       return json({ error: "provider_error", status: r.status }, 502);
     }

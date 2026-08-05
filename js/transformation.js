@@ -228,6 +228,7 @@
     no_cloud: "Account-Sync ist auf diesem Gerät nicht aktiv — ohne Cloud-Konto keine Bildgenerierung.",
     rate_limited: "Stundenlimit erreicht (12 Bilder). Versuch es in einer Stunde wieder.",
     provider_not_configured: "Die Bildgenerierung ist serverseitig noch nicht freigeschaltet (API-Key fehlt).",
+    provider_balance: "Die Bildgenerierung ist vorübergehend nicht verfügbar (Kontingent aufgebraucht) — versuch es später erneut.",
     provider_auth_failed: "Der Bild-Dienst lehnt unseren Schlüssel ab — wir kümmern uns darum.",
     content_rejected: "Das Bildmodell hat dieses Foto abgelehnt. Oberkörperfrei ist kein Problem — nur komplett nackte Fotos (ganz ohne Unterwäsche) blockiert das Modell. Zieh Shorts oder Unterwäsche an und versuch es erneut.",
     invalid_image: "Das Foto konnte nicht verarbeitet werden. Bitte JPG/PNG verwenden.",
