@@ -268,9 +268,10 @@ Abnehmen ohne Hunger · Schlaf & Testosteron · Ozempic/Wegovy/Mounjaro ·
 GLP-1 absetzen · Kreatin-Mythen · Erektionsprobleme · HRV verstehen.
 
 ## Knowledge Graph (`js/os/intelligence/knowledge.js`)
-18 Objekte, **7 verifizierte Landmark-Quellen** (DOI+URL), Publikations-Gate:
-2 PUBLISHED · 16 REVIEWED. Quellen: Morton 2018, Kreider 2017, ESC/EAS 2019,
-STEP-1 2021, Bhasin 2018, Schoenfeld 2017, Watson 2015.
+18 Objekte, **10 verifizierte Landmark-Quellen** (DOI+URL), Publikations-Gate:
+5 PUBLISHED · 13 REVIEWED (Stand 05.08.2026). Quellen: Morton 2018, Kreider 2017, ESC/EAS 2019,
+STEP-1 2021, Bhasin 2018, Schoenfeld 2017, Watson 2015, Nedeltcheva 2010,
+Leproult 2011, Drake 2013.
 
 ## Befunde & Maßnahmen
 

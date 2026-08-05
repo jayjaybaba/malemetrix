@@ -19,7 +19,7 @@
   if (!window.MM) window.MM = {};
   var I = MM.intelligence = MM.intelligence || {};
 
-  var KV = 3;                 // Knowledge-Graph-Version (Phase 9.6: weitere Quellen aufgelöst; Snapshots referenzieren die Version zum Entscheidungszeitpunkt, §30)
+  var KV = 4;                 // Knowledge-Graph-Version (05.08.2026: +Nedeltcheva 2010, Leproult 2011, Drake 2013 web-verifiziert → recovery_sleep, testosterone_basics, omega3 auf PUBLISHED; Snapshots referenzieren die Version zum Entscheidungszeitpunkt, §30)
   var STALE_DAYS = 365;
   var REVIEWED = "2026-07-23"; // Redaktionsstand dieses Builds
 
@@ -41,7 +41,10 @@
     step1_2021: { title: "Once-Weekly Semaglutide in Adults with Overweight or Obesity (STEP 1)", authors: "Wilding JPH, et al.", year: 2021, venue: "N Engl J Med 384:989–1002", doi: "10.1056/NEJMoa2032183", url: "https://www.nejm.org/doi/full/10.1056/NEJMoa2032183", source_type: "RCT", last_reviewed: REVIEWED },
     bhasin_2018: { title: "Testosterone Therapy in Men With Hypogonadism: An Endocrine Society Clinical Practice Guideline", authors: "Bhasin S, et al.", year: 2018, venue: "J Clin Endocrinol Metab 103(5):1715–1744", doi: "10.1210/jc.2018-00229", url: "https://academic.oup.com/jcem/article/103/5/1715/4939465", source_type: "GUIDELINE", last_reviewed: REVIEWED },
     schoenfeld_2017: { title: "Dose-response relationship between weekly resistance training volume and increases in muscle mass: A systematic review and meta-analysis", authors: "Schoenfeld BJ, Ogborn D, Krieger JW", year: 2017, venue: "J Sports Sci 35(11):1073–1082", doi: "10.1080/02640414.2016.1210197", url: "https://www.tandfonline.com/doi/full/10.1080/02640414.2016.1210197", source_type: "META_ANALYSIS", last_reviewed: REVIEWED },
-    watson_2015: { title: "Recommended Amount of Sleep for a Healthy Adult: A Joint Consensus Statement of the AASM and Sleep Research Society", authors: "Watson NF, et al.", year: 2015, venue: "J Clin Sleep Med 11(6):591–592", doi: "10.5664/jcsm.4758", url: "https://jcsm.aasm.org/doi/10.5664/jcsm.4758", source_type: "CONSENSUS", last_reviewed: REVIEWED }
+    watson_2015: { title: "Recommended Amount of Sleep for a Healthy Adult: A Joint Consensus Statement of the AASM and Sleep Research Society", authors: "Watson NF, et al.", year: 2015, venue: "J Clin Sleep Med 11(6):591–592", doi: "10.5664/jcsm.4758", url: "https://jcsm.aasm.org/doi/10.5664/jcsm.4758", source_type: "CONSENSUS", last_reviewed: REVIEWED },
+    nedeltcheva_2010: { title: "Insufficient Sleep Undermines Dietary Efforts to Reduce Adiposity", authors: "Nedeltcheva AV, et al.", year: 2010, venue: "Ann Intern Med 153(7):435–441", doi: "10.7326/0003-4819-153-7-201010050-00006", url: "https://www.acpjournals.org/doi/abs/10.7326/0003-4819-153-7-201010050-00006", source_type: "RCT", last_reviewed: REVIEWED },
+    leproult_2011: { title: "Effect of 1 Week of Sleep Restriction on Testosterone Levels in Young Healthy Men", authors: "Leproult R, Van Cauter E", year: 2011, venue: "JAMA 305(21):2173–2174", doi: "10.1001/jama.2011.710", url: "https://jamanetwork.com/journals/jama/fullarticle/1029127", source_type: "RCT", last_reviewed: REVIEWED },
+    drake_2013: { title: "Caffeine Effects on Sleep Taken 0, 3, or 6 Hours before Going to Bed", authors: "Drake C, et al.", year: 2013, venue: "J Clin Sleep Med 9(11):1195–1200", doi: "10.5664/jcsm.3170", url: "https://jcsm.aasm.org/doi/10.5664/jcsm.3170", source_type: "RCT", last_reviewed: REVIEWED }
   };
   function source(id) { return SOURCES[id] || null; }
   // Evidenz-Publikations-Gate (§29): ein Objekt ist nur PUBLISHED, wenn seine
@@ -91,17 +94,17 @@
     ], related: ["kidney_markers"] }),
     K({ id: "omega3", slug: "omega-3", title: "Omega-3 (EPA/DHA)", domain: "stack", summary: "Kardiometabolische Basis, besonders bei wenig Fischkonsum. Triglycerid-senkend in relevanter Dosis.", markers: ["triglycerides"], claims: [
       C("o31", "EPA/DHA senken Triglyceride dosisabhängig.", "STRONG", { source_ids: ["esc_eas_2019"], context: "2019 ESC/EAS: Omega-3 in relevanter Dosis als triglyceridsenkende Option." }),
-      C("o32", "Harte Endpunkt-Effekte (Ereignisse) sind gemischt belegt — Basis, kein Wundermittel.", "MODERATE")
+      C("o32", "Harte Endpunkt-Effekte (Ereignisse) sind gemischt belegt — Basis, kein Wundermittel.", "MODERATE", { source_ids: ["esc_eas_2019"], context: "2019 ESC/EAS: Omega-3 primär als triglyceridsenkende Option eingeordnet; der harte Endpunktnutzen bleibt in der Leitlinie bewusst zurückhaltend/uneinheitlich bewertet." })
     ] }),
     K({ id: "recovery_sleep", slug: "schlaf", title: "Schlaf & Trainingserholung", domain: "recovery", summary: "Unter ~6,5 h chronisch: schlechtere Kraftentwicklung, Appetitregulation und Glukosetoleranz. Konstante Bettzeit schlägt Einzeloptimierungen.", goals: ["build", "cut", "recomp", "perform"], interventions: ["sleep_window", "caffeine_cutoff"], claims: [
       C("sl1", "Chronischer Schlafmangel reduziert Muskelproteinsynthese und Trainingsleistung.", "STRONG", { source_ids: ["watson_2015"], context: "AASM/SRS-Konsens (Watson 2015): ≥7 h/Nacht für Gesundheit nötig; ≤6 h reichen nicht — Basis für die Schlaf-Guardrail." }),
-      C("sl2", "Schlafrestriktion verschiebt Gewichtsverlust von Fett zu fettfreier Masse.", "MODERATE"),
-      C("sl3", "Koffein nach ~14 Uhr verschlechtert bei sensiblen Personen messbar die Schlafarchitektur.", "MODERATE")
+      C("sl2", "Schlafrestriktion verschiebt Gewichtsverlust von Fett zu fettfreier Masse.", "MODERATE", { source_ids: ["nedeltcheva_2010"], context: "Nedeltcheva 2010 (RCT, Crossover, 14 Tage Kaloriendefizit): 5,5 h vs. 8,5 h Schlaf senkte den Fettanteil am Verlust um 55 % und erhöhte den Verlust fettfreier Masse um 60 % bei gleichem Gesamtgewichtsverlust." }),
+      C("sl3", "Koffein nach ~14 Uhr verschlechtert bei sensiblen Personen messbar die Schlafarchitektur.", "MODERATE", { source_ids: ["drake_2013"], context: "Drake 2013 (RCT): 400 mg Koffein selbst 6 h vor dem Zubettgehen reduzierten die Schlafzeit signifikant gegenüber Placebo." })
     ], related: ["plateau", "hypertrophy_volume"] }),
     K({ id: "testosterone_basics", slug: "testosteron", title: "Testosteron-Grundlagen", domain: "hormonal", summary: "Schlaf, Körperfett, Energieverfügbarkeit und Krafttraining sind die größten natürlichen Hebel. Einzelwerte schwanken stark tageszeitabhängig — morgens, nüchtern, wiederholt messen.", markers: ["total_testosterone", "free_testosterone", "lh", "shbg"], claims: [
       C("t1", "Testosteron ist morgens am höchsten; Messungen außerhalb des Morgens sind schwer interpretierbar.", "STRONG", { source_ids: ["bhasin_2018"], context: "Endocrine-Society-Leitlinie: Diagnose nur bei Symptomen UND wiederholt eindeutig niedrigem Morgen-Testosteron." }),
-      C("t2", "Massives Kaloriendefizit und Schlafmangel senken Testosteron reversibel.", "MODERATE"),
-      C("t3", "Ein einzelner niedrig-normaler Wert ist keine Diagnose — Wiederholung + LH/SHBG-Kontext nötig.", "STRONG")
+      C("t2", "Massives Kaloriendefizit und Schlafmangel senken Testosteron reversibel.", "MODERATE", { source_ids: ["leproult_2011"], context: "Leproult & Van Cauter 2011 (JAMA): 1 Woche Schlafrestriktion (<5 h/Nacht) senkte das Tagestestosteron junger gesunder Männer um 10–15 % — reversibel. Deckt den Schlaf-Hebel; der Kaloriendefizit-Hebel ist gleichgerichtet, aber hier nicht die zitierte Quelle." }),
+      C("t3", "Ein einzelner niedrig-normaler Wert ist keine Diagnose — Wiederholung + LH/SHBG-Kontext nötig.", "STRONG", { source_ids: ["bhasin_2018"], context: "Endocrine-Society-Leitlinie: Diagnose nur bei zwei eindeutig niedrigen Morgen-Gesamttestosteron-Messungen plus konsistenter Symptomatik; LH/FSH grenzen primären von sekundärem Hypogonadismus ab." })
     ], related: ["trt_context", "recovery_sleep"] }),
     K({ id: "trt_context", slug: "trt", title: "TRT — Kontext statt Hype", domain: "hormonal", audience: "advanced", pathways: ["enhanced", "performance"], summary: "TRT ist Therapie eines diagnostizierten Mangels, kein Lifestyle-Upgrade. Unter TRT/Enhanced sind Hämatokrit, Lipide, Blutdruck und Fertilität die Monitoring-Kernachsen.", markers: ["total_testosterone", "hematocrit", "estradiol", "psa"], contraContext: ["kinderwunsch_ohne_beratung"], claims: [
       C("trt1", "Exogenes Testosteron supprimiert die eigene Achse (LH/FSH) und die Spermatogenese.", "STRONG", { source_ids: ["bhasin_2018"] }),

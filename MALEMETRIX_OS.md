@@ -191,7 +191,7 @@ Tests: `node tools-dev/tests/phase9.test.js` (44) — Billing-Determinismus + ou
 | SUPABASE_PRODUCTION_AUDIT.md | 8 Migrationen + 5 Edge Functions statisch auditiert (RLS/Rollback/Idempotenz); Runtime-RLS BLOCKED (keine Creds) |
 | FIRST_100_USERS.md | Messplan + Diagnose-Baum (welcher Funnel-Abfall bedeutet was) |
 | SUBSCRIPTION_ACTIVATION_DECISION.md | Was vor Abo-Preis gemessen sein muss; Schalter dokumentiert |
-| KNOWLEDGE_AUDIT.md | Deckung je Objekt (2 PUBLISHED, 16 REVIEWED, 5 Quellen), nächste Redaktionsschritte |
+| KNOWLEDGE_AUDIT.md | Deckung je Objekt (5 PUBLISHED, 13 REVIEWED, 10 Quellen — Stand 05.08.2026), nächste Redaktionsschritte |
 | Trust-Transparenz | trust.html "Wer sieht was — konkret", gegen Code verifiziert |
 
 Tests: `node tools-dev/tests/phase95.test.js` (37) — AES-Inhaltsgrenze, Autoritäts-Modell, Capability-Facade server-autoritativ, SW-Cache-Sicherheit (nie Cross-Origin), Migrations-Idempotenz + RLS-Statik, productionStatus ohne Secrets.

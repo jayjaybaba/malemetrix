@@ -33,7 +33,7 @@ LIVE-REAL · BLOCKED-FOUNDER · DEFERRED.** Laufzeit-Diagnose: `await MM.product
 | Analytics (Plausible) | ✅ | ❌ `plausibleDomain` leer | n/a | ❌ | lokaler Funnel ✅ | **REQUIRES CONFIG** |
 | E-Mail-Liste (Brevo) | ✅ | ❌ `brevoFormAction` leer | n/a | ❌ | FormSubmit-Relay | **REQUIRES CONFIG** |
 | Terminbuchung (Cal.com) | ✅ | ❌ `calLink` leer | n/a | ❌ | eingebauter Kalender läuft | **REQUIRES CONFIG** |
-| Knowledge Evidenz (Gate) | ✅ | ✅ | ✅ | n/a | ✅ 2 PUBLISHED / 16 REVIEWED | **LIVE + VERIFIED** |
+| Knowledge Evidenz (Gate) | ✅ | ✅ | ✅ | n/a | ✅ 5 PUBLISHED / 13 REVIEWED, 10 verifizierte Quellen (05.08.) | **LIVE + VERIFIED** |
 
 ## Was 100 Fremde MORGEN erleben würden (§31, ehrlich — Stand 05.08.)
 
