@@ -24,7 +24,8 @@
       "Bash(cp \"/root/.claude/uploads/819bdb46-8cc7-57c7-bfd8-36f2730c17c0/99354ace-IMG_0081.jpeg\" img/ural-bayramoglu.jpg)",
       "mcp__2208435e-9585-45ba-ab74-66428fda232e__get_workflow_instructions",
       "mcp__2208435e-9585-45ba-ab74-66428fda232e__get_explainer_presets",
-      "mcp__2208435e-9585-45ba-ab74-66428fda232e__list_voices"
+      "mcp__2208435e-9585-45ba-ab74-66428fda232e__list_voices",
+      "Bash(git push *)"
     ]
   }
 }

@@ -31,9 +31,9 @@ window.MM_CONFIG = {
   // Bankverbindung für Vorkasse/Überweisung. MUSS vor dem Livegang
   // ausgefüllt werden.
   bank: {
-    inhaber: "[KONTOINHABER EINTRAGEN]",
-    iban: "[IBAN EINTRAGEN]",
-    bank: "[BANKNAME EINTRAGEN]"
+    inhaber: "Ural Bayramoglu",
+    iban: "DE55 7015 0000 1004 8511 82",
+    bank: "Stadtsparkasse München"
   },
 
   // --- PayPal -------------------------------------------------------------
