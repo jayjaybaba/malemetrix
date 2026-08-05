@@ -107,9 +107,10 @@ Akquise-Funnel: **Score → Konto → Bilder → Plan → Angebot.**
   `ai_request_log` task `BODY_TRANSFORM` — getrennt vom mm-ai-Kontingent.
 - **Schicht 3 — Lifetime-Freikontingent:** Nicht-Kunden max. 4 erfolgreiche
   Bilder insgesamt (`free_quota_exhausted`, 403). Fehlgeschlagene Bilder
-  zählen nicht. Kunden (protocol/twelve_week/coaching/advanced_library)
-  sind ausgenommen. Gegenmittel gegen Wegwerf-Konten: das Konto ist gratis,
-  aber pro Konto gibt es nur noch 4 Bilder statt 288/Tag.
+  zählen nicht. „Kunde" = irgendein aktives Entitlement ODER die
+  server-vergebene Owner-Rolle (user_roles). Gegenmittel gegen
+  Wegwerf-Konten: das Konto ist gratis, aber pro Konto gibt es nur noch
+  4 Bilder statt 288/Tag.
 - **Schicht 4 — IP-Limit:** 24 Bilder/Stunde pro IP über ALLE Konten
   (Wegwerf-Konten teilen sich die Leitung). Die IP wird NIE roh gespeichert —
   nur SHA-256 mit serverseitigem Schlüssel (`ip_hash` in `ai_request_log`,

@@ -45,10 +45,10 @@ const FREE_LIFETIME_IMAGES = 4;        // = 2 komplette Läufe à 2 Ziele
 const IP_LIMIT_PER_HOUR = 24;          // über alle Konten einer IP
 const GLOBAL_DAILY_CAP = 400;          // Bilder/24h gesamt, Notbremse
 
-// Entitlements, die als "Kunde" zählen (Score-Pflicht + Freikontingent
-// entfallen; das Stundenlimit bleibt). Muss zur Kauf-Pipeline passen:
-// mm-commerce vergibt protocol + twelve_week, coaching ist manuell.
-const CUSTOMER_KEYS = new Set(["protocol", "twelve_week", "coaching", "advanced_library"]);
+// "Kunde" = irgendein aktives Entitlement ODER die server-vergebene
+// Owner-Rolle (user_roles — der Betreiber testet viel und kauft nicht bei
+// sich selbst). Kunden überspringen Score-Pflicht und Freikontingent;
+// Stundenlimit, IP-Limit und Tages-Deckel gelten weiter für alle.
 
 // IP pseudonymisieren: SHA-256 über serverseitigen Schlüssel + IP. Einweg,
 // nur für Ratenzählung — die rohe IP verlässt den Handler nie.
@@ -176,9 +176,12 @@ Deno.serve(async (req) => {
     const user = authRes.user;
 
     // --- Kunde oder Interessent? Entscheidet über Score-Pflicht + Kontingent ---
-    const { data: entRows } = await admin.from("entitlements")
-      .select("product_key,status").eq("user_id", user.id).eq("status", "active");
-    const isCustomer = (entRows ?? []).some((e: { product_key: string }) => CUSTOMER_KEYS.has(e.product_key));
+    const { data: roleRow } = await admin.from("user_roles").select("role")
+      .eq("user_id", user.id).maybeSingle();
+    const { count: entCount } = await admin.from("entitlements")
+      .select("user_id", { count: "exact", head: true })
+      .eq("user_id", user.id).eq("status", "active");
+    const isCustomer = roleRow?.role === "owner" || (entCount ?? 0) > 0;
 
     // --- Score-Pflicht für Nicht-Kunden: die Transformation gibt es nur
     //     nach dem Score. Der Client synchronisiert den Score beim Login
