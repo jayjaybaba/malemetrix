@@ -60,6 +60,12 @@ supabase secrets set FAL_KEY=...
 bash tools-dev/check-functions.sh    # mm-transform ist in der Messliste
 ```
 
+**Zweite Voraussetzung — Guthaben bei fal.ai:** Live gemessen am 05.08.2026:
+Der vorhandene Key authentifiziert korrekt, aber das fal.ai-Konto war
+gesperrt („Exhausted balance“). Ohne Guthaben unter fal.ai → Dashboard →
+Billing schlägt jede Generierung mit 403 fehl — unabhängig vom Secret.
+Der Key selbst gehört NUR ins Supabase-Secret, nie ins Repo oder den Client.
+
 Ohne Secret antwortet die Function ehrlich mit `provider_not_configured` —
 die Seite zeigt dann „serverseitig noch nicht freigeschaltet“ an, es gibt
 keinen stillen Fake-Modus.
