@@ -18,6 +18,10 @@
 // ============================================================================
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, jsonResponse, preflight, requireUser } from "../_shared/edge.mjs";
+// Zielengine: EINE Quelle der Wahrheit für Grenzen, Schätzungen und
+// Prompt-Bausteine — dieselbe Datei läuft im Browser und in den Node-Tests.
+// Direkt manipulierte API-Aufrufe treffen hier auf dieselben Regeln wie die UI.
+import { IDENTITY_FRAGMENT, SHAPES, targetLookFragment, validateTarget } from "../_shared/transform-goals.mjs";
 
 // 12 Bilder/Stunde pro Nutzer = 6 komplette Läufe (2 Ziele je Lauf).
 // Bewusst knapper als mm-ai (30/h): ein Bild kostet ~4 Cent statt Bruchteilen.
@@ -95,67 +99,22 @@ async function resolveFalKey(admin: { rpc: (fn: string) => Promise<{ data: unkno
 }
 
 // Prompt auf Englisch — Bildmodelle folgen englischen Anweisungen messbar
-// präziser. Die Zahlen sind validiert; `look` und `enhanced` kommen als
-// Enum/Boolean und werden auf KONSTANTE Fragmente abgebildet — der Client
-// liefert nie Freitext ans Bildmodell (keine Prompt-Injection-Fläche).
-const LOOKS = new Set(["lean", "athletic", "muscular"]);
-
-function lookFragment(cut: boolean, look: string, enhanced: boolean): string {
-  if (cut) {
-    if (look === "lean") return "Very lean and defined: visible abs, tight waist, clear muscle separation. ";
-    if (look === "muscular") return "Recomposition: leaner AND visibly more muscular at the same time — tighter waist with fuller shoulders and arms. ";
-    return "Athletic and fit: slimmer waist, flat stomach, healthy defined build. ";
-  }
-  if (look === "lean") return "Lean-muscle build: added muscle stays defined, waist stays tight. ";
-  if (look === "muscular") {
-    return enhanced
-      ? "Significantly more muscular: dense, powerful physique with broad shoulders, thick chest, arms and legs. "
-      : "Noticeably more muscular and broader, still a natural achievable look. ";
-  }
-  return "Athletic build: fuller chest, shoulders and arms, balanced proportions. ";
-}
-
-// Definition skaliert MIT dem Gewichtsverlust. Live-Befund 05.08.2026:
-// Ohne diese Staffel machte das Modell −16 kg „insgesamt dünner", aber
-// WEICHER als −8 kg — physiologisch verkehrt herum. Je größer das Defizit,
-// desto niedriger das Körperfett, desto härter die Definition.
-function cutIntensity(pct: number): string {
-  if (pct >= 15) {
-    return "At this large loss he is VERY lean (low body fat): a sharply defined six-pack, " +
-      "clear muscle separation, visible veins on the arms, tight chest and a leaner, more angular face. ";
-  }
-  if (pct >= 8) {
-    return "He is now lean: clearly visible abs, defined waist, noticeably slimmer face. ";
-  }
-  return "He is moderately leaner: flatter stomach, first hints of abs. ";
-}
-
-function buildPrompt(currentKg: number, targetKg: number, look: string, enhanced: boolean): string {
-  const delta = Math.round(Math.abs(currentKg - targetKg));
-  const pct = Math.round((delta / currentKg) * 100);
-  const identity =
-    "Keep the SAME person and identity: identical face, same pose, same clothing " +
-    "(if any — do NOT add clothing to a bare torso), same background, same lighting " +
-    "and camera angle. Photorealistic, natural skin texture. Change nothing except " +
-    "his body composition.";
-  if (targetKg < currentKg) {
-    return (
-      `Edit this photo: show the exact same man as if he weighed ${targetKg} kg ` +
-      `instead of his current ${currentKg} kg — he has lost ${delta} kg (about ${pct}% ` +
-      `of his body weight) through training and nutrition. He kept his muscle: the ` +
-      `weight lost is body fat. ` + cutIntensity(pct) +
-      `IMPORTANT: muscle definition INCREASES with the amount of weight lost — at this ` +
-      `weight he must look MORE defined than at any smaller loss. Never soften or smooth ` +
-      `the abdominal area. ` +
-      lookFragment(true, look, enhanced) + identity
-    );
-  }
-  return (
-    `Edit this photo: show the exact same man as if he weighed ${targetKg} kg ` +
-    `instead of his current ${currentKg} kg — he has gained ${delta} kg of lean ` +
-    `muscle mass (about ${pct}%) through strength training. ` +
-    lookFragment(false, look, enhanced) + identity
-  );
+// präziser. Die Zieloptik hängt am GESCHÄTZTEN ZIEL-KÖRPERFETT (Zielengine,
+// Phase 2), nicht mehr am verlorenen Prozentsatz: 160→136 kg wird „deutlich
+// schlanker, aber weich", nicht automatisch ein Sixpack. Alle Eingaben sind
+// hart validierte Zahlen/Enums — der Client liefert nie Freitext ans Modell.
+function buildPrompt(p: { currentKg: number; targetKg: number; heightCm: number; waistCm: number | null; shape: string }): string {
+  const delta = Math.round(Math.abs(p.currentKg - p.targetKg));
+  const intro = p.targetKg < p.currentKg
+    ? `Edit this photo: show the exact same man as if he weighed ${p.targetKg} kg instead of his ` +
+      `current ${p.currentKg} kg — he has lost ${delta} kg of mostly body fat through consistent ` +
+      `training and nutrition over a realistic timeframe. `
+    : `Edit this photo: show the exact same man as if he weighed ${p.targetKg} kg instead of his ` +
+      `current ${p.currentKg} kg — he has gained ${delta} kg through long-term strength training, ` +
+      `mostly muscle with a small natural amount of body fat. `;
+  return intro +
+    targetLookFragment({ weightKg: p.currentKg, heightCm: p.heightCm, waistCm: p.waistCm, shape: p.shape, targetKg: p.targetKg }) +
+    IDENTITY_FRAGMENT;
 }
 
 Deno.serve(async (req) => {
@@ -223,27 +182,34 @@ Deno.serve(async (req) => {
     //     Server erzwingt das Merkmal, gespeichert wird es nicht. ---
     if (body.consent !== true) return json({ error: "consent_required" }, 400);
 
-    // --- Payload-Validierung: alle Felder hart geprüft ---
+    // --- Payload-Validierung: alle Felder hart geprüft. Die Zielprüfung
+    //     läuft über die Zielengine — clientseitig blockierte Werte können
+    //     nicht per direktem API-Aufruf umgangen werden (Phase 2/6). ---
     const currentKg = Number(body.current_kg);
     const targetKg = Number(body.target_kg);
+    const heightCm = Number(body.height_cm);
+    const waistCm = Number.isFinite(Number(body.waist_cm)) && Number(body.waist_cm) >= 50 && Number(body.waist_cm) <= 200
+      ? Number(body.waist_cm) : null;
+    const shape = Object.prototype.hasOwnProperty.call(SHAPES, String(body.shape)) ? String(body.shape) : "durchschnitt";
     const image = String(body.image ?? "");
     if (!Number.isFinite(currentKg) || currentKg < 40 || currentKg > 300) {
       return json({ error: "invalid_current_kg" }, 400);
     }
-    if (!Number.isFinite(targetKg) || targetKg < 40 || targetKg > 300) {
-      return json({ error: "invalid_target_kg" }, 400);
+    if (!Number.isFinite(heightCm) || heightCm < 140 || heightCm > 220) {
+      return json({ error: "invalid_height" }, 400);
     }
-    // Mehr als 60 % Differenz ist keine Transformation mehr, sondern eine
-    // andere Person — das Ergebnis wäre unglaubwürdig und die Kosten umsonst.
-    if (Math.abs(currentKg - targetKg) > currentKg * 0.6 || currentKg === targetKg) {
-      return json({ error: "invalid_target_range" }, 400);
+    const verdictRes = validateTarget({ weightKg: currentKg, heightCm, waistCm, shape, targetKg });
+    if (verdictRes.verdict !== "plausibel" && verdictRes.verdict !== "ambitioniert") {
+      // Blockierte Ziele bekommen die dynamische Alternative mitgeliefert —
+      // die UI macht daraus eine Empfehlung statt einer Sackgasse.
+      return json({
+        error: "target_blocked", verdict: verdictRes.verdict, code: verdictRes.code,
+        alt_lo: verdictRes.altLo ?? null, alt_hi: verdictRes.altHi ?? null,
+      }, 400);
     }
     if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(image)) {
       return json({ error: "invalid_image" }, 400);
     }
-    // Wunsch-Look: Enum-validiert, unbekannte Werte fallen auf "athletic".
-    const look = LOOKS.has(String(body.look)) ? String(body.look) : "athletic";
-    const enhanced = body.enhanced === true;
 
     const falKey = await resolveFalKey(admin);
     if (!falKey) return json({ error: "provider_not_configured" }, 503);
@@ -265,7 +231,7 @@ Deno.serve(async (req) => {
         "x-fal-object-lifecycle-preference": JSON.stringify({ expiration_duration_seconds: 3600 }),
       },
       body: JSON.stringify({
-        prompt: buildPrompt(currentKg, targetKg, look, enhanced),
+        prompt: buildPrompt({ currentKg, targetKg, heightCm, waistCm, shape }),
         image_urls: [image],
         num_images: 1,
         output_format: "jpeg",
