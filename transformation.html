@@ -115,6 +115,9 @@
     .trf-view img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
     .trf-panel-foot { padding: 12px 14px; border-top: 1px solid var(--hairline); }
     .trf-panel-foot .btn { width: 100%; }
+    .trf-foot-row { display: flex; gap: 8px; }
+    .trf-foot-row .btn { width: auto; flex: 1; }
+    .trf-foot-row .trf-share { flex: 0 0 auto; }
     .trf-panel-foot .mono-note { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.14em; color: var(--muted-2); }
     .trf-panel.is-chosen { border-color: var(--accent-2); }
     .trf-panel.is-chosen .trf-panel-head { border-bottom-color: var(--accent-line); }
@@ -148,6 +151,14 @@
     .trf-row .rv { color: var(--muted); }
     .trf-row .rv strong { color: var(--text); font-weight: 600; }
     .trf-plan-note { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--hairline); }
+
+    /* --- Protokoll-Brücke --- */
+    .trf-cta { margin-top: clamp(28px, 4vw, 40px); padding: clamp(24px, 4vw, 38px); border: 1px solid var(--accent-line); background: linear-gradient(180deg, rgba(37, 140, 255, 0.09), rgba(22, 196, 244, 0.03)); }
+    .trf-cta .ck { display: block; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.2em; color: var(--accent-2); margin-bottom: 12px; }
+    .trf-cta .ct { font-family: var(--font-display); font-size: clamp(1.25rem, 2.6vw, 1.7rem); letter-spacing: -0.01em; margin: 0 0 10px; }
+    .trf-cta .cp { color: var(--muted); max-width: 62ch; line-height: 1.6; font-size: 0.95rem; }
+    .trf-cta .cp strong { color: var(--text); }
+    .trf-cta .btn { margin-top: 18px; }
 
     @media (max-width: 700px) {
       .trf-stage { grid-template-columns: 1fr; }

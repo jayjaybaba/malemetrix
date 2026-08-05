@@ -495,6 +495,123 @@
     wrap.appendChild(el("p", "trf-error", esc(fehlertext(code))));
     view.appendChild(wrap);
   }
+  function track(ev) { try { if (window.MM && MM.track) MM.track(ev); } catch (e) {} }
+
+  /* ================= Wasserzeichen & Teilen (Monetarisierung #5) =================
+     Jedes generierte Bild trägt ein dezentes MALEMETRIX-Wasserzeichen, und der
+     Teilen-Button baut ein Vorher/Nachher-Composite (1080×1350, 4:5) — jede
+     geteilte Transformation wirbt für die Seite. Alles clientseitig auf
+     Canvas; schlägt der Cross-Origin-Zugriff auf das Bild-CDN fehl, wird
+     ehrlich degradiert (Bild ohne Wasserzeichen, Teilen als Link). */
+  function loadImg(src, cross) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      if (cross) img.crossOrigin = "anonymous";
+      img.onload = function () { resolve(img); };
+      img.onerror = function () { reject(new Error("img")); };
+      img.src = src;
+    });
+  }
+  function drawCover(ctx, img, x, y, w, h) {
+    var s = Math.max(w / img.width, h / img.height);
+    var dw = img.width * s, dh = img.height * s;
+    ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+    ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+    ctx.restore();
+  }
+  function drawBrand(ctx, x, y, size) {
+    ctx.save();
+    ctx.textBaseline = "alphabetic";
+    ctx.font = "700 " + size + "px 'Space Grotesk', 'Inter', sans-serif";
+    ctx.fillStyle = "rgba(240,238,233,0.92)";
+    ctx.fillText("MALEMETRI", x, y);
+    var w = ctx.measureText("MALEMETRI").width;
+    ctx.fillStyle = "#16C4F4";
+    ctx.fillText("X", x + w + size * 0.06, y);
+    ctx.restore();
+  }
+  // Wasserzeichen unten rechts auf das generierte Bild (liefert Data-URL
+  // oder null, wenn das CDN kein Cross-Origin-Canvas erlaubt).
+  function watermark(url) {
+    return loadImg(url, true).then(function (img) {
+      var c = document.createElement("canvas");
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      var x = c.getContext("2d");
+      x.drawImage(img, 0, 0);
+      var fs = Math.max(16, Math.round(c.width * 0.028));
+      x.save();
+      x.textBaseline = "alphabetic"; x.textAlign = "left";
+      x.font = "700 " + fs + "px 'Space Grotesk', 'Inter', sans-serif";
+      var tw = x.measureText("MALEMETRIX").width;
+      x.fillStyle = "rgba(7,10,15,0.55)";
+      x.fillRect(c.width - tw - fs * 1.6, c.height - fs * 2.2, tw + fs * 1.6, fs * 2.2);
+      x.restore();
+      drawBrand(x, c.width - tw - fs * 0.8, c.height - fs * 0.75, fs);
+      return c.toDataURL("image/jpeg", 0.9);
+    }).catch(function () { return null; });
+  }
+  // Vorher/Nachher-Composite fürs Teilen: 1080×1350 (Instagram/TikTok-sicher).
+  function buildShareCard(beforeSrc, afterSrc, curKg, targetKg) {
+    return Promise.all([loadImg(beforeSrc, false), loadImg(afterSrc, /^data:/.test(afterSrc) ? false : true)]).then(function (imgs) {
+      var W = 1080, H = 1350;
+      var c = document.createElement("canvas");
+      c.width = W; c.height = H;
+      var x = c.getContext("2d");
+      x.fillStyle = "#070A0F"; x.fillRect(0, 0, W, H);
+      // Kopfzeile im Systemstil
+      x.font = "500 26px 'JetBrains Mono', monospace";
+      x.fillStyle = "#16C4F4";
+      x.fillText("MM / TRANSFORM", 48, 76);
+      x.fillStyle = "rgba(255,255,255,0.35)";
+      x.fillText("BODY PREVIEW", 48, 112);
+      // Zwei Panels
+      var top = 150, bh = 1000, gap = 10, bw = (W - 96 - gap) / 2;
+      drawCover(x, imgs[0], 48, top, bw, bh);
+      drawCover(x, imgs[1], 48 + bw + gap, top, bw, bh);
+      x.strokeStyle = "rgba(255,255,255,0.14)";
+      x.strokeRect(48, top, bw, bh); x.strokeRect(48 + bw + gap, top, bw, bh);
+      // Labels
+      function tag(tx, label) {
+        x.font = "500 24px 'JetBrains Mono', monospace";
+        var tw = x.measureText(label).width;
+        x.fillStyle = "rgba(7,10,15,0.78)";
+        x.fillRect(tx, top + 18, tw + 28, 44);
+        x.fillStyle = "rgba(240,238,233,0.95)";
+        x.fillText(label, tx + 14, top + 48);
+      }
+      tag(48 + 18, "VORHER · " + curKg + " KG");
+      tag(48 + bw + gap + 18, "ZIEL · " + targetKg + " KG");
+      // Fußzeile: Marke + Domain
+      drawBrand(x, 48, H - 84, 44);
+      x.font = "500 26px 'JetBrains Mono', monospace";
+      x.fillStyle = "rgba(255,255,255,0.45)";
+      x.textAlign = "right";
+      x.fillText("malemetrix.com", W - 48, H - 92);
+      x.textAlign = "left";
+      return new Promise(function (resolve) { c.toBlob(resolve, "image/jpeg", 0.9); });
+    });
+  }
+  function shareResult(t, afterSrc, btn) {
+    track("transform_share");
+    buildShareCard(state.photo, afterSrc, state.currentKg, t).then(function (blob) {
+      if (!blob) throw new Error("blob");
+      var file = new File([blob], "malemetrix-transformation.jpg", { type: "image/jpeg" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        return navigator.share({ files: [file], title: "Meine Transformation", text: "Meine Transformation mit MaleMetrix — malemetrix.com/transformation.html" }).catch(function () {});
+      }
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "malemetrix-transformation.jpg";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 30000);
+    }).catch(function () {
+      // Composite nicht möglich (z. B. CORS) → wenigstens den Link teilen.
+      var url = "https://www.malemetrix.com/transformation.html";
+      if (navigator.share) { navigator.share({ title: "MaleMetrix Transformation", url: url }).catch(function () {}); return; }
+      try { navigator.clipboard.writeText(url); btn.textContent = "Link kopiert"; } catch (e) {}
+    });
+  }
+
   function showCompare(view, beforeSrc, afterSrc) {
     view.innerHTML = "";
     view.classList.add("trf-ba");
@@ -551,6 +668,7 @@
     if (v) { runErr.textContent = v; runErr.style.display = ""; return; }
     runBtn.disabled = true;
     runBtn.textContent = "Wird generiert …";
+    track("transform_run");
     state.results = {}; state.chosen = null;
     panels = {};
     s4.style.display = "none";
@@ -579,11 +697,19 @@
         .then(function (r) {
           p.foot.innerHTML = "";
           if (r && r.ok && r.data && r.data.image_url) {
-            state.results[t] = { url: r.data.image_url };
-            showCompare(p.view, state.photo, r.data.image_url);
-            var pick = el("button", "btn btn-dark btn-sm", "Dieses Ziel wählen");
-            pick.addEventListener("click", function () { chooseGoal(t); });
-            p.foot.appendChild(pick);
+            var raw = r.data.image_url;
+            return watermark(raw).then(function (wm) {
+              var afterSrc = wm || raw;
+              state.results[t] = { url: raw, after: afterSrc };
+              showCompare(p.view, state.photo, afterSrc);
+              var row = el("div", "trf-foot-row");
+              var pick = el("button", "btn btn-dark btn-sm", "Dieses Ziel wählen");
+              pick.addEventListener("click", function () { chooseGoal(t); });
+              var share = el("button", "btn btn-dark btn-sm trf-share", "Teilen");
+              share.addEventListener("click", function () { shareResult(t, afterSrc, share); });
+              row.appendChild(pick); row.appendChild(share);
+              p.foot.appendChild(row);
+            });
           } else {
             var code = (r && r.code) || "unbekannt";
             state.results[t] = { error: code };
@@ -606,6 +732,7 @@
   function chooseGoal(targetKg) {
     state.chosen = targetKg;
     save();
+    track("transform_goal");
     Object.keys(panels).forEach(function (k) {
       panels[k].root.classList.toggle("is-chosen", Number(k) === Number(targetKg));
     });
@@ -732,6 +859,32 @@
     grid.appendChild(colS);
 
     s4.appendChild(grid);
+
+    /* --- Die Brücke zum Protokoll (Monetarisierung #1) ---
+       Der Moment nach der Zielwahl ist der heißeste Punkt im Funnel. Wer das
+       Protokoll schon besitzt, bekommt statt Verkauf den Weg in die App —
+       Quelle der Wahrheit sind die server-vergebenen Entitlements. */
+    var hasProto = false;
+    try { hasProto = !!(window.MM && MM.account && MM.account.hasAccess && MM.account.hasAccess("protocol")); } catch (e) {}
+    var cta = el("div", "trf-cta");
+    cta.appendChild(el("span", "ck", "MM / NEXT"));
+    if (hasProto) {
+      cta.appendChild(el("h3", "ct", "Dein Ziel gehört ins System."));
+      cta.appendChild(el("p", "cp", "Du hast DAS PROTOKOLL. Trag dein Ziel " + t + " kg in My MaleMetrix ein — Programm, Tracker und Intelligence arbeiten dann " + p.realWeeks + " Wochen lang genau darauf hin, mit Wochen-Reviews statt guter Vorsätze."));
+      var goApp = el("a", "btn btn-primary", "Weiter in My MaleMetrix");
+      goApp.href = "mein-protokoll.html";
+      goApp.setAttribute("data-track", "transform_cta_mymm");
+      cta.appendChild(goApp);
+    } else {
+      cta.appendChild(el("h3", "ct", "Das ist die Landkarte. DAS PROTOKOLL ist das Fahrzeug."));
+      cta.appendChild(el("p", "cp", "Der Plan oben sagt, was zu tun ist. Das Protokoll sorgt dafür, dass es " + p.realWeeks + " Wochen lang wirklich passiert: 12-Wochen-Programm, Tracker mit Progression, Wochen-Reviews und Intelligence — auf dein Ziel " + t + " kg. <strong>99 €, einmalig, kein Abo.</strong>"));
+      var goProto = el("a", "btn btn-primary", "DAS PROTOKOLL ansehen");
+      goProto.href = "protokoll.html";
+      goProto.setAttribute("data-track", "transform_cta_protokoll");
+      cta.appendChild(goProto);
+    }
+    s4.appendChild(cta);
+
     s4.appendChild(el("p", "trf-hint trf-plan-note",
       "Kein medizinischer Rat: Bei Vorerkrankungen, Medikamenten oder einem Ziel unter BMI 20 zuerst ärztlich abklären. " +
       "Die generierten Bilder sind eine Visualisierung, kein Versprechen — dein echtes Ergebnis entsteht aus " + p.realWeeks + " Wochen Umsetzung."));

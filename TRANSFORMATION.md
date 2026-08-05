@@ -37,6 +37,21 @@ Stand: 05.08.2026 · Seite: `transformation.html` · Logik: `js/transformation.j
    Kreatin, D3 nach Blutwert, Omega-3, Magnesium — bewusst ohne
    Fatburner-Märchen; enhanced zusätzlich Monitoring-Pflichtzeile).
 
+## Monetarisierung (aktiv)
+
+- **Protokoll-Brücke:** Nach der Zielwahl rendert der Plan einen CTA-Block
+  („Das ist die Landkarte. DAS PROTOKOLL ist das Fahrzeug.“) mit
+  personalisierten Zahlen (Ziel-kg, ehrliche Wochen). Besitzt der Nutzer das
+  Protokoll bereits (server-vergebenes Entitlement), wird stattdessen in die
+  App geführt — kein Verkauf an Bestandskäufer.
+- **Wasserzeichen + Teilen:** Generierte Bilder tragen ein dezentes
+  MALEMETRIX-Wasserzeichen (Canvas, clientseitig). Der Teilen-Button baut ein
+  Vorher/Nachher-Composite (1080×1350, Systemlook, malemetrix.com) und nutzt
+  die Web-Share-API (Fallback: Download; Composite unmöglich → Link teilen).
+- **Funnel-Messung** über die bestehende anonyme Telemetrie: `transform_run`,
+  `transform_goal`, `transform_share`, `transform_cta_protokoll`,
+  `transform_cta_mymm`.
+
 ## Datenfluss & Datenschutz (bewusste Entscheidungen)
 
 - Das Foto wird **nirgends gespeichert**: nicht im localStorage, nicht in
