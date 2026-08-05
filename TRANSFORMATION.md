@@ -8,18 +8,34 @@ Stand: 05.08.2026 · Seite: `transformation.html` · Logik: `js/transformation.j
 1. Der Nutzer lädt ein Foto von sich hoch — oberkörperfrei ist ideal
    (frontal, gut beleuchtet, Shorts/Unterwäsche): Je mehr Körper sichtbar,
    desto realistischer die Transformation.
-2. Er gibt sein aktuelles Gewicht und ZWEI Zielgewichte an (Vorschlag: −20 %
-   und −30 %, also 100 kg → 80 kg und 70 kg — frei änderbar, auch Aufbau).
+2. Er gibt sein aktuelles Gewicht und ZWEI Zielgewichte an (Chips: −10/−20/
+   −30 %, also 100 kg → 80 kg und 70 kg — frei änderbar, auch Aufbau) und
+   beantwortet den **Transformations-Fragebogen**. Jede Antwort verändert
+   etwas, keine Deko-Fragen:
+   · **Zeitraum** (3/6/12 Monate/offen) → Kalorien zielen auf den Zeitrahmen;
+     die Seite urteilt ehrlich (machbar / knapp / NICHT seriös machbar — dann
+     rechnet der Plan mit der schnellsten seriösen Rate und sagt das).
+   · **Wunsch-Look** (definiert/athletisch/massiv) → fließt als validierter
+     Enum in den Bild-Prompt ein.
+   · **Trainingserfahrung** (<1 J / 1-4 J / 4+ J) → Progressionsschema und
+     realistische Aufbaurate (0,35/0,25/0,15 kg/Woche natural).
+   · **Trainingstage** (2-6) → eigener Split je Frequenz (GK 2× · GK A/B ·
+     OK/UK · PPL+OK/UK · PPL×2).
+   · **Natural/Enhanced** → Raten (Cut-Limit 0,75 %/1,0 % KG pro Woche),
+     Volumenhinweis, Pflicht-Zeile Blutbild-Monitoring. BEWUSST keine
+     Substanz-/Dosierungsempfehlungen — Einordnung liefert die Anabole Matrix.
+   · **Equipment** (Gym/Zuhause) → Übungsauswahl (Langhantel vs. Kurzhantel).
 3. Die Edge Function `mm-transform` lässt das Bild-Editing-Modell
    (`fal-ai/nano-banana/edit`) je Ziel eine fotorealistische Vorschau
    generieren: dieselbe Person, gleiche Pose/Kleidung/Hintergrund, veränderte
-   Körperkomposition.
+   Körperkomposition. Die Ergebnisse liegen als Vorher/Nachher-Regler über
+   dem eigenen Foto.
 4. Der Nutzer wählt EIN Ziel — dafür rendert die Seite **deterministisch**
-   (Mifflin-St-Jeor + feste Regeln, KEINE KI-Zahlen, §9):
-   Ernährungsplan (kcal/Makros/Beispieltag), Trainingsplan (Cut: 3×
-   Ganzkörper + Cardio + Schritte · Aufbau: 4er OK/UK), Supplementplan
-   (Whey, Kreatin, D3 nach Blutwert, Omega-3, Magnesium — bewusst ohne
-   Fatburner-Märchen) und einen ehrlichen Zeitrahmen in Wochen.
+   (Mifflin-St-Jeor + feste Regeln, KEINE KI-Zahlen, §9): Zeitrahmen-Urteil,
+   Makro-Instrumente (kcal/Protein/Fett/Carbs/Rate/Wochen), Ernährungsplan,
+   Trainingsplan nach Tagen+Equipment+Erfahrung, Supplementplan (Whey,
+   Kreatin, D3 nach Blutwert, Omega-3, Magnesium — bewusst ohne
+   Fatburner-Märchen; enhanced zusätzlich Monitoring-Pflichtzeile).
 
 ## Datenfluss & Datenschutz (bewusste Entscheidungen)
 
@@ -31,6 +47,8 @@ Stand: 05.08.2026 · Seite: `transformation.html` · Logik: `js/transformation.j
   persistiert nur Gewichte/Ziel/Rahmendaten (`mm_transform_v1`), nie Bild-URLs.
 - Der Prompt wird **serverseitig aus validierten Zahlen** gebaut — der Client
   liefert keinen Freitext ans Bildmodell (keine Prompt-Injection-Fläche).
+  `look` ist Enum-validiert (lean/athletic/muscular, sonst athletic),
+  `enhanced` strikt Boolean; beide mappen auf konstante Prompt-Fragmente.
 - **Nacktfotos:** Oberkörperfrei ist ausdrücklich erwünscht (bestes
   Ergebnis). Nur KOMPLETT nackte Fotos (ganz ohne Unterwäsche) lehnt das
   Bildmodell ab (Antwort 422 → `content_rejected`, als Klartext im UI) —

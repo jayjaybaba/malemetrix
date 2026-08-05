@@ -1,25 +1,25 @@
 /* ==========================================================================
    MaleMetrix — Transformation (transformation.html)
    --------------------------------------------------------------------------
-   Der Nutzer lädt ein Foto von sich hoch, wählt zwei Zielgewichte und sieht
-   fotorealistische Vorschauen seiner selbst mit diesen Gewichten — je Ziel
-   mit Vorher/Nachher-Regler auf dem eigenen Bild. Danach wählt er EIN Ziel
-   und bekommt dafür Ernährungs-, Trainings- und Supplementplan,
-   deterministisch berechnet (keine KI-Zahlen).
+   Der Nutzer lädt ein Foto von sich hoch, beantwortet die Transformations-
+   Fragen (Zeitraum, Wunsch-Look, Erfahrung, Trainingstage, Natural/Enhanced,
+   Equipment), wählt zwei Zielgewichte und sieht fotorealistische Vorschauen
+   seiner selbst — je Ziel mit Vorher/Nachher-Regler. Danach wählt er EIN
+   Ziel und bekommt dafür Ernährungs-, Trainings- und Supplementplan.
 
-   Gestaltung folgt VISUAL SYSTEM 2.0 (css/style.css): Instrumente statt
-   Karten, Hairline-Ebenen, Mono-Systemsprache, Status-Farben. Die
-   Seitenklassen (trf-*) liegen im <style> von transformation.html.
+   JEDE Antwort verändert etwas — keine Deko-Fragen:
+   · Zeitraum        → Kalorien zielen auf den Zeitrahmen; die Seite urteilt
+                       ehrlich: machbar / knapp / nicht seriös machbar.
+   · Wunsch-Look     → fließt als validierter Enum in den Bild-Prompt ein.
+   · Erfahrung       → Progressionsschema + realistische Aufbaurate.
+   · Trainingstage   → anderer Split (GK / OK-UK / PPL-Hybrid / PPL×2).
+   · Natural/Enhanced→ Raten, Volumenhinweis, Blutbild-Monitoring. BEWUSST
+                       keine Substanz-/Dosierungsempfehlungen (Haus-Regel wie
+                       überall: Einordnung liefert die Anabole Matrix).
+   · Equipment       → Übungsauswahl Gym vs. Kurzhanteln/Zuhause.
 
-   Datenfluss & Ehrlichkeit:
-   · Das Foto bleibt im Browser, bis der Nutzer "Visualisieren" klickt. Dann
-     geht es an die Edge Function mm-transform → fal.ai und wird NICHT in
-     unserer Datenbank gespeichert. Es landet auch NICHT im localStorage.
-   · Die Bild-Generierung braucht ein Konto (Magic Link) — sie kostet pro
-     Bild echtes Geld und ist deshalb pro Nutzer begrenzt (12 Bilder/Stunde).
-   · Die Pläne sind deterministisch (Mifflin-St-Jeor + feste Regeln). Die KI
-     liefert die Bilder, nie die Zahlen — dieselbe Grenze wie überall im
-     Projekt (§9: Die KI ist nie Quelle der Wahrheit).
+   Pläne bleiben deterministisch (Mifflin-St-Jeor + feste Regeln, §9: die KI
+   liefert Bilder, nie Zahlen). Foto wird nirgends gespeichert.
    ========================================================================== */
 (function () {
   "use strict";
@@ -37,35 +37,38 @@
     heightCm: 180,
     age: 35,
     activity: "moderat",
+    months: null,           // Wunsch-Zeitraum in Monaten (3/6/12) oder null=offen
+    look: "athletic",       // lean | athletic | muscular (fließt ins Bild)
+    exp: "mid",             // neu | mid | pro
+    days: 3,                // Trainingstage pro Woche (2-6)
+    mode: "natural",        // natural | enhanced
+    equip: "gym",           // gym | home
     results: {},            // targetKg -> { url } | { error }
     chosen: null            // gewähltes Zielgewicht
   };
   // Aktive Prozent-Chips je Ziel (A/B). Manuelle Eingabe löst den Chip.
   var activePct = { a: 0.2, b: 0.3 };
 
+  var PERSIST = ["currentKg", "targetA", "targetB", "heightCm", "age", "activity",
+    "months", "look", "exp", "days", "mode", "equip", "chosen"];
   function loadSaved() {
     try {
       var s = JSON.parse(localStorage.getItem(LS_KEY) || "null");
       if (!s) return;
-      ["currentKg", "targetA", "targetB", "heightCm", "age", "activity", "chosen"].forEach(function (k) {
-        if (s[k] != null) state[k] = s[k];
-      });
+      PERSIST.forEach(function (k) { if (s[k] !== undefined) state[k] = s[k]; });
       if (s.targetA != null) activePct.a = null;
       if (s.targetB != null) activePct.b = null;
     } catch (e) {}
   }
   function save() {
     try {
-      localStorage.setItem(LS_KEY, JSON.stringify({
-        currentKg: state.currentKg, targetA: state.targetA, targetB: state.targetB,
-        heightCm: state.heightCm, age: state.age, activity: state.activity, chosen: state.chosen
-      }));
+      var out = {};
+      PERSIST.forEach(function (k) { out[k] = state[k]; });
+      localStorage.setItem(LS_KEY, JSON.stringify(out));
     } catch (e) {}
   }
 
-  /* ================= Foto: verkleinern statt roh hochladen =================
-     Ein Kamerafoto hat 8-20 MB — als Base64 sprengt das jede sinnvolle
-     Anfrage. 1280 px längste Kante, JPEG 0.85 reicht dem Bildmodell völlig. */
+  /* ================= Foto: verkleinern statt roh hochladen ================= */
   function downscale(file) {
     return new Promise(function (resolve, reject) {
       if (!/^image\/(jpeg|png|webp)/.test(file.type)) return reject(new Error("format"));
@@ -87,33 +90,121 @@
     });
   }
 
-  /* ================= Pläne: deterministisch ================= */
+  /* ================= Plan-Engine v2: deterministisch =================
+     Zeitraum-Logik: gewünschte Rate = Delta / Wochen. Sichere Obergrenzen:
+     · Fettabbau natural ~0,75 % KG/Woche, enhanced ~1,0 % (Muskelschutz).
+     · Aufbau natural 0,35/0,25/0,15 kg/Woche (neu/mid/pro), enhanced ×1,5.
+     Liegt der Wunsch darüber → ehrliches Urteil statt Wunschkalorien. */
   var ACTIVITY = {
     sitzend: { f: 1.2,   label: "überwiegend sitzend" },
     leicht:  { f: 1.375, label: "leicht aktiv (1-3× Sport/Woche)" },
     moderat: { f: 1.55,  label: "moderat aktiv (3-5× Sport/Woche)" },
     hoch:    { f: 1.725, label: "sehr aktiv (6-7× Sport/Woche)" }
   };
+  var BULK_RATE = { neu: 0.35, mid: 0.25, pro: 0.15 };
 
-  function calcPlan(currentKg, targetKg, heightCm, age, activity) {
-    var bmr = Math.round(10 * currentKg + 6.25 * heightCm - 5 * age + 5);
-    var tdee = Math.round(bmr * (ACTIVITY[activity] || ACTIVITY.moderat).f);
-    var cut = targetKg < currentKg;
-    var delta = Math.abs(currentKg - targetKg);
-    var kcal, wochenMin, wochenMax;
-    if (cut) {
-      kcal = Math.max(tdee - 500, 1500);
-      // 500 kcal/Tag Defizit ≈ 0,45-0,55 kg/Woche. Ehrliche Spanne, kein Datum.
-      wochenMin = Math.ceil(delta / 0.75); wochenMax = Math.ceil(delta / 0.45);
+  function calcPlan(st, targetKg) {
+    var cur = st.currentKg, t = targetKg;
+    var cut = t < cur;
+    var delta = Math.abs(cur - t);
+    var enh = st.mode === "enhanced";
+    var bmr = Math.round(10 * cur + 6.25 * st.heightCm - 5 * st.age + 5);
+    var tdee = Math.round(bmr * (ACTIVITY[st.activity] || ACTIVITY.moderat).f);
+
+    var maxRate = cut
+      ? cur * (enh ? 0.010 : 0.0075)
+      : (BULK_RATE[st.exp] || 0.25) * (enh ? 1.5 : 1);
+
+    var verdict, usedRate, wishWeeks = null, neededRate = null;
+    if (st.months) {
+      wishWeeks = Math.round(st.months * 4.345);
+      neededRate = delta / wishWeeks;
+      if (neededRate <= maxRate * 0.85) verdict = "ok";
+      else if (neededRate <= maxRate) verdict = "tight";
+      else verdict = "unreal";
+      usedRate = Math.min(neededRate, maxRate);
     } else {
-      kcal = tdee + 250;
-      // Muskelaufbau ist langsam: ~0,25 kg/Woche sind für Fortgeschrittene viel.
-      wochenMin = Math.ceil(delta / 0.35); wochenMax = Math.ceil(delta / 0.2);
+      verdict = "open";
+      usedRate = cut ? Math.min(maxRate, cur * 0.006) : maxRate * 0.8;
     }
-    var protein = Math.round((cut ? 2.2 : 2.0) * targetKg);
-    var fett = Math.max(60, Math.round(1.0 * targetKg));
+    usedRate = Math.max(usedRate, cut ? 0.25 : 0.1);   // Untergrenze: sonst Placebo-Defizit
+
+    var kcalDelta = Math.round(usedRate * 7700 / 7);   // ~7700 kcal pro kg Fettmasse
+    var kcal;
+    if (cut) {
+      kcalDelta = Math.min(Math.max(kcalDelta, 300), enh ? 900 : 700);
+      kcal = Math.max(tdee - kcalDelta, 1500);
+    } else {
+      kcalDelta = Math.min(Math.max(kcalDelta, 150), 500);
+      kcal = tdee + kcalDelta;
+    }
+    var realWeeks = Math.ceil(delta / usedRate);
+    var bestWeeks = Math.ceil(delta / maxRate);        // schnellste seriöse Variante
+
+    var protein = Math.round((cut ? 2.2 : (enh ? 2.2 : 2.0)) * t);
+    var fett = Math.max(60, Math.round(1.0 * t));
     var carbs = Math.max(50, Math.round((kcal - protein * 4 - fett * 9) / 4));
-    return { cut: cut, delta: delta, bmr: bmr, tdee: tdee, kcal: kcal, protein: protein, fett: fett, carbs: carbs, wochenMin: wochenMin, wochenMax: wochenMax };
+    return {
+      cut: cut, delta: delta, enh: enh, bmr: bmr, tdee: tdee,
+      kcal: kcal, kcalDelta: kcalDelta, protein: protein, fett: fett, carbs: carbs,
+      verdict: verdict, usedRate: usedRate, neededRate: neededRate,
+      wishWeeks: wishWeeks, realWeeks: realWeeks, bestWeeks: bestWeeks
+    };
+  }
+
+  /* ================= Trainingspläne nach Tagen & Equipment ================= */
+  function trainingRows(st, p) {
+    var home = st.equip === "home";
+    var d = Math.max(2, Math.min(6, st.days || 3));
+    var rows = [];
+    rows.push(["FREQUENZ", "<strong>" + d + "× Kraft/Woche</strong>" +
+      (p.cut ? " + <strong>2× Zone-2-Cardio</strong> 30-40 min + <strong>8-10k Schritte</strong> täglich" : " — Erholung ist Teil des Plans, nicht seine Abwesenheit")]);
+
+    if (home) {
+      // Kurzhantel-/Körpergewichts-Fassung: gleiche Struktur, machbare Übungen.
+      if (d <= 3) {
+        rows.push(["GK A", "Goblet Squat 3×10-12 · KH-Bankdrücken/Liegestütze 3×8-12 · KH-Rudern 3×10 · KH-Schulterdrücken 3×10 · Plank 3×"]);
+        rows.push(["GK B", "Rumänisches Kreuzheben (KH) 3×10 · Ausfallschritte 3×10/Bein · Klimmzüge/Ruder-Variante 3×max · Seitheben 3×12-15"]);
+        rows.push(["ROTATION", d === 2 ? "A und B je 1× pro Woche" : "A/B/A, nächste Woche B/A/B"]);
+      } else {
+        rows.push(["OK", "KH-Bankdrücken 4×8-10 · KH-Rudern 4×8-10 · KH-Schulterdrücken 3×10 · Curls/Trizeps je 3×10-12"]);
+        rows.push(["UK", "Goblet Squat 4×10 · RDL (KH) 4×8-10 · Ausfallschritte 3×10/Bein · Wadenheben 4×15"]);
+        rows.push(["ROTATION", "OK/UK im Wechsel, " + d + " Einheiten pro Woche"]);
+      }
+      rows.push(["ZUHAUSE", "Mit verstellbaren Kurzhanteln bis ~30 kg kommst du weit — wird eine Übung zu leicht: Tempo runter, Pause kürzer, Wiederholungen rauf."]);
+    } else if (d === 2) {
+      rows.push(["GK 1", "Kniebeuge 3×6-8 · Bankdrücken 3×6-8 · Rudern 3×8-10 · Plank 3×"]);
+      rows.push(["GK 2", "Kreuzheben 3×5 · Schulterdrücken 3×6-8 · Klimmzug/Latzug 3×8-10 · Seitheben 2×12-15"]);
+    } else if (d === 3) {
+      rows.push(["GK A", "Kniebeuge 3×5-8 · Bankdrücken 3×5-8 · Rudern 3×8-10 · Seitheben 2×12-15 · Plank 3×"]);
+      rows.push(["GK B", "Kreuzheben 3×5 · Schulterdrücken 3×6-8 · Klimmzug/Latzug 3×8-10 · Beugercurls 2×10-12"]);
+      rows.push(["ROTATION", "A/B/A, nächste Woche B/A/B"]);
+    } else if (d === 4) {
+      rows.push(["OK A", "Bankdrücken 4×6-8 · Rudern 4×6-8 · Schulterdrücken 3×8-10 · Curls/Trizeps je 3×10-12"]);
+      rows.push(["UK A", "Kniebeuge 4×6-8 · Rumänisches Kreuzheben 3×8-10 · Ausfallschritte 3×10 · Wadenheben 4×12"]);
+      rows.push(["OK B", "Schrägbank 4×8-10 · Klimmzüge 4×max · Dips 3×8-12 · Seitheben 3×12-15"]);
+      rows.push(["UK B", "Kreuzheben 4×5 · Beinpresse 3×10-12 · Beinbeuger 3×10-12 · Bauch 3×"]);
+    } else if (d === 5) {
+      rows.push(["PUSH", "Bankdrücken 4×6-8 · Schrägbank-KH 3×8-10 · Schulterdrücken 3×8-10 · Seitheben 3×12-15 · Trizeps 3×10-12"]);
+      rows.push(["PULL", "Kreuzheben 3×5 · Klimmzüge 4×max · Rudern 4×8-10 · Face Pulls 3×15 · Curls 3×10-12"]);
+      rows.push(["BEINE", "Kniebeuge 4×6-8 · RDL 3×8-10 · Beinpresse 3×10-12 · Beinbeuger 3×10-12 · Waden 4×12"]);
+      rows.push(["OK/UK", "Dazu 1× Oberkörper (Schwachstellen) + 1× Unterkörper (leichter, Technik/Volumen)"]);
+    } else {
+      rows.push(["PPL ×2", "Push/Pull/Legs, zweimal pro Woche — 1. Durchgang schwer (5-8 Wdh), 2. Durchgang Volumen (8-12 Wdh)"]);
+      rows.push(["PUSH", "Bankdrücken · Schulterdrücken · Schrägbank · Seitheben · Trizeps"]);
+      rows.push(["PULL", "Kreuzheben (1×/Woche) · Klimmzüge · Rudern · Face Pulls · Curls"]);
+      rows.push(["LEGS", "Kniebeuge · RDL · Beinpresse · Beinbeuger · Waden"]);
+    }
+
+    var progression = {
+      neu: "Du bist im besten Fenster deines Lebens: <strong>lineare Progression</strong> — fast jede Einheit +2,5 kg auf den Hauptübungen. Nutz es, es kommt nicht wieder.",
+      mid: "<strong>+1 Wiederholung oder +2,5 kg pro Woche</strong> auf den Hauptübungen. Ohne dokumentierte Progression (Tracker!) kein Fortschritt.",
+      pro: "<strong>Doppelprogression</strong> (erst Wiederholungen, dann Last) und Volumen in Wellen — PRs planst du, sie passieren nicht."
+    };
+    rows.push(["PRINZIP", progression[st.exp] || progression.mid]);
+    if (p.cut) rows.push(["IM DEFIZIT", "Gewichte <strong>nicht</strong> freiwillig reduzieren — Kraft halten heißt Muskeln halten. Das Defizit kommt aus der Küche."]);
+    if (p.enh) rows.push(["VOLUMEN", "Enhanced: Die Erholung erlaubt <strong>+20-30 % Volumen</strong> auf zurückhängende Muskelgruppen — aber erst, wenn die Basisübungen sauber progressieren."]);
+    return rows;
   }
 
   /* ================= Anzeige-Helfer ================= */
@@ -180,9 +271,9 @@
     downscale(f).then(function (dataUrl) {
       state.photo = dataUrl;
       drop.classList.add("has-photo");
-      var old = drop.querySelector(".trf-drop-preview"); if (old) old.parentNode.removeChild(old);
-      var oldS = drop.querySelector(".trf-drop-state"); if (oldS) oldS.parentNode.removeChild(oldS);
-      var oldC = drop.querySelector(".trf-drop-change"); if (oldC) oldC.parentNode.removeChild(oldC);
+      ["trf-drop-preview", "trf-drop-state", "trf-drop-change"].forEach(function (c) {
+        var o = drop.querySelector("." + c); if (o) o.parentNode.removeChild(o);
+      });
       var im = el("img", "trf-drop-preview"); im.src = dataUrl; im.alt = "Dein hochgeladenes Foto";
       drop.appendChild(im);
       drop.appendChild(el("span", "trf-drop-state", "INPUT BEREIT"));
@@ -196,18 +287,18 @@
   s1.appendChild(drop); s1.appendChild(fileIn); s1.appendChild(photoErr);
   root.appendChild(s1);
 
-  /* --- Schritt 2: Gewichte als Instrumente --- */
+  /* --- Schritt 2: Ziele + Transformations-Fragen --- */
   var s2 = el("section", "trf-step");
-  s2.appendChild(secthead("MM / TRANSFORM · 02", "Wo du stehst, wo du hinwillst"));
-  s2.appendChild(el("p", "trf-hint", "Zwei Ziele, zwei Vorschauen — damit du vergleichst, bevor du dich festlegst. Die Prozent-Marken rechnen vom aktuellen Gewicht; jedes Feld ist frei überschreibbar (auch nach oben, für Aufbau)."));
+  s2.appendChild(secthead("MM / TRANSFORM · 02", "Deine Transformation"));
+  s2.appendChild(el("p", "trf-hint", "Zwei Ziele, zwei Vorschauen — die Prozent-Marken rechnen vom aktuellen Gewicht, jedes Feld ist frei überschreibbar (auch nach oben, für Aufbau). Die Fragen darunter sind keine Deko: Jede Antwort verändert deinen Plan — und der Wunsch-Look fließt in die Bilder ein."));
 
   var io = el("div", "trf-io");
-  function bigInput(labelHtml, value, step) {
+  function bigInput(labelHtml, value) {
     var cell = el("div", "trf-io-cell");
     cell.appendChild(el("span", "trf-k", labelHtml));
     var wrap = el("div", "trf-bigin");
     var inp = el("input");
-    inp.type = "number"; inp.min = "40"; inp.max = "300"; inp.step = step || "0.5";
+    inp.type = "number"; inp.min = "40"; inp.max = "300"; inp.step = "0.5";
     inp.setAttribute("inputmode", "decimal");
     inp.value = value != null ? value : "";
     inp.placeholder = "—";
@@ -220,7 +311,6 @@
   var fA = bigInput("ZIEL A", state.targetA);
   var fB = bigInput("ZIEL B", state.targetB);
 
-  // Prozent-Chips: setzen das Ziel relativ zum IST-Gewicht.
   var PCTS = [0.10, 0.20, 0.30];
   function makeChips(cell, key, input) {
     var row = el("div", "trf-chips");
@@ -259,9 +349,49 @@
   });
   io.appendChild(fCur.cell); io.appendChild(fA.cell); io.appendChild(fB.cell);
   s2.appendChild(io);
-  // Startwerte: Chips anwenden, falls Ist-Gewicht gespeichert war.
   if (state.currentKg) { applyPct("a", fA.input); applyPct("b", fB.input); }
   syncChips();
+
+  /* Fragebogen: Chip-Gruppen, single-select, jede Antwort wird persistiert. */
+  function chipGroup(label, key, options) {
+    var cell = el("div", "trf-io-cell trf-q-cell");
+    cell.appendChild(el("span", "trf-k", label));
+    var row = el("div", "trf-chips");
+    options.forEach(function (o) {
+      var b = el("button", "trf-chip", o.label);
+      b.type = "button";
+      b.addEventListener("click", function () {
+        state[key] = o.v;
+        save();
+        var kids = row.querySelectorAll(".trf-chip");
+        for (var i = 0; i < kids.length; i++) kids[i].classList.toggle("is-on", options[i].v === o.v);
+      });
+      if (state[key] === o.v) b.classList.add("is-on");
+      row.appendChild(b);
+    });
+    cell.appendChild(row);
+    return cell;
+  }
+  var q = el("div", "trf-q");
+  q.appendChild(chipGroup("Zeitraum — bis wann?", "months", [
+    { v: 3, label: "3 MONATE" }, { v: 6, label: "6 MONATE" }, { v: 12, label: "12 MONATE" }, { v: null, label: "OFFEN" }
+  ]));
+  q.appendChild(chipGroup("Wunsch-Look (fließt ins Bild)", "look", [
+    { v: "lean", label: "DEFINIERT" }, { v: "athletic", label: "ATHLETISCH" }, { v: "muscular", label: "MASSIV" }
+  ]));
+  q.appendChild(chipGroup("Trainingserfahrung", "exp", [
+    { v: "neu", label: "< 1 JAHR" }, { v: "mid", label: "1-4 JAHRE" }, { v: "pro", label: "4+ JAHRE" }
+  ]));
+  q.appendChild(chipGroup("Trainingstage pro Woche", "days", [
+    { v: 2, label: "2" }, { v: 3, label: "3" }, { v: 4, label: "4" }, { v: 5, label: "5" }, { v: 6, label: "6" }
+  ]));
+  q.appendChild(chipGroup("Status", "mode", [
+    { v: "natural", label: "NATURAL" }, { v: "enhanced", label: "ENHANCED" }
+  ]));
+  q.appendChild(chipGroup("Equipment", "equip", [
+    { v: "gym", label: "GYM" }, { v: "home", label: "ZUHAUSE / KURZHANTELN" }
+  ]));
+  s2.appendChild(q);
 
   // Rahmendaten — nur für die Kalorienrechnung der Pläne, nicht fürs Bild.
   var meta = el("div", "trf-meta");
@@ -276,7 +406,7 @@
   var fH = metaField("Größe (cm)", "trfH", state.heightCm, { min: 140, max: 220, step: "1", inputmode: "numeric" });
   var fAge = metaField("Alter", "trfAge", state.age, { min: 18, max: 90, step: "1", inputmode: "numeric" });
   var actWrap = el("label");
-  actWrap.innerHTML = "<span>Aktivität</span>";
+  actWrap.innerHTML = "<span>Alltags-Aktivität</span>";
   var actSel = el("select"); actSel.id = "trfAct";
   Object.keys(ACTIVITY).forEach(function (k) {
     var o = el("option"); o.value = k; o.textContent = ACTIVITY[k].label;
@@ -286,7 +416,6 @@
   actWrap.appendChild(actSel);
   meta.appendChild(fH.wrap); meta.appendChild(fAge.wrap); meta.appendChild(actWrap);
   s2.appendChild(meta);
-  s2.appendChild(el("p", "trf-hint", "Größe, Alter und Aktivität fließen NUR in die Kalorienrechnung der Pläne ein — nicht in die Bilder."));
   root.appendChild(s2);
 
   /* --- Schritt 3: Visualisieren + Bühne --- */
@@ -306,9 +435,7 @@
   s4.style.display = "none";
   root.appendChild(s4);
 
-  /* ================= Login-Gate =================
-     Die Edge Function verlangt einen eingeloggten Nutzer. Ohne Konto zeigen
-     wir das ehrlich VOR dem Klick — nicht erst als Fehlermeldung danach. */
+  /* ================= Login-Gate ================= */
   var accountState = "unknown";
   function renderGate() {
     gate.innerHTML = "";
@@ -368,9 +495,6 @@
     wrap.appendChild(el("p", "trf-error", esc(fehlertext(code))));
     view.appendChild(wrap);
   }
-
-  /* Vorher/Nachher-Regler: Original unten, Ergebnis oben mit clip-path.
-     Ziehen (Pointer Events) verschiebt die Trennlinie. */
   function showCompare(view, beforeSrc, afterSrc) {
     view.innerHTML = "";
     view.classList.add("trf-ba");
@@ -418,7 +542,7 @@
     return null;
   }
 
-  var panels = {};   // targetKg -> panel refs (für Auswahl-Markierung)
+  var panels = {};
 
   runBtn.addEventListener("click", function () {
     readInputs();
@@ -448,7 +572,10 @@
       p.foot.appendChild(el("span", "mono-note", "WIRD GENERIERT …"));
       stage.appendChild(p.root);
 
-      MM.account.invokeFunction("mm-transform", { image: state.photo, current_kg: state.currentKg, target_kg: t })
+      MM.account.invokeFunction("mm-transform", {
+        image: state.photo, current_kg: state.currentKg, target_kg: t,
+        look: state.look, enhanced: state.mode === "enhanced"
+      })
         .then(function (r) {
           p.foot.innerHTML = "";
           if (r && r.ok && r.data && r.data.image_url) {
@@ -498,16 +625,46 @@
     return w;
   }
 
+  /* Zeitrahmen-Urteil: ehrlich, mit Zahlen — der wichtigste Block des Plans. */
+  function verdictBlock(p, months) {
+    var cls, label, text;
+    var rate = p.usedRate.toFixed(2).replace(".", ",");
+    if (p.verdict === "ok") {
+      cls = "is-ok"; label = "ZEITRAHMEN MACHBAR";
+      text = "<strong>" + p.delta + " kg in " + months + " Monaten</strong> entspricht " + rate + " kg/Woche — seriös machbar. Der Plan unten ist genau darauf gerechnet.";
+    } else if (p.verdict === "tight") {
+      cls = "is-tight"; label = "ZEITRAHMEN KNAPP";
+      text = "<strong>" + p.delta + " kg in " + months + " Monaten</strong> ist das obere Ende des Seriösen (" + rate + " kg/Woche). Der Plan fährt am Limit — jede schwache Woche verschiebt das Ziel. Puffer: rechne mit " + p.realWeeks + "-" + Math.ceil(p.realWeeks * 1.2) + " Wochen.";
+    } else if (p.verdict === "unreal") {
+      cls = "is-unreal"; label = "NICHT SERIÖS MACHBAR";
+      var needed = p.neededRate.toFixed(2).replace(".", ",");
+      text = "<strong>" + p.delta + " kg in " + months + " Monaten</strong> hieße " + needed + " kg/Woche — das kostet " + (p.cut ? "Muskeln und endet im Jojo" : "mehr Fett als Muskeln") + ". Wir rechnen nichts schön: Der Plan unten nutzt die schnellste seriöse Rate (" + rate + " kg/Woche) und braucht dafür <strong>" + p.realWeeks + " Wochen</strong>.";
+    } else {
+      cls = "is-open"; label = "OHNE DATUM — NACHHALTIG";
+      text = "Kein Zieldatum gewählt: Der Plan fährt eine nachhaltige Rate von " + rate + " kg/Woche. Realistischer Zeitrahmen für " + p.delta + " kg: <strong>" + p.realWeeks + " Wochen</strong> (schnellste seriöse Variante: " + p.bestWeeks + ").";
+    }
+    var v = el("div", "trf-verdict " + cls);
+    v.appendChild(el("span", "vk", label));
+    v.appendChild(el("span", "vt", text));
+    return v;
+  }
+
   function renderPlans() {
     var t = state.chosen;
-    var p = calcPlan(state.currentKg, t, state.heightCm, state.age, state.activity);
+    var p = calcPlan(state, t);
+    var LOOK_LABEL = { lean: "definiert", athletic: "athletisch", muscular: "massiv" };
     s4.innerHTML = "";
     s4.appendChild(secthead("MM / PROTOCOL · 04", "Dein Plan für " + t + " kg"));
     s4.appendChild(el("p", "trf-hint",
-      "Berechnet aus deinen Angaben (" + state.currentKg + " kg → " + t + " kg, " + state.heightCm + " cm, " + state.age + " Jahre, " +
-      esc((ACTIVITY[state.activity] || ACTIVITY.moderat).label) + "). Grundumsatz nach Mifflin-St-Jeor: " + p.bmr + " kcal, Erhaltungsbedarf ca. " + p.tdee + " kcal. Alles deutlich Schnellere als der Zeitrahmen unten kostet Muskeln oder ist nicht haltbar."));
+      "Gerechnet aus deinen Antworten: " + state.currentKg + " kg → " + t + " kg · Look " + (LOOK_LABEL[state.look] || "athletisch") + " · " +
+      (state.months ? state.months + " Monate" : "ohne Zieldatum") + " · " + state.days + " Trainingstage · " +
+      (state.exp === "neu" ? "unter 1 Jahr Erfahrung" : state.exp === "pro" ? "4+ Jahre Erfahrung" : "1-4 Jahre Erfahrung") + " · " +
+      (p.enh ? "enhanced" : "natural") + " · " + (state.equip === "home" ? "zuhause/Kurzhanteln" : "Gym") + " · " +
+      state.heightCm + " cm · " + state.age + " Jahre · " + esc((ACTIVITY[state.activity] || ACTIVITY.moderat).label) +
+      ". Grundumsatz (Mifflin-St-Jeor): " + p.bmr + " kcal · Erhaltungsbedarf: ca. " + p.tdee + " kcal."));
 
-    // Makro-Instrumente: die fünf Zahlen, die den Plan tragen.
+    s4.appendChild(verdictBlock(p, state.months));
+
     var mrow = el("div", "mm-metric-row trf-plan-metrics");
     function metric(v, unit, k, cls) {
       var m = el("div", "mm-metric" + (cls ? " " + cls : ""));
@@ -515,11 +672,12 @@
       m.appendChild(el("span", "k", k));
       return m;
     }
-    mrow.appendChild(metric(p.kcal, "KCAL", "pro Tag (" + (p.cut ? "−500" : "+250") + " zum Erhalt)"));
+    mrow.appendChild(metric(p.kcal, "KCAL", "pro Tag (" + (p.cut ? "−" : "+") + p.kcalDelta + " zum Erhalt)"));
     mrow.appendChild(metric(p.protein, "G", "Protein — nicht verhandelbar", "is-up"));
     mrow.appendChild(metric(p.fett, "G", "Fett"));
     mrow.appendChild(metric(p.carbs, "G", "Kohlenhydrate"));
-    mrow.appendChild(metric(p.wochenMin + "-" + p.wochenMax, "WO", p.delta + " kg " + (p.cut ? "Fettabbau" : "Aufbau") + ", realistisch"));
+    mrow.appendChild(metric(p.usedRate.toFixed(2).replace(".", ","), "KG/WO", (p.cut ? "Abnahme" : "Aufbau") + "-Rate"));
+    mrow.appendChild(metric(p.realWeeks, "WO", "bis " + t + " kg, ehrlich"));
     s4.appendChild(mrow);
 
     var grid = el("div", "trf-plan-grid");
@@ -534,7 +692,7 @@
         ["MITTAG", "<strong>Hähnchen/Rind/Fisch (200 g)</strong> + Reis/Kartoffeln + Gemüse"],
         ["ABEND", "<strong>Eier/Fisch/Tofu</strong> + großes Gemüse + Olivenöl"],
         ["SNACK", "<strong>Whey-Shake oder Hüttenkäse</strong> — schließt die Proteinlücke"],
-        ["REGEL", "Wiegen täglich morgens, gewertet wird nur der <strong>Wochenschnitt</strong>. Stagniert er 2 Wochen: −150 kcal."]
+        ["REGEL", "Wiegen täglich morgens, gewertet wird nur der <strong>Wochenschnitt</strong>. Liegt er 2 Wochen über der Ziel-Rate: −150 kcal."]
       ];
     } else {
       mealsE = [
@@ -542,7 +700,7 @@
         ["MITTAG", "<strong>Fleisch/Fisch (200 g)</strong> + große Portion Reis/Nudeln + Gemüse"],
         ["ABEND", "<strong>Eier/Lachs</strong> + Kartoffeln + Avocado"],
         ["SNACKS", "Shake + Obst nach dem Training, <strong>Quark vor dem Schlafen</strong>"],
-        ["REGEL", "Wiegen täglich morgens, Wochenschnitt zählt. Stagniert er 2 Wochen: +150 kcal."]
+        ["REGEL", "Wiegen täglich morgens, Wochenschnitt zählt. Baut er 2 Wochen nichts auf: +150 kcal."]
       ];
     }
     colE.appendChild(rows(mealsE));
@@ -551,25 +709,7 @@
     /* --- Training --- */
     var colT = el("div", "trf-plan-col");
     colT.appendChild(el("h3", null, "Training"));
-    var rowsT;
-    if (p.cut) {
-      rowsT = [
-        ["FREQUENZ", "<strong>3× Kraft/Woche</strong> (Ganzkörper A/B im Wechsel) + <strong>2× Zone-2-Cardio</strong> 30-40 min + <strong>8-10k Schritte</strong> täglich"],
-        ["TAG A", "Kniebeuge 3×5-8 · Bankdrücken 3×5-8 · Rudern 3×8-10 · Seitheben 2×12-15 · Plank 3×"],
-        ["TAG B", "Kreuzheben 3×5 · Schulterdrücken 3×6-8 · Klimmzug/Latzug 3×8-10 · Beugercurls 2×10-12"],
-        ["PRINZIP", "Gewichte <strong>nicht</strong> reduzieren — Kraft halten heißt Muskeln halten. Das Defizit kommt aus der Küche, nicht aus Extra-Cardio."]
-      ];
-    } else {
-      rowsT = [
-        ["FREQUENZ", "<strong>4× Kraft/Woche</strong> — Oberkörper/Unterkörper im Wechsel"],
-        ["OK A", "Bankdrücken 4×6-8 · Rudern 4×6-8 · Schulterdrücken 3×8-10 · Curls/Trizeps je 3×10-12"],
-        ["UK A", "Kniebeuge 4×6-8 · Rumänisches Kreuzheben 3×8-10 · Ausfallschritte 3×10 · Wadenheben 4×12"],
-        ["OK B", "Schrägbank 4×8-10 · Klimmzüge 4×max · Dips 3×8-12 · Seitheben 3×12-15"],
-        ["UK B", "Kreuzheben 4×5 · Beinpresse 3×10-12 · Beinbeuger 3×10-12 · Bauch 3×"],
-        ["PRINZIP", "Jede Woche <strong>+1 Wiederholung oder +2,5 kg</strong> auf den Hauptübungen. Ohne Progression kein Aufbau."]
-      ];
-    }
-    colT.appendChild(rows(rowsT));
+    colT.appendChild(rows(trainingRows(state, p)));
     grid.appendChild(colT);
 
     /* --- Supplemente --- */
@@ -583,6 +723,10 @@
       ["MAGNESIUM", "300-400 mg abends"]
     ];
     if (p.cut) rowsS.push(["KOFFEIN", "Vor dem Training — der einzige legale „Fatburner“, der wirkt. Der Rest im Fatburner-Regal ist Dekoration."]);
+    if (p.enh) {
+      rowsS.push(["MONITORING", "Enhanced ohne Daten ist Blindflug: <strong>großes Blutbild, Lipide, Leberwerte, Hämatokrit, Blutdruck alle 8-12 Wochen</strong> + ärztliche Begleitung. Nicht optional."]);
+      rowsS.push(["SUBSTANZEN", "Bewusst <strong>keine</strong> Substanz- oder Dosierungsempfehlungen — die nüchterne Einordnung von Wirkstoffen, Risiken und Mythen liefert die <a href=\"anabole-matrix.html\">Anabole Matrix</a>."]);
+    }
     rowsS.push(["EHRLICH", "Supplemente sind die letzten 5 % — die ersten 95 % stehen in den beiden Spalten links."]);
     colS.appendChild(rows(rowsS));
     grid.appendChild(colS);
@@ -590,7 +734,7 @@
     s4.appendChild(grid);
     s4.appendChild(el("p", "trf-hint trf-plan-note",
       "Kein medizinischer Rat: Bei Vorerkrankungen, Medikamenten oder einem Ziel unter BMI 20 zuerst ärztlich abklären. " +
-      "Die generierten Bilder sind eine Visualisierung, kein Versprechen — dein echtes Ergebnis entsteht aus " + p.wochenMin + "+ Wochen Umsetzung."));
+      "Die generierten Bilder sind eine Visualisierung, kein Versprechen — dein echtes Ergebnis entsteht aus " + p.realWeeks + " Wochen Umsetzung."));
   }
 
   /* Gespeicherte Wahl wiederherstellen (ohne Bilder — die leben nur je Sitzung) */
