@@ -26,34 +26,115 @@
   <meta name="twitter:description" content="Sieh dich selbst mit deinem Zielgewicht — dann verfolge genau dieses Ziel mit Ernährungs-, Trainings- und Supplementplan.">
   <meta name="twitter:image" content="https://www.malemetrix.com/og-image.png">
   <style>
-    /* Seiten-eigene Bausteine — bewusst schmal, alles andere kommt aus style.css */
-    .trf-step { margin: 34px 0; }
-    .trf-hint { color: var(--muted-2); max-width: 68ch; }
-    .trf-error { color: #ff7a6e; display: block; }
-    .trf-drop { border: 1px dashed var(--line, #2a3140); border-radius: 12px; padding: 34px 18px; text-align: center; cursor: pointer; margin-top: 14px; transition: border-color .15s; }
-    .trf-drop.is-over, .trf-drop:hover { border-color: #16C4F4; }
-    .trf-preview { max-width: 240px; max-height: 320px; border-radius: 10px; margin-top: 14px; display: block; }
+    /* ========================================================================
+       TRANSFORM — Seitenbausteine im VISUAL SYSTEM 2.0 (Instrumente statt
+       Karten, Hairlines, Mono-Systemsprache). Tokens kommen aus style.css.
+       ===================================================================== */
+    .trf-hint { color: var(--muted-2); max-width: 70ch; font-size: 0.88rem; line-height: 1.6; }
+    .trf-error { color: var(--status-flag, #ff7a6e); display: block; font-size: 0.88rem; }
     .file-hidden { display: none; }
-    .trf-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 14px; max-width: 720px; }
-    .trf-field span { display: block; font-size: .72rem; color: var(--muted-2); margin-bottom: 5px; font-family: var(--font-mono); letter-spacing: .06em; }
-    .trf-field input, .trf-field select { width: 100%; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--line, #2a3140); background: rgba(255,255,255,.03); color: inherit; font: inherit; }
-    .trf-login { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
-    .trf-login input { padding: 10px 12px; border-radius: 9px; border: 1px solid var(--line, #2a3140); background: rgba(255,255,255,.03); color: inherit; font: inherit; min-width: 240px; }
-    .trf-gate { margin-bottom: 14px; }
-    #trfRun { margin-top: 6px; }
-    .trf-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 22px; }
-    .trf-card { border: 1px solid var(--line, #2a3140); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
-    .trf-card-title { font-family: var(--font-mono); font-size: .78rem; letter-spacing: .1em; color: var(--muted-2); }
-    .trf-card-img { min-height: 220px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.02); border-radius: 9px; overflow: hidden; }
-    .trf-card-img img { max-width: 100%; max-height: 360px; display: block; }
-    .trf-spinner { width: 26px; height: 26px; border: 3px solid rgba(255,255,255,.15); border-top-color: #16C4F4; border-radius: 50%; animation: trfspin 0.9s linear infinite; }
-    @keyframes trfspin { to { transform: rotate(360deg); } }
-    .trf-plan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 18px; }
-    .trf-plan-card { border: 1px solid var(--line, #2a3140); border-radius: 12px; padding: 18px; }
-    .trf-plan-title { font-size: 1.05rem; margin-bottom: 10px; }
-    .trf-plan-card ul { padding-left: 18px; margin: 8px 0; }
-    .trf-plan-card li { margin: 6px 0; font-size: .92rem; line-height: 1.45; }
-    .trf-macros li { list-style: none; margin-left: -18px; }
+
+    /* --- Hero-Instrumente --- */
+    .trf-hero-metrics { margin-top: 34px; max-width: 640px; }
+
+    /* --- Schritt-Struktur: Hairline-Ebenen, keine Boxen --- */
+    .trf-step { padding: clamp(28px, 4vw, 44px) 0; border-top: 1px solid var(--hairline); }
+    .trf-step:first-child { border-top: 0; padding-top: 0; }
+
+    /* --- Foto-Eingang: Kalibrierrahmen mit Eck-Ticks --- */
+    .trf-drop { position: relative; margin-top: 18px; padding: clamp(38px, 6vw, 64px) 20px; text-align: center; cursor: pointer; background: var(--surface); transition: background .2s; }
+    .trf-drop .tick { position: absolute; width: 18px; height: 18px; border: 0 solid var(--accent-line); pointer-events: none; transition: border-color .2s; }
+    .trf-drop .tick.tl { top: 0; left: 0; border-top-width: 1px; border-left-width: 1px; }
+    .trf-drop .tick.tr { top: 0; right: 0; border-top-width: 1px; border-right-width: 1px; }
+    .trf-drop .tick.bl { bottom: 0; left: 0; border-bottom-width: 1px; border-left-width: 1px; }
+    .trf-drop .tick.br { bottom: 0; right: 0; border-bottom-width: 1px; border-right-width: 1px; }
+    .trf-drop:hover, .trf-drop.is-over { background: rgba(22, 196, 244, 0.04); }
+    .trf-drop:hover .tick, .trf-drop.is-over .tick { border-color: var(--accent-2); }
+    .trf-drop-ico { width: 34px; height: 34px; margin: 0 auto 14px; color: var(--accent-2); }
+    .trf-drop-text { display: block; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.2em; color: var(--text); }
+    .trf-drop-sub { display: block; margin-top: 10px; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.14em; color: var(--muted-2); }
+    .trf-drop.has-photo { padding: 0; background: transparent; }
+    .trf-drop.has-photo .trf-drop-inner { display: none; }
+    .trf-drop-preview { display: block; width: 100%; max-height: 460px; object-fit: contain; background: var(--bg-1); }
+    .trf-drop-state { position: absolute; top: 12px; left: 12px; font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.18em; color: var(--bg-0); background: var(--accent-2); padding: 4px 8px; }
+    .trf-drop-change { position: absolute; bottom: 12px; right: 12px; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.14em; color: var(--text); background: rgba(7, 10, 15, 0.78); border: 1px solid var(--hairline); padding: 6px 10px; }
+
+    /* --- Eingaben als Instrumente --- */
+    .trf-io { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: clamp(18px, 3vw, 34px); margin-top: 22px; }
+    .trf-io-cell { border-left: 1px solid var(--hairline); padding-left: 16px; }
+    .trf-io-cell:first-child { border-left: 0; padding-left: 0; }
+    .trf-k { display: block; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.16em; color: var(--muted-2); text-transform: uppercase; margin-bottom: 10px; }
+    .trf-bigin { display: flex; align-items: baseline; gap: 8px; }
+    .trf-bigin input { width: 130px; background: transparent; border: 0; border-bottom: 1px solid var(--line-strong); color: var(--text); font-family: var(--font-display); font-weight: 700; font-size: clamp(1.9rem, 5vw, 2.6rem); line-height: 1.05; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; padding: 0 0 4px; outline: none; -moz-appearance: textfield; }
+    .trf-bigin input::-webkit-outer-spin-button, .trf-bigin input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .trf-bigin input:focus { border-bottom-color: var(--accent-2); }
+    .trf-bigin .u { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.12em; color: var(--muted-2); }
+    .trf-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .trf-chip { font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.1em; color: var(--muted); background: transparent; border: 1px solid var(--hairline); padding: 7px 11px; cursor: pointer; transition: border-color .15s, color .15s; }
+    .trf-chip:hover { border-color: var(--accent-line); color: var(--text); }
+    .trf-chip.is-on { border-color: var(--accent-2); color: var(--accent-2); }
+    .trf-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-top: 30px; padding-top: 18px; border-top: 1px solid var(--hairline); max-width: 720px; }
+    .trf-meta label span { display: block; font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.16em; color: var(--muted-2); text-transform: uppercase; margin-bottom: 7px; }
+    .trf-meta input, .trf-meta select { width: 100%; background: var(--surface); border: 1px solid var(--hairline); color: var(--text); font: inherit; font-variant-numeric: tabular-nums; padding: 9px 11px; outline: none; }
+    .trf-meta input:focus, .trf-meta select:focus { border-color: var(--accent-line); }
+    .trf-meta select option { background: var(--bg-1); }
+
+    /* --- Login-Gate --- */
+    .trf-login { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+    .trf-login input { background: var(--surface); border: 1px solid var(--hairline); color: var(--text); font: inherit; padding: 11px 13px; min-width: 250px; outline: none; }
+    .trf-login input:focus { border-color: var(--accent-line); }
+    .trf-gate { margin-bottom: 16px; }
+
+    /* --- Ergebnis-Bühne --- */
+    .trf-stage { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: clamp(14px, 2vw, 22px); margin-top: 28px; }
+    .trf-panel { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--hairline); }
+    .trf-panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--hairline); }
+    .trf-panel-head .id { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.18em; color: var(--muted-2); }
+    .trf-panel-head .kg { font-family: var(--font-display); font-weight: 700; font-size: 1.5rem; letter-spacing: -0.01em; color: var(--text); font-variant-numeric: tabular-nums; }
+    .trf-panel-head .kg small { font-size: 0.55em; font-weight: 600; color: var(--muted-2); margin-left: 3px; }
+    .trf-panel.is-target .trf-panel-head .kg { color: var(--accent-2); }
+    .trf-view { position: relative; aspect-ratio: 3 / 4; overflow: hidden; background: var(--bg-1); }
+    .trf-view img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .trf-panel-foot { padding: 12px 14px; border-top: 1px solid var(--hairline); }
+    .trf-panel-foot .btn { width: 100%; }
+    .trf-panel-foot .mono-note { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.14em; color: var(--muted-2); }
+    .trf-panel.is-chosen { border-color: var(--accent-2); }
+    .trf-panel.is-chosen .trf-panel-head { border-bottom-color: var(--accent-line); }
+
+    /* Generierungszustand: Scanlinie + Statuszeilen */
+    .trf-scan { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+    .trf-scan::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--accent-2), transparent); animation: trfscan 2.4s ease-in-out infinite; opacity: 0.85; }
+    @keyframes trfscan { 0% { top: 6%; } 50% { top: 94%; } 100% { top: 6%; } }
+    @media (prefers-reduced-motion: reduce) { .trf-scan::before { animation: none; top: 50%; } }
+    .trf-scan .st { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.2em; color: var(--accent-2); }
+    .trf-scan .st2 { font-family: var(--font-mono); font-size: 0.56rem; letter-spacing: 0.14em; color: var(--muted-2); }
+    .trf-scan-err { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 18px; text-align: center; }
+
+    /* Vorher/Nachher-Regler */
+    .trf-ba { touch-action: none; cursor: ew-resize; }
+    .trf-ba .after { clip-path: inset(0 0 0 var(--ba, 50%)); }
+    .trf-ba-handle { position: absolute; top: 0; bottom: 0; left: var(--ba, 50%); width: 1px; background: var(--accent-2); pointer-events: none; }
+    .trf-ba-handle::after { content: "◂ ▸"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.62rem; letter-spacing: 0.05em; color: var(--bg-0); background: var(--accent-2); padding: 5px 7px; border-radius: 99px; white-space: nowrap; }
+    .trf-ba-tags { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; pointer-events: none; }
+    .trf-ba-tags span { font-family: var(--font-mono); font-size: 0.55rem; letter-spacing: 0.16em; color: var(--text); background: rgba(7, 10, 15, 0.72); padding: 3px 7px; }
+
+    /* --- Plan: Makro-Instrumente + Struktur-Ebenen --- */
+    .trf-plan-metrics { padding: 6px 0 2px; }
+    .trf-plan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: clamp(18px, 3vw, 34px); margin-top: 10px; }
+    .trf-plan-col h3 { font-family: var(--font-mono); font-size: 0.64rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent-2); margin: 0 0 4px; display: flex; align-items: center; gap: 10px; }
+    .trf-plan-col h3::after { content: ""; flex: 1; height: 1px; background: var(--hairline); }
+    .trf-rows { display: flex; flex-direction: column; }
+    .trf-row { display: grid; grid-template-columns: 96px 1fr; gap: 12px; padding: 10px 0; border-top: 1px solid var(--hairline); font-size: 0.9rem; line-height: 1.5; }
+    .trf-row:first-child { border-top: 0; }
+    .trf-row .rk { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.12em; color: var(--muted-2); text-transform: uppercase; padding-top: 3px; }
+    .trf-row .rv { color: var(--muted); }
+    .trf-row .rv strong { color: var(--text); font-weight: 600; }
+    .trf-plan-note { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--hairline); }
+
+    @media (max-width: 700px) {
+      .trf-stage { grid-template-columns: 1fr; }
+      .trf-row { grid-template-columns: 78px 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -131,18 +212,22 @@
 
 <main>
 
-  <section class="page-head" style="padding-bottom:18px">
+  <section class="page-head" style="padding-bottom:10px">
     <div class="hero-bg"></div>
     <div class="container" style="position:relative">
-      <div class="os14-sysline">MM / TRANSFORM</div>
-      <h1 class="h-display" style="max-width:840px;font-size:clamp(2.4rem,7vw,4.2rem);line-height:0.98"><span data-i18n="trf.h1a">Sieh dein Ziel,</span> <span class="text-grad" data-i18n="trf.h1b">bevor du startest</span>.</h1>
-      <p class="lead" style="max-width:56ch;margin-top:18px" data-i18n="trf.lead">Lade ein Foto von dir hoch und sieh dich selbst mit zwei verschiedenen Zielgewichten — fotorealistisch, generiert aus deinem eigenen Bild. Dann wählst du EIN Ziel, und genau dafür bekommst du Ernährungsplan, Trainingsplan und Supplementplan.</p>
-      <p class="small" style="color:var(--muted-2);margin-top:12px;font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.16em" data-i18n="trf.eyebrow">Foto wird nicht gespeichert · Pläne deterministisch berechnet</p>
+      <div class="os14-sysline">MM / TRANSFORM · BODY PREVIEW ENGINE</div>
+      <h1 class="h-display" style="max-width:920px;font-size:clamp(2.5rem,7vw,4.4rem);line-height:0.98"><span data-i18n="trf.h1a">Dein Körper in der Zukunft.</span><br><span class="text-grad" data-i18n="trf.h1b">Heute sichtbar.</span></h1>
+      <p class="lead" style="max-width:56ch;margin-top:22px" data-i18n="trf.lead">Ein Foto von dir, zwei Zielgewichte — und du siehst dich selbst, wie du nach der Transformation aussiehst. Fotorealistisch, aus deinem eigenen Bild. Dann wählst du EIN Ziel, und genau dafür bekommst du Ernährungs-, Trainings- und Supplementplan.</p>
+      <div class="mm-metric-row trf-hero-metrics">
+        <div class="mm-metric"><span class="v">2<small>&nbsp;VERSIONEN</small></span><span class="k">von dir selbst</span></div>
+        <div class="mm-metric"><span class="v">~30<small>&nbsp;SEK</small></span><span class="k">pro Vorschau</span></div>
+        <div class="mm-metric"><span class="v">0<small>&nbsp;FOTOS</small></span><span class="k">gespeichert</span></div>
+      </div>
     </div>
   </section>
 
-  <section class="section-tight" style="padding-top:8px">
-    <div class="container" style="max-width:980px">
+  <section class="section-tight" style="padding-top:14px">
+    <div class="container" style="max-width:1060px">
       <div id="mmTransform">
         <noscript><p>Diese Seite braucht JavaScript.</p></noscript>
         <p class="small" style="color:var(--muted-2)">Wird geladen …</p>
