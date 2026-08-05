@@ -1,5 +1,15 @@
 # PRODUCTION READINESS — Phase 10
 
+> **NACHTRAG 05.08.2026 — mehrere „bis zum Deploy"-Warnungen sind eingelöst.**
+> Der neue mm-commerce-Stand IST live (v22, `check-functions.sh` misst überall
+> den P10-Stand), `score-telemetry` ist deployt, und über den Stripe-Pfad ist
+> ein **realer Kauf** serverseitig verifiziert worden (1 orders-Zeile paid,
+> 1 commerce_events-Zeile). Der Preis ist inzwischen 99 € (nicht 49 €).
+> Die Tabelle unten bleibt als historischer Phase-10-Stand stehen; aktuelle
+> Wahrheit: `PRODUCTION_TRUTH.md` + `SUPABASE_PRODUCTION_AUDIT.md` (Nachtrag).
+> Dauerhafte Messung statt Erinnerung: `bash tools-dev/production-smoke.sh`
+> (läuft täglich als GitHub Action, sobald auf dem Default-Branch).
+
 Stand: 2026-07-23 · Ehrliche Statusmatrix. Testlevel-Skala:
 STATIC (Quellcode-Invarianten) → UNIT (echte Logik isoliert) → INTEGRATION
 (Module zusammen) → BROWSER → AUTHENTICATED → REAL SUPABASE → **LIVE VERIFIED**.

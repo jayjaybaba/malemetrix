@@ -91,7 +91,10 @@ Jeder Schritt: **WO · WAS · VERIFY · ROLLBACK.**
 
 ### 9. Verifikation gesamt
 - `await MM.productionStatus()` → alle beabsichtigten Abhängigkeiten `configured:true`.
-- Produktions-Smoke (tools-dev, `BASE=https://www.malemetrix.com`) grün, 0 Konsolenfehler.
+- Produktions-Smoke: `bash tools-dev/production-smoke.sh` — misst Seiten,
+  Edge Functions, anonyme RLS-Oberfläche und SW-Version in einem Lauf
+  (**GRÜN am 05.08.2026**; läuft täglich als GitHub Action, sobald die
+  Workflow-Datei auf dem Default-Branch liegt).
 - **Anon-RLS: ✅ bestanden (05.08.2026).** Anonyme REST-Proben mit dem
   Publishable Key gegen alle 14 Nutzer-/Geld-Tabellen und die RPCs
   (`claim_access_code`, `translation_report`, `is_owner`) → durchgängig

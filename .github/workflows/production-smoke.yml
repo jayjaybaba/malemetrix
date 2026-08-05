@@ -1,0 +1,25 @@
+# Täglicher Produktions-Smoke: misst die Live-Seite, die Edge Functions und
+# die anonyme RLS-Oberfläche. Ein roter Lauf erzeugt die übliche
+# GitHub-Actions-Fehlerbenachrichtigung an den Repo-Owner — das ist das
+# Monitoring, ohne einen weiteren Dienst einzurichten.
+#
+# Hinweis: Scheduled Workflows laufen erst, wenn diese Datei auf dem
+# Default-Branch liegt. Manuell jederzeit über "Run workflow" startbar.
+name: production-smoke
+
+on:
+  schedule:
+    - cron: "17 5 * * *"   # täglich 05:17 UTC (bewusst nicht zur vollen Stunde)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Produktions-Smoke
+        run: bash tools-dev/production-smoke.sh

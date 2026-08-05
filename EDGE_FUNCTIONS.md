@@ -1,6 +1,6 @@
 # EDGE FUNCTIONS — Auth-/CORS-/Deploy-Status (Phase 10)
 
-Stand: 2026-07-23 · Projekt `vczhfyxltiyvtvppfodt` · Verbindlicher Standard: `supabase/functions/_shared/edge.mjs`
+Stand: 2026-07-23, **Statusmatrix aktualisiert 05.08.2026** (live nachgemessen via `check-functions.sh` — alle 6 gemessenen Functions AKTUELL; insgesamt sind 10 Functions ACTIVE, die 4 neueren — mm-admin, mm-usage, mm-translate, site-telemetry — auditiert in SUPABASE_PRODUCTION_AUDIT.md, Nachtrag). Projekt `vczhfyxltiyvtvppfodt` · Verbindlicher Standard: `supabase/functions/_shared/edge.mjs`
 
 ## Warum dieser Standard existiert
 
@@ -34,7 +34,7 @@ der POST nie gesendet. Seit P10: **Origin-Allowlist** (`https://www.malemetrix.c
 | `resolve-product-access` | Browser (Premium-Unlock) | ✅ Standard | ✅ Allowlist (P10: apikey/x-client-info ergänzt, Apex ergänzt) | `false` ✅ | P10 | ✅ **JA** — live verifiziert 25.07.2026 (vollständige CORS-Header vorhanden) |
 | `mm-ai` | Browser (Intelligence) | ✅ Standard (P10-Fix — vorher ANON_KEY-Bug, hätte live 401 geworfen) | ✅ Allowlist (P10 — vorher GAR KEINE CORS-Header) | `false` ✅ (P10) | P10 | ✅ **JA** — live verifiziert 25.07.2026 (CORS-Header vorhanden ⇒ P10-Stand ist ausgerollt) |
 | `delete-account` | Browser (Konto) | ✅ Standard (P10-Fix — vorher ANON_KEY-Bug) | ✅ Allowlist (P10 — vorher fehlten apikey/x-client-info/Apex) | `false` ✅ (P10) | P10 | ✅ **JA** — live verifiziert 25.07.2026. **DESTRUKTIV** — siehe unten |
-| `score-telemetry` | Browser (Score, anonym) | bewusst KEINE User-Auth — der Score ist anonym nutzbar; Schutz über Allowlist-Validierung (validate.mjs), Origin-Allowlist, Idempotenz (event_id), RLS ohne Policy | ✅ Allowlist, OPTIONS→204, akzeptiert zusätzlich text/plain (sendBeacon) | `false` ✅ | P12 neu (127 Unit-Tests) | ⚠️ **NEIN — als einzige.** Live-Test: `POST /functions/v1/score-telemetry` → `404 NOT_FOUND`. Ein Befehl: `bash tools-dev/deploy-telemetry.sh`. Ohne Deploy sammelt der Client still und verwirft nach 3 Versuchen — der Score bleibt unbeeinträchtigt. |
+| `score-telemetry` | Browser (Score, anonym) | bewusst KEINE User-Auth — der Score ist anonym nutzbar; Schutz über Allowlist-Validierung (validate.mjs), Origin-Allowlist, Idempotenz (event_id), RLS ohne Policy | ✅ Allowlist, OPTIONS→204, akzeptiert zusätzlich text/plain (sendBeacon) | `false` ✅ | P12 neu (127 Unit-Tests) | ✅ **JA — live nachgemessen 05.08.2026** (`check-functions.sh`: P10-Allowlist aktiv). Die frühere Zeile „NEIN, 404" beschrieb den Stand vor dem Deploy. |
 | `send-brief` | Scheduler (server→server) | ✅ `x-scheduler-secret` (kein User-JWT, bewusst) | n. a. (kein Browser-Aufruf) | `false` ✅ (P10 — nötig, damit der Scheduler ohne JWT durchkommt) | unverändert | Push-Stack insgesamt CONFIG REQUIRED (VAPID) |
 
 **Secrets-Konvention:** `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (Standard).

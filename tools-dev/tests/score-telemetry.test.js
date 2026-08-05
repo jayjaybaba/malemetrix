@@ -569,7 +569,12 @@ group("16 · Betriebs-Werkzeuge: Produktionsstand messen statt behaupten");
   var doc = fs.readFileSync(path.join(ROOT, "EDGE_FUNCTIONS.md"), "utf8");
   ok(/live nachgemessen/.test(doc), "die Statusmatrix sagt, woher ihr Wissen stammt");
   ok(!/NEIN — Live läuft noch der/.test(doc), "die überholte mm-commerce-Warnung ist korrigiert");
-  ok((doc.match(/⚠️ \*\*NEIN/g) || []).length === 1, "genau eine Function ist noch offen (score-telemetry)");
+  /* 05.08.2026: score-telemetry ist deployt (check-functions.sh: AKTUELL).
+     Vorher stand hier „genau eine Function ist noch offen" — die Doku darf
+     jetzt KEINE Function mehr als nicht-deployt führen, und der Deploy-Nachweis
+     muss in der score-telemetry-Zeile stehen, nicht nur behauptet sein. */
+  ok((doc.match(/⚠️ \*\*NEIN/g) || []).length === 0, "keine Function steht mehr als nicht-deployt in der Matrix");
+  ok(/score-telemetry[^\n]*JA — live nachgemessen/.test(doc), "der Deploy von score-telemetry ist mit Messdatum dokumentiert");
 })();
 
 console.log("\n==============================");
