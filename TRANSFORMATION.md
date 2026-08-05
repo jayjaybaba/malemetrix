@@ -5,7 +5,9 @@ Stand: 05.08.2026 · Seite: `transformation.html` · Logik: `js/transformation.j
 
 ## Was das Feature tut
 
-1. Der Nutzer lädt ein Foto von sich hoch (frontal, Unterwäsche/Sportkleidung).
+1. Der Nutzer lädt ein Foto von sich hoch — oberkörperfrei ist ideal
+   (frontal, gut beleuchtet, Shorts/Unterwäsche): Je mehr Körper sichtbar,
+   desto realistischer die Transformation.
 2. Er gibt sein aktuelles Gewicht und ZWEI Zielgewichte an (Vorschlag: −20 %
    und −30 %, also 100 kg → 80 kg und 70 kg — frei änderbar, auch Aufbau).
 3. Die Edge Function `mm-transform` lässt das Bild-Editing-Modell
@@ -29,10 +31,10 @@ Stand: 05.08.2026 · Seite: `transformation.html` · Logik: `js/transformation.j
   persistiert nur Gewichte/Ziel/Rahmendaten (`mm_transform_v1`), nie Bild-URLs.
 - Der Prompt wird **serverseitig aus validierten Zahlen** gebaut — der Client
   liefert keinen Freitext ans Bildmodell (keine Prompt-Injection-Fläche).
-- **Nacktfotos:** Die Seite sagt es dem Nutzer VOR dem Upload — vollständig
-  unbekleidete Fotos lehnt das Bildmodell ab (Antwort 422 →
-  `content_rejected`, als Klartext im UI). Unterwäsche/Sportkleidung genügt
-  für das Ergebnis vollständig.
+- **Nacktfotos:** Oberkörperfrei ist ausdrücklich erwünscht (bestes
+  Ergebnis). Nur KOMPLETT nackte Fotos (ganz ohne Unterwäsche) lehnt das
+  Bildmodell ab (Antwort 422 → `content_rejected`, als Klartext im UI) —
+  die Seite sagt das VOR dem Upload, nicht erst als Fehlermeldung.
 
 ## Schutz & Kosten
 
