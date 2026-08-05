@@ -92,3 +92,24 @@ freischalten** — beides verlangt echten Krypto-Beweis bzw. Server-Entitlement.
 `checkout.js` + der historische Klartextcode gelten als KOMPROMITTIERT. Die
 Retire-Sequenz oben entwertet sie (Rotation nach Cloud-Aktivierung). Bis dahin
 neutralisiert der Server-Grant-Pfad den Client-Vault im Live-Kauf.
+
+---
+
+## Supabase-Linter-Befunde — bewertet und akzeptiert (05.08.2026)
+
+Der Security Advisor meldet drei `SECURITY DEFINER`-Funktionen, die von
+angemeldeten Nutzern aufrufbar sind. Alle drei sind **bewusst so gebaut**;
+sie werden hier festgehalten, damit der WARN nicht bei jedem Audit neu
+untersucht wird:
+
+| Funktion | Warum aufrufbar | Warum sicher |
+|---|---|---|
+| `claim_access_code(text)` | ist der Claim-Pfad für Zugangscodes | prüft den gehashten Code serverseitig; ohne gültigen Code kein Entitlement |
+| `translation_report()` | Owner-Dashboard ruft sie per RPC | erste Anweisung prüft die Owner-Rolle und wirft sonst `forbidden` |
+| `is_owner(uuid)` | RLS-Policies anderer Tabellen werten sie beim Query des Nutzers aus — der Aufrufer braucht EXECUTE | gibt nur ein Boolean zurück; `user_roles` selbst bleibt unlesbar. Schlimmster Fall: jemand mit bekannter fremder UUID erfährt, ob sie Owner ist |
+
+Runtime-Kontrolle (05.08.): **anonym sind alle drei RPCs gesperrt**
+(401/42501) — die Grants greifen erst nach Anmeldung.
+
+Offen (Founder, 2 Min): „Leaked password protection" im Auth-Dashboard
+aktivieren — ACTIVATION.md §10.

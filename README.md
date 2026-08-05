@@ -9,10 +9,10 @@
 | **MaleMetrix Score-Check** — adaptiver Fragebogen, 12 gewichtete Bereiche (Score V2; im Profil zu 7 Säulen verdichtet), Engpass-Algorithmus, 7 Archetypen, Red-Flag-System, Radar-Chart, 7-Tage-Plan | ✅ läuft komplett im Browser |
 | **19 kostenlose Rechner** ([tools.html](tools.html)) — BMI, Körperfett (US Navy & Caliper), WHtR, LBM, Berkhan, BMR/TDEE/Cunningham, Protein, Makros, Wasser, FFMI, Idealgewicht, Casey-Butt-Muskelpotenzial, 1RM, Herzfrequenz, Wilks-2, Scheibenrechner | ✅ wissenschaftliche Formeln, metrisch/imperial |
 | **Training-Tracker** ([tracker.html](tracker.html)) — Sätze loggen mit Auto-Vorschlag aus dem letzten Mal, PRs, e1RM, Rest-Timer, Cardio (Pace/Tempo), Körpermaße + Gewichtschart, eigene & fertige Pläne, JSON-Export/Import | ✅ voll funktionsfähige Fitness-App, offline |
-| **Kostenlose Ebooks** ([ebooks.html](ebooks.html)) — 4 Guides inkl. Flaggschiff-Masterguide. Lesen offen (SEO), **PDF-Download per E-Mail freigeschaltet** | ✅ |
+| **Ebook-Bibliothek** ([ebooks.html](ebooks.html)) — die Kapitel von DAS PROTOKOLL als eigene Seiten (Teaser + Inhaltsverzeichnis frei, Volltext hinter dem Kauf; `noindex` gegen Duplicate Content) | ✅ |
 | **PDF-Report** ([report.html](report.html)) — jetzt mit **personalisierten Zielwerten** (BMR, TDEE, Protein-Gramm, Ziel-Bauchumfang aus den Check-Antworten) | ✅ über Browser-Druck |
 | **Shop** — 9 Produkte inkl. **9-€-Express-Plan (Tripwire)**, Filter, Warenkorb, Checkout | ✅ Bestellungen sofort möglich |
-| **PayPal-Checkout** — Smart Buttons (PayPal/Karte), aktuell im Testmodus (`sb`); Live-Client-ID eintragen für echtes Geld | ✅ |
+| **PayPal-Checkout** — Smart Buttons (PayPal/Karte), **Live-Client-ID eingetragen**; dazu Stripe-Zahlungslink (Apple/Google Pay, Karte, Klarna) mit serverseitiger Verifikation | ✅ live |
 | **E-Mail-Capture / Liste** — Ebook-Unlock + Newsletter, mit Brevo (Double-Opt-In) oder FormSubmit-Fallback | ✅ |
 | **Conversion-Brücken** — Tool-Ergebnisse & Score-Check verlinken kontextuell auf Coaching/Tripwire; Social-Proof-Strips auf Coaching/Checkout/Termin | ✅ |
 | **Terminbuchung** — **Cal.com-Embed** (wenn `calLink` gesetzt) oder eingebauter Kalender mit .ics-Export | ✅ |
@@ -77,7 +77,7 @@ Die Seite trackt die wichtigsten Funnel-Schritte (Check gestartet/abgeschlossen,
 - **Structured Data (JSON-LD):** Organization + WebSite + Service auf der Startseite, FAQ-Schema auf [faq.html](faq.html) → Chance auf Rich Results bei Google.
 - **Canonical-URLs** auf allen Seiten.
 
-⚠️ Alle SEO-URLs nutzen `https://malemetrix.de`. Wenn deine Domain abweicht: in `sitemap.xml`, `robots.txt` und per Suchen-&-Ersetzen in den HTML-Dateien (`malemetrix.de` → deine Domain) anpassen, dann das OG-Bild neu prüfen.
+⚠️ Alle SEO-URLs nutzen `https://www.malemetrix.com` (Live-Domain, siehe `CNAME`). Wenn deine Domain abweicht: in `sitemap.xml`, `robots.txt` und per Suchen-&-Ersetzen in den HTML-Dateien (`www.malemetrix.com` → deine Domain) anpassen, dann das OG-Bild neu prüfen.
 
 > Das OG-Bild kannst du jederzeit neu erzeugen mit `python og_gen.py` (Anpassungen im Skript möglich).
 
@@ -87,7 +87,9 @@ Die Seite trackt die wichtigsten Funnel-Schritte (Check gestartet/abgeschlossen,
 2. In `js/config.js` bei `calLink` den Slug eintragen, z. B. `"malemetrix/analysegespraech"`.
 3. Die Terminseite zeigt dann den echten Cal.com-Kalender (Bestätigung + Erinnerung automatisch). Ohne Eintrag bleibt der eingebaute Anfrage-Kalender aktiv.
 
-## PayPal aktivieren (optional, ~10 Min)
+## PayPal aktivieren (✅ erledigt — Live-Client-ID ist in `js/config.js` eingetragen)
+
+> Die Schritte bleiben als Referenz für einen Konto-Wechsel stehen.
 
 1. Kostenloses PayPal-**Geschäftskonto** anlegen.
 2. Auf [developer.paypal.com](https://developer.paypal.com) → *Apps & Credentials* → **Live** → *Create App* → **Client-ID** kopieren.

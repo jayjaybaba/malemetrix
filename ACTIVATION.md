@@ -1,4 +1,8 @@
-# PRODUCTION ACTIVATION — Truth Matrix & Founder Checklist (Phase 9, §2/§90)
+# PRODUCTION ACTIVATION — Truth Matrix & Founder Checklist
+
+> **Aktualisiert am 05.08.2026** nach Verifikation gegen die echte Produktion
+> (Supabase Management API + Live-Site + anonyme REST-Proben). Die Schritte
+> 1–3 sind vollzogen, Schritt 4 zur Hälfte. Details: `PRODUCTION_TRUTH.md`.
 
 ## Aktivierungs-Wahrheitsmatrix
 
@@ -6,15 +10,19 @@ Status: **LIVE+VERIFIED** · **REQUIRES CONFIG** (Architektur fertig, Founder-Ak
 
 | Abhängigkeit | Config im Client? | Server konfiguriert? | Migrationen? | Function deployed? | Real getestet? | UI ehrlich? | Status |
 |---|---|---|---|---|---|---|---|
-| Supabase (Auth/Sync/RLS) | nein (leere Keys) | nein | 8 vorhanden, nicht angewandt | — | — | ja (lokaler Modus sichtbar) | **REQUIRES CONFIG** |
-| PayPal (Kauf) | `"sb"` Sandbox | nein (mm-commerce) | — | nein | Sandbox-Flow | ja (Testmodus-Banner) | **REQUIRES CONFIG** |
-| Vorkasse | — | E-Mail-Relay (FormSubmit) | — | — | — | ja (E-Mail-Hinweis statt Platzhalter) | **LIVE (degradiert)** |
-| KI (mm-ai) | `AI_ENABLED` fehlt | nein (Provider-Key) | 0006 | nein | Validator gemockt | ja (deterministisch aktiv) | **REQUIRES CONFIG** |
-| Push (VAPID + Scheduler) | kein `vapidPublicKey` | nein | 0005 | send-brief nein | Client-Handler | ja (In-App-Erinnerungen live) | **REQUIRES CONFIG** |
+| Supabase (Auth/Sync/RLS) | ✅ URL + Publishable Key | ✅ `ACTIVE_HEALTHY` | ✅ alle 14 angewandt | ✅ 10 ACTIVE | ✅ echte Profile/Entitlements; Anon-RLS-Proben 05.08. bestanden | ja | **LIVE-REAL** |
+| Stripe (Kauf) | ✅ Payment Link | ✅ `rk_live` (nur Session lesen) | 0007 ✅ | mm-commerce v22 ✅ | ✅ 1 realer Kauf (orders/commerce_events) | ja | **LIVE-REAL** |
+| PayPal (Kauf) | ✅ Live-Client-ID | PAYPAL_*-Secrets: siehe §4 | — | mm-commerce ✅ | ⚠️ Live-Testkauf noch nicht dokumentiert | ja | **CONFIGURED — VERIFY offen (§4)** |
+| Vorkasse | ❌ Bankdaten = Platzhalter | E-Mail-Relay (FormSubmit) | — | — | Guard: wird ohne echte Bankdaten nicht angeboten | ja | **AUS — Founder: Bankdaten (§4b)** |
+| KI (mm-ai) | deterministischer Fallback aktiv | Provider-Key: prüfen | 0006 ✅ | ✅ ACTIVE | `ai_request_log` leer | ja | **DEPLOYED — Nutzung 0** |
+| Übersetzung (mm-translate) | ✅ | ✅ | 0014 ✅ | ✅ | ✅ 796 Cache-Zeilen | ja | **LIVE-REAL** |
+| Telemetrie (site/score) | ✅ | ✅ | 0010/0013 ✅ | ✅ | ✅ 558 site_events | ja | **LIVE-REAL** |
+| Push (VAPID + Scheduler) | kein `vapidPublicKey` | nein | 0005 ✅ | send-brief ✅ | Client-Handler | ja (In-App-Erinnerungen live) | **REQUIRES CONFIG** |
 | Analytics (Plausible) | keine Domain | — | — | — | lokaler Funnel zählt | ja (lokal-only) | **REQUIRES CONFIG** |
 | E-Mail (Brevo) | keine Action | Relay-Fallback | — | — | — | ja | **REQUIRES CONFIG** |
+| Terminbuchung (Cal.com) | kein `calLink` | — | — | — | eingebauter Kalender läuft | ja | **REQUIRES CONFIG** |
 | Google Calendar OAuth | — | — | — | — | ICS-Import live | ja | **DEFERRED** |
-| Abo-Rail (mm-commerce subs) | — | nein | 0008 | nein | Zustandsmaschine getestet | ja (nicht angeboten) | **REQUIRES CONFIG** |
+| Abo-Rail (mm-commerce subs) | — | ✅ deployt | 0008 ✅ | ✅ | Zustandsmaschine getestet, Tabellen leer | ja (nicht angeboten) | **DEPLOYED, nicht angeboten** |
 
 **Diagnose zur Laufzeit:** in der Konsole `await MM.productionStatus()` → meldet
 je Abhängigkeit configured/reachable, nie Secrets.
@@ -23,30 +31,40 @@ je Abhängigkeit configured/reachable, nie Secrets.
 
 Jeder Schritt: **WO · WAS · VERIFY · ROLLBACK.**
 
-### 1. Supabase-Projekt
+### 1. Supabase-Projekt ✅ ERLEDIGT (23.07., verifiziert 05.08.)
 - **WO:** supabase.com → New Project.
 - **WAS:** Projekt-URL + Publishable Key in `js/config.js` (`supabaseUrl`,
   `supabasePublishableKey`). Niemals service_role in den Client.
 - **VERIFY:** `await MM.productionStatus()` → `supabase.client_configured: true, reachable: true`.
 - **ROLLBACK:** Felder leeren → App fällt in lokalen Modus zurück (kein Datenverlust).
 
-### 2. Migrationen anwenden
+### 2. Migrationen anwenden ✅ ERLEDIGT (alle 14 angewandt, 21 Tabellen mit RLS — verifiziert 05.08.)
 - **WO:** lokal mit Supabase CLI.
 - **WAS:** `supabase db push` (wendet 0001–0008 an).
 - **VERIFY:** Tabellen `entitlements, orders, commerce_events, subscriptions, subscription_events, os_state, ...` existieren; RLS aktiv.
 - **ROLLBACK:** je Migration dokumentierter Down-Pfad; 0007/0008 sind additiv (droppen bei Bedarf).
 
-### 3. Edge Functions deployen
+### 3. Edge Functions deployen ✅ ERLEDIGT (10 Functions ACTIVE — verifiziert 05.08.)
 - **WO:** Supabase CLI.
 - **WAS:** `supabase functions deploy mm-ai mm-commerce send-brief resolve-product-access delete-account`.
 - **VERIFY:** Functions-Liste im Dashboard; 503 `provider_not_configured` bis Secrets gesetzt (erwartet).
 - **ROLLBACK:** `supabase functions delete <name>`.
 
-### 4. PayPal Live
+### 4. PayPal Live ⚠️ HALB — Client-ID gesetzt, VERIFY offen
 - **WO:** developer.paypal.com → Live-App.
-- **WAS:** Live-Client-ID → `config.js paypalClientId`; `supabase secrets set PAYPAL_CLIENT_ID=… PAYPAL_SECRET=… PAYPAL_ENV=live`.
-- **VERIFY:** Testkauf → `orders.status='paid'` serverseitig, Entitlement gesetzt; `commerce_events` hat genau 1 Zeile; Doppel-Capture ⇒ `replay:true`.
-- **ROLLBACK:** `paypalClientId:"sb"` (Sandbox) oder `""` (nur Vorkasse).
+- **WAS (erledigt):** Live-Client-ID steht in `config.js paypalClientId`.
+- **WAS (offen):** prüfen, dass `PAYPAL_CLIENT_ID/PAYPAL_SECRET/PAYPAL_ENV=live`
+  als Supabase Secrets gesetzt sind, dann der dokumentierte Testkauf.
+- **VERIFY:** Testkauf → `orders.status='paid'` serverseitig, Entitlement gesetzt; `commerce_events` +1 Zeile; Doppel-Capture ⇒ `replay:true`. (Stripe hat diesen Nachweis bereits: 1 realer Kauf in Prod.)
+- **ROLLBACK:** `paypalClientId:"sb"` (Sandbox) oder `""` (nur Vorkasse/Stripe).
+
+### 4b. Vorkasse aktivieren — NUR Founder (Bankdaten)
+- **WO:** `js/config.js` → `bank` (`inhaber`, `iban`, `bank`).
+- **WAS:** echte Kontodaten eintragen. Solange Platzhalter stehen, bietet der
+  Checkout Vorkasse bewusst **nicht** an (`bankConfigured()`-Guard) — es kommt
+  also nichts Kaputtes beim Kunden an, es fehlt nur der Zahlweg.
+- **VERIFY:** Checkout zeigt Vorkasse als Option; Bestellbestätigung nennt IBAN.
+- **ROLLBACK:** Platzhalter wiederherstellen → Option verschwindet wieder.
 
 ### 5. Delivery-Vault retiren (Reihenfolge schützt Alt-Kunden — SECURITY.md)
 - **WAS:** (a) Alt-Kunden per Konto-Claim migrieren, (b) `node tools-dev/rotate-vault.mjs …` neuer Code, (c) `DELIVERY_VAULT`/`DK` aus `checkout.js` entfernen, SW bumpen.
@@ -74,3 +92,19 @@ Jeder Schritt: **WO · WAS · VERIFY · ROLLBACK.**
 ### 9. Verifikation gesamt
 - `await MM.productionStatus()` → alle beabsichtigten Abhängigkeiten `configured:true`.
 - Produktions-Smoke (tools-dev, `BASE=https://www.malemetrix.com`) grün, 0 Konsolenfehler.
+- **Anon-RLS: ✅ bestanden (05.08.2026).** Anonyme REST-Proben mit dem
+  Publishable Key gegen alle 14 Nutzer-/Geld-Tabellen und die RPCs
+  (`claim_access_code`, `translation_report`, `is_owner`) → durchgängig
+  HTTP 401 / `42501`. Nichts ist anonym lesbar.
+- **Cross-User-RLS (offen, braucht Founder):** mit **zwei echten Konten**
+  (A und B) je anmelden und prüfen, dass A per REST (`profiles`, `os_state`,
+  `orders`, `entitlements` mit A-JWT) ausschließlich eigene Zeilen sieht.
+  Bewusst nicht mit Wegwerf-Konten automatisiert, um keine Kunstdaten in
+  Produktions-Tabellen zu hinterlassen.
+
+### 10. Auth-Härtung (Dashboard, 2 Minuten)
+- **WO:** Supabase Dashboard → Authentication → Passwords.
+- **WAS:** „Leaked password protection" (HaveIBeenPwned-Abgleich) aktivieren.
+  Der Login läuft zwar über Magic Links, der Schalter kostet aber nichts und
+  schließt den Advisor-WARN.
+- **VERIFY:** Security Advisor zeigt die Warnung nicht mehr.
