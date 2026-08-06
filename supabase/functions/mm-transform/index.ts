@@ -102,19 +102,21 @@ async function resolveFalKey(admin: { rpc: (fn: string) => Promise<{ data: unkno
 }
 
 // Prompt auf Englisch — Bildmodelle folgen englischen Anweisungen messbar
-// präziser. Die Zieloptik hängt am GESCHÄTZTEN ZIEL-KÖRPERFETT (Zielengine,
-// Phase 2), nicht mehr am verlorenen Prozentsatz: 160→136 kg wird „deutlich
-// schlanker, aber weich", nicht automatisch ein Sixpack. Alle Eingaben sind
-// hart validierte Zahlen/Enums — der Client liefert nie Freitext ans Modell.
+// präziser. Struktur des bewährten ersten Live-Stands (Betreiber: „das war
+// TOP"): klare Kausalität im Intro, dramatische prozentbasierte Staffel
+// (mit einer Ehrlichkeits-Kappe bei sehr hohem Ziel-Körperfett) und ein
+// KURZER Identitäts-Block — der ausführliche „same everything"-Block drückte
+// das Modell nachweislich in fast unsichtbare Änderungen.
 function buildPrompt(p: { currentKg: number; targetKg: number; heightCm: number; waistCm: number | null; shape: string }): string {
   const delta = Math.round(Math.abs(p.currentKg - p.targetKg));
+  const pct = Math.round((delta / p.currentKg) * 100);
   const intro = p.targetKg < p.currentKg
     ? `Edit this photo: show the exact same man as if he weighed ${p.targetKg} kg instead of his ` +
-      `current ${p.currentKg} kg — he has lost ${delta} kg of mostly body fat through consistent ` +
-      `training and nutrition over a realistic timeframe. `
+      `current ${p.currentKg} kg — he has lost ${delta} kg (about ${pct}% of his body weight) ` +
+      `through training and nutrition. He kept his muscle: the weight lost is body fat. `
     : `Edit this photo: show the exact same man as if he weighed ${p.targetKg} kg instead of his ` +
-      `current ${p.currentKg} kg — he has gained ${delta} kg through long-term strength training, ` +
-      `mostly muscle with a small natural amount of body fat. `;
+      `current ${p.currentKg} kg — he has gained ${delta} kg of muscle mass (about ${pct}%) ` +
+      `through years of dedicated strength training. `;
   return intro +
     targetLookFragment({ weightKg: p.currentKg, heightCm: p.heightCm, waistCm: p.waistCm, shape: p.shape, targetKg: p.targetKg }) +
     IDENTITY_FRAGMENT;
