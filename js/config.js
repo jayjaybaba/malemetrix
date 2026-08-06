@@ -456,6 +456,14 @@ window.MM_CONFIG = {
   //   Stufe 5 (Standard):      zusätzlich legacyAppAdminOnly: true —
   //     erst wenn Backups/Migration/Rollback/Entitlements verifiziert sind.
   //     Legacy wird NIE physisch gelöscht.
+  // --- Web Push (Server-Push) ----------------------------------------------
+  // Öffentlicher VAPID-Schlüssel (der private liegt NUR in den Supabase
+  // Edge-Function-Secrets). Aktiviert am 06.08.2026; Sender: send-brief,
+  // Scheduler: pg_cron. Beide Feldnamen absichtlich: execution.js liest
+  // VAPID_PUBLIC_KEY, production-status.js liest vapidPublicKey.
+  VAPID_PUBLIC_KEY: "BM_zSxrNThum4kpnNCP8hAish_yxre3bi_bff1tbHOt5JLVrNE7u-AE3rpRelixmu3zxXTg_tzhsw45EqModPZI",
+  vapidPublicKey: "BM_zSxrNThum4kpnNCP8hAish_yxre3bi_bff1tbHOt5JLVrNE7u-AE3rpRelixmu3zxXTg_tzhsw45EqModPZI",
+
   featureFlags: {
     simpleAppEnabled: true,
     simpleAppDefault: true,

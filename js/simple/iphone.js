@@ -97,6 +97,101 @@
     return L.join("\n");
   }
 
+  /* ------------- Server-Push (nur echte Zustände, keine Fake-Zusagen) ------ */
+  function urlB64ToUint8(s) {
+    var pad = "=".repeat((4 - s.length % 4) % 4);
+    var b64 = (s + pad).replace(/-/g, "+").replace(/_/g, "/");
+    var raw = atob(b64);
+    var out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+  function renderPushSection(card) {
+    var key = (window.MM_CONFIG && MM_CONFIG.VAPID_PUBLIC_KEY) || "";
+    var supported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+    var signedIn = false;
+    try { signedIn = !!(MM.account && MM.account.getDashboardState && MM.account.getDashboardState().user); } catch (e) {}
+
+    if (!key) {
+      card.appendChild(el("p", "hint", tx("Server-Push ist derzeit nicht konfiguriert — Erinnerungen kommen über den Kalender (oben).",
+        "Server push is not configured — reminders arrive via the calendar (above).")));
+      return;
+    }
+    if (!supported) {
+      card.appendChild(el("p", "hint", tx("Dieser Browser unterstützt keine Web-Push-Benachrichtigungen.",
+        "This browser does not support web push notifications.")));
+      return;
+    }
+    if (isIos() && !isStandalone()) {
+      card.appendChild(el("p", "hint", tx(
+        "Auf dem iPhone verlangt Apple dafür die installierte App: erst Schritt 2 (Zum Home-Bildschirm), dann die App vom Home-Bildschirm öffnen — hier erscheint dann der Schalter.",
+        "On iPhone, Apple requires the installed app: do step 2 first (Add to Home Screen), then open the app from your home screen — the toggle appears here.")));
+      return;
+    }
+    if (!signedIn) {
+      card.appendChild(el("p", "hint", tx(
+        "Benachrichtigungen brauchen dein (kostenloses) Konto — sonst weiß der Server nicht, wohin er senden soll. Einloggen im Profil.",
+        "Notifications need your (free) account — otherwise the server doesn't know where to send. Sign in via Profile.")));
+      return;
+    }
+
+    card.appendChild(el("p", "hint", tx(
+      "Nur Wertvolles: Morning Brief und Wochencheck-Erinnerung. Ruhezeiten 21:30–07:30 werden respektiert, Inhalte bleiben auf dem Sperrbildschirm diskret. Jederzeit abschaltbar.",
+      "Only what's valuable: morning brief and weekly-check reminder. Quiet hours 21:30–07:30 respected, lock-screen content stays discreet. Switch off anytime.")));
+    var status = el("p", "hint");
+    var btn = el("button", "btn btn-primary btn-sm");
+    var offBtn = el("button", "btn btn-ghost btn-sm", tx("Abschalten", "Turn off"));
+    offBtn.style.marginLeft = "8px";
+
+    function refresh() {
+      navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); })
+        .then(function (sub) {
+          var on = !!sub;
+          btn.textContent = on ? tx("Aktiv ✓", "Active ✓") : tx("Benachrichtigungen aktivieren", "Enable notifications");
+          btn.disabled = on;
+          offBtn.style.display = on ? "" : "none";
+          status.textContent = on ? "" : (Notification.permission === "denied"
+            ? tx("Vom Browser blockiert — in den Website-Einstellungen erlauben, dann erneut versuchen.", "Blocked by the browser — allow in site settings, then retry.")
+            : "");
+        });
+    }
+    btn.addEventListener("click", function () {
+      btn.disabled = true; btn.textContent = "…";
+      Notification.requestPermission().then(function (perm) {
+        if (perm !== "granted") { btn.disabled = false; refresh(); return null; }
+        return navigator.serviceWorker.ready.then(function (reg) {
+          return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8(key) });
+        }).then(function (sub) {
+          var json = JSON.parse(JSON.stringify(sub));
+          return MM.account.savePushSubscription(json, {}).then(function (r) {
+            if (r.ok) { track("push_enabled"); status.textContent = tx("Aktiviert ✓ — der nächste Morning Brief kommt automatisch.", "Enabled ✓ — the next morning brief arrives automatically."); }
+            else {
+              // Ehrlich bleiben: ohne Server-Speicherung KEIN aktiver Zustand vortäuschen
+              sub.unsubscribe().catch(function () {});
+              status.textContent = tx("Serverseitig fehlgeschlagen (", "Server-side failed (") + (r.message || r.code || "?") + ") — " + tx("bitte später erneut versuchen.", "please try again later.");
+            }
+            refresh();
+          });
+        });
+      }).catch(function (e2) {
+        status.textContent = String(e2 && e2.message || e2);
+        btn.disabled = false; refresh();
+      });
+    });
+    offBtn.addEventListener("click", function () {
+      navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); })
+        .then(function (sub) {
+          if (!sub) return refresh();
+          var ep = sub.endpoint;
+          return sub.unsubscribe().then(function () {
+            return MM.account.removePushSubscription(ep);
+          }).then(function () { status.textContent = tx("Abgeschaltet.", "Turned off."); refresh(); });
+        });
+    });
+    card.appendChild(btn); card.appendChild(offBtn); card.appendChild(status);
+    refresh();
+  }
+
   /* ------------- Renderer ------------- */
   function render(root, p) {
     track("iphone_setup_opened");
@@ -204,12 +299,10 @@
     }
     root.appendChild(pwa);
 
-    /* 3 — Benachrichtigungen (EHRLICH) */
+    /* 3 — Benachrichtigungen (Server-Push, seit 06.08.2026 aktiv) */
     var push = el("div", "s-card");
     push.appendChild(el("h3", null, tx("3 · Benachrichtigungen", "3 · Notifications")));
-    push.appendChild(el("p", "hint", tx(
-      "Ehrlich: Server-Push ist derzeit nicht aktiviert. Erinnerungen kommen zuverlässig über den Kalender (oben) — dort gehören sie auch hin. Sobald Push aktiv ist, erscheint hier der Schalter; vorher behaupten wir keine Funktion.",
-      "Honestly: server push is not active yet. Reminders arrive reliably via the calendar (above) — where they belong. Once push is live, the toggle appears here; until then we don't fake it.")));
+    renderPushSection(push);
     root.appendChild(push);
 
     /* 4 — Einkaufsliste */

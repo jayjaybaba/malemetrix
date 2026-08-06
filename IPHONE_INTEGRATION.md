@@ -47,12 +47,21 @@ Erkennung: iOS (User-Agent), Standalone (`display-mode: standalone` /
 → Hinzufügen. Bereits installierte App wird als „✓ läuft als App" erkannt.
 Bestehende PWA/Service-Worker-Infrastruktur unverändert weiterverwendet.
 
-## 3 · Benachrichtigungen — EHRLICH
+## 3 · Benachrichtigungen — AKTIV seit 06.08.2026
 
-Server-Push ist in Produktion **nicht konfiguriert** (PRODUCTION_TRUTH:
-`REQUIRES CONFIG`, kein VAPID-Key im Client). Die App zeigt deshalb keinen
-Push-Schalter, sondern sagt es offen: Erinnerungen kommen über den Kalender.
-Kein „Push aktiv"-Theater, solange die Zustellung nicht nachweislich läuft.
+Server-Push läuft: VAPID-Keys + Scheduler-Secret in den Supabase-Secrets
+(Founder), Public Key im Client, pg_cron → `send-brief` (Morning Brief
+täglich 05:00 UTC, Weekly Review So 16:00 UTC; Secret im Vault, Migration
+`20260806000018`). Der Schalter in der App zeigt nur echte Zustände:
+- iOS ohne installierte PWA → ehrlicher Hinweis (Apple-Regel), kein Schalter
+- ohne Konto → Hinweis (Server braucht ein Ziel)
+- Aktivieren = Permission → Subscription → serverseitig gespeichert
+  (`MM.account.savePushSubscription`, RLS eigene Zeilen); schlägt das
+  Speichern fehl, wird die Subscription zurückgenommen — kein Fake-Aktiv
+- Abschalten löscht Subscription lokal UND serverseitig.
+Quiet Hours 21:30–07:30 und diskreter Sperrbildschirm-Modus sind
+Server-/SW-seitig verankert. Verifiziert: 403 bei falschem Secret, 200 bei
+korrektem, Ende-zu-Ende über pg_cron-Pfad.
 
 ## 4 · Einkaufsliste
 
