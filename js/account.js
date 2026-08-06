@@ -257,6 +257,12 @@
       invokeFunction: function (name, body) {
         return client.functions.invoke(name, { body: body || {} })
           .then(function (r) { return { data: r.data, error: r.error }; });
+      },
+      // Push-Aktivierung: Zeilen löschen (RLS begrenzt auf eigene Zeilen).
+      deleteRows: function (t, eq) {
+        var b = client.from(t).delete();
+        Object.keys(eq || {}).forEach(function (k) { b = b.eq(k, eq[k]); });
+        return b.then(function (r) { return { data: r.data, error: r.error, status: r.status }; });
       }
     };
   }
@@ -866,6 +872,32 @@
       };
     },
     flushNow: function () { return flushDirty(); },
+
+    /* ---- Server-Push (Phase 10 / Push-Aktivierung) ----
+       Speichert die PushSubscription des Geräts serverseitig, damit
+       send-brief zustellen kann. RLS: nur eigene Zeilen. */
+    savePushSubscription: function (subscription, prefs) {
+      if (!backend || !_user) return Promise.resolve({ ok: false, code: "no_cloud" });
+      prefs = prefs || {};
+      var row = {
+        user_id: _user.id,
+        endpoint: subscription.endpoint,
+        subscription: subscription,
+        privacy: prefs.privacy || "discreet",
+        quiet_from: prefs.quietFrom || "21:30",
+        quiet_to: prefs.quietTo || "07:30",
+        updated_at: new Date().toISOString()
+      };
+      return backend.upsert("push_subscriptions", row, "user_id,endpoint").then(function (r) {
+        return r.error ? { ok: false, message: r.error.message } : { ok: true };
+      });
+    },
+    removePushSubscription: function (endpoint) {
+      if (!backend || !_user) return Promise.resolve({ ok: false, code: "no_cloud" });
+      return backend.deleteRows("push_subscriptions", { user_id: _user.id, endpoint: endpoint }).then(function (r) {
+        return r.error ? { ok: false, message: r.error.message } : { ok: true };
+      });
+    },
 
     signIn: function (email) {
       if (!backend) return Promise.resolve({ ok: false, code: "not_configured", message: "Account-Sync ist auf diesem Gerät noch nicht aktiviert." });

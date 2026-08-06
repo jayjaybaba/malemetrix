@@ -29,7 +29,7 @@ LIVE-REAL · BLOCKED-FOUNDER · DEFERRED.** Laufzeit-Diagnose: `await MM.product
 | Übersetzung (mm-translate) | ✅ | ✅ | ✅ | ✅ | ✅ 796 Cache-Zeilen in Prod | **LIVE-REAL** |
 | Telemetrie (site-telemetry / score-telemetry) | ✅ | ✅ | ✅ | ✅ | ✅ 558 `site_events`-Zeilen | **LIVE-REAL** (score_events noch 0) |
 | Admin (mm-admin, Owner-Rolle) | ✅ | ✅ | ✅ | ✅ | ✅ 1 `user_roles`-Zeile (owner) | **LIVE-REAL** |
-| Push subscription / send-brief / VAPID / Scheduler | ✅ | ❌ kein `vapidPublicKey` im Client | Function ACTIVE | ❌ | `push_subscriptions` leer | **REQUIRES CONFIG** |
+| Push subscription / send-brief / VAPID / Scheduler | ✅ | ✅ 06.08.: VAPID-Keys + SCHEDULER_SECRET (Founder), Public Key im Client, pg_cron 05:00 UTC + So 16:00 UTC (Secret im Vault) | ✅ | ✅ | ✅ 403/200-Proben + DB→Vault→pg_net→Function 200 `{"sent":0}`; erste echte Zustellung folgt mit erstem Abonnenten | **LIVE (Zustellung ab erstem Abo)** |
 | Analytics (Plausible) | ✅ | ❌ `plausibleDomain` leer | n/a | ❌ | lokaler Funnel ✅ | **REQUIRES CONFIG** |
 | E-Mail-Liste (Brevo) | ✅ | ❌ `brevoFormAction` leer | n/a | ❌ | FormSubmit-Relay | **REQUIRES CONFIG** |
 | Terminbuchung (Cal.com) | ✅ | ❌ `calLink` leer | n/a | ❌ | eingebauter Kalender läuft | **REQUIRES CONFIG** |
