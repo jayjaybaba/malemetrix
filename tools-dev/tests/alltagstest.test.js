@@ -722,7 +722,8 @@ group("21 · Auditzahl wird gemessen, nicht fortgeschrieben (T71)");
   ok(m && Number(m[2]) === suiten, "die Suitenzahl stimmt (" + (m ? m[2] : "?") + " = " + suiten + ") (T71)");
   ok(m && m[3] === (read("sw.js").match(/const VERSION = "(mm-v\d+)"/) || [])[1],
     "die genannte Service-Worker-Version ist die ausgelieferte (T71)");
-  ok(m && Number(m[1]) > 2900 && Number(m[1]) < 4000,
+  /* Obergrenze mit den Generation-2-Suiten (Phase 1-7, +7 Suiten) angehoben. */
+  ok(m && Number(m[1]) > 2900 && Number(m[1]) < 5200,
     "die genannte Assertionszahl liegt im gemessenen Bereich (" + (m ? m[1] : "?") + ") (T71)");
 })();
 

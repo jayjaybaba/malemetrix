@@ -34,6 +34,8 @@ LIVE-REAL · BLOCKED-FOUNDER · DEFERRED.** Laufzeit-Diagnose: `await MM.product
 | E-Mail-Liste (Brevo) | ✅ | ❌ `brevoFormAction` leer | n/a | ❌ | FormSubmit-Relay | **REQUIRES CONFIG** |
 | Terminbuchung (Cal.com) | ✅ | ❌ `calLink` leer | n/a | ❌ | eingebauter Kalender läuft | **REQUIRES CONFIG** |
 | Knowledge Evidenz (Gate) | ✅ | ✅ | ✅ | n/a | ✅ 5 PUBLISHED / 13 REVIEWED, 10 verifizierte Quellen (05.08.) | **LIVE + VERIFIED** |
+| Generation 2 — einfache 12-Wochen-App (meinplan.html, Rollout Stufe 1) | ✅ | ✅ Flags Stufe 1 (Legacy Standard) | Branch (Merge auf main ausstehend) | n/a | ✅ 7 neue Suiten (213 Assertions) + Browser-Smokes 320-1440 px, DE/EN | **BUILT + VERIFIED (Deploy = Merge)** |
+| mm-plan-ics (Kalender-Feed) + calendar_tokens | ✅ | ✅ | ✅ v1 ACTIVE, Migration angewandt (06.08.) | ✅ | ✅ Live-Proben: GET ohne Token 400, unbekannt 404, POST ohne Auth 401; Feed-E2E mit echtem Konto offen (Testkonto Stufe 1) | **DEPLOYED + VERIFIED (statisch/negativ)** |
 
 ## Was 100 Fremde MORGEN erleben würden (§31, ehrlich — Stand 05.08.)
 

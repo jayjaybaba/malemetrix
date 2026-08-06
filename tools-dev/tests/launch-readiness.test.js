@@ -166,7 +166,8 @@ group("Navigation · Kernziele existieren, keine Dublette");
     "intern.html": "intern",
     "founder.html": "Weiterleitung",
     "kurs.html": "Weiterleitung",
-    "stack-review.html": "Weiterleitung"
+    "stack-review.html": "Weiterleitung",
+    "meinplan.html": "Generation-2-App — Rollout Stufe 1: bewusst unverlinkt, bis der Funnel umgestellt wird (PRODUCT_ARCHITECTURE.md §Rollout)"
   };
   /* Gezählt wird die ganze Navigation, Hauptleiste und Sammelmenü — für den
      Besucher ist beides „das Menü". */
@@ -196,7 +197,7 @@ group("Navigation · Kernziele existieren, keine Dublette");
      Unterschieden wird zwischen echten Ankern (müssen als id/name im Ziel
      stehen) und den Hash-ROUTEN der App — mein-protokoll.html#plan ist
      kein Element, sondern eine Ansicht. */
-  var HASH_ROUTEN = { "mein-protokoll.html": true };
+  var HASH_ROUTEN = { "mein-protokoll.html": true, "meinplan.html": true };
   var idCache = {};
   function zielIds(rel) {
     if (!idCache[rel]) {

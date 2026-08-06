@@ -10,10 +10,16 @@
    · push: echter Handler — wird nur aktiv, wenn Server-Push konfiguriert ist
      (VAPID + Backend). Ohne Config passiert hier ehrlich: nichts.
    ========================================================================== */
-const VERSION = "mm-v175";
+const VERSION = "mm-v176";
 const CORE = [
   "tracker.html", "dinner.html", "index.html", "mein-protokoll.html", "labor.html",
+  "meinplan.html",
   "css/fonts.css", "css/style.css", "css/os.css", "css/labs.css", "css/blueprint.css",
+  "css/simple.css",
+  "js/flags.js",
+  "js/simple/plan-model.js", "js/simple/plan-input.js", "js/simple/plan-engine.js",
+  "js/simple/weekly-check.js", "js/simple/ics.js", "js/simple/plan-store.js",
+  "js/simple/migration.js", "js/simple/iphone.js", "js/simple/app.js",
   "js/config.js", "js/analytics.js", "js/i18n.js", "js/main.js",
   "js/vault.js", "js/check-data.js", "js/score-telemetry.js", "js/account.js",
   "js/focus.js", "js/points.js",
@@ -78,7 +84,8 @@ self.addEventListener("fetch", (e) => {
           // Navigation offline: passende Shell statt falscher Seite.
           if (req.mode === "navigate") {
             const p = url.pathname;
-            const fallback = p.indexOf("mein-protokoll") >= 0 ? "mein-protokoll.html"
+            const fallback = p.indexOf("meinplan") >= 0 ? "meinplan.html"
+              : p.indexOf("mein-protokoll") >= 0 ? "mein-protokoll.html"
               : p.indexOf("dinner") >= 0 ? "dinner.html"
               : p.indexOf("tracker") >= 0 ? "tracker.html"
               : "mein-protokoll.html";
