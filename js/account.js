@@ -858,7 +858,11 @@
         domains: domains,
         programKeys: PROG_KEYS_STATIC.slice(),
         programDynamic: ["^c2_reassess_\\d+$"],
-        localOnly: ["^c2_min_", "^c2_view$", "^os_ver_", "^os_synced_", "^account_sync$", "^account_access_validation$", "^account_entitlements$", "^funnel", "^os_events$", "^check_history$", "^check_draft$", "^course_code$", "^unlock_name$", "^lang$", "^consent", "^theme$"]
+        localOnly: ["^c2_min_", "^c2_view$", "^os_ver_", "^os_synced_", "^account_sync$", "^account_access_validation$", "^account_entitlements$", "^funnel", "^os_events$", "^check_history$", "^check_draft$", "^course_code$", "^unlock_name$", "^lang$", "^consent", "^theme$",
+          /* Generation 2 (bewusst gerätelokal): Wizard-Entwurf, UI-Tab-Merker,
+             Geräte-Feature-Flags. Plan/Historie/Checkins/Daylog etc. sind
+             registrierte Sync-Domains (js/simple/plan-store.js). */
+          "^simple_wizard_draft$", "^simple_plan_tab$", "^flags_local$", "^simple_calfeed$"]
       };
     },
     flushNow: function () { return flushDirty(); },

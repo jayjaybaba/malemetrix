@@ -80,3 +80,8 @@ verify_jwt = false
 # public.translations: Clients kommen an die Tabelle nicht heran.
 [functions.mm-translate]
 verify_jwt = false
+
+# Gen 2 — persönlicher Kalender-Feed. GET ist token-basiert (Apple Kalender
+# kann keinen JWT senden), POST validiert den Bearer-JWT im Handler (P0.6).
+[functions.mm-plan-ics]
+verify_jwt = false

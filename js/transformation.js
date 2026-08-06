@@ -1135,6 +1135,24 @@
       once(seen, "preview", function () { track("transform_plan_preview_view"); });
       var t = state.chosen;
       var p = calcPlan(state, t);
+      /* Generation 2 (additiv): Die Planfragen-Antworten gehören zum
+         gewählten Ziel — nachziehen, damit der 12-Wochen-Plan (plan-input.js)
+         Alter/Aktivität/Ernährungsform nicht erneut fragen muss. Die
+         bestehende transform_goal-Form bleibt unverändert erhalten. */
+      try {
+        var tg = MM.store.get("transform_goal", null);
+        if (tg && Number(tg.target_kg) === Number(t)) {
+          tg.age = state.age != null ? state.age : tg.age;
+          tg.activity = state.activity || tg.activity;
+          tg.diet = state.diet || tg.diet;
+          tg.months = state.months != null ? state.months : tg.months;
+          tg.exp = state.exp || tg.exp;
+          tg.days = state.days != null ? state.days : tg.days;
+          tg.mode = state.mode || tg.mode;
+          tg.equip = state.equip || tg.equip;
+          MM.store.set("transform_goal", tg);
+        }
+      } catch (e) {}
       s6.innerHTML = "";
       s6.appendChild(secthead("MM / PROTOCOL · 06", "Dein Plan für " + t + " kg"));
       s6.appendChild(el("p", "trf-hint",
