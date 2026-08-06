@@ -644,7 +644,9 @@ group("Q2 · Kontrast auf hellem Papier und auf gefüllten Schaltflächen");
 
   /* Die Geisterziffern sind Ornament — als solches ausgezeichnet, damit die
      Ausnahme dokumentiert ist statt bloß angenommen. */
-  ok((read("index.html").match(/class="n" aria-hidden="true"/g) || []).length === 6, "die Ornament-Ziffern der Startseite sind als dekorativ ausgezeichnet");
+  /* Stand August 2026: 8 Kapitel (Flaggschiff-Neuausrichtung ergänzte
+     „THE PREVIEW" und „THE TARGETS"). */
+  ok((read("index.html").match(/class="n" aria-hidden="true"/g) || []).length === 8, "die Ornament-Ziffern der Startseite sind als dekorativ ausgezeichnet");
   ok((read("protokoll.html").match(/class="pc-n" aria-hidden="true"/g) || []).length === 11, "die Kapitel-Geisterziffern ebenso");
 })();
 

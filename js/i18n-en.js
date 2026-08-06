@@ -93,5 +93,42 @@ window.MM_I18N_EN = {
     "Free and without obligation. We confirm by email and send you the video link. Data processing according to",
   "© MaleMetrix. Allgemeine Information und Aufklärung, kein Ersatz für ärztliche Beratung, Diagnose oder Therapie.":
     "© MaleMetrix. General information and education — not a substitute for medical advice, diagnosis or treatment.",
-  "MaleMetrix. Alle Rechte vorbehalten.": "MaleMetrix. All rights reserved."
+  "MaleMetrix. Alle Rechte vorbehalten.": "MaleMetrix. All rights reserved.",
+
+  /* ---------- 5. Transformation (Flaggschiff, August 2026) ----------
+     KI-Kennzeichnung und Einwilligung sind rechtlich scharf — feste
+     Übersetzung statt Maschine. Verdikte und Ziel-Labels sind Produkt-
+     begriffe mit fester Fassung. */
+  "KI-VISUALISIERUNG · KEIN ECHTES ZUKUNFTSFOTO": "AI VISUALIZATION · NOT A REAL FUTURE PHOTO",
+  "MÖGLICHES ZIEL": "POSSIBLE TARGET",
+  "VORHER": "BEFORE",
+  "HEUTE — IST": "TODAY — CURRENT",
+  "REALISTISCHER NÄCHSTER ZUSTAND": "REALISTIC NEXT STATE",
+  "AMBITIONIERTES LANGFRISTIGES ZIEL": "AMBITIOUS LONG-TERM TARGET",
+  "DEIN GEPRÜFTES EIGENES ZIEL": "YOUR VALIDATED CUSTOM TARGET",
+  "EIGENES ZIEL PRÜFEN": "CHECK A CUSTOM TARGET",
+  "PLAUSIBEL": "PLAUSIBLE",
+  "AMBITIONIERT": "AMBITIOUS",
+  "BLOCKIERT": "BLOCKED",
+  "NICHT SERIÖS": "NOT CREDIBLE",
+  "Beide Ziele visualisieren": "Visualize both targets",
+  "Erneut visualisieren": "Visualize again",
+  "Dieses Ziel wählen": "Choose this target",
+  "Dieses Ziel neu generieren": "Regenerate this target",
+  "Anderes Foto verwenden": "Use a different photo",
+  "Ziele neu berechnen": "Recalculate targets",
+  "Als Ziel B verwenden": "Use as target B",
+  "Teilen": "Share",
+  "Einwilligung — Pflicht vor der Generierung": "Consent — required before generation",
+  "Ich bin mindestens 18 Jahre alt.": "I am at least 18 years old.",
+  "Das Foto zeigt ausschließlich mich.": "The photo shows only me.",
+  "Ich bin berechtigt, dieses Foto zu verwenden.": "I have the right to use this photo.",
+  "Magic Link senden": "Send magic link",
+  "Meinen 12-Wochen-Plan freischalten": "Unlock my 12-week plan",
+  "Plan freischalten": "Unlock plan",
+  "Zur Planvorschau": "See my plan preview",
+  "Score starten — Paket freischalten": "Start the Score",
+  "Ziel in My MaleMetrix übernehmen": "Adopt target in My MaleMetrix",
+  "mehrphasiges Ziel": "multi-phase target",
+  "MEHRPHASIG": "MULTI-PHASE"
 };

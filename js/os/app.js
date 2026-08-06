@@ -1073,10 +1073,17 @@
       return html;
     }
     function inp(id, label, val, ph) { return '<label class="os-field"><span>' + esc(label) + '</span><input id="' + id + '" type="number" inputmode="decimal" value="' + (val != null ? esc(val) : "") + '" placeholder="' + (ph || "—") + '"></label>'; }
+    /* Zielübernahme aus der Transformation (transformation.html schreibt
+       mm_transform_goal): die Roadmap füllt sich mit dem gewählten Ziel
+       vor und sagt das sichtbar — nachvollziehbare Übernahme statt
+       stiller Magie. Bilddaten werden dabei nie übernommen. */
+    var tg = MM.store.get("transform_goal", null);
+    var tgValid = tg && isFinite(Number(tg.target_kg)) && isFinite(Number(tg.current_kg));
     html += sec("Wo willst du hin?", '<p class="muted">Wir rechnen ehrlich: was dein Ziel in deinem Trainingsalter wirklich braucht — in Spannen, nicht in Versprechen.</p>' +
+      (tgValid ? '<p class="small" style="color:var(--accent-2,#16C4F4)">Ziel aus deiner Transformations-Visualisierung übernommen: <b>' + Number(tg.target_kg) + ' kg</b>' + (tg.months ? ' · ' + Number(tg.months) + ' Monate' : '') + ' — Werte unten anpassbar.</p>' : '') +
       (pw === "enhanced" ? '<p class="small" style="color:var(--amber,#f5a623)">Dein Pathway ist ENHANCED — die Roadmap rechnet mit dem Kontext (höhere Spannen, höhere Unsicherheit, Monitoring-Blöcke). Keine Substanz-/Dosierungsplanung.</p>' : '') +
-      '<div class="os-grid2">' + inp("txW", "Aktuelles Gewicht (kg)", (lw && lw.value) || null) + inp("txBf", "KFA-Schätzung % (optional)", null, "18") +
-      inp("txTW", "Zielgewicht (kg)", null, "90") + inp("txM", "Zeitraum (Monate)", 12) + '</div>' +
+      '<div class="os-grid2">' + inp("txW", "Aktuelles Gewicht (kg)", (lw && lw.value) || (tgValid ? Number(tg.current_kg) : null)) + inp("txBf", "KFA-Schätzung % (optional)", null, "18") +
+      inp("txTW", "Zielgewicht (kg)", tgValid ? Number(tg.target_kg) : null, "90") + inp("txM", "Zeitraum (Monate)", (tgValid && tg.months) ? Number(tg.months) : 12) + '</div>' +
       '<label class="os-field"><span>Dabei…</span><select id="txLean"><option value="leaner">definierter werden</option><option value="same">Körperfett egal</option><option value="much_leaner">deutlich definierter</option></select></label>' +
       '<label class="os-field"><span>Trainingserfahrung</span><select id="txExp"><option value="beginner">Einsteiger (&lt;1 Jahr)</option><option value="novice" selected>Fortgeschritten (1–2 J.)</option><option value="intermediate">Erfahren (2–5 J.)</option><option value="advanced">Sehr erfahren (5+ J.)</option></select></label>' +
       '<button id="txGo" class="btn btn-primary" style="margin-top:12px">Reality Check →</button>');
