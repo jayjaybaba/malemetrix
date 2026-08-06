@@ -47,6 +47,7 @@
     "nav.myGroup":      { de: "My MaleMetrix", en: "My MaleMetrix" },
     "nav.stackBuilder": { de: "Stack Builder", en: "Stack Builder" },
     "nav.transform":    { de: "Transformation", en: "Transformation" },
+    "nav.circle":       { de: "Circle", en: "Circle" },
     /* Nur die Gruppenüberschrift bekommt einen Schlüssel. Die Kapiteltitel
        selbst bleiben ohne — wie „Ergebnisse" und „Produktvorschau" — und
        laufen über die dynamische Übersetzung. Siebzehn feste EN-Strings
