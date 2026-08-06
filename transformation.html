@@ -406,10 +406,10 @@
      laden nach klassischen Skripten; transformation.js wartet auf das
      Ready-Event, bevor es die Seite baut. -->
 <script type="module">
-  import * as G from "./supabase/functions/_shared/transform-goals.mjs";
+  import * as G from "./supabase/functions/_shared/transform-goals.mjs?v=2";
   window.MMTransformGoals = G;
   window.dispatchEvent(new CustomEvent("mm:goals-ready"));
 </script>
-<script src="js/transformation.js"></script>
+<script src="js/transformation.js?v=2"></script>
 </body>
 </html>
