@@ -70,6 +70,109 @@
   function access() {
     try { return (MM.account && MM.account.getDashboardState) ? (MM.account.getDashboardState().access || {}) : {}; } catch (e) { return {}; }
   }
+
+  /* ---------------- Gerätelokale Fotos (IndexedDB, nie hochgeladen) ------- */
+  var photoDB = {
+    open: function () {
+      return new Promise(function (res, rej) {
+        var r = indexedDB.open("mm_simple", 1);
+        r.onupgradeneeded = function () { r.result.createObjectStore("photos"); };
+        r.onsuccess = function () { res(r.result); };
+        r.onerror = function () { rej(r.error); };
+      });
+    },
+    put: function (key, blob) {
+      return photoDB.open().then(function (db) {
+        return new Promise(function (res, rej) {
+          var tx = db.transaction("photos", "readwrite");
+          tx.objectStore("photos").put(blob, key);
+          tx.oncomplete = function () { res(true); };
+          tx.onerror = function () { rej(tx.error); };
+        });
+      });
+    },
+    get: function (key) {
+      return photoDB.open().then(function (db) {
+        return new Promise(function (res) {
+          var rq = db.transaction("photos").objectStore("photos").get(key);
+          rq.onsuccess = function () { res(rq.result || null); };
+          rq.onerror = function () { res(null); };
+        });
+      });
+    }
+  };
+  /* Foto aufnehmen/auswählen und lokal speichern; checkpointKey = "d1"|"d22"|… */
+  function capturePhoto(checkpointKey, done) {
+    var inp = document.createElement("input");
+    inp.type = "file"; inp.accept = "image/*"; inp.setAttribute("capture", "environment");
+    inp.style.display = "none";
+    document.body.appendChild(inp);
+    inp.addEventListener("change", function () {
+      var f = inp.files && inp.files[0];
+      inp.remove();
+      if (!f) return;
+      photoDB.put(checkpointKey, f).then(function () {
+        track("photo_saved");
+        if (done) done(true);
+      }).catch(function () { if (done) done(false); });
+    });
+    inp.click();
+  }
+
+  /* ---------------- Bottom-Sheet (eine Schicht, wiederverwendbar) --------- */
+  function openSheet(build) {
+    closeSheet();
+    var back = el("div", "s-sheet-back");
+    var sheet = el("div", "s-sheet");
+    back.addEventListener("click", closeSheet);
+    document.body.appendChild(back);
+    document.body.appendChild(sheet);
+    build(sheet);
+    window._mmSheet = [back, sheet];
+    try { if (MM.fokusFangen) MM.fokusFangen(sheet, closeSheet); } catch (e) {}
+  }
+  function closeSheet() {
+    (window._mmSheet || []).forEach(function (n) { if (n.parentNode) n.parentNode.removeChild(n); });
+    window._mmSheet = null;
+  }
+
+  /* Gewichts-Sheet: großer Wert, gestern-Kontext, Trend-Feedback. */
+  function openWeightSheet(ymd, onSaved) {
+    var series = weightSeries();
+    var last = series.length ? series[series.length - 1] : null;
+    openSheet(function (sheet) {
+      sheet.appendChild(el("h3", null, tx("Gewicht heute", "Weight today")));
+      sheet.appendChild(el("div", "ctx", last
+        ? tx("Zuletzt: ", "Last: ") + last.kg + " kg (" + last.date.slice(5) + ")"
+        : tx("Erster Eintrag — ab jetzt zählt der Trend, nicht der einzelne Tag.", "First entry — from now on the trend counts, not the single day.")));
+      var row = el("div", "big-input");
+      var minus = el("button", null, "−"); minus.type = "button";
+      var inp = el("input"); inp.type = "number"; inp.step = "0.1"; inp.inputMode = "decimal";
+      inp.value = last ? last.kg : "";
+      var plus = el("button", null, "+"); plus.type = "button";
+      minus.addEventListener("click", function () { inp.value = (Math.round(((parseFloat(inp.value) || 0) - 0.1) * 10) / 10).toFixed(1); });
+      plus.addEventListener("click", function () { inp.value = (Math.round(((parseFloat(inp.value) || 0) + 0.1) * 10) / 10).toFixed(1); });
+      row.appendChild(minus); row.appendChild(inp); row.appendChild(plus);
+      sheet.appendChild(row);
+      var fb = el("div", "fb", "");
+      sheet.appendChild(fb);
+      var save = el("button", "btn btn-primary", tx("Speichern", "Save"));
+      save.addEventListener("click", function () {
+        var v = parseFloat(String(inp.value).replace(",", "."));
+        if (!v || v < 30 || v > 300) { fb.textContent = tx("Bitte einen plausiblen Wert (30–300 kg).", "Please enter a plausible value (30–300 kg)."); fb.style.color = "var(--red)"; return; }
+        logWeight(v, ymd);
+        track("weight_logged");
+        var tr = weekly.trend(weightSeries(), ymd);
+        fb.style.color = "var(--green)";
+        fb.textContent = tr
+          ? tx("Gespeichert ✓ — Trend: " + (tr.deltaPerWeek > 0 ? "+" : "") + tr.deltaPerWeek + " kg/Woche", "Saved ✓ — trend: " + (tr.deltaPerWeek > 0 ? "+" : "") + tr.deltaPerWeek + " kg/week")
+          : tx("Gespeichert ✓", "Saved ✓");
+        setTimeout(function () { closeSheet(); if (onSaved) onSaved(); }, 700);
+      });
+      sheet.appendChild(save);
+      inp.focus();
+    });
+  }
   function isCustomer() { var a = access(); return !!(a.protocol || a.twelve_week || a.coaching); }
 
   function dayNumber(p, ymd) {
@@ -331,17 +434,47 @@
         pv.appendChild(el("p", null, tx(
           "Der vollständige Plan (Training, Mahlzeiten, Einkaufsliste, tägliche Führung, Wochenanpassung) ist Teil von <strong>DAS PROTOKOLL</strong> — einmalig, kein Abo. Bereits gekauft? Einloggen genügt.",
           "The full plan (training, meals, shopping list, daily guidance, weekly adjustment) is part of <strong>DAS PROTOKOLL</strong> — one-time, no subscription. Already bought it? Just sign in.")));
-        var buy = el("a", "btn btn-primary", tx("Plan freischalten", "Unlock the plan"));
+        var buy = el("a", "btn btn-primary", tx("Plan freischalten — " + dp.phaseGoal.week12TargetMinKg + "–" + dp.phaseGoal.week12TargetMaxKg + " kg in 12 Wochen", "Unlock the plan — " + dp.phaseGoal.week12TargetMinKg + "–" + dp.phaseGoal.week12TargetMaxKg + " kg in 12 weeks"));
         buy.href = "protokoll.html";
         buy.setAttribute("data-track", "simple_unlock_cta");
         pv.appendChild(buy);
-        var login = el("a", "btn btn-ghost btn-sm", tx("Einloggen", "Sign in"));
-        login.href = "mein-protokoll.html?legacy=1#settings";
-        login.style.marginLeft = "10px";
-        pv.appendChild(login);
+        pv.appendChild(loginForm(
+          "Bereits gekauft? Einloggen genügt — dein Plan wird danach hier freigeschaltet:",
+          "Already bought it? Just sign in — your plan unlocks here afterwards:"));
       }
       root.appendChild(pv);
     }
+  }
+
+  /* Inline-Login (Magic Link) — kein Umweg über die Legacy-Einstellungen. */
+  function loginForm(introDe, introEn) {
+    var wrap = el("div");
+    if (introDe) wrap.appendChild(el("p", "hint", tx(introDe, introEn)));
+    var row = el("div", "s-actions");
+    var inp = el("input");
+    inp.type = "email"; inp.placeholder = "deine@email.de"; inp.autocomplete = "email";
+    inp.style.cssText = "flex:1;min-width:200px;background:var(--bg-2);border:1px solid var(--line-strong);color:var(--text);border-radius:9px;padding:10px 12px;font-size:0.95rem;";
+    var btn = el("button", "btn btn-primary btn-sm", tx("Login-Link senden", "Send sign-in link"));
+    var fb = el("p", "hint"); fb.style.marginTop = "6px";
+    btn.addEventListener("click", function () {
+      var mail = (inp.value || "").trim();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) { fb.textContent = tx("Bitte eine gültige E-Mail-Adresse.", "Please enter a valid email address."); return; }
+      btn.disabled = true; btn.textContent = "…";
+      MM.account.signIn(mail).then(function (r) {
+        btn.disabled = false;
+        if (r && r.ok !== false) {
+          btn.textContent = tx("Link gesendet ✓", "Link sent ✓");
+          fb.textContent = tx("Prüfe dein Postfach und öffne den Link auf DIESEM Gerät — danach geht es hier automatisch weiter.",
+            "Check your inbox and open the link on THIS device — this page continues automatically afterwards.");
+        } else {
+          btn.textContent = tx("Login-Link senden", "Send sign-in link");
+          fb.textContent = (r && r.message) || tx("Senden fehlgeschlagen — bitte später erneut versuchen.", "Sending failed — please try again later.");
+        }
+      });
+    });
+    row.appendChild(inp); row.appendChild(btn);
+    wrap.appendChild(row); wrap.appendChild(fb);
+    return wrap;
   }
 
   function labelFor(qid, o) {
@@ -432,8 +565,7 @@
     if (p.dailyTargets.weighInWeekdays.indexOf(wd) >= 0) {
       var todaysWeight = weightSeries().filter(function (w) { return w.date === ymd; })[0];
       chip("weigh", todaysWeight ? ("⚖ " + todaysWeight.kg + " kg ✓") : tx("⚖ Gewicht eintragen", "⚖ Log weight"), !!todaysWeight, function () {
-        var v = prompt(tx("Gewicht heute (kg):", "Weight today (kg):"));
-        if (v) { logWeight(parseFloat(String(v).replace(",", ".")), ymd); render(); }
+        openWeightSheet(ymd, render);
       });
     }
     if (info.shopping) chip("shop", tx("🛒 Einkaufstag", "🛒 Shopping day"), !!entry.tasks.shopping, function () { location.hash = "#plan"; MM.store.set("simple_plan_tab", "einkauf"); render(); });
@@ -441,10 +573,23 @@
     if (info.review && week >= 2) chip("review", tx("📋 Wochencheck fällig", "📋 Weekly check due"), false, function () { location.hash = "#check"; });
     if ([1, 22, 50, 78].indexOf(day) >= 0) {
       chip("photo", tx("📷 Fortschrittsfoto (bleibt auf deinem Gerät)", "📷 Progress photo (stays on your device)"), !!entry.tasks.photo, function () {
-        entry.tasks.photo = !entry.tasks.photo; setDayEntry(ymd, entry); render();
+        capturePhoto("d" + day, function (okSaved) {
+          if (okSaved) { entry.tasks.photo = true; setDayEntry(ymd, entry); }
+          render();
+        });
       });
     }
     root.appendChild(chips);
+
+    /* Fortschritts-Moment: heute besser als letztes Mal? */
+    if (entry.tasks.training && entry.workout && entry.workout.improved != null) {
+      var imp = entry.workout.improved;
+      root.appendChild(el("div", "s-note", imp > 0
+        ? tx("Stark: <strong>" + imp + (imp === 1 ? " Übung" : " Übungen") + " besser als letztes Mal</strong> — genau so funktioniert Progression.",
+             "Strong: <strong>" + imp + (imp === 1 ? " exercise" : " exercises") + " better than last time</strong> — that's exactly how progression works.")
+        : tx("Training absolviert ✓ — halten zählt auch. Nächstes Mal greift das Tagesziel wieder.",
+             "Session done ✓ — maintaining counts too. Next time the daily goal applies again.")));
+    }
 
     /* Tagesabschluss */
     var closeBtn = el("button", "btn " + (entry.closed ? "btn-ghost btn-sm" : "btn-dark"), entry.closed ? tx("Tag abgeschlossen ✓", "Day closed ✓") : tx("Tag abschließen", "Close the day"));
@@ -483,6 +628,60 @@
   /* ================================================================
      WORKOUT — Training starten, abhaken, eintragen
      ================================================================ */
+  /* Rest-Timer: startet beim Abhaken eines Satzes, läuft render-sicher
+     über einen Modul-Zustand + 1-s-Tick. */
+  var restTimer = { until: 0, label: "", iv: null };
+  function startRest(seconds, label) {
+    restTimer.until = Date.now() + seconds * 1000;
+    restTimer.label = label;
+    if (!restTimer.iv) restTimer.iv = setInterval(function () {
+      var elBox = document.getElementById("sRestTimer");
+      if (!elBox) return;
+      var left = Math.ceil((restTimer.until - Date.now()) / 1000);
+      var tEl = elBox.querySelector(".t");
+      if (left <= 0) {
+        elBox.classList.add("done");
+        tEl.textContent = "0:00";
+        elBox.querySelector(".l").textContent = tx("Pause vorbei — nächster Satz.", "Rest over — next set.");
+        clearInterval(restTimer.iv); restTimer.iv = null;
+        try { if (navigator.vibrate) navigator.vibrate(180); } catch (e) {}
+      } else {
+        tEl.textContent = Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0");
+      }
+    }, 250);
+  }
+  function stopRest() {
+    restTimer.until = 0;
+    if (restTimer.iv) { clearInterval(restTimer.iv); restTimer.iv = null; }
+    var elBox = document.getElementById("sRestTimer");
+    if (elBox) elBox.remove();
+  }
+  /* Konkretes Tagesziel je Übung aus dem letzten Mal (doppelte Progression). */
+  function progressionGoal(ex, last4) {
+    if (!last4 || last4.weightKg == null) {
+      return tx("Heute: Arbeitsgewicht finden (RIR 2)", "Today: find your working weight (RIR 2)");
+    }
+    if (last4.reps != null && last4.reps < ex.repsHi) {
+      return tx("Ziel heute: " + last4.weightKg + " kg × " + (last4.reps + 1) + " (eine mehr als letztes Mal)",
+                "Goal today: " + last4.weightKg + " kg × " + (last4.reps + 1) + " (one more than last time)");
+    }
+    var inc = ["squat", "legpress", "hinge", "hipthrust", "splitsquat", "gobletsquat", "dbrdl", "legcurl"].indexOf(ex.id) >= 0 ? 5 : 2.5;
+    return tx("Ziel heute: " + (last4.weightKg + inc) + " kg × " + ex.repsLo + " (Gewicht rauf, unten neu starten)",
+              "Goal today: " + (last4.weightKg + inc) + " kg × " + ex.repsLo + " (add load, restart at the bottom)");
+  }
+  /* Verbesserungen vs. letztes Mal zählen — der sichtbare Fortschritts-Moment. */
+  function countImprovements(entries, last) {
+    if (!last || !last.entries) return null;
+    var n = 0;
+    Object.keys(entries).forEach(function (id) {
+      var now = entries[id], old = last.entries[id];
+      if (!now || !old || now.weightKg == null || old.weightKg == null) return;
+      if (now.weightKg > old.weightKg) n++;
+      else if (now.weightKg === old.weightKg && (now.reps || 0) > (old.reps || 0)) n++;
+    });
+    return n;
+  }
+
   function vWorkout() {
     var p = activePlan();
     var ymd = todayYmd();
@@ -508,6 +707,17 @@
     shortBtn.addEventListener("click", function () { w.short = !w.short; setDayEntry(ymd, entry); render(); });
     root.appendChild(shortBtn);
 
+    /* Rest-Timer-Fläche (erscheint nach dem ersten abgehakten Satz) */
+    if (restTimer.until > Date.now()) {
+      var tb = el("div", "s-timer"); tb.id = "sRestTimer";
+      tb.appendChild(el("span", "t", "…"));
+      tb.appendChild(el("span", "l", tx("Pause — ", "Rest — ") + restTimer.label));
+      var skip = el("button", null, tx("Überspringen", "Skip"));
+      skip.addEventListener("click", stopRest);
+      tb.appendChild(skip);
+      root.appendChild(tb);
+    }
+
     var card = el("div", "s-card");
     session.exercises.forEach(function (ex) {
       if (w.short && !ex.inShort) return;
@@ -516,9 +726,17 @@
       var row = el("div", "s-ex");
       var n = el("div", "n");
       var last4 = last && last.entries && last.entries[ex.id];
+      /* Anzeige = Daten: Das vorbelegte Gewicht aus dem letzten Mal wird
+         REAL übernommen — sonst verliert der Log das Gewicht, wenn der
+         Nutzer das Feld nie anfasst, und die Progression bricht. */
+      if (e.weightKg == null && last4 && last4.weightKg != null) {
+        e.weightKg = last4.weightKg;
+        w.entries[ex.id] = e;
+      }
       n.appendChild(el("b", null, esc(en() ? ex.nameEn : ex.name) + (ex.inShort ? " <span class='short-mark'>KURZ</span>" : "")));
       n.appendChild(el("span", null, sets + " × " + ex.repsLo + "–" + ex.repsHi + " · RIR " + ex.rir + " · " + tx("Pause", "rest") + " " + ex.restSec + " s" +
         (last4 && last4.weightKg ? " · " + tx("letztes Mal", "last time") + ": " + last4.weightKg + " kg × " + (last4.reps || "?") : "")));
+      n.appendChild(el("span", "s-goal", esc(progressionGoal(ex, last4))));
       row.appendChild(n);
       var wIn = el("input"); wIn.type = "number"; wIn.step = "0.5"; wIn.placeholder = "kg";
       wIn.value = e.weightKg != null ? e.weightKg : (last4 && last4.weightKg != null ? last4.weightKg : "");
@@ -531,7 +749,14 @@
       for (var si = 1; si <= sets; si++) {
         (function (si2) {
           var b = el("button", e.setsDone >= si2 ? "on" : "", String(si2));
-          b.addEventListener("click", function () { e.setsDone = e.setsDone >= si2 ? si2 - 1 : si2; w.entries[ex.id] = e; setDayEntry(ymd, entry); render(); });
+          b.addEventListener("click", function () {
+            var inc = !(e.setsDone >= si2);
+            e.setsDone = e.setsDone >= si2 ? si2 - 1 : si2;
+            w.entries[ex.id] = e; setDayEntry(ymd, entry);
+            if (inc && e.setsDone < sets) startRest(ex.restSec, (en() ? ex.nameEn : ex.name) + " · " + tx("Satz", "set") + " " + (e.setsDone + 1) + "/" + sets);
+            else if (inc) stopRest();
+            render();
+          });
           sb.appendChild(b);
         })(si);
       }
@@ -552,7 +777,10 @@
     var doneBtn = el("button", "btn btn-primary", tx("Training abschließen", "Finish workout"));
     doneBtn.addEventListener("click", function () {
       entry.tasks.training = true;
+      var imp = countImprovements(w.entries, last);
+      if (imp != null) w.improved = imp;
       setDayEntry(ymd, entry);
+      stopRest();
       track("workout_completed");
       location.hash = "#heute";
     });
@@ -645,15 +873,38 @@
       var card = el("div", "s-meal");
       card.appendChild(el("div", "slot", esc(slotNames[m.slot] || m.slot) + " · ~" + m.targetKcal + " kcal"));
       m.options.forEach(function (o) {
-        var chosenId = (n.mealTemplateIds[mi] || "").split("@")[0];
+        var sel = (n.mealTemplateIds[mi] || "").split("@");
+        var chosenId = sel[0];
         var isChosen = o.blockId === chosenId;
+        /* Portion: die gewählte Option kann vom Basisfaktor abweichen (Stepper) */
+        var factor = isChosen ? (parseFloat(sel[1]) || o.factor) : o.factor;
+        var scale = factor / o.factor;
+        var kcalShow = Math.round(o.kcal * scale), protShow = Math.round(o.protein * scale);
         var opt = el("div", "opt" + (isChosen ? " chosen" : ""));
         var row = el("div", "row");
         row.appendChild(el("b", null, esc(pick(o.name))));
-        row.appendChild(el("span", "kp", o.kcal + " kcal · " + o.protein + " g P"));
+        row.appendChild(el("span", "kp", kcalShow + " kcal · " + protShow + " g P"));
         opt.appendChild(row);
-        opt.appendChild(el("div", "items", o.items.map(function (i) { return esc(en() ? i.nameEn : i.name) + " " + i.grams + " g"; }).join(" · ")));
+        opt.appendChild(el("div", "items", o.items.map(function (i) { return esc(en() ? i.nameEn : i.name) + " " + (Math.round(i.grams * scale / 5) * 5) + " g"; }).join(" · ")));
         opt.appendChild(el("div", "prep", esc(pick(o.prep))));
+        if (isChosen) {
+          var stepper = el("div", "s-portion");
+          function setFactor(nf) {
+            nf = Math.max(0.6, Math.min(1.6, Math.round(nf * 20) / 20));
+            var cur2 = plan();
+            cur2.nutrition.mealTemplateIds[mi] = o.blockId + "@" + nf;
+            store.adoptPlan(cur2, { force: true });   // Portionswahl ist Präferenz — Einkaufsliste folgt automatisch
+            render();
+          }
+          var minus = el("button", null, "−"); minus.type = "button";
+          minus.addEventListener("click", function () { setFactor(factor - 0.1); });
+          var plus = el("button", null, "+"); plus.type = "button";
+          plus.addEventListener("click", function () { setFactor(factor + 0.1); });
+          stepper.appendChild(minus);
+          stepper.appendChild(el("span", "f", tx("Portion ", "Portion ") + Math.round(scale * 100) + " % · " + tx("Einkauf folgt mit", "shopping list follows")));
+          stepper.appendChild(plus);
+          opt.appendChild(stepper);
+        }
         if (!isChosen) {
           var pickBtn = el("button", "btn btn-ghost btn-sm", tx("Diese Option wählen", "Choose this option"));
           pickBtn.addEventListener("click", function () {
@@ -781,19 +1032,36 @@
     tc.appendChild(el("p", "hint", tx("Zählung ohne Streak-Druck: Kurzversion zählt voll, verpasste Tage werden nicht gestapelt.", "No streak pressure: the short version counts fully, missed days are not stacked.")));
     root.appendChild(tc);
 
-    /* Fotos */
+    /* Fotos — gerätelokal gespeichert, direkt vergleichbar */
     var ph = el("div", "s-card");
     ph.appendChild(el("h3", null, tx("Fotos", "Photos")));
-    var marks = { 1: tx("Start", "Start"), 22: tx("Woche 4", "Week 4"), 50: tx("Woche 8", "Week 8"), 78: tx("Woche 12", "Week 12") };
-    var rowP = [];
-    Object.keys(marks).forEach(function (dd) {
-      var dy2 = model.addDays(p.startDate, +dd - 1);
-      var got = d[dy2] && d[dy2].tasks && d[dy2].tasks.photo;
-      rowP.push((got ? "✓ " : "○ ") + marks[dd]);
+    var marks = [[1, tx("Start", "Start")], [22, tx("Woche 4", "Week 4")], [50, tx("Woche 8", "Week 8")], [78, tx("Woche 12", "Week 12")]];
+    var grid = el("div", "s-photos");
+    var today = dayNumber(p, ymd);
+    marks.forEach(function (mk) {
+      var dd = mk[0], label = mk[1];
+      var cell = el("div", "ph");
+      cell.appendChild(el("span", "cap", esc(label)));
+      photoDB.get("d" + dd).then(function (blob) {
+        if (blob) {
+          cell.innerHTML = "";
+          var img = document.createElement("img");
+          img.src = URL.createObjectURL(blob);
+          img.alt = label;
+          cell.appendChild(img);
+        } else if (today >= dd) {
+          cell.appendChild(el("span", "cap", tx("antippen zum Aufnehmen", "tap to capture")));
+        }
+      });
+      cell.addEventListener("click", function () {
+        if (today < dd) return;
+        capturePhoto("d" + dd, function () { render(); });
+      });
+      grid.appendChild(cell);
     });
-    ph.appendChild(el("p", null, rowP.join(" · ")));
-    ph.appendChild(el("p", "hint", tx("Fotos bleiben auf deinem Gerät (Kamera/Fotos-App) — MaleMetrix lädt nichts hoch und erinnert nur an die Zeitpunkte.",
-      "Photos stay on your device (camera/photos app) — MaleMetrix uploads nothing and only reminds you of the checkpoints.")));
+    ph.appendChild(grid);
+    ph.appendChild(el("p", "hint", tx("Fotos bleiben auf DIESEM Gerät (lokaler Speicher) — MaleMetrix lädt nichts hoch. Verpasste Checkpoints lassen sich nachholen.",
+      "Photos stay on THIS device (local storage) — MaleMetrix uploads nothing. Missed checkpoints can be caught up.")));
     root.appendChild(ph);
 
     /* Wochencheck-Historie */
@@ -812,10 +1080,34 @@
      WOCHENCHECK
      ================================================================ */
   var checkAnswers = {};
+  /* Vorbefüllung aus dem, was die App schon weiß — nie doppelt fragen. */
+  function prefillCheck(p, ymd) {
+    if (checkAnswers.trainingsDone == null) {
+      var d = daylog(), done = 0;
+      for (var i = 0; i < 7; i++) {
+        var dy = model.addDays(ymd, -i);
+        if (d[dy] && d[dy].tasks && d[dy].tasks.training) done++;
+      }
+      checkAnswers.trainingsDone = done;
+      checkAnswers._trainingsAuto = true;
+    }
+    if (checkAnswers.nutritionAdherence == null) {
+      // Tagesabschlüsse als grober Anker: viele geschlossene Tage ≙ dranbleiben
+      var d2 = daylog(), closed = 0;
+      for (var j = 1; j <= 7; j++) {
+        var dy2 = model.addDays(ymd, -j);
+        if (d2[dy2] && d2[dy2].closed) closed++;
+      }
+      if (closed >= 5) checkAnswers.nutritionAdherence = "gut";
+      else if (closed >= 3) checkAnswers.nutritionAdherence = "mittel";
+      // unter 3: bewusst offen lassen — raten wäre eine stille Annahme
+    }
+  }
   function vCheck() {
     var p = activePlan();
     var ymd = todayYmd();
     var week = weekNumber(p, ymd);
+    prefillCheck(p, ymd);
     track("weekly_check_started");
     root.appendChild(el("h2", null, tx("Wochencheck — Woche ", "Weekly check — week ") + week));
     root.appendChild(el("p", "s-sub", tx("Sieben kurze Angaben. Danach entscheidet das Regelwerk — und begründet die Entscheidung.", "Seven quick inputs. Then the rules decide — and explain the decision.")));
@@ -832,11 +1124,13 @@
     var card = el("div", "s-card");
     weekly.QUESTIONS.forEach(function (q) {
       var wrap = el("div", "s-q");
-      wrap.appendChild(el("div", "lbl", esc(en() ? q.labelEn : q.label)));
+      var auto = q.id === "trainingsDone" && checkAnswers._trainingsAuto;
+      wrap.appendChild(el("div", "lbl", esc(en() ? q.labelEn : q.label) + (auto ? " ✓" : "")));
+      if (auto) wrap.appendChild(el("div", "why", tx("Aus deinen abgehakten Trainings übernommen — korrigierbar.", "Taken from your completed sessions — you can correct it.")));
       if (q.type === "number") {
         var inp = el("input"); inp.type = "number"; inp.min = 0; inp.max = 7;
         inp.value = checkAnswers[q.id] != null ? checkAnswers[q.id] : "";
-        inp.addEventListener("change", function () { checkAnswers[q.id] = parseInt(inp.value, 10); });
+        inp.addEventListener("change", function () { checkAnswers[q.id] = parseInt(inp.value, 10); delete checkAnswers._trainingsAuto; });
         wrap.appendChild(inp);
       } else {
         var opts = el("div", "opts");
@@ -909,12 +1203,14 @@
     try { state = MM.account && MM.account.getDashboardState ? MM.account.getDashboardState() : null; } catch (e) {}
     if (state && state.user) {
       acc.appendChild(el("p", null, esc(state.user.email || "") + (isCustomer() ? " · DAS PROTOKOLL ✓" : "")));
+      var accLink = el("a", "btn btn-ghost btn-sm", tx("Konto verwalten", "Manage account"));
+      accLink.href = "mein-protokoll.html?legacy=1#settings";
+      acc.appendChild(accLink);
     } else {
-      acc.appendChild(el("p", "hint", tx("Nicht eingeloggt. Mit Konto synchronisiert dein Plan über Geräte.", "Not signed in. With an account your plan syncs across devices.")));
+      acc.appendChild(loginForm(
+        "Mit Konto synchronisiert dein Plan über alle Geräte und der Kalender-Feed wird möglich:",
+        "With an account your plan syncs across devices and the calendar feed becomes available:"));
     }
-    var accLink = el("a", "btn btn-ghost btn-sm", state && state.user ? tx("Konto verwalten", "Manage account") : tx("Einloggen", "Sign in"));
-    accLink.href = "mein-protokoll.html?legacy=1#settings";
-    acc.appendChild(accLink);
     root.appendChild(acc);
 
     /* Sprache */
