@@ -121,19 +121,36 @@
     /* Hero-Neufassung (Founder, Juli 2026): aktivere Verben ("Bau DEINEN
        Körper", "STEUERE dein System"), kürzerer Nutzen-Text ohne "Hormone"
        und "Bauchgefühl", CTA in Ich-Form. br-m bricht nur mobil. */
-    "home.h1": { de: "Bau deinen Körper.<br><span class=\"text-grad\">Steuere dein <br class=\"br-m\">System.</span>",
-                 en: "Build your body.<br><span class=\"text-grad\">Steer your <br class=\"br-m\">system.</span>" },
-    "home.lead": { de: "Finde zuerst den Engpass, der deinen Fortschritt wirklich bremst. MaleMetrix verbindet Training, Ernährung, Schlaf und Gesundheitsdaten zu einer klaren Priorität.",
-                   en: "First find the bottleneck that is really holding you back. MaleMetrix turns training, nutrition, sleep and health data into one clear priority." },
-    "home.trustline": { de: "7 Minuten · Ergebnis sofort · ohne Anmeldung", en: "7 minutes · instant result · no sign-up" },
-    "home.howLink": { de: "So funktioniert der Score ↓", en: "How the score works ↓" },
+    /* Flaggschiff-Neuausrichtung (August 2026): Die Transformation ist der
+       Hero — sieh deinen möglichen Körper, wähle dein Ziel, MaleMetrix baut
+       den Weg. Der Score bleibt der sekundäre Einstieg. */
+    "home.h1": { de: "Sieh deinen möglichen Körper.<br><span class=\"text-grad\">Bevor du dafür <br class=\"br-m\">arbeitest.</span>",
+                 en: "See your possible body.<br><span class=\"text-grad\">Before you <br class=\"br-m\">work for it.</span>" },
+    "home.lead": { de: "Lade ein aktuelles Foto hoch. MaleMetrix erstellt zwei realistische KI-Visualisierungen möglicher Zielzustände. Du wählst das Ziel — MaleMetrix baut den Weg dorthin.",
+                   en: "Upload a current photo. MaleMetrix creates two realistic AI visualizations of possible target states. You pick the target — MaleMetrix builds the path to it." },
+    "home.trustline": { de: "Zwei realistische Zieloptionen · KI-Visualisierung, klar gekennzeichnet · keine Extremziele · Konto erst vor der Generierung",
+                        en: "Two realistic target options · AI visualization, clearly labeled · no extreme targets · account only right before generation" },
+    "home.howLink": { de: "So funktioniert es ↓", en: "How it works ↓" },
+    "cta.seeTransform": { de: "Meine mögliche Transformation sehen", en: "See my possible transformation" },
+    "home.s.how.k": { de: "So funktioniert es", en: "How it works" },
+    "home.s.how.h": { de: "Vom Foto zum Ziel — <span class=\"text-grad\">in vier Schritten</span>.",
+                      en: "From photo to target — <span class=\"text-grad\">in four steps</span>." },
+    "home.s.targets.k": { de: "Warum zwei Ziele", en: "Why two targets" },
+    "home.s.targets.h": { de: "Keine Fantasiekörper. <span class=\"text-grad\">Zwei ehrliche Optionen.</span>",
+                          en: "No fantasy bodies. <span class=\"text-grad\">Two honest options.</span>" },
+
+    /* ---------- Transformation (Hero der Funktionsseite) ---------- */
+    "trf.h1a": { de: "Dein Körper in der Zukunft.", en: "Your body in the future." },
+    "trf.h1b": { de: "Heute sichtbar.", en: "Visible today." },
+    "trf.lead": { de: "Ein Foto von dir — und MaleMetrix erstellt zwei realistische KI-Visualisierungen möglicher Zielzustände, aus deinem eigenen Bild. Du wählst EIN Ziel, und MaleMetrix baut den Weg dorthin: Ernährung, Training, System.",
+                  en: "One photo of you — and MaleMetrix creates two realistic AI visualizations of possible target states, from your own picture. You pick ONE target, and MaleMetrix builds the path: nutrition, training, system." },
 
     /* Sektions-Kicker + Überschriften */
     "home.s.problem.k": { de: "Das eigentliche Problem", en: "The real problem" },
     "home.s.problem.h": { de: "Du brauchst nicht mehr Informationen. Du brauchst die richtige <span class=\"text-grad\">Reihenfolge</span>.",
                           en: "You don’t need more information. You need the right <span class=\"text-grad\">order</span>." },
-    "home.s.system.k": { de: "Das MaleMetrix System", en: "The MaleMetrix system" },
-    "home.s.system.h": { de: "Ein System. Vier klare Rollen.", en: "One system. Four clear roles." },
+    "home.s.system.k": { de: "Vom Bild zum System", en: "From image to system" },
+    "home.s.system.h": { de: "Die Visualisierung ist der Anfang — nicht das Produkt.", en: "The visualization is the start — not the product." },
     "home.s.score.k": { de: "Der MaleMetrix Score", en: "The MaleMetrix Score" },
     "home.s.score.h": { de: "Deine Performance besteht aus <span class=\"text-grad\">mehreren Bereichen</span>.",
                         en: "Your performance is made of <span class=\"text-grad\">several areas</span>." },
@@ -152,9 +169,9 @@
     "home.s.know.h": { de: "Klartext statt Bro-Science.", en: "Straight talk, not bro-science." },
     "home.s.faq.k": { de: "Häufige Fragen", en: "Frequent questions" },
     "home.s.faq.h": { de: "Kurz beantwortet.", en: "Answered briefly." },
-    "home.s.final.k": { de: "Kostenlos · ~7 Minuten", en: "Free · ~7 minutes" },
-    /* Diagnose-Vorschau (Beispielauswertung) im Hero. */
-    "home.diag.head": { de: "MALEMETRIX SCORE · BEISPIELAUSWERTUNG", en: "MALEMETRIX SCORE · SAMPLE ANALYSIS" },
+    "home.s.final.k": { de: "Zielvorschläge kostenlos · KI-Visualisierung klar gekennzeichnet", en: "Target proposals free · AI visualization clearly labeled" },
+    /* Ziel-Instrument (Transformations-Schema) im Hero. */
+    "home.diag.head": { de: "MM / TRANSFORM · BEISPIELRECHNUNG", en: "MM / TRANSFORM · SAMPLE CALCULATION" },
     "home.diag.level": { de: "Solide Basis, klare Engpässe", en: "Solid base, clear bottlenecks" },
     "home.diag.type": { de: "Typ: Der müde Leistungsträger", en: "Type: The tired high performer" },
     "home.diag.body": { de: "KÖRPER", en: "BODY" },
@@ -164,8 +181,8 @@
     "home.diag.blood": { de: "BLUTWERTE", en: "BIOMARKERS" },
     "home.diag.drive": { de: "ENERGIE", en: "ENERGY" },
     "home.diag.execution": { de: "UMSETZUNG", en: "EXECUTION" },
-    "home.diag.leadOut": { de: "<b>Primärer Engpass: Schlaf &amp; Erholung.</b> Daraus werden deine nächsten Schritte nach Wirkung und Aufwand priorisiert.", en: "<b>Primary bottleneck: sleep &amp; recovery.</b> Your next steps are prioritised from it by impact and effort." },
-    "home.diag.note": { de: "Verdichtetes Profil aus 12 Bereichen. Der Engpass ist der wirksamste Hebel — nicht automatisch der niedrigste Wert.", en: "A condensed profile of 12 areas. The bottleneck is the most effective lever — not automatically the lowest score." },
+    "home.diag.leadOut": { de: "<b>Beide Ziele physiologisch begrenzt:</b> nie unter BMI 20, keine Fantasiekörper — gerechnet aus Gewicht, Größe, Taille und Ausgangsform.", en: "<b>Both targets physiologically bounded:</b> never below BMI 20, no fantasy bodies — computed from weight, height, waist and starting shape." },
+    "home.diag.note": { de: "Schema mit Beispielwerten, keine echte Person. Deine Visualisierung entsteht aus deinem eigenen Foto und ist klar als KI gekennzeichnet.", en: "Schema with sample values, not a real person. Your visualization is created from your own photo and clearly labeled as AI." },
     "cta.findBottleneck": { de: "Meinen Engpass finden", en: "Find my bottleneck" },
     "cta.startFree": { de: "Kostenlos starten", en: "Start free" },
     "cta.calcScore": { de: "Score berechnen", en: "Calculate my Score" },

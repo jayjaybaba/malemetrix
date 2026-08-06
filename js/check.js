@@ -550,6 +550,23 @@
       '<div class="limiter"><span class="k">PRIMÄRER ENGPASS</span><b>' + esc(V.primaryBottleneck.name).toUpperCase() + '</b><span class="v">' + (V.primaryBottleneck.value != null ? V.primaryBottleneck.value : "") + '</span></div>' +
       '</div>';
 
+    /* ---------- Brücke zur Transformation ---------------------------------
+       Wer auf transformation.html bereits ein Ziel gewählt hat
+       (mm_transform_goal), kam von seiner Visualisierung hierher — dieser
+       Block führt direkt zurück zum Ziel und in den Plan. Der Score ist
+       kein Gate, aber er kalibriert die Planvorschau auf den Engpass. */
+    (function () {
+      const g = MM.store.get("transform_goal", null);
+      const kg = g && Number(g.target_kg);
+      if (!kg || !isFinite(kg)) return;
+      html += '<div class="card dash-block" style="margin-top:16px;border-color:var(--accent-line)">' +
+        '<span class="card-num">MM / TRANSFORM</span>' +
+        '<h3 style="margin:4px 0 6px">Dein Ziel: ' + kg + ' kg — jetzt mit deinem Engpass kalibriert</h3>' +
+        '<p class="small muted" style="margin:0 0 12px">Du hast dein mögliches Ziel bei ' + kg + ' kg gewählt. Dein Score fließt ab jetzt in deine Planvorschau ein — größter Hebel: ' + esc(V.primaryBottleneck.name).toUpperCase() + '.</p>' +
+        '<a class="btn btn-primary" href="transformation.html#trfPlanSec" data-track="score_to_transform_click">Zurück zu meinem Ziel</a>' +
+        '</div>';
+    })();
+
     /* ---------- HAT DEIN AUFTRAG ETWAS GEBRACHT? --------------------------
        Der eigentliche Grund, ein zweites Mal herzukommen. Nur sichtbar, wenn
        es beim letzten Mal wirklich einen Auftrag gab — sonst wäre es eine

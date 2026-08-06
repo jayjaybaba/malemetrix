@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Körper-Transformation visualisieren — sieh dich mit deinem Zielgewicht | MaleMetrix</title>
-  <meta name="description" content="Foto hochladen, zwei Zielgewichte wählen — und dich selbst mit 10 oder 20 kg weniger sehen. Danach: Ernährungs-, Trainings- und Supplementplan exakt für dein gewähltes Ziel.">
+  <title>Transformation — sieh deinen möglichen Körper als KI-Visualisierung | MaleMetrix</title>
+  <meta name="description" content="Foto hochladen — MaleMetrix berechnet zwei realistische Ziele (nie unter BMI 20, keine Extremziele) und erstellt klar gekennzeichnete KI-Visualisierungen aus deinem eigenen Bild. Du wählst das Ziel, MaleMetrix baut den Weg dorthin.">
   <link rel="stylesheet" href="css/fonts.css">
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23070A0F'/%3E%3Cpath d='M8.5 8.5l5.5 5.5M8.5 23.5l5.5-5.5' stroke='%23F0EEE9' stroke-width='3.4' stroke-linecap='round' fill='none'/%3E%3Cpath d='M23.5 8.5l-5.5 5.5M23.5 23.5l-5.5-5.5' stroke='%2316C4F4' stroke-width='3.4' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
@@ -15,16 +15,16 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="MaleMetrix">
   <meta property="og:locale" content="de_DE">
-  <meta property="og:title" content="Körper-Transformation visualisieren — sieh dich mit deinem Zielgewicht | MaleMetrix">
-  <meta property="og:description" content="Foto hochladen, zwei Zielgewichte wählen — und dich selbst mit 10 oder 20 kg weniger sehen. Danach: Ernährungs-, Trainings- und Supplementplan exakt für dein Ziel.">
+  <meta property="og:title" content="Transformation — sieh deinen möglichen Körper als KI-Visualisierung | MaleMetrix">
+  <meta property="og:description" content="Ein Foto, zwei realistische KI-Visualisierungen möglicher Zielzustände — keine Extremziele. Du wählst das Ziel, MaleMetrix baut den Weg dorthin.">
   <meta property="og:url" content="https://www.malemetrix.com/transformation.html">
-  <meta property="og:image" content="https://www.malemetrix.com/og-image.png">
+  <meta property="og:image" content="https://www.malemetrix.com/og-transformation.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Körper-Transformation visualisieren | MaleMetrix">
-  <meta name="twitter:description" content="Sieh dich selbst mit deinem Zielgewicht — dann verfolge genau dieses Ziel mit Ernährungs-, Trainings- und Supplementplan.">
-  <meta name="twitter:image" content="https://www.malemetrix.com/og-image.png">
+  <meta name="twitter:title" content="Transformation — sieh deinen möglichen Körper | MaleMetrix">
+  <meta name="twitter:description" content="Zwei realistische KI-Visualisierungen aus deinem eigenen Foto — dann verfolgst du genau dieses Ziel mit System.">
+  <meta name="twitter:image" content="https://www.malemetrix.com/og-transformation.png">
   <style>
     /* ========================================================================
        TRANSFORM — Seitenbausteine im VISUAL SYSTEM 2.0 (Instrumente statt
@@ -131,8 +131,20 @@
     .trf-scan .st2 { font-family: var(--font-mono); font-size: 0.56rem; letter-spacing: 0.14em; color: var(--muted-2); }
     .trf-scan-err { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 18px; text-align: center; }
 
+    /* Sichtbarer Fokus für die Upload-Fläche (echtes role=button) */
+    .trf-drop:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; }
+    .trf-drop:focus-visible .tick { border-color: var(--accent-2); }
+
     /* Vorher/Nachher-Regler */
     .trf-ba { touch-action: none; cursor: ew-resize; }
+    /* Echte Range-Steuerung: unauffällige Leiste am unteren Rand, deutlicher
+       Fokus — Tastatur und Screenreader bedienen den Vergleich hierüber. */
+    .trf-ba-range { position: absolute; left: 10px; right: 10px; bottom: 8px; width: calc(100% - 20px); z-index: 3; height: 18px; margin: 0; background: transparent; -webkit-appearance: none; appearance: none; cursor: ew-resize; }
+    .trf-ba-range::-webkit-slider-runnable-track { height: 2px; background: rgba(240, 238, 233, 0.35); }
+    .trf-ba-range::-moz-range-track { height: 2px; background: rgba(240, 238, 233, 0.35); }
+    .trf-ba-range::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent-2); margin-top: -6px; border: 2px solid var(--bg-0); }
+    .trf-ba-range::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--accent-2); border: 2px solid var(--bg-0); }
+    .trf-ba-range:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
     .trf-ba .after { clip-path: inset(0 0 0 var(--ba, 50%)); }
     .trf-ba-handle { position: absolute; top: 0; bottom: 0; left: var(--ba, 50%); width: 1px; background: var(--accent-2); pointer-events: none; }
     .trf-ba-handle::after { content: "◂ ▸"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.62rem; letter-spacing: 0.05em; color: var(--bg-0); background: var(--accent-2); padding: 5px 7px; border-radius: 99px; white-space: nowrap; }
@@ -159,6 +171,72 @@
     .trf-cta .cp { color: var(--muted); max-width: 62ch; line-height: 1.6; font-size: 0.95rem; }
     .trf-cta .cp strong { color: var(--text); }
     .trf-cta .btn { margin-top: 18px; }
+
+    /* --- Einwilligung (P0): Pflicht-Checkboxen vor der Übertragung --- */
+    .trf-consent { margin-top: 22px; padding: 16px 18px; border: 1px solid var(--hairline); background: var(--surface); }
+    .trf-consent .trf-k { margin-bottom: 12px; }
+    .trf-consent-item { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; cursor: pointer; font-size: 0.9rem; line-height: 1.5; color: var(--muted); }
+    .trf-consent-item input { margin-top: 3px; width: 16px; height: 16px; flex: 0 0 auto; accent-color: var(--accent-2); }
+    .trf-consent-item a { text-decoration: underline; }
+
+    /* --- KI-Kennzeichnung auf jedem Ergebnisbild (P0) --- */
+    .trf-ai-tag { position: absolute; left: 0; bottom: 0; z-index: 2; pointer-events: none; font-family: var(--font-mono); font-size: 0.55rem; letter-spacing: 0.12em; color: rgba(240, 238, 233, 0.95); background: rgba(7, 10, 15, 0.78); padding: 5px 9px; }
+
+    /* --- Zielkarten: A realistisch / B ambitioniert (Phase 3) --- */
+    .trf-goals { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: clamp(14px, 2vw, 22px); margin-top: 22px; }
+    .trf-goalcard { position: relative; border: 1px solid var(--hairline); background: var(--surface); padding: 20px; }
+    .trf-goalcard .gk { display: block; font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.18em; color: var(--accent-2); margin-bottom: 10px; }
+    .trf-goalcard .gkg { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.9rem, 4vw, 2.5rem); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+    .trf-goalcard .gkg small { font-size: 0.45em; font-weight: 600; color: var(--muted-2); margin-left: 4px; }
+    .trf-goalcard .gmeta { display: block; margin-top: 8px; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.1em; color: var(--muted); line-height: 1.8; }
+    .trf-goalcard .gwhy { margin-top: 10px; color: var(--muted); font-size: 0.86rem; line-height: 1.55; }
+    .trf-goalnote { margin-top: 14px; padding: 12px 14px; border-left: 2px solid var(--status-attention); background: var(--surface); color: var(--muted); font-size: 0.88rem; line-height: 1.55; }
+    .trf-custom { margin-top: 18px; border: 1px solid var(--hairline); background: var(--surface); }
+    .trf-custom summary { cursor: pointer; padding: 12px 16px; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.14em; color: var(--muted); list-style: none; }
+    .trf-custom summary::-webkit-details-marker { display: none; }
+    .trf-custom[open] summary { color: var(--accent-2); border-bottom: 1px solid var(--hairline); }
+    .trf-custom-body { padding: 14px 16px 18px; }
+    .trf-verdict-badge { display: inline-block; margin-left: 10px; font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.14em; padding: 3px 8px; border: 1px solid var(--hairline); }
+    .trf-verdict-badge.is-ok { color: var(--status-improving); border-color: var(--status-improving); }
+    .trf-verdict-badge.is-amb { color: var(--status-attention); border-color: var(--status-attention); }
+    .trf-verdict-badge.is-no { color: var(--status-flag); border-color: var(--status-flag); }
+
+    /* --- Score-Gate: erst der Score, dann die Bilder --- */
+    .trf-scoregate { margin: 14px 0 4px; padding: 16px 18px; border-left: 2px solid var(--accent-2); background: var(--surface); }
+    .trf-scoregate .gk { display: block; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.2em; color: var(--accent-2); margin-bottom: 8px; }
+    .trf-scoregate p { color: var(--muted); font-size: 0.92rem; line-height: 1.55; max-width: 62ch; margin: 0 0 12px; }
+    .trf-scoregate p strong { color: var(--text); }
+
+    /* --- Gratis-Kontingent-Zähler unter dem Generieren-Button --- */
+    .trf-quota { display: block; margin-top: 10px; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.16em; color: var(--muted-2); }
+    .trf-quota.is-low { color: var(--status-attention); }
+
+    /* --- Angebots-Staffel nach der Zielwahl --- */
+    .trf-offers { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: clamp(14px, 2vw, 22px); margin-top: 18px; }
+    .trf-offer { display: flex; flex-direction: column; position: relative; border: 1px solid var(--hairline); background: var(--surface); padding: 22px 20px 20px; }
+    .trf-offer.is-reco { border-color: var(--accent-2); }
+    .trf-offer .badge { position: absolute; top: -9px; left: 16px; font-family: var(--font-mono); font-size: 0.55rem; letter-spacing: 0.16em; color: var(--bg-0); background: var(--accent-2); padding: 3px 8px; }
+    .trf-offer .on { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; letter-spacing: -0.01em; margin: 0 0 2px; }
+    .trf-offer .op { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.12em; color: var(--accent-2); margin-bottom: 10px; }
+    .trf-offer .od { color: var(--muted); font-size: 0.88rem; line-height: 1.55; flex: 1; }
+    .trf-offer .od strong { color: var(--text); }
+    .trf-offer .btn { margin-top: 14px; width: 100%; }
+
+    /* --- Gesperrte Vollplan-Inhalte (Phase 5: Vorschau ist begrenzt) --- */
+    .trf-locked { margin-top: 26px; padding: 18px 20px; border: 1px dashed var(--hairline); background: var(--surface); }
+    .trf-locked .lk { display: block; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.18em; color: var(--muted-2); margin-bottom: 10px; }
+    .trf-locked ul { margin: 0; padding: 0; list-style: none; }
+    .trf-locked li { position: relative; padding: 7px 0 7px 26px; color: var(--muted); font-size: 0.9rem; line-height: 1.5; border-top: 1px solid var(--hairline); }
+    .trf-locked li:first-child { border-top: 0; }
+    .trf-locked li::before { content: ""; position: absolute; left: 2px; top: 12px; width: 10px; height: 9px; border: 1.5px solid var(--muted-2); border-radius: 2px; }
+    .trf-locked li::after { content: ""; position: absolute; left: 4.5px; top: 8px; width: 5px; height: 5px; border: 1.5px solid var(--muted-2); border-bottom: 0; border-radius: 4px 4px 0 0; }
+    .trf-locked li strong { color: var(--text); }
+
+    /* --- Sticky-Leiste nach der Zielwahl (nur Nicht-Kunden) --- */
+    .trf-sticky { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; padding: 10px 14px; background: rgba(7, 10, 15, 0.92); backdrop-filter: blur(6px); border-top: 1px solid var(--accent-line); }
+    .trf-sticky .sk { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.14em; color: var(--text); }
+    .trf-sticky .sk strong { color: var(--accent-2); }
+    .trf-sticky .close { background: transparent; border: 0; color: var(--muted-2); font-size: 1rem; line-height: 1; cursor: pointer; padding: 4px 8px; }
 
     @media (max-width: 700px) {
       .trf-stage { grid-template-columns: 1fr; }
@@ -246,11 +324,11 @@
     <div class="container" style="position:relative">
       <div class="os14-sysline">MM / TRANSFORM · BODY PREVIEW ENGINE</div>
       <h1 class="h-display" style="max-width:920px;font-size:clamp(2.5rem,7vw,4.4rem);line-height:0.98"><span data-i18n="trf.h1a">Dein Körper in der Zukunft.</span><br><span class="text-grad" data-i18n="trf.h1b">Heute sichtbar.</span></h1>
-      <p class="lead" style="max-width:56ch;margin-top:22px" data-i18n="trf.lead">Ein Foto von dir, zwei Zielgewichte — und du siehst dich selbst, wie du nach der Transformation aussiehst. Fotorealistisch, aus deinem eigenen Bild. Dann wählst du EIN Ziel, und genau dafür bekommst du Ernährungs-, Trainings- und Supplementplan.</p>
+      <p class="lead" style="max-width:56ch;margin-top:22px" data-i18n="trf.lead">Ein Foto von dir — und MaleMetrix erstellt zwei realistische KI-Visualisierungen möglicher Zielzustände, aus deinem eigenen Bild. Du wählst EIN Ziel, und MaleMetrix baut den Weg dorthin: Ernährung, Training, System.</p>
       <div class="mm-metric-row trf-hero-metrics">
         <div class="mm-metric"><span class="v">2<small>&nbsp;VERSIONEN</small></span><span class="k">von dir selbst</span></div>
         <div class="mm-metric"><span class="v">~30<small>&nbsp;SEK</small></span><span class="k">pro Vorschau</span></div>
-        <div class="mm-metric"><span class="v">0<small>&nbsp;FOTOS</small></span><span class="k">gespeichert</span></div>
+        <div class="mm-metric"><span class="v">KI</span><span class="k">jede Visualisierung klar gekennzeichnet</span></div>
       </div>
     </div>
   </section>
@@ -323,6 +401,15 @@
 <script src="js/i18n.js"></script>
 <script src="js/main.js"></script>
 <script src="js/account.js"></script>
+<!-- Zielengine: dieselbe Datei, die auch die Edge Function serverseitig
+     nutzt — EINE Quelle der Wahrheit für Grenzen und Vorschläge. Module
+     laden nach klassischen Skripten; transformation.js wartet auf das
+     Ready-Event, bevor es die Seite baut. -->
+<script type="module">
+  import * as G from "./supabase/functions/_shared/transform-goals.mjs";
+  window.MMTransformGoals = G;
+  window.dispatchEvent(new CustomEvent("mm:goals-ready"));
+</script>
 <script src="js/transformation.js"></script>
 </body>
 </html>
