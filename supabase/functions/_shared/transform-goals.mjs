@@ -207,11 +207,19 @@ export function validatePair(aKg, bKg) {
 }
 
 /* ============================================================
-   BILD-PROMPT-BAUSTEINE — physiologisch plausibel statt pauschal.
-   Die Zieloptik hängt am GESCHÄTZTEN ZIEL-KÖRPERFETT, nicht am
-   verlorenen Prozentsatz. Keine Wettkampf-Definition, keine
-   Venen-Show, keine Gesichts-/Identitätsveränderung.
+   BILD-PROMPT-BAUSTEINE — dramatisch UND körperfettgestuft.
+   Produktentscheidung des Betreibers (06.08.2026): Die Bilder
+   MÜSSEN einen Wow-Effekt haben — der Unterschied muss auf den
+   ersten Blick unübersehbar sein. Die Zieloptik bleibt nach
+   geschätztem Ziel-Körperfett gestuft (ein 30-%-Ziel bekommt
+   kein Sixpack), aber innerhalb jeder Stufe wird die Veränderung
+   maximal deutlich gezeichnet. Identität bleibt strikt erhalten.
    ============================================================ */
+const EMPHASIS =
+  "The transformation must be immediately OBVIOUS and dramatic — a striking, unmistakable " +
+  "before/after difference in silhouette, belly, waist and face. Never produce a subtle or " +
+  "barely visible change. ";
+
 export function targetLookFragment({ weightKg, heightCm, waistCm, shape, targetKg }) {
   const est = estimateBf({ weightKg, heightCm, waistCm, shape });
   const lean = leanMass(weightKg, est.mid);
@@ -219,24 +227,34 @@ export function targetLookFragment({ weightKg, heightCm, waistCm, shape, targetK
   if (cut) {
     const tBf = bfAtWeight(lean, targetKg).mid;
     if (tBf >= 30) {
-      return "He is noticeably slimmer overall: smaller belly, reduced waist, slightly slimmer face — but still a soft midsection. NO visible abs, NO muscle definition; this is an early, realistic stage of fat loss. ";
+      return EMPHASIS + "He is dramatically slimmer: a much smaller belly, drastically reduced waist, " +
+        "visibly slimmer face, chest and arms — a completely changed silhouette. NO six-pack at this " +
+        "stage, but the fat loss is massive and unmistakable. ";
     }
     if (tBf >= 22) {
-      return "He is clearly slimmer: flatter stomach, visibly reduced waist, slimmer face — a normal healthy build. NO six-pack yet, only a flat, soft-to-firm midsection. ";
+      return EMPHASIS + "He is dramatically slimmer: flat stomach, much narrower waist, clearly slimmer " +
+        "face and sharper jawline — first hints of upper-ab outlines, but NO full six-pack yet. ";
     }
     if (tBf >= 17) {
-      return "He looks athletic: flat firm stomach with faint ab outlines, moderately defined chest and arms, natural skin. NOT shredded — realistic everyday-athletic. ";
+      return EMPHASIS + "He looks impressively athletic: flat, hard stomach with clearly visible ab " +
+        "outlines, defined chest, shoulders and arms, tight waist, sharper facial features. ";
     }
     if (tBf >= 12) {
-      return "He is lean: visible but natural abs, defined waist and chest, athletic arms. Natural skin texture, NO extreme vascularity, NO competition-level dryness. ";
+      return EMPHASIS + "He is lean and defined: a clearly visible six-pack, sharp V-shaped waist, " +
+        "defined chest, shoulders and arms, lean angular face. IMPORTANT: muscle definition INCREASES " +
+        "with the amount of weight lost — never soften or smooth the abdominal area. ";
     }
-    return "He is very lean but still natural: clearly defined abs and muscle separation, modest vascularity at most, healthy skin — NOT a bodybuilding stage look. ";
+    return EMPHASIS + "He is extremely lean: a sharply defined six-pack, deep muscle separation, " +
+      "visible veins on arms and shoulders, tight angular face. IMPORTANT: muscle definition INCREASES " +
+      "with the amount of weight lost — never soften or smooth the abdominal area. ";
   }
   const frac = (targetKg - weightKg) / weightKg;
   if (frac <= 0.05) {
-    return "He has gained a modest amount of muscle: slightly fuller chest, shoulders and arms, same waist. The change is subtle and realistic — weight gain includes a little body fat, not pure muscle. ";
+    return EMPHASIS + "He has gained clearly visible muscle: noticeably fuller chest, broader shoulders, " +
+      "thicker arms, same tight waist — a visibly more powerful physique. ";
   }
-  return "He is noticeably more muscular: fuller chest, broader shoulders, thicker arms and legs, achieved over a long training period. Still a natural, attainable look — some accompanying body fat, NO extreme mass. ";
+  return EMPHASIS + "He is significantly more muscular: broad shoulders, thick chest and arms, powerful " +
+    "V-taper, strong legs — an impressively built, dense physique. ";
 }
 
 // Identitäts-Block: gilt für JEDEN Prompt (Regel 2.8).
