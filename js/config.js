@@ -440,7 +440,10 @@ window.MM_CONFIG = {
   // keine Codeänderung (ROLLBACK.md).
   //
   // Rollout-Stufen (PRODUCT_ARCHITECTURE.md §Rollout):
-  //   Stufe 1 (intern):        simpleAppDefault: false   ← AKTUELLER STAND
+  //   AKTUELLER STAND: Stufe 4 — die neue App ist Standard (Founder-
+  //   Entscheidung 06.08.2026, "live erleben"); Rückweg pro Nutzer über
+  //   das Profil, global über simpleAppDefault: false.
+  //   Stufe 1 (intern):        simpleAppDefault: false
   //     Die neue App ist unter /meinplan.html erreichbar (Admin/Tester
   //     öffnen sie direkt oder per MM.flags.setLocal("simpleAppDefault",true)),
   //     Legacy bleibt für alle Standard.
@@ -455,7 +458,7 @@ window.MM_CONFIG = {
   //     Legacy wird NIE physisch gelöscht.
   featureFlags: {
     simpleAppEnabled: true,
-    simpleAppDefault: false,
+    simpleAppDefault: true,
     legacyAppEnabled: true,
     legacyAppAdminOnly: false,
     newPlanEngineEnabled: true,
