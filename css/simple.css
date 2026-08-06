@@ -113,6 +113,36 @@
 .s-nav a svg { width: 21px; height: 21px; stroke: currentColor; fill: none; stroke-width: 1.7; }
 .s-nav a.on { color: var(--accent-2); }
 
+/* Bottom-Sheet (Gewicht eintragen u. a.) */
+.s-sheet-back { position: fixed; inset: 0; background: rgba(4, 6, 10, 0.66); z-index: 90; }
+.s-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 91; background: var(--bg-1); border-top: 1px solid var(--line-strong); border-radius: 18px 18px 0 0; padding: 18px 18px calc(20px + env(safe-area-inset-bottom)); max-width: 640px; margin: 0 auto; }
+.s-sheet h3 { margin: 0 0 4px; }
+.s-sheet .ctx { color: var(--muted); font-size: 0.86rem; margin-bottom: 12px; }
+.s-sheet .big-input { display: flex; align-items: center; gap: 10px; margin: 10px 0 14px; }
+.s-sheet .big-input input { flex: 1; background: var(--bg-2); border: 1px solid var(--line-strong); color: var(--text); border-radius: 12px; padding: 14px; font-size: 1.5rem; font-weight: 650; text-align: center; }
+.s-sheet .big-input button { width: 46px; height: 52px; border-radius: 12px; border: 1px solid var(--line-strong); background: transparent; color: var(--text); font-size: 1.2rem; cursor: pointer; }
+.s-sheet .fb { font-size: 0.86rem; color: var(--green); min-height: 1.2em; margin-bottom: 10px; }
+
+/* Rest-Timer im Workout */
+.s-timer { position: sticky; top: 8px; z-index: 40; display: flex; align-items: center; gap: 10px; background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: 12px; padding: 10px 14px; margin: 10px 0; }
+.s-timer .t { font-size: 1.3rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--accent-2); min-width: 62px; }
+.s-timer .l { color: var(--muted); font-size: 0.84rem; flex: 1; }
+.s-timer button { border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 0.8rem; }
+.s-timer.done { background: var(--green-soft); border-color: var(--green); }
+.s-timer.done .t { color: var(--green); }
+.s-goal { color: var(--accent-2); font-size: 0.82rem; }
+
+/* Portions-Stepper (Ernährung) */
+.s-portion { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.s-portion button { width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--line-strong); background: transparent; color: var(--text); cursor: pointer; font-size: 1rem; }
+.s-portion .f { color: var(--muted); font-size: 0.84rem; min-width: 130px; text-align: center; }
+
+/* Fotos (gerätelokal) */
+.s-photos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; }
+.s-photos .ph { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; aspect-ratio: 3/4; display: grid; place-items: center; color: var(--muted-2); font-size: 0.72rem; text-align: center; background: var(--bg-2); cursor: pointer; }
+.s-photos .ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.s-photos .ph .cap { padding: 4px; }
+
 /* Wizard */
 .s-steps { display: flex; gap: 6px; margin: 6px 0 16px; }
 .s-steps i { height: 3px; flex: 1; background: var(--line); border-radius: 2px; }

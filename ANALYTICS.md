@@ -18,6 +18,8 @@ Nutzung: `today_opened` · `workout_started` · `workout_completed` ·
 `day_closed` · `weekly_check_started` · `weekly_check_completed` ·
 `plan_adjusted` · `plan_kept` · `program_completed`
 
+Daily Loop: `weight_logged` (ohne Wert) · `photo_saved` (ohne Bilddaten)
+
 iPhone: `iphone_setup_opened` · `calendar_feed_created` ·
 `calendar_subscribe_started` · `calendar_export_done` · `pwa_help_opened` ·
 `shopping_copied` · `shopping_shared` · `reminders_copied` · `notes_copied` ·

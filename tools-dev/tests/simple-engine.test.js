@@ -164,6 +164,19 @@ group("Einkaufsliste (§14)");
   ok(engine.shoppingListText(list, "en").indexOf("shopping list") >= 0, "Klartext-Export EN");
 }
 
+group("Baustein-Katalog: Integrität");
+{
+  const slots = { breakfast: 0, lunch: 0, dinner: 0, snack: 0 };
+  engine.MEAL_BLOCKS.forEach(b => {
+    ok(b.id && b.slot in slots && b.name && b.name.de && b.name.en && b.prep && b.prep.de && b.prep.en,
+       "Block " + b.id + ": Slot, Name (DE/EN), Zubereitung (DE/EN)");
+    ok(b.items.every(it => engine.FOODS[it[0]] && it[1] > 0), "Block " + b.id + ": nur Katalog-Lebensmittel mit Mengen");
+    slots[b.slot]++;
+  });
+  ok(slots.breakfast >= 4 && slots.lunch >= 5 && slots.dinner >= 5 && slots.snack >= 4,
+     "genug Auswahl je Slot (" + JSON.stringify(slots) + ")");
+}
+
 group("Wochenstruktur");
 {
   const r = engine.createPlan(mkInput(), "2026-08-10");
