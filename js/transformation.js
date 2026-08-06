@@ -411,6 +411,13 @@
       grid.appendChild(goalCard("ZIEL A", "REALISTISCHER NÄCHSTER ZUSTAND", p.a));
       grid.appendChild(goalCard("ZIEL B", p.b.manual ? "DEIN GEPRÜFTES EIGENES ZIEL" : "AMBITIONIERTES LANGFRISTIGES ZIEL", p.b));
       goalsBox.appendChild(grid);
+      // Neue Ziele nach einem abgeschlossenen Lauf → der Gesamtlauf wird
+      // wieder angeboten (statt nur Einzel-Regeneration).
+      if (actionsRow && runBtn.style.display === "none") {
+        runBtn.style.display = "";
+        runBtn.textContent = "Beide Ziele visualisieren";
+        actionsRow.style.display = "none";
+      }
       renderGate();
     }
     root.appendChild(s3);
@@ -677,9 +684,11 @@
 
     var panels = {};
     var running = false;
+    var inFlight = 0;   // verhindert doppelte parallele Requests (6.3)
 
     function generateOne(t, kind, p, done) {
       var visualKg = visualTargetFor(t, kind);
+      inFlight++;
       showScan(p.view, t);
       p.foot.innerHTML = "";
       p.foot.appendChild(el("span", "mono-note", "WIRD GENERIERT …"));
@@ -706,34 +715,58 @@
             pick.addEventListener("click", function () { chooseGoal(t, kind); });
             var share = el("button", "btn btn-dark btn-sm trf-share", "Teilen");
             share.addEventListener("click", function () { shareResult(t, afterSrc, share); });
-            row.appendChild(pick); row.appendChild(share);
+            // Einzel-Regeneration (6.2): NUR dieses Ziel neu — nie
+            // automatisch ein kompletter Doppellauf.
+            var regen = el("button", "btn btn-dark btn-sm trf-share", "↻");
+            regen.title = "Dieses Ziel neu generieren";
+            regen.setAttribute("aria-label", "Dieses Ziel neu generieren");
+            regen.addEventListener("click", function () {
+              if (inFlight > 0) return;
+              track("transform_regen_single");
+              generateOne(t, kind, p, function () {});
+            });
+            row.appendChild(pick); row.appendChild(share); row.appendChild(regen);
             p.foot.appendChild(row);
           });
         }
         var code = (r && r.code) || "unbekannt";
         state.results[t] = { error: code };
         track("transform_generate_failed");
+        showError(p.view, code);
         // target_blocked kommt mit dynamischer Alternative vom Server.
         if (code === "target_blocked" && r && r.data && r.data.alt_lo) {
-          showError(p.view, code);
           p.foot.appendChild(el("span", "mono-note", "PLAUSIBEL WÄRE ~" + r.data.alt_lo + "–" + r.data.alt_hi + " KG"));
           return;
         }
-        showError(p.view, code);
         if (code === "free_quota_exhausted") {
           updateQuota(0);
           track("transform_quota_wall");
-          var buy = el("a", "btn btn-primary btn-sm", "DAS PROTOKOLL — 99 €");
+          var buy = el("a", "btn btn-primary btn-sm", "DAS PROTOKOLL");
           buy.href = "protokoll.html";
           buy.setAttribute("data-track", "transform_quota_cta");
           p.foot.appendChild(buy);
         } else {
-          p.foot.appendChild(el("span", "mono-note", "FEHLGESCHLAGEN"));
+          // Einzel-Retry statt Sackgasse — zählt erst bei Erfolg gegen
+          // das Kontingent (Server wertet nur ok=true).
+          var retry = el("button", "btn btn-dark btn-sm", "Erneut versuchen");
+          retry.addEventListener("click", function () {
+            if (inFlight > 0) return;
+            track("transform_regen_single");
+            generateOne(t, kind, p, function () {});
+          });
+          p.foot.appendChild(retry);
         }
       }).catch(function () {
         state.results[t] = { error: "unreachable" };
         showError(p.view, "unreachable");
-      }).then(done);
+        p.foot.innerHTML = "";
+        var retry = el("button", "btn btn-dark btn-sm", "Erneut versuchen");
+        retry.addEventListener("click", function () {
+          if (inFlight > 0) return;
+          generateOne(t, kind, p, function () {});
+        });
+        p.foot.appendChild(retry);
+      }).then(function () { inFlight = Math.max(0, inFlight - 1); if (done) done(); });
     }
 
     runBtn.addEventListener("click", function () {
@@ -770,11 +803,36 @@
           done++;
           if (done === jobs.length) {
             running = false;
-            runBtn.disabled = false;
-            runBtn.textContent = "Erneut visualisieren";
+            // Kein globaler „Erneut visualisieren"-Doppellauf mehr (6.2):
+            // Neu generieren geht pro Ziel im Panel; hier bleiben die
+            // beiden ehrlichen Wege — anderes Foto oder andere Ziele.
+            runBtn.style.display = "none";
+            actionsRow.style.display = "";
           }
         });
       });
+    });
+
+    var actionsRow = el("div", "trf-foot-row");
+    actionsRow.style.display = "none";
+    actionsRow.style.marginTop = "14px";
+    var actPhoto = el("button", "btn btn-dark btn-sm", "Anderes Foto verwenden");
+    actPhoto.addEventListener("click", function () {
+      try { s1.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {}
+      fileIn.click();
+    });
+    var actGoals = el("button", "btn btn-dark btn-sm", "Ziele neu berechnen");
+    actGoals.addEventListener("click", function () {
+      try { s2.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {}
+    });
+    actionsRow.appendChild(actPhoto); actionsRow.appendChild(actGoals);
+    s4.insertBefore(actionsRow, quotaNote);
+
+    // Neues Foto oder neue Ausgangslage → der Gesamtlauf wird wieder möglich.
+    fileIn.addEventListener("change", function () {
+      runBtn.style.display = "";
+      runBtn.textContent = "Beide Ziele visualisieren";
+      actionsRow.style.display = "none";
     });
 
     /* =========================================================

@@ -182,4 +182,10 @@ test("13. Edge Function erzwingt Zielengine, Consent und Datenschutz-Header", ()
   assert.ok(src.includes("x-fal-object-lifecycle-preference"), "sendet Lifecycle-Header (Bildverfall)");
   assert.ok(src.includes("body.consent !== true"), "erzwingt die Einwilligung serverseitig");
   assert.ok(!/cutIntensity|sharply defined six-pack|visible veins/.test(src), "alte Pauschal-Prompts sind entfernt");
+  // Atomare Kontingentprüfung (Phase 6.3): erst reservieren, dann zählen —
+  // parallele Race-Anfragen sehen gegenseitig ihre Reservierungen.
+  assert.ok(/ok:\s*null,\s*ip_hash/.test(src), "Reservierungszeile (ok=null) vor den Zählungen");
+  assert.ok(src.includes('.or("ok.eq.true,ok.is.null")'), "Freikontingent zählt Erfolge + offene Reservierungen");
+  assert.ok(/update\(\{\s*ok:\s*true\s*\}\)\.eq\("id", reservationId\)/.test(src), "Reservierung wird bei Erfolg eingelöst");
+  assert.ok(/update\(\{\s*ok:\s*false\s*\}\)\.eq\("id", reservationId\)/.test(src), "Fehlschläge geben die Reservierung frei");
 });

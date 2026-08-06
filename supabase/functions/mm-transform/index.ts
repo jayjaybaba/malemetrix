@@ -28,23 +28,26 @@ import { IDENTITY_FRAGMENT, SHAPES, targetLookFragment, validateTarget } from ".
 const RATE_LIMIT_PER_HOUR = 12;
 
 // ---------------------------------------------------------------------------
-// Missbrauchsschutz in Schichten (05.08.2026, v9). Das Stundenlimit allein
-// schützt nicht: Magic Link = beliebig viele Wegwerf-Konten. Deshalb:
+// Missbrauchsschutz in Schichten (Stand v10: ATOMARE Reservierung — erst
+// Reservierungszeile mit ok=null schreiben, DANN zählen; parallele
+// Race-Anfragen sehen gegenseitig ihre Reservierungen und können das
+// Kontingent nicht überziehen). Das Stundenlimit allein schützt nicht:
+// Magic Link = beliebig viele Wegwerf-Konten. Deshalb:
 //
 // 1. FREIKONTINGENT: Nicht-Kunden haben ein LIFETIME-Kontingent von
-//    FREE_LIFETIME_IMAGES erfolgreichen Bildern (fehlgeschlagene zählen
-//    nicht). Danach: Kauf (Protokoll/Coaching) statt weiterer Gratisbilder.
-//    Kunden behalten das normale Stundenlimit.
+//    FREE_LIFETIME_IMAGES erfolgreichen Bildern = ein kompletter Erstlauf
+//    (2 Zielbilder) + begrenzte Einzel-Regenerationen. Fehlgeschlagene
+//    Läufe zählen nicht. Danach: Produktzugang statt weiterer Gratisbilder.
 // 2. IP-LIMIT: Wegwerf-Konten laufen meist über EINE Leitung. Pro IP
 //    (SHA-256 mit serverseitigem Schlüssel — die rohe IP wird nie
 //    gespeichert) gilt ein eigenes Stundenlimit über alle Konten hinweg.
 // 3. TAGES-DECKEL: Globale Kosten-Notbremse über alle Nutzer. Bei ~4 Cent
 //    pro Bild deckelt GLOBAL_DAILY_CAP den schlimmsten Tag auf ~16 €.
 //
-// BEWUSST KEINE Score-Pflicht mehr vor der Generierung (v9): Der Funnel ist
-// Bild → Zielwahl → Score → Paket. Die Bilder sind der Haken und durch das
-// 4-Bilder-Kontingent gedeckelt; der Score sitzt clientseitig vor dem
-// maßgeschneiderten Paket (js/transformation.js, Paket-Gate).
+// Keine Score-Pflicht vor der Generierung: Der Funnel ist Foto → Ziele →
+// Konto → Bilder → Zielwahl → Planfragen; die Bilder sind der Haken und
+// durch das Kontingent gedeckelt. Zielparameter werden hier serverseitig
+// mit derselben Engine validiert wie im Client (transform-goals.mjs).
 // ---------------------------------------------------------------------------
 const FREE_LIFETIME_IMAGES = 4;        // = 2 komplette Läufe à 2 Ziele
 const IP_LIMIT_PER_HOUR = 24;          // über alle Konten einer IP
@@ -135,52 +138,18 @@ Deno.serve(async (req) => {
     if (authRes.errorResponse) return authRes.errorResponse;
     const user = authRes.user;
 
-    // --- Kunde oder Interessent? Entscheidet über Score-Pflicht + Kontingent ---
+    // --- Einwilligung (P0): ohne aktive Bestätigung im Client (18+, eigenes
+    //     Foto, Nutzungsrecht, Verarbeitung) wird nichts generiert. Der
+    //     Server erzwingt das Merkmal, gespeichert wird es nicht. ---
+    if (body.consent !== true) return json({ error: "consent_required" }, 400);
+
+    // --- Kunde oder Interessent? Entscheidet über das Freikontingent ---
     const { data: roleRow } = await admin.from("user_roles").select("role")
       .eq("user_id", user.id).maybeSingle();
     const { count: entCount } = await admin.from("entitlements")
       .select("user_id", { count: "exact", head: true })
       .eq("user_id", user.id).eq("status", "active");
     const isCustomer = roleRow?.role === "owner" || (entCount ?? 0) > 0;
-
-    // --- Rate-Limit pro Nutzer (nur die eigenen Transform-Aufrufe zählen,
-    //     damit Intelligence-Fragen das Bild-Kontingent nicht auffressen) ---
-    const oneHourAgo = new Date(Date.now() - 3600_000).toISOString();
-    const { count } = await admin.from("ai_request_log").select("id", { count: "exact", head: true })
-      .eq("user_id", user.id).eq("task", "BODY_TRANSFORM").gte("created_at", oneHourAgo);
-    if ((count ?? 0) >= RATE_LIMIT_PER_HOUR) return json({ error: "rate_limited" }, 429);
-
-    // --- Lifetime-Freikontingent für Nicht-Kunden (nur ERFOLGREICHE Bilder
-    //     zählen — ein Provider-Fehler frisst kein Gratiskontingent) ---
-    let freeUsed = 0;
-    if (!isCustomer) {
-      const { count: okCount } = await admin.from("ai_request_log")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id).eq("task", "BODY_TRANSFORM").eq("ok", true);
-      freeUsed = okCount ?? 0;
-      if (freeUsed >= FREE_LIFETIME_IMAGES) return json({ error: "free_quota_exhausted" }, 403);
-    }
-
-    // --- IP-Limit über alle Konten: Wegwerf-Konten teilen sich die Leitung ---
-    const ipHash = await hashIp(clientIp(req));
-    if (ipHash) {
-      const { count: ipCount } = await admin.from("ai_request_log")
-        .select("id", { count: "exact", head: true })
-        .eq("ip_hash", ipHash).eq("task", "BODY_TRANSFORM").gte("created_at", oneHourAgo);
-      if ((ipCount ?? 0) >= IP_LIMIT_PER_HOUR) return json({ error: "rate_limited" }, 429);
-    }
-
-    // --- Globaler Tages-Deckel: Kosten-Notbremse, unabhängig vom Nutzer ---
-    const oneDayAgo = new Date(Date.now() - 86_400_000).toISOString();
-    const { count: dayCount } = await admin.from("ai_request_log")
-      .select("id", { count: "exact", head: true })
-      .eq("task", "BODY_TRANSFORM").gte("created_at", oneDayAgo);
-    if ((dayCount ?? 0) >= GLOBAL_DAILY_CAP) return json({ error: "daily_capacity" }, 503);
-
-    // --- Einwilligung (P0): ohne aktive Bestätigung im Client (18+, eigenes
-    //     Foto, Nutzungsrecht, Verarbeitung) wird nichts generiert. Der
-    //     Server erzwingt das Merkmal, gespeichert wird es nicht. ---
-    if (body.consent !== true) return json({ error: "consent_required" }, 400);
 
     // --- Payload-Validierung: alle Felder hart geprüft. Die Zielprüfung
     //     läuft über die Zielengine — clientseitig blockierte Werte können
@@ -211,8 +180,61 @@ Deno.serve(async (req) => {
       return json({ error: "invalid_image" }, 400);
     }
 
+    /* --- ATOMARE KONTINGENTPRÜFUNG (6.3): erst RESERVIEREN (ok=null),
+       dann zählen — die eigene Reservierung zählt mit. Zwei parallele
+       Anfragen sehen so gegenseitig ihre Reservierungen und werden im
+       Grenzfall beide abgelehnt (streng, aber nie überzogen) statt beide
+       durchgelassen. Fehlgeschlagene Läufe werden ok=false markiert und
+       kosten kein Freikontingent (das zählt ok=true + eigene Reservierung). */
+    const ipHash = await hashIp(clientIp(req));
+    const { data: resRow, error: resErr } = await admin.from("ai_request_log")
+      .insert({ user_id: user.id, task: "BODY_TRANSFORM", model: FAL_MODEL, ok: null, ip_hash: ipHash })
+      .select("id").single();
+    if (resErr || !resRow) return json({ error: "internal" }, 500);
+    const reservationId = resRow.id;
+    const failReservation = () =>
+      admin.from("ai_request_log").update({ ok: false }).eq("id", reservationId);
+    const reject = async (obj: unknown, status: number) => {
+      await failReservation();
+      return json(obj, status);
+    };
+
+    const oneHourAgo = new Date(Date.now() - 3600_000).toISOString();
+    const oneDayAgo = new Date(Date.now() - 86_400_000).toISOString();
+
+    // Stundenlimit pro Nutzer (alle Versuche zählen, inkl. eigener Reservierung)
+    const { count: hourCount } = await admin.from("ai_request_log")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id).eq("task", "BODY_TRANSFORM").gte("created_at", oneHourAgo);
+    if ((hourCount ?? 0) > RATE_LIMIT_PER_HOUR) return reject({ error: "rate_limited" }, 429);
+
+    // Lifetime-Freikontingent für Nicht-Kunden: ok=true + offene Reservierungen
+    let freeUsed = 0;
+    if (!isCustomer) {
+      const { count: okCount } = await admin.from("ai_request_log")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id).eq("task", "BODY_TRANSFORM")
+        .or("ok.eq.true,ok.is.null");
+      freeUsed = okCount ?? 0;   // inkl. eigener Reservierung
+      if (freeUsed > FREE_LIFETIME_IMAGES) return reject({ error: "free_quota_exhausted" }, 403);
+    }
+
+    // IP-Limit über alle Konten: Wegwerf-Konten teilen sich die Leitung
+    if (ipHash) {
+      const { count: ipCount } = await admin.from("ai_request_log")
+        .select("id", { count: "exact", head: true })
+        .eq("ip_hash", ipHash).eq("task", "BODY_TRANSFORM").gte("created_at", oneHourAgo);
+      if ((ipCount ?? 0) > IP_LIMIT_PER_HOUR) return reject({ error: "rate_limited" }, 429);
+    }
+
+    // Globaler Tages-Deckel: Kosten-Notbremse über alle Nutzer
+    const { count: dayCount } = await admin.from("ai_request_log")
+      .select("id", { count: "exact", head: true })
+      .eq("task", "BODY_TRANSFORM").gte("created_at", oneDayAgo);
+    if ((dayCount ?? 0) > GLOBAL_DAILY_CAP) return reject({ error: "daily_capacity" }, 503);
+
     const falKey = await resolveFalKey(admin);
-    if (!falKey) return json({ error: "provider_not_configured" }, 503);
+    if (!falKey) return reject({ error: "provider_not_configured" }, 503);
 
     // --- Provider-Aufruf (synchron; fal.run wartet auf das Ergebnis) ---
     // Datensparsamkeit (P0, fal-Doku "Data Retention" + "Media Expiration"):
@@ -239,30 +261,27 @@ Deno.serve(async (req) => {
     });
 
     if (!r.ok) {
-      await admin.from("ai_request_log").insert({ user_id: user.id, task: "BODY_TRANSFORM", model: FAL_MODEL, ok: false, ip_hash: ipHash });
       const errBody = await r.text().catch(() => "");
       // 422 = das Modell lehnt den Inhalt ab (z. B. komplett unbekleidetes
       // Foto). Dem Nutzer ehrlich sagen, statt "Serverfehler" zu heucheln.
-      if (r.status === 422) return json({ error: "content_rejected" }, 422);
+      if (r.status === 422) return reject({ error: "content_rejected" }, 422);
       // fal meldet ein leeres Konto als 403 "Exhausted balance" — das ist
       // KEIN Schlüsselproblem und verdient eine eigene, ehrliche Meldung.
-      if (r.status === 403 && /balance|locked/i.test(errBody)) return json({ error: "provider_balance" }, 503);
-      if (r.status === 401 || r.status === 403) return json({ error: "provider_auth_failed" }, 502);
-      return json({ error: "provider_error", status: r.status }, 502);
+      if (r.status === 403 && /balance|locked/i.test(errBody)) return reject({ error: "provider_balance" }, 503);
+      if (r.status === 401 || r.status === 403) return reject({ error: "provider_auth_failed" }, 502);
+      return reject({ error: "provider_error", status: r.status }, 502);
     }
 
     const d = await r.json();
     const url = d?.images?.[0]?.url ?? null;
-    if (!url) {
-      await admin.from("ai_request_log").insert({ user_id: user.id, task: "BODY_TRANSFORM", model: FAL_MODEL, ok: false, ip_hash: ipHash });
-      return json({ error: "provider_error" }, 502);
-    }
+    if (!url) return reject({ error: "provider_error" }, 502);
 
-    // --- Observability ohne Bilddaten (§23/§253) ---
-    await admin.from("ai_request_log").insert({ user_id: user.id, task: "BODY_TRANSFORM", model: FAL_MODEL, ok: true, ip_hash: ipHash });
+    // --- Reservierung einlösen: Observability ohne Bilddaten (§23/§253) ---
+    await admin.from("ai_request_log").update({ ok: true }).eq("id", reservationId);
     // Nicht-Kunden sehen ihr Rest-Kontingent — die Seite macht daraus einen
-    // ehrlichen Zähler ("noch X Gratis-Bilder") statt einer Überraschungswand.
-    const freeRemaining = isCustomer ? null : Math.max(0, FREE_LIFETIME_IMAGES - freeUsed - 1);
+    // ehrlichen Zähler statt einer Überraschungswand. freeUsed enthält die
+    // eigene (jetzt eingelöste) Reservierung bereits.
+    const freeRemaining = isCustomer ? null : Math.max(0, FREE_LIFETIME_IMAGES - freeUsed);
     return json({ image_url: url, target_kg: targetKg, model: FAL_MODEL, free_remaining: freeRemaining });
   } catch (e) {
     return json({ error: "internal", detail: String((e as Error)?.message ?? e).slice(0, 200) }, 500);
