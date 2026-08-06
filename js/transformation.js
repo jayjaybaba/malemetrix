@@ -1283,7 +1283,10 @@
           (state.months ? state.months + " Monate" : "~" + p.realWeeks + " Wochen") + ", " + p.kcal + " kcal, " + p.protein + " g Protein, " + state.days + "× Training) in My MaleMetrix — Roadmap, Tracker und Wochenreviews arbeiten dann genau darauf hin."));
         var adoptMsg = el("p", "cp"); adoptMsg.style.display = "none";
         var goApp = el("a", "btn btn-primary", "Ziel in My MaleMetrix übernehmen");
-        goApp.href = "mein-protokoll.html#transform";
+        /* Generation 2: Kunden landen direkt im Plan-Ablauf (das gewählte
+           Ziel ist dort bereits vorbefüllt). Bei deaktivierter Gen-2-App
+           leitet meinplan.html selbst zur klassischen Ansicht weiter. */
+        goApp.href = "meinplan.html#einrichten";
         goApp.addEventListener("click", function () {
           track("transform_goal_adopted");
           adoptMsg.innerHTML = "<strong>Ziel übernommen ✓</strong> — die Roadmap in My MaleMetrix ist mit deinen Werten vorbereitet.";
