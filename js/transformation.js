@@ -306,7 +306,7 @@
     var s3 = el("section", "trf-step");
     s3.appendChild(secthead("MM / TRANSFORM · 03", "Deine zwei Ziele"));
     var goalsHint = el("p", "trf-hint",
-      "MaleMetrix schlägt keine Fantasiekörper vor: <strong>Ziel A</strong> ist dein realistischer nächster Zustand, <strong>Ziel B</strong> das ambitionierte langfristige Ziel — beide physiologisch plausibel begrenzt (nie unter BMI 20, keine Extremziele).");
+      "MaleMetrix rechnet dir zwei ehrliche Vorschläge: <strong>Ziel A</strong> ist dein realistischer nächster Zustand, <strong>Ziel B</strong> das ambitionierte langfristige Ziel. Dein eigenes Wunschgewicht kannst du darunter frei eintragen — MaleMetrix ordnet es ehrlich ein, die Entscheidung liegt bei dir.");
     s3.appendChild(goalsHint);
     var goalsBox = el("div");
     s3.appendChild(goalsBox);
@@ -314,7 +314,7 @@
     /* Eigenes Ziel: bewusst sekundär, live validiert. Freigegebene eigene
        Ziele ersetzen Ziel B — Ziel A bleibt der Systemvorschlag. */
     var custom = el("details", "trf-custom");
-    var sum = el("summary", null, "EIGENES ZIEL PRÜFEN");
+    var sum = el("summary", null, "EIGENES ZIEL EINGEBEN");
     custom.appendChild(sum);
     var cBody = el("div", "trf-custom-body");
     var cRow = el("div", "trf-bigin");
@@ -338,24 +338,34 @@
     function baseReady() {
       return state.currentKg && state.heightCm && state.waistCm && state.shape;
     }
+    /* Einordnung statt Blockade (Produktentscheidung 06.08.2026): Jedes
+       Zielgewicht im technischen Rahmen (40-300 kg) ist wählbar. Die
+       Zielengine liefert weiterhin die ehrliche Einordnung — als
+       Information, nicht als Sperre. Die Entscheidung liegt beim Nutzer. */
     function checkCustom() {
       var t = num(cIn.value);
       cUse.disabled = true;
       if (!baseReady() || !t) { cVerdict.innerHTML = ""; return; }
+      if (t < 40 || t > 300 || Math.round(t) === Math.round(state.currentKg)) {
+        cVerdict.innerHTML = t < 40 || t > 300
+          ? "Bitte ein Zielgewicht zwischen 40 und 300 kg."
+          : "Das Ziel ist identisch mit deinem aktuellen Gewicht — das wäre kein Vorher/Nachher.";
+        return;
+      }
+      cUse.disabled = false;
       var v = G.validateTarget({ weightKg: state.currentKg, heightCm: state.heightCm, waistCm: state.waistCm, shape: state.shape, targetKg: t });
       var badge, text;
       if (v.verdict === "plausibel") {
         badge = '<span class="trf-verdict-badge is-ok">PLAUSIBEL</span>';
-        text = "Freigegeben — geschätzt " + v.targetBf.lo + "–" + v.targetBf.hi + " % Körperfett am Ziel.";
-        cUse.disabled = false;
+        text = "Geschätzt " + v.targetBf.lo + "–" + v.targetBf.hi + " % Körperfett am Ziel.";
       } else if (v.verdict === "ambitioniert") {
         badge = '<span class="trf-verdict-badge is-amb">AMBITIONIERT</span>';
-        text = "Freigegeben, aber ein mehrphasiges Langfrist-Ziel" + (v.targetBf ? " — geschätzt " + v.targetBf.lo + "–" + v.targetBf.hi + " % Körperfett am Ziel." : ".");
-        cUse.disabled = false;
+        text = "Ein mehrphasiges Langfrist-Ziel" + (v.targetBf ? " — geschätzt " + v.targetBf.lo + "–" + v.targetBf.hi + " % Körperfett am Ziel." : ".");
       } else {
-        badge = '<span class="trf-verdict-badge is-no">' + (v.verdict === "blockiert" ? "BLOCKIERT" : "NICHT SERIÖS") + "</span>";
-        text = "Dieses Ziel wäre für deine Größe und Ausgangslage nicht seriös. MaleMetrix generiert keine extremen oder gesundheitlich fragwürdigen Zielkörper." +
-          (v.altLo && v.altHi ? " Ein plausibler Zielbereich liegt für dich ungefähr zwischen <strong>" + v.altLo + " und " + v.altHi + " kg</strong>." : "");
+        badge = '<span class="trf-verdict-badge is-no">EINORDNUNG: NICHT SERIÖS</span>';
+        text = "MaleMetrix stuft dieses Ziel für deine Größe und Ausgangslage als nicht seriös ein" +
+          (v.altLo && v.altHi ? " — plausibel wären ungefähr <strong>" + v.altLo + "–" + v.altHi + " kg</strong>" : "") +
+          ". Die Entscheidung liegt bei dir: Generieren ist trotzdem möglich.";
         track("transform_target_blocked");
       }
       cVerdict.innerHTML = badge + " " + text;
@@ -405,16 +415,20 @@
       }
       var p = G.proposeGoals({ weightKg: state.currentKg, heightCm: state.heightCm, waistCm: state.waistCm, shape: state.shape, direction: state.direction });
       state.proposals = p;
-      // Eigenes freigegebenes Ziel ersetzt B (sekundäre Option, Phase 2.5).
+      // Eigenes Ziel ersetzt B — frei wählbar (nur technische Grenzen und
+      // A≠B); die Engine-Einordnung ist Information, keine Sperre.
       if (state.manualB) {
-        var v = G.validateTarget({ weightKg: state.currentKg, heightCm: state.heightCm, waistCm: state.waistCm, shape: state.shape, targetKg: state.manualB });
-        if ((v.verdict === "plausibel" || v.verdict === "ambitioniert") && G.validatePair(p.a.kg, state.manualB).ok) {
+        var mOk = state.manualB >= 40 && state.manualB <= 300 &&
+          Math.round(state.manualB) !== Math.round(state.currentKg) &&
+          G.validatePair(p.a.kg, state.manualB).ok;
+        if (mOk) {
+          var v = G.validateTarget({ weightKg: state.currentKg, heightCm: state.heightCm, waistCm: state.waistCm, shape: state.shape, targetKg: state.manualB });
           p.b = {
             kind: state.manualB < state.currentKg ? "cut" : "bulk",
             kg: Math.round(state.manualB),
             deltaKg: Math.round(Math.abs(state.currentKg - state.manualB)),
-            bf: v.targetBf || p.b.bf,
-            weeks: p.b.weeks, phased: v.verdict === "ambitioniert", manual: true
+            bf: (v && v.targetBf) || p.b.bf,
+            weeks: p.b.weeks, phased: !!(v && v.phased), manual: true
           };
         } else {
           state.manualB = null; save();
@@ -431,7 +445,7 @@
       if (p.note) goalsBox.appendChild(el("div", "trf-goalnote", esc(p.note)));
       var grid = el("div", "trf-goals");
       grid.appendChild(goalCard("ZIEL A", "REALISTISCHER NÄCHSTER ZUSTAND", p.a));
-      grid.appendChild(goalCard("ZIEL B", p.b.manual ? "DEIN GEPRÜFTES EIGENES ZIEL" : "AMBITIONIERTES LANGFRISTIGES ZIEL", p.b));
+      grid.appendChild(goalCard("ZIEL B", p.b.manual ? "DEIN EIGENES ZIEL" : "AMBITIONIERTES LANGFRISTIGES ZIEL", p.b));
       goalsBox.appendChild(grid);
       // Neue Ziele nach einem abgeschlossenen Lauf → der Gesamtlauf wird
       // wieder angeboten (statt nur Einzel-Regeneration).
@@ -778,11 +792,6 @@
         state.results[t] = { error: code };
         track("transform_generate_failed");
         showError(p.view, code);
-        // target_blocked kommt mit dynamischer Alternative vom Server.
-        if (code === "target_blocked" && r && r.data && r.data.alt_lo) {
-          p.foot.appendChild(el("span", "mono-note", "PLAUSIBEL WÄRE ~" + r.data.alt_lo + "–" + r.data.alt_hi + " KG"));
-          return;
-        }
         if (code === "free_quota_exhausted") {
           updateQuota(0);
           track("transform_quota_wall");

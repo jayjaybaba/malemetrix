@@ -127,28 +127,30 @@ test("Körperfett ist immer ein Schätzbereich, nie ein Einzelwert", () => {
 test("Prompts: großer Verlust ab hohem Startgewicht ergibt KEIN Sixpack", () => {
   // 160 kg → 136 kg: deutlich schlanker, aber nicht definiert (Beispiel aus der Vorgabe).
   const f = G.targetLookFragment({ weightKg: 160, heightCm: 185, waistCm: 135, shape: "adipoes", targetKg: 136 });
-  assert.ok(/NO six-pack|NO visible abs/i.test(f), "kein Sixpack-Versprechen: " + f);
+  assert.ok(/NO (full )?six-pack|NO visible abs/i.test(f), "kein Sixpack-Versprechen: " + f);
   assert.ok(!/six-pack.*defined|sharply defined/i.test(f), "keine Definitionssprache");
 });
 
-test("Prompts: moderater Verlust bei Durchschnittsform wird höchstens athletisch", () => {
-  const f = G.targetLookFragment({ weightKg: 90, heightCm: 182, waistCm: 96, shape: "durchschnitt", targetKg: 76 });
-  assert.ok(!/competition|extreme vascul/i.test(f));
+test("Prompts: jede Stufe verlangt einen dramatischen, unübersehbaren Unterschied", () => {
+  [[160, 185, 135, "adipoes", 136], [90, 182, 96, "durchschnitt", 76], [80, 180, 84, "athletisch", 72], [75, 180, 82, "athletisch", 82]].forEach(([w, h, wa, s, tk]) => {
+    const f = G.targetLookFragment({ weightKg: w, heightCm: h, waistCm: wa, shape: s, targetKg: tk });
+    assert.ok(/OBVIOUS and dramatic/i.test(f), "Wow-Anweisung fehlt: " + f.slice(0, 80));
+    assert.ok(/Never produce a subtle/i.test(f), "Anti-Subtil-Anweisung fehlt");
+  });
 });
 
-test("Prompts: nie Wettkampf-Look, nie Venen-Show, Identität bleibt", () => {
-  const f = G.targetLookFragment({ weightKg: 80, heightCm: 180, waistCm: 84, shape: "athletisch", targetKg: 72 });
-  assert.ok(/NO extreme vascularity|NOT a bodybuilding|NOT shredded/i.test(f), f);
+test("Prompts: Identität bleibt strikt erhalten", () => {
   assert.ok(/same tattoos/i.test(G.IDENTITY_FRAGMENT), "Tattoos bleiben");
   assert.ok(/without any beautification/i.test(G.IDENTITY_FRAGMENT), "keine Gesichtsverschönerung");
   assert.ok(/same hairstyle/i.test(G.IDENTITY_FRAGMENT), "keine neue Frisur");
   assert.ok(/same background/i.test(G.IDENTITY_FRAGMENT), "Hintergrund bleibt");
 });
 
-test("Prompts: Aufbau wird nie als reine Muskelmasse beschrieben", () => {
-  const small = G.targetLookFragment({ weightKg: 75, heightCm: 180, waistCm: 82, shape: "athletisch", targetKg: 78 });
-  const big = G.targetLookFragment({ weightKg: 75, heightCm: 180, waistCm: 82, shape: "athletisch", targetKg: 82 });
-  assert.ok(/body fat/i.test(small) && /body fat/i.test(big), "Zunahme enthält ehrlich auch Fettanteil");
+test("Prompts: schlanke Ziele bekommen wieder sichtbare Definition (Wow)", () => {
+  const lean = G.targetLookFragment({ weightKg: 90, heightCm: 182, waistCm: 90, shape: "athletisch", targetKg: 80 });
+  assert.ok(/six-pack|clearly visible ab/i.test(lean), "Definition sichtbar: " + lean.slice(0, 120));
+  const bulk = G.targetLookFragment({ weightKg: 75, heightCm: 180, waistCm: 82, shape: "athletisch", targetKg: 82 });
+  assert.ok(/more muscular|muscle/i.test(bulk), "Aufbau sichtbar muskulöser");
 });
 
 /* ---------------- Server-Durchsetzung (Abnahmekriterium 13 + P0) ----------
@@ -173,11 +175,13 @@ test("10./11. Planengine: keine Zwangs-Minimums, keine stillen Defaults", () => 
   assert.ok(!/20-30\s*%/.test(src), "keine 20-30-Prozent-Volumen-Pauschale mehr");
 });
 
-test("13. Edge Function erzwingt Zielengine, Consent und Datenschutz-Header", () => {
+test("13. Edge Function: Consent, Datenschutz-Header, technische Grenzen (Zielwahl frei)", () => {
   const src = fs.readFileSync(path.join(__dirname, "..", "..", "supabase", "functions", "mm-transform", "index.ts"), "utf8");
-  assert.ok(src.includes('from "../_shared/transform-goals.mjs"'), "importiert die geteilte Zielengine");
-  assert.ok(/validateTarget\(\{\s*weightKg:\s*currentKg/.test(src), "ruft validateTarget mit den Request-Werten auf");
-  assert.ok(/verdictRes\.verdict !== "plausibel" && verdictRes\.verdict !== "ambitioniert"/.test(src), "nur freigegebene Verdikte generieren");
+  assert.ok(src.includes('from "../_shared/transform-goals.mjs"'), "nutzt die geteilte Zielengine für die Prompts");
+  /* Produktentscheidung 06.08.2026: Zielgewichte werden NICHT mehr
+     blockiert — nur technische Grenzen (40-300 kg, Ziel ≠ Ist). */
+  assert.ok(!src.includes("target_blocked"), "keine Verdikt-Blockade mehr im Server");
+  assert.ok(/targetKg < 40 \|\| targetKg > 300/.test(src), "technische Zielgrenzen bleiben");
   assert.ok(src.includes('"x-fal-store-io": "0"'), "sendet x-fal-store-io: 0");
   assert.ok(src.includes("x-fal-object-lifecycle-preference"), "sendet Lifecycle-Header (Bildverfall)");
   assert.ok(src.includes("body.consent !== true"), "erzwingt die Einwilligung serverseitig");

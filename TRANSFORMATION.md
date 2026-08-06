@@ -52,34 +52,37 @@ Browser (ES-Modul via `transformation.html`) und in den Node-Tests.
   nach der Zielwahl kommt. Schlanke Ausgangslage (BMI < 20,5 oder
   KFA ≤ 14) → KEINE Abnahmevorschläge, stattdessen Rekomposition +
   moderater Aufbau mit erklärendem Hinweis.
-- **Harte Grenzen (`validateTarget`)**: Ziel-BMI < 20 blockiert (auch
-  manuell), > 35 % Abnahme blockiert, geschätzter Ziel-KFA < 8 %
-  blockiert, Aufbau > 15 % oder Ziel-BMI > 32 blockiert, Ziel = Ist
-  blockiert, Ziel A = Ziel B blockiert (`validatePair`).
-- **Vier Verdikte:** plausibel (≤10 % Abnahme / ≤5 % Aufbau) ·
-  ambitioniert (≤25 % / ≤10 %, mehrphasig) · nicht_serioes · blockiert.
-  Nur plausibel/ambitioniert sind zur Generierung freigegeben.
-- **Dynamische Alternativen:** blockierte/nicht seriöse Ziele liefern
-  eine berechnete realistische Spanne (altLo-altHi) — UI und Server-
-  Antwort (`target_blocked` + alt_lo/alt_hi) zeigen sie an.
+- **Einordnung statt Blockade (Produktentscheidung des Betreibers,
+  06.08.2026 — Override der ursprünglichen Hard-Block-Vorgabe):**
+  `validateTarget` liefert weiterhin vier Verdikte (plausibel ≤10 %
+  Abnahme / ≤5 % Aufbau · ambitioniert ≤25 % / ≤10 % · nicht_serioes ·
+  blockiert bei BMI < 20, > 35 % Abnahme, Ziel-KFA < 8 %, Aufbau > 15 %
+  oder BMI > 32) — aber sie SPERREN NICHTS mehr. Die UI zeigt Badge +
+  ehrliche Einordnung + dynamische Alternative (altLo-altHi), der Nutzer
+  entscheidet und kann JEDES Zielgewicht generieren. Einzige harte
+  Grenzen: 40-300 kg, Ziel ≠ Ist (Client + Server identisch).
+- Die Verdikte formen weiter die VORSCHLÄGE (A/B bleiben realistisch
+  gerechnet, nie unter BMI-20-Nähe) und die ehrliche Kommunikation —
+  Beispiel: 70 kg/175 cm, Wunsch 50 kg → Badge „EINORDNUNG: NICHT
+  SERIÖS … plausibel wären ~61-63 kg. Die Entscheidung liegt bei dir." 
 
-Beispiele blockierter Ziele: 70 kg/180 cm → 49 kg (BMI 15,1) ·
-70 kg/190 cm → 49 kg · 75 kg → 90 kg Aufbau (+20 %) · Ziel = Ist.
-Beispiel Alternative: 70 kg/175 cm, Wunsch 50 kg → „plausibel wären
-ungefähr 61-63 kg".
+## Bild-Prompts (dramatisch UND körperfettgestuft)
 
-## Bild-Prompts (physiologisch plausibel)
-
-Die Zieloptik hängt am GESCHÄTZTEN ZIEL-KÖRPERFETT, nicht am verlorenen
-Prozentsatz (`targetLookFragment`): ≥30 % „deutlich schlanker, aber
-weich, KEINE Abs" · 22-30 % „klar schlanker, kein Sixpack" · 17-22 %
-„athletisch, angedeutete Abs" · 12-17 % „lean, natürlich" · <12 % „sehr
-lean, aber kein Wettkampf-Look". 160→136 kg ergibt also KEIN Sixpack
-mehr. Aufbau wird nie als reine Muskelmasse beschrieben (enthält ehrlich
-Fettanteil). `IDENTITY_FRAGMENT` erzwingt: gleiche Person, Gesicht ohne
+Produktentscheidung 06.08.2026 nach zwei Live-Testläufen des Betreibers:
+Die erste realistische Prompt-Fassung war zu subtil („Unterschied nicht
+groß genug"). Jeder Prompt beginnt jetzt mit einer EMPHASIS-Anweisung
+(„immediately OBVIOUS and dramatic … never subtle") — der Unterschied
+muss auf den ersten Blick unübersehbar sein. Die Stufung nach
+geschätztem ZIEL-Körperfett bleibt: ≥30 % „dramatisch schlanker, aber
+noch kein Sixpack" · 22-30 % „dramatisch schlanker, erste Ab-Umrisse" ·
+17-22 % „beeindruckend athletisch, sichtbare Ab-Umrisse" · 12-17 %
+„klar sichtbares Sixpack, V-Taille" (+ „Definition steigt mit dem
+Verlust"-Anweisung) · <12 % „extrem lean, tiefe Separation, sichtbare
+Venen". Aufbau: sichtbar kräftigere/deutlich muskulösere Statur.
+`IDENTITY_FRAGMENT` bleibt strikt: gleiche Person, Gesicht ohne
 Verschönerung, Frisur, Hautfarbe, Tattoos, Pose, Perspektive,
 Hintergrund, Beleuchtung, Kleidung. Rekompositions-Ziele werden als
-kleine freigegebene Abnahme (~3 %) visualisiert und ehrlich beschriftet.
+kleine Abnahme (~3 %) visualisiert und ehrlich beschriftet.
 
 ## Datenfluss & Datenschutz (P0)
 
@@ -123,8 +126,8 @@ kleine freigegebene Abnahme (~3 %) visualisiert und ehrlich beschriftet.
 - **Weitere Schichten:** 12 Bilder/h/Nutzer · 24/h/IP über alle Konten
   (SHA-256-`ip_hash` mit Server-Schlüssel, nie die rohe IP; Migration
   `20260805000016`) · globaler Tages-Deckel 400 Bilder (~16 €
-  Worst-Case). Serverseitige Zielvalidierung mit derselben Engine —
-  Client-Blockaden sind per API nicht umgehbar.
+  Worst-Case). Serverseitig gelten dieselben technischen
+  Zielgrenzen wie im Client (40-300 kg, Ziel ≠ Ist).
 - **Client:** „Erneut visualisieren" erzeugt nie automatisch beide
   Bilder neu — Regeneration pro Ziel (↻), Fehler-Retry pro Panel,
   danach „Anderes Foto verwenden" / „Ziele neu berechnen".
@@ -195,7 +198,7 @@ Körperform, Zielgewicht, Gesundheitsangaben, E-Mail.
 
 `auth_missing/auth_invalid_token` 401 · `consent_required` 400 ·
 `invalid_current_kg/invalid_height/invalid_image` 400 ·
-`target_blocked` 400 (mit verdict/code/alt_lo/alt_hi) ·
+`invalid_target_kg` 400 ·
 `free_quota_exhausted` 403 · `rate_limited` 429 (Nutzer ODER IP) ·
 `daily_capacity` 503 · `payload_too_large` 413 ·
 `provider_not_configured` 503 · `provider_balance` 503 ·
