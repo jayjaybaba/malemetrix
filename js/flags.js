@@ -37,7 +37,12 @@
     newPlanEngineEnabled: true,
     /* Bei fehlendem/inkonsistentem Simple-Plan auf Legacy-Programmdaten
        zurückfallen (lesend)? */
-    legacyPlanFallbackEnabled: true
+    legacyPlanFallbackEnabled: true,
+    /* Future Split: Kurskarten (aktueller Kurs vs. Zielkurs) im Fortschritt
+       und die Hebel-Karte im Wochencheck. Reine Darstellungsschicht über
+       weekly-check.project()/decide() — aus = exakt der bisherige Zustand.
+       Wie alle Flags KEIN Zugriffsschutz (siehe Kopf dieser Datei). */
+    futureSplitEnabled: true
   };
 
   function store() { return (window.MM && MM.store) ? MM.store : null; }

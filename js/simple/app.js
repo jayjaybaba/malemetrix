@@ -432,8 +432,8 @@
         pv.appendChild(act);
       } else {
         pv.appendChild(el("p", null, tx(
-          "Der vollständige Plan (Training, Mahlzeiten, Einkaufsliste, tägliche Führung, Wochenanpassung) ist Teil von <strong>DAS PROTOKOLL</strong> — einmalig, kein Abo. Bereits gekauft? Einloggen genügt.",
-          "The full plan (training, meals, shopping list, daily guidance, weekly adjustment) is part of <strong>DAS PROTOKOLL</strong> — one-time, no subscription. Already bought it? Just sign in.")));
+          "Du bekommst nicht nur einen Plan: MaleMetrix prüft zwölf Wochen lang, welchen Verlauf du gerade aufbaust, und verändert jede Woche nur den einen Hebel, der jetzt wirklich zählt. Der vollständige Plan (Training, Mahlzeiten, Einkaufsliste, tägliche Führung, Wochenanpassung) ist Teil von <strong>DAS PROTOKOLL</strong> — einmalig, kein Abo. Bereits gekauft? Einloggen genügt.",
+          "You don't just get a plan: for twelve weeks MaleMetrix checks which course you're actually building — and each week changes only the one lever that truly counts right now. The full plan (training, meals, shopping list, daily guidance, weekly adjustment) is part of <strong>DAS PROTOKOLL</strong> — one-time, no subscription. Already bought it? Just sign in.")));
         var buy = el("a", "btn btn-primary", tx("Plan freischalten — " + dp.phaseGoal.week12TargetMinKg + "–" + dp.phaseGoal.week12TargetMaxKg + " kg in 12 Wochen", "Unlock the plan — " + dp.phaseGoal.week12TargetMinKg + "–" + dp.phaseGoal.week12TargetMaxKg + " kg in 12 weeks"));
         buy.href = "protokoll.html";
         buy.setAttribute("data-track", "simple_unlock_cta");
@@ -983,12 +983,62 @@
   /* ================================================================
      FORTSCHRITT
      ================================================================ */
+  /* Future Split: Kurskarte — aktueller Kurs vs. Zielkurs. Reine Anzeige
+     über weekly.project(); Bereiche statt Einzelwerte, bei dünner Datenlage
+     keine Zahlen. Status nie nur über Farbe (immer Text). */
+  function fmtRange(min, max) { return min.toFixed(1).replace(".0", "") + "–" + max.toFixed(1).replace(".0", "") + " kg"; }
+  function renderFutureSplit(p, ymd, series) {
+    var week = Math.min(weekNumber(p, ymd), 12);
+    var fs = weekly.project({ plan: p, week: week, todayYmd: ymd, weights: series });
+    var warn = ["behind_target", "goal_requires_extension", "loss_too_fast"].indexOf(fs.status) >= 0;
+    var dqName = { low: tx("niedrig", "low"), medium: tx("mittel", "medium"), high: tx("hoch", "high") }[fs.dataQuality];
+
+    var card = el("div", "s-card");
+    card.appendChild(el("h3", null, tx("Dein Kurs", "Your course") + " · " + tx("Woche", "Week") + " " + week + " / 12"));
+    card.appendChild(el("div", "s-note" + (warn ? " warn" : ""), esc(pick(fs.headline))));
+
+    if (fs.currentCourse) {
+      var rows = el("div", null);
+      function row(label, value, sub) {
+        var r = el("p", null);
+        r.innerHTML = "<strong>" + esc(label) + "</strong><br>" + esc(value) +
+          (sub ? " <span style='color:var(--muted)'>· " + esc(sub) + "</span>" : "");
+        rows.appendChild(r);
+      }
+      row(tx("AKTUELLER KURS", "CURRENT COURSE"),
+        fmtRange(fs.currentCourse.minKg, fs.currentCourse.maxKg) + " " + tx("in Woche 12", "in week 12"),
+        tx("Datenqualität", "Data quality") + ": " + dqName);
+      row(tx("ZIELKURS", "TARGET COURSE"),
+        fmtRange(fs.targetCourse.minKg, fs.targetCourse.maxKg),
+        fs.currentCourse.weeksRemaining > 0
+          ? tx("noch " + fs.currentCourse.weeksRemaining + " Wochen", fs.currentCourse.weeksRemaining + " weeks left")
+          : tx("Phase beendet", "phase finished"));
+      if (fs.gap && fs.gap.weeksBehindMin != null) {
+        var wtxt = fs.gap.weeksBehindMin === fs.gap.weeksBehindMax
+          ? String(fs.gap.weeksBehindMin) : fs.gap.weeksBehindMin + "–" + fs.gap.weeksBehindMax;
+        rows.appendChild(el("p", "hint", tx(
+          "Du liegst aktuell ungefähr " + wtxt + " Wochen hinter dem Zielkurs.",
+          "You're currently roughly " + wtxt + " weeks behind the target course.")));
+      }
+      card.appendChild(rows);
+    }
+    card.appendChild(el("p", "hint", tx(
+      "Regelbasierte Szenarioberechnung, keine exakte Prognose. Genetik, Wasserhaushalt und tatsächliche Umsetzung verändern das Ergebnis.",
+      "Rule-based scenario calculation, not an exact prediction. Genetics, water balance and actual execution change the outcome.")));
+    root.appendChild(card);
+    track("future_split_viewed");
+  }
+
   function vProgress() {
     var p = activePlan();
     var ymd = todayYmd();
     var series = weightSeries();
     var st = p.selectedTransformation, pg = p.phaseGoal;
     root.appendChild(el("h2", null, tx("Fortschritt", "Progress")));
+
+    if (MM.flags && MM.flags.get("futureSplitEnabled")) {
+      renderFutureSplit(p, ymd, series);
+    }
 
     var startW = st.startWeightKg;
     var curW = series.length ? series[series.length - 1].kg : null;
@@ -1161,8 +1211,22 @@
       var ctx = { plan: p, week: week, todayYmd: ymd, weights: weightSeries(), answers: checkAnswers };
       var d = weekly.decide(ctx);
       root.innerHTML = "";
-      root.appendChild(el("h2", null, tx("Entscheidung", "Decision")));
-      root.appendChild(el("div", d.changes ? "s-note" : "s-note", esc(pick(d.reason))));
+      if (MM.flags && MM.flags.get("futureSplitEnabled")) {
+        /* Future Split: genau EIN Hebel pro Woche — "Konstanz" (keep) ist
+           ein vollwertiges Ergebnis, kein Leerzustand. */
+        root.appendChild(el("h2", null, tx("Dein Hebel diese Woche", "Your lever this week")));
+        var lc = el("div", "s-card");
+        lc.appendChild(el("h3", null, esc(leverTitle(d))));
+        if (d.decision === "keep" && ["wr_on_track", "wr_watch", "wr_life"].indexOf(d.rule) >= 0) {
+          lc.appendChild(el("p", null, tx("Dein Plan funktioniert. Diese Woche ändern wir nichts.", "Your plan is working. We change nothing this week.")));
+        }
+        lc.appendChild(el("p", null, esc(pick(d.reason))));
+        if (d.safetyNote) lc.appendChild(el("p", "hint", tx("Sicherheitsbedingte Entscheidung — Optimierungsregeln sind diese Woche nachrangig.", "Safety-driven decision — optimization rules step back this week.")));
+        root.appendChild(lc);
+      } else {
+        root.appendChild(el("h2", null, tx("Entscheidung", "Decision")));
+        root.appendChild(el("div", "s-note", esc(pick(d.reason))));
+      }
       var apply = el("button", "btn btn-primary", d.changes ? tx("Anpassung übernehmen", "Apply adjustment") : tx("Verstanden — weiter", "Got it — continue"));
       apply.addEventListener("click", function () {
         var ci = weekly.buildCheckin(ctx, d);
@@ -1181,6 +1245,22 @@
       root.appendChild(apply);
     });
     root.appendChild(go);
+  }
+  /* Hebel-Titel: deterministische Zuordnung aus decision/rule — Texte
+     entstehen NIE frei, die Begründung liefert weekly.decide(). */
+  function leverTitle(d) {
+    var byDecision = {
+      kcal_down: tx("Kalorien moderat senken", "Lower calories moderately"),
+      kcal_up: tx("Kalorien moderat erhöhen", "Raise calories moderately"),
+      steps_up: tx("Mehr Alltagsschritte", "More daily steps"),
+      volume_down: tx("Reduzierte Woche", "Deload week"),
+      adjust_training: tx("Training anpassen", "Adjust training"),
+      recovery_first: tx("Erholung zuerst", "Recovery first")
+    };
+    if (byDecision[d.decision]) return byDecision[d.decision];
+    if (d.rule === "wr_no_data") return tx("Regelmäßig wiegen", "Weigh in regularly");
+    if (d.rule === "wr_stall_execution") return tx("Umsetzung vor Verschärfung", "Execution before tightening");
+    return tx("Konstanz", "Consistency");
   }
   function checkLabel(o) {
     var m = { gut: tx("gut", "good"), mittel: tx("mittel", "medium"), schlecht: tx("schlecht", "poor"),

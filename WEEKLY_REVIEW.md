@@ -46,3 +46,36 @@ Begründung (DE/EN) mit den konkreten Zahlen.
   eine neue Planversion mit Regel-ID, Grund, Datum, Quelle `system` und
   `checkinId` (Historie: `mm_simple_plan_history`, Check-ins:
   `mm_simple_checkins`, beide append-only und kontogesynct).
+
+## Future Split (Kurskarte) — Stand 06.08.2026
+
+Code: `weekly-check.js → project(ctx)` (rein, deterministisch, kein LLM,
+keine Mutation). UI: `app.js → renderFutureSplit` (Fortschritt-Tab) und die
+Hebel-Karte im Wochencheck-Ergebnis. Flag: `futureSplitEnabled`
+(aus = exakt der vorherige Zustand). Tests:
+`tools-dev/tests/simple-future-split.test.js` (38 Assertions).
+
+**Projektion:** `thisWeekAvg + deltaPerWeek × weeksRemaining` auf Basis des
+bestehenden geglätteten Trends (`trend()`, nie Ein-Punkt). Korridorbreite
+nach Datenqualität: `high` (≥6 Messpunkte) ±0,5 kg, `medium` (<6) ±0,9 kg,
+`low` (kein Trend) → **keine Zahlen**, Status `insufficient_data`.
+Die Breiten sind konservativ gesetzt, aber noch nicht an echten Verläufen
+kalibriert — offene Flanke, sichtbar über die Datenqualitätsstufe.
+
+**Statusreihenfolge (erste zutreffende gewinnt):** `insufficient_data` →
+`loss_too_fast` (EXAKT dieselbe Schwelle wie `wr_too_fast`: >1,1 % KG/Woche,
+nur Cut) → `goal_requires_extension` (nötige Restrate über der Schwelle →
+Zielzeitraum verlängern statt verschärfen, `stillPlausible=false`) →
+`completed` → `ahead_but_safe` → `on_course` (Korridore überlappen) →
+`slightly_behind` (Abstand ≤1,5 kg) → `behind_target`.
+
+**Richtung:** Cut = „hinter" wenn Projektion ÜBER dem Ziel; Gain exakt
+invertiert. Gain-Überschießen wird neutral als „vor dem Zielkurs" gezeigt,
+nie als Erfolg. Wochenabweichung = `ceil(kg / |Planrate|)`; bei Planrate
+<0,05 kg/Wo bewusst `null` (keine Division, kein Infinity).
+
+**Grenzen:** kein Recomp-Indikator (Taille/Kraft/Fotos), keine
+Wahrscheinlichkeit in Prozent, keine Kursgrafik, keine Bilder — bewusst
+nicht Teil dieser Scheibe. Headlines sind eine feste Tabelle (DE/EN),
+ohne Wertung. `decide()` bleibt die einzige Entscheidungsinstanz;
+`project()` zeigt nur an.
