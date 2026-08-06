@@ -102,11 +102,11 @@ async function resolveFalKey(admin: { rpc: (fn: string) => Promise<{ data: unkno
 }
 
 // Prompt auf Englisch — Bildmodelle folgen englischen Anweisungen messbar
-// präziser. Struktur des bewährten ersten Live-Stands (Betreiber: „das war
-// TOP"): klare Kausalität im Intro, dramatische prozentbasierte Staffel
-// (mit einer Ehrlichkeits-Kappe bei sehr hohem Ziel-Körperfett) und ein
-// KURZER Identitäts-Block — der ausführliche „same everything"-Block drückte
-// das Modell nachweislich in fast unsichtbare Änderungen.
+// präziser. Struktur: klare Kausalität im Intro, dann die nach geschätztem
+// ZIEL-Körperfett gestufte Zieloptik aus der Engine (unter ~22 % Ziel-KFA
+// verlangt der Prompt sichtbare Bauchmuskeln; nur ≥28 % bleibt ohne Sixpack)
+// und ein KURZER Identitäts-Block — der ausführliche „same everything"-Block
+// drückte das Modell nachweislich in fast unsichtbare Änderungen.
 function buildPrompt(p: { currentKg: number; targetKg: number; heightCm: number; waistCm: number | null; shape: string }): string {
   const delta = Math.round(Math.abs(p.currentKg - p.targetKg));
   const pct = Math.round((delta / p.currentKg) * 100);

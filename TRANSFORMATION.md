@@ -68,17 +68,25 @@ Browser (ES-Modul via `transformation.html`) und in den Node-Tests.
 
 ## Bild-Prompts (dramatisch UND körperfettgestuft)
 
-Produktentscheidung 06.08.2026 nach zwei Live-Testläufen des Betreibers:
-Die erste realistische Prompt-Fassung war zu subtil („Unterschied nicht
-groß genug"). Jeder Prompt beginnt jetzt mit einer EMPHASIS-Anweisung
-(„immediately OBVIOUS and dramatic … never subtle") — der Unterschied
-muss auf den ersten Blick unübersehbar sein. Die Stufung nach
-geschätztem ZIEL-Körperfett bleibt: ≥30 % „dramatisch schlanker, aber
-noch kein Sixpack" · 22-30 % „dramatisch schlanker, erste Ab-Umrisse" ·
-17-22 % „beeindruckend athletisch, sichtbare Ab-Umrisse" · 12-17 %
-„klar sichtbares Sixpack, V-Taille" (+ „Definition steigt mit dem
-Verlust"-Anweisung) · <12 % „extrem lean, tiefe Separation, sichtbare
-Venen". Aufbau: sichtbar kräftigere/deutlich muskulösere Statur.
+Produktentscheidung 06.08.2026 nach drei Live-Testläufen des Betreibers.
+Runde 1: die realistische Fassung war zu subtil. Runde 2 (Prozent-
+Staffel): 78→75 zeigte Abs, 78→70 sah aus wie das Ausgangsfoto — das
+größere Ziel wirkte SCHWÄCHER. Konsequenz (Runde 3, aktueller Stand):
+Die Stufung hängt wieder ausschließlich am geschätzten ZIEL-Körperfett,
+damit das ambitioniertere Ziel immer in der mindestens gleich harten
+Stufe landet: ≥28 % „dramatisch schlanker, aber noch KEIN Sixpack"
+(Ehrlichkeits-Kappe) · 22-28 % „dramatisch schlanker, flacher Bauch,
+klar sichtbare Ab-Umrisse" · 15-22 % „klar sichtbares Sixpack, V-Taille
+— das Sixpack MUSS im Bild sichtbar sein" · <15 % „shredded: messerscharfes
+Sixpack, tiefe Separation, sichtbare Venen". Jeder Cut-Prompt nennt dem
+Modell zusätzlich die konkreten KFA-Zahlen („from about X% to about Y%")
+als Skalierungsanker, plus die Regel „Definition steigt mit dem Verlust".
+Jeder Prompt beginnt mit der EMPHASIS-Anweisung („immediately OBVIOUS
+and dramatic … when in doubt, make the change STRONGER, never weaker") —
+das fast unveränderte Bild ist der dokumentierte Fehlermodus des Modells.
+Aufbau: pralle, runde Schultern und volle Arme als konkrete Bildanker
+(„round, full, pumped shoulders, noticeably thicker arms"), kg-Zahl des
+Muskelzuwachses im Prompt und die Regel „mehr Zuwachs = sichtbar größer".
 `IDENTITY_FRAGMENT` bleibt strikt: gleiche Person, Gesicht ohne
 Verschönerung, Frisur, Hautfarbe, Tattoos, Pose, Perspektive,
 Hintergrund, Beleuchtung, Kleidung. Rekompositions-Ziele werden als

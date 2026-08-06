@@ -208,64 +208,85 @@ export function validatePair(aKg, bKg) {
 
 /* ============================================================
    BILD-PROMPT-BAUSTEINE — dramatisch UND körperfettgestuft.
-   Produktentscheidung des Betreibers (06.08.2026): Die Bilder
-   MÜSSEN einen Wow-Effekt haben — der Unterschied muss auf den
-   ersten Blick unübersehbar sein. Die Zieloptik bleibt nach
-   geschätztem Ziel-Körperfett gestuft (ein 30-%-Ziel bekommt
-   kein Sixpack), aber innerhalb jeder Stufe wird die Veränderung
-   maximal deutlich gezeichnet. Identität bleibt strikt erhalten.
+   Produktentscheidung des Betreibers (06.08.2026, zweite Runde
+   nach Live-Befund „78→75 zeigte Abs, 78→70 sah aus wie vorher"):
+   · Die Stufen hängen am geschätzten ZIEL-Körperfett, nicht am
+     Prozentverlust — das größere Ziel landet damit IMMER in einer
+     mindestens gleich dramatischen, meist härteren Stufe.
+   · Sobald der geschätzte Ziel-KFA unter ~22 % fällt, verlangt der
+     Prompt ausdrücklich sichtbare Bauchmuskeln; unter ~15 % die
+     Shredded-Optik. Nur ≥28 % bleibt die Ehrlichkeits-Kappe ohne
+     Sixpack (ein stark übergewichtiges Ziel bekommt keins).
+   · Jeder Cut-Prompt nennt dem Modell die konkreten KFA-Zahlen
+     (von ~X % auf ~Y %) — Zahlenanker skalieren das Ergebnis mit
+     der Zielgröße, statt es dem Zufall zu überlassen.
+   · „Bild kommt unverändert zurück" ist der dokumentierte
+     Fehlermodus — EMPHASIS sagt deshalb explizit: im Zweifel
+     STÄRKER übertreiben, nie schwächer. Identität bleibt strikt.
    ============================================================ */
 const EMPHASIS =
   "The transformation must be immediately OBVIOUS and dramatic — a striking, unmistakable " +
   "before/after difference. Do NOT return the photo unchanged or nearly unchanged; the body " +
-  "must look clearly different at first glance. ";
+  "must look clearly different at first glance. When in doubt, make the change STRONGER, " +
+  "never weaker. ";
 
-// Die bewährte Kernanweisung des allerersten Live-Stands (78→70 kg ergab
-// damals ein Sixpack — Betreiber: „Das war TOP"): Definition steigt mit dem
-// Verlust, der Bauch wird nie weichgezeichnet.
+// Die bewährte Kernanweisung des allerersten Live-Stands: Definition steigt
+// mit dem Verlust, der Bauch wird nie weichgezeichnet.
 const CUT_RULE =
   "IMPORTANT: muscle definition INCREASES with the amount of weight lost — at this weight he " +
   "must look MORE defined than at any smaller loss. Never soften or smooth the abdominal area. ";
+
+// Gegenstück für den Aufbau: mehr Zielgewicht = sichtbar mehr Masse.
+const BULK_RULE =
+  "IMPORTANT: muscle size INCREASES with the amount of weight gained — at this weight he must " +
+  "look clearly BIGGER than at any smaller gain. Never render the body identical to the original. ";
 
 export function targetLookFragment({ weightKg, heightCm, waistCm, shape, targetKg }) {
   const est = estimateBf({ weightKg, heightCm, waistCm, shape });
   const lean = leanMass(weightKg, est.mid);
   const cut = targetKg < weightKg;
   if (cut) {
-    const pct = Math.round(((weightKg - targetKg) / weightKg) * 100);
     const tBf = bfAtWeight(lean, targetKg).mid;
-    // Einzige Ehrlichkeits-Kappe: Wer am Ziel geschätzt noch ~28 %+
-    // Körperfett hat, bekommt dramatischen Fettverlust, aber kein Sixpack.
+    // Zahlenanker: das Modell sieht, WIE weit der KFA fällt — ein größeres
+    // Ziel bekommt so automatisch das sichtbar leanere Ergebnis.
+    const bfLine = `His body fat drops from about ${est.mid}% to about ${tBf}%. `;
+    // Ehrlichkeits-Kappe: Wer am Ziel geschätzt noch ~28 %+ Körperfett hat,
+    // bekommt dramatischen Fettverlust, aber kein Sixpack.
     if (tBf >= 28) {
-      return EMPHASIS + "He is dramatically slimmer: a much smaller belly, drastically reduced waist, " +
-        "visibly slimmer face, chest and arms — a completely changed silhouette. The fat loss is " +
-        "massive and unmistakable, though there is NO six-pack at this stage. ";
+      return EMPHASIS + bfLine + "He is dramatically slimmer: a much smaller belly, drastically " +
+        "reduced waist, visibly slimmer face, chest and arms — a completely changed silhouette. " +
+        "The fat loss is massive and unmistakable, though there is NO six-pack at this stage. ";
     }
-    // Darunter: die bewährte prozentbasierte Staffel des ersten Live-Stands.
-    if (pct >= 15) {
-      return EMPHASIS + "At this large loss he is VERY lean (low body fat): a sharply defined six-pack, " +
-        "clear muscle separation, visible veins on the arms, tight chest and a leaner, more angular face. " +
-        CUT_RULE;
+    if (tBf >= 22) {
+      return EMPHASIS + bfLine + "He is dramatically leaner: a flat, tight stomach with clearly " +
+        "visible ab outlines, a much narrower waist, a visibly slimmer face and a completely " +
+        "changed silhouette — the fat loss is unmistakable. " + CUT_RULE;
     }
-    if (pct >= 8) {
-      return EMPHASIS + "He is now lean: a clearly visible six-pack, defined tight waist, defined chest " +
-        "and arms, noticeably slimmer face. " + CUT_RULE;
+    if (tBf >= 15) {
+      return EMPHASIS + bfLine + "He is now lean and athletic: a clearly visible six-pack with " +
+        "distinct abdominal muscles, a tight V-tapered waist, defined chest and arms, noticeably " +
+        "slimmer face. The six-pack MUST be clearly visible in the image. " + CUT_RULE;
     }
-    return EMPHASIS + "He is clearly leaner: visibly flatter stomach with first ab outlines, narrower " +
-      "waist, slimmer face. " + CUT_RULE;
+    return EMPHASIS + bfLine + "He is shredded (very low body fat): a razor-sharp six-pack with " +
+      "deep muscle separation, visible veins on the arms, tight defined chest, a lean angular " +
+      "face — competition-level leanness. " + CUT_RULE;
   }
-  // Aufbau: Der Muskelzuwachs muss UNÜBERSEHBAR sein — „unverändertes Bild"
-  // ist der dokumentierte Fehlermodus des Modells bei zu zahmen Prompts.
+  // Aufbau: Der Muskelzuwachs muss UNÜBERSEHBAR sein — pralle, runde
+  // Schultern und volle Arme sind die Anker, die den Wow-Effekt tragen.
   const frac = (targetKg - weightKg) / weightKg;
+  const gainKg = Math.round(targetKg - weightKg);
+  const gainLine = `He has built about ${gainKg} kg of pure muscle mass. `;
   if (frac <= 0.06) {
-    return EMPHASIS + "He is visibly more muscular: clearly fuller and broader chest, wider shoulders, " +
-      "noticeably thicker arms, more muscular back — the muscle gain must be clearly visible in the " +
-      "photo, not subtle. Waist stays tight. ";
+    return EMPHASIS + gainLine + "He is visibly more muscular: round, full, pumped shoulders " +
+      "(capped deltoids), noticeably thicker arms with full biceps stretching the sleeves, a " +
+      "clearly fuller and broader chest, a wider muscular back — the muscle gain must be " +
+      "obvious at first glance, not subtle. Waist stays tight. " + BULK_RULE;
   }
-  return EMPHASIS + "He is dramatically more muscular, like after years of dedicated bodybuilding " +
-    "training: much bigger chest, much broader shoulders, thick arms with clearly larger biceps and " +
-    "triceps, wide muscular back with a powerful V-taper, fuller legs. The muscle mass must be " +
-    "strikingly larger than in the original photo. ";
+  return EMPHASIS + gainLine + "He is dramatically more muscular, like after years of dedicated " +
+    "bodybuilding training: round, full, pumped shoulders (capped deltoids), thick arms with " +
+    "clearly larger, fuller biceps and triceps, a much bigger chest, a wide muscular back with " +
+    "a powerful V-taper, fuller legs. The muscle mass must be strikingly larger than in the " +
+    "original photo. " + BULK_RULE;
 }
 
 // Identitäts-Block: kurz und bewährt. Der ausführliche „same everything"-
