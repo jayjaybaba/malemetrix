@@ -107,7 +107,7 @@ kleine freigegebene Abnahme (~3 %) visualisiert und ehrlich beschriftet.
   Downloads) und auf der Share-Card („Mögliche Zielvisualisierung",
   Tags VORHER / MÖGLICHES ZIEL). Englische Fassungen fest verdrahtet.
 
-## Kontingent & Missbrauchsschutz (Function v10)
+## Kontingent & Missbrauchsschutz (deployt: Plattform-Version 9, 06.08.2026)
 
 - **Modell:** Erstlauf = 2 Gratis-Zielbilder + begrenzte
   Einzel-Regenerationen — insgesamt `FREE_LIFETIME_IMAGES = 4`
