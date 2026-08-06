@@ -184,6 +184,86 @@
       null, null);
   }
 
+  /* ---------- Future Split: Kursprojektion (§Kurskarte) ----------
+     Rein deterministisch, keine KI, keine Mutation von ctx/plan.
+     Projiziert den geglätteten Trend auf Woche 12 und vergleicht mit dem
+     gespeicherten Zielkorridor. Bei dünner Datenlage gibt es KEINE Zahlen —
+     Datenqualität bestimmt die Korridorbreite, nie umgekehrt. */
+  var FS_HEADLINES = {
+    insufficient_data: { de: "Für eine belastbare Kursberechnung fehlen noch Gewichtswerte.", en: "Not enough weight data for a reliable course calculation yet." },
+    loss_too_fast: { de: "Dein Verlauf ist aktuell schneller als vorgesehen.", en: "Your course is currently faster than intended." },
+    goal_requires_extension: { de: "Der ursprüngliche Zielbereich ist in der verbleibenden Zeit nicht mehr seriös erreichbar. Der realistische Abschlussbereich verschiebt sich.", en: "The original target range is no longer realistically reachable in the remaining time. The realistic finish range shifts." },
+    completed: { de: "Die Phase ist abgeschlossen.", en: "This phase is complete." },
+    ahead_but_safe: { de: "Dein Verlauf liegt vor dem Zielkurs.", en: "Your course is ahead of target." },
+    on_course: { de: "Dein Verlauf liegt im Zielkorridor.", en: "Your course sits inside the target corridor." },
+    slightly_behind: { de: "Dein Verlauf liegt leicht hinter dem Zielkurs.", en: "Your course sits slightly behind target." },
+    behind_target: { de: "Dein Verlauf liegt hinter dem Zielkurs.", en: "Your course sits behind target." }
+  };
+
+  function project(ctx) {
+    var plan = ctx.plan;
+    var tr = trend(ctx.weights || [], ctx.todayYmd);
+    var pr = plannedRate(plan);
+    var cut = plan.derived ? plan.derived.cut : (pr != null && pr < 0);
+    var pg = plan.phaseGoal || {};
+    var startW = (plan.selectedTransformation || {}).startWeightKg || 90;
+    var weeksRemaining = Math.max(0, (pg.durationWeeks || 12) - ctx.week);
+    var r1 = function (x) { return Math.round(x * 10) / 10; };
+
+    var targetCourse = { minKg: pg.week12TargetMinKg, maxKg: pg.week12TargetMaxKg, stillPlausible: true };
+    var maxSafeRate = startW * 0.011; // identische Schwelle wie wr_too_fast
+
+    function out(status, dq, cc, gap) {
+      return { dataQuality: dq, currentCourse: cc, targetCourse: targetCourse,
+               gap: gap, status: status, headline: FS_HEADLINES[status] };
+    }
+
+    /* 1 — kein Trend → keine Projektion, keine Platzhalterzahl */
+    if (!tr) return out("insufficient_data", "low", null, null);
+
+    var dq = tr.points >= 6 ? "high" : "medium";
+    var half = dq === "high" ? 0.5 : 0.9;
+    var mid = tr.thisWeekAvg + tr.deltaPerWeek * weeksRemaining;
+    var cc = { minKg: r1(mid - half), maxKg: r1(mid + half), weeksRemaining: weeksRemaining };
+
+    /* Gap: Abstand der Korridore in der ungünstigen Richtung (nur wenn
+       "hinter"; bei Überlappung oder voraus: null). Richtung: Cut = hinter,
+       wenn die Projektion ÜBER dem Ziel liegt; Gain exakt umgekehrt. */
+    var behind = cut ? cc.minKg > targetCourse.maxKg : cc.maxKg < targetCourse.minKg;
+    var ahead = cut ? cc.maxKg < targetCourse.minKg : cc.minKg > targetCourse.maxKg;
+    var gap = null;
+    if (behind) {
+      var gMin = cut ? cc.minKg - targetCourse.maxKg : targetCourse.minKg - cc.maxKg;
+      var gMax = cut ? cc.maxKg - targetCourse.minKg : targetCourse.maxKg - cc.minKg;
+      var prAbs = pr == null ? 0 : Math.abs(pr);
+      var wk = function (kg) { return prAbs < 0.05 ? null : Math.max(1, Math.ceil(kg / prAbs)); };
+      gap = { kgBehindMin: r1(gMin), kgBehindMax: r1(gMax),
+              weeksBehindMin: wk(gMin), weeksBehindMax: wk(gMax) };
+    }
+
+    /* 2 — Sicherheitsschwelle (nur Cut, exakt wie decide/wr_too_fast) */
+    if (cut && -tr.deltaPerWeek > maxSafeRate) return out("loss_too_fast", dq, cc, gap);
+
+    /* 3 — Ziel physiologisch nicht mehr erreichbar → verlängern statt erzwingen */
+    if (weeksRemaining > 0 && targetCourse.maxKg != null) {
+      var nearBound = cut ? targetCourse.maxKg : targetCourse.minKg;
+      var required = Math.abs(nearBound - tr.thisWeekAvg) / weeksRemaining;
+      var stillNeeded = cut ? tr.thisWeekAvg > nearBound : tr.thisWeekAvg < nearBound;
+      if (stillNeeded && required > maxSafeRate) {
+        targetCourse.stillPlausible = false;
+        return out("goal_requires_extension", dq, cc, gap);
+      }
+    }
+
+    /* 4 — Phase vorbei */
+    if (weeksRemaining === 0) return out("completed", dq, cc, gap);
+
+    /* 5-8 — Lage der Korridore zueinander */
+    if (ahead) return out("ahead_but_safe", dq, cc, gap);
+    if (!behind) return out("on_course", dq, cc, gap);
+    return out(gap.kgBehindMin <= 1.5 ? "slightly_behind" : "behind_target", dq, cc, gap);
+  }
+
   /* ---------- Check-in-Datensatz bauen (append-only, Phase-1-Store) ---------- */
   function buildCheckin(ctx, decision) {
     return {
@@ -198,5 +278,5 @@
     };
   }
 
-  return { QUESTIONS: QUESTIONS, trend: trend, plannedRate: plannedRate, decide: decide, buildCheckin: buildCheckin };
+  return { QUESTIONS: QUESTIONS, trend: trend, plannedRate: plannedRate, decide: decide, project: project, buildCheckin: buildCheckin };
 });
