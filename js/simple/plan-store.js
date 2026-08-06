@@ -96,6 +96,48 @@
     return r;
   }
 
+  /* Bewusste Nutzer-Neukonfiguration (§"Plan anpassen"): Der Nutzer darf
+     Trainingstage, Zeiten, Ernährungspräferenzen usw. jederzeit ändern.
+     Das ist KEINE Wochencheck-Anpassung (dort gelten Schrittgrenzen),
+     sondern ein Neuaufbau der Plan-Inhalte bei erhaltener Identität:
+     id, Status, Start-/Enddatum und Historie bleiben, die Version steigt,
+     der Unterschied wird als Historieneintrag festgehalten. */
+  function reconfigurePlan(nextPlan, reason) {
+    var cur = getPlan();
+    if (!cur) return { ok: false, errors: ["kein Plan vorhanden"] };
+    nextPlan.id = cur.id;
+    nextPlan.status = cur.status;
+    nextPlan.startDate = cur.startDate;
+    nextPlan.endDate = cur.endDate;
+    nextPlan.createdAt = cur.createdAt;
+    nextPlan.legacySource = cur.legacySource;
+    var v = model.validate(nextPlan);
+    if (!v.ok) return { ok: false, errors: v.errors };
+    nextPlan.version = (cur.version || 1) + 1;
+    var paths = ["training.daysPerWeek", "training.weekdays", "training.templateId",
+      "training.location", "training.maximumSessionMinutes",
+      "nutrition.calorieTarget", "nutrition.proteinTargetGrams", "nutrition.mealCount",
+      "dailyTargets.steps"];
+    var changes = [];
+    paths.forEach(function (p) {
+      var from = model._get(cur, p), to = model._get(nextPlan, p);
+      if (JSON.stringify(from) !== JSON.stringify(to)) changes.push({ path: p, from: from, to: to });
+    });
+    var entry = {
+      id: "pv:" + nextPlan.version + ":" + cur.id,
+      planId: cur.id, version: nextPlan.version,
+      changedAt: nowIso(),
+      reason: reason || "Vom Nutzer angepasst (Plan-Einstellungen)",
+      rule: "user_reconfigure", source: "user", checkinId: null,
+      changes: changes
+    };
+    var hist = getHistory();
+    hist.push(entry);
+    S().set(KEYS.history, hist);
+    savePlan(nextPlan);
+    return { ok: true, plan: nextPlan, entry: entry };
+  }
+
   /* Ersten Plan setzen (aus plan-engine.createPlan). Überschreibt nie einen
      aktiven Plan ohne ausdrückliches force. */
   function adoptPlan(plan, opts) {
@@ -155,6 +197,7 @@
     getHistory: getHistory,
     adoptPlan: adoptPlan,
     changePlan: changePlan,
+    reconfigurePlan: reconfigurePlan,
     getFunnel: getFunnel,
     setFunnelStep: setFunnelStep,
     FUNNEL_ORDER: FUNNEL_ORDER,
