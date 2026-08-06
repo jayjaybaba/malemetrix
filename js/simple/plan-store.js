@@ -44,15 +44,24 @@
   function registerSync() {
     if (registered) return true;
     if (!(MM.account && MM.account.registerStateDomain)) return false;
-    MM.account.registerStateDomain("simple_plan", "mm_" + KEYS.plan);
-    MM.account.registerStateDomain("simple_plan_history", "mm_" + KEYS.history, { append: true });
-    MM.account.registerStateDomain("simple_funnel", "mm_" + KEYS.funnel);
-    MM.account.registerStateDomain("simple_checkins", "mm_" + KEYS.checkins, { append: true });
-    MM.account.registerStateDomain("legacy_snapshot", "mm_" + KEYS.snapshot);
-    MM.account.registerStateDomain("flags_user", "mm_" + KEYS.flagsUser);
+    // WICHTIG: registerStateDomain erwartet Store-Keys OHNE "mm_"-Präfix —
+    // der Account-Layer liest über MM.store, das selbst präfixiert.
+    MM.account.registerStateDomain("simple_plan", KEYS.plan);
+    MM.account.registerStateDomain("simple_plan_history", KEYS.history, { append: true });
+    MM.account.registerStateDomain("simple_funnel", KEYS.funnel);
+    MM.account.registerStateDomain("simple_checkins", KEYS.checkins, { append: true });
+    MM.account.registerStateDomain("legacy_snapshot", KEYS.snapshot);
+    MM.account.registerStateDomain("flags_user", KEYS.flagsUser);
     // Das gewählte Transformationsziel folgt dem Konto (Funnel-Fortsetzung
     // auf anderem Gerät); Owner bleibt js/transformation.js.
-    MM.account.registerStateDomain("transform_goal", "mm_transform_goal");
+    MM.account.registerStateDomain("transform_goal", "transform_goal");
+    // Tagesprotokoll + Einkaufs-Häkchen der Gen-2-App.
+    MM.account.registerStateDomain("simple_daylog", "simple_daylog");
+    MM.account.registerStateDomain("simple_shopping", "simple_shopping");
+    // Gewichtsreihe: identische Domain wie OS v1 (os-core registriert
+    // "osmetrics" → "os_metrics"); die Registrierung hier ist idempotent
+    // und sorgt dafür, dass Gewichte auch ohne geladenes OS syncen.
+    MM.account.registerStateDomain("osmetrics", "os_metrics");
     registered = true;
     return true;
   }
