@@ -946,56 +946,6 @@
       };
     }
 
-    function trainingRows(st, p) {
-      var home = st.equip === "home";
-      var d = Math.max(2, Math.min(6, st.days || 3));
-      var rows = [];
-      rows.push(["FREQUENZ", "<strong>" + d + "× Kraft/Woche</strong>" +
-        (p.cut ? " + <strong>2× Zone-2-Cardio</strong> 30-40 min + <strong>8-10k Schritte</strong> täglich" : " — Erholung ist Teil des Plans, nicht seine Abwesenheit")]);
-      if (home) {
-        if (d <= 3) {
-          rows.push(["GK A", "Goblet Squat 3×10-12 · KH-Bankdrücken/Liegestütze 3×8-12 · KH-Rudern 3×10 · KH-Schulterdrücken 3×10 · Plank 3×"]);
-          rows.push(["GK B", "Rumänisches Kreuzheben (KH) 3×10 · Ausfallschritte 3×10/Bein · Klimmzüge/Ruder-Variante 3×max · Seitheben 3×12-15"]);
-          rows.push(["ROTATION", d === 2 ? "A und B je 1× pro Woche" : "A/B/A, nächste Woche B/A/B"]);
-        } else {
-          rows.push(["OK", "KH-Bankdrücken 4×8-10 · KH-Rudern 4×8-10 · KH-Schulterdrücken 3×10 · Curls/Trizeps je 3×10-12"]);
-          rows.push(["UK", "Goblet Squat 4×10 · RDL (KH) 4×8-10 · Ausfallschritte 3×10/Bein · Wadenheben 4×15"]);
-          rows.push(["ROTATION", "OK/UK im Wechsel, " + d + " Einheiten pro Woche"]);
-        }
-        rows.push(["ZUHAUSE", "Mit verstellbaren Kurzhanteln bis ~30 kg kommst du weit — wird eine Übung zu leicht: Tempo runter, Pause kürzer, Wiederholungen rauf."]);
-      } else if (d === 2) {
-        rows.push(["GK 1", "Kniebeuge 3×6-8 · Bankdrücken 3×6-8 · Rudern 3×8-10 · Plank 3×"]);
-        rows.push(["GK 2", "Kreuzheben 3×5 · Schulterdrücken 3×6-8 · Klimmzug/Latzug 3×8-10 · Seitheben 2×12-15"]);
-      } else if (d === 3) {
-        rows.push(["GK A", "Kniebeuge 3×5-8 · Bankdrücken 3×5-8 · Rudern 3×8-10 · Seitheben 2×12-15 · Plank 3×"]);
-        rows.push(["GK B", "Kreuzheben 3×5 · Schulterdrücken 3×6-8 · Klimmzug/Latzug 3×8-10 · Beugercurls 2×10-12"]);
-        rows.push(["ROTATION", "A/B/A, nächste Woche B/A/B"]);
-      } else if (d === 4) {
-        rows.push(["OK A", "Bankdrücken 4×6-8 · Rudern 4×6-8 · Schulterdrücken 3×8-10 · Curls/Trizeps je 3×10-12"]);
-        rows.push(["UK A", "Kniebeuge 4×6-8 · Rumänisches Kreuzheben 3×8-10 · Ausfallschritte 3×10 · Wadenheben 4×12"]);
-        rows.push(["OK B", "Schrägbank 4×8-10 · Klimmzüge 4×max · Dips 3×8-12 · Seitheben 3×12-15"]);
-        rows.push(["UK B", "Kreuzheben 4×5 · Beinpresse 3×10-12 · Beinbeuger 3×10-12 · Bauch 3×"]);
-      } else if (d === 5) {
-        rows.push(["PUSH", "Bankdrücken 4×6-8 · Schrägbank-KH 3×8-10 · Schulterdrücken 3×8-10 · Seitheben 3×12-15 · Trizeps 3×10-12"]);
-        rows.push(["PULL", "Kreuzheben 3×5 · Klimmzüge 4×max · Rudern 4×8-10 · Face Pulls 3×15 · Curls 3×10-12"]);
-        rows.push(["BEINE", "Kniebeuge 4×6-8 · RDL 3×8-10 · Beinpresse 3×10-12 · Beinbeuger 3×10-12 · Waden 4×12"]);
-        rows.push(["OK/UK", "Dazu 1× Oberkörper (Schwachstellen) + 1× Unterkörper (leichter, Technik/Volumen)"]);
-      } else {
-        rows.push(["PPL ×2", "Push/Pull/Legs, zweimal pro Woche — 1. Durchgang schwer (5-8 Wdh), 2. Durchgang Volumen (8-12 Wdh)"]);
-        rows.push(["PUSH", "Bankdrücken · Schulterdrücken · Schrägbank · Seitheben · Trizeps"]);
-        rows.push(["PULL", "Kreuzheben (1×/Woche) · Klimmzüge · Rudern · Face Pulls · Curls"]);
-        rows.push(["LEGS", "Kniebeuge · RDL · Beinpresse · Beinbeuger · Waden"]);
-      }
-      var progression = {
-        neu: "Du bist im besten Fenster deines Lebens: <strong>lineare Progression</strong> — fast jede Einheit +2,5 kg auf den Hauptübungen. Nutz es, es kommt nicht wieder.",
-        mid: "<strong>+1 Wiederholung oder +2,5 kg pro Woche</strong> auf den Hauptübungen. Ohne dokumentierte Progression (Tracker!) kein Fortschritt.",
-        pro: "<strong>Doppelprogression</strong> (erst Wiederholungen, dann Last) und Volumen in Wellen — PRs planst du, sie passieren nicht."
-      };
-      rows.push(["PRINZIP", progression[st.exp] || progression.mid]);
-      if (p.cut) rows.push(["IM DEFIZIT", "Gewichte <strong>nicht</strong> freiwillig reduzieren — Kraft halten heißt Muskeln halten. Das Defizit kommt aus der Küche."]);
-      return rows;
-    }
-
     function rows(list) {
       var w = el("div", "trf-rows");
       list.forEach(function (r) {
@@ -1036,12 +986,15 @@
       if (stickyEl && stickyEl.parentNode) stickyEl.parentNode.removeChild(stickyEl);
       stickyEl = null;
     }
-    function renderSticky(t, p) {
+    function renderSticky(t, p, phase1, price) {
       removeSticky();
       if (stickyDismissed) return;
       stickyEl = el("div", "trf-sticky");
-      stickyEl.appendChild(el("span", "sk", "DEIN ZIEL: " + t + " KG IN " + p.realWeeks + " WOCHEN — <strong>DAS PROTOKOLL · 99 €</strong>"));
-      var go = el("a", "btn btn-primary btn-sm", "Jetzt starten");
+      stickyEl.appendChild(el("span", "sk", (phase1
+        ? "PHASE 1: 12 WOCHEN BIS " + phase1.lo + "–" + phase1.hi + " KG"
+        : "DEIN ZIEL: " + t + " KG IN ~" + p.realWeeks + " WOCHEN") +
+        " — <strong>DAS PROTOKOLL · " + (price || 99) + " €</strong>"));
+      var go = el("a", "btn btn-primary btn-sm", "Plan freischalten");
       go.href = "protokoll.html";
       go.setAttribute("data-track", "transform_sticky_cta");
       var x = el("button", "close", "×");
@@ -1053,6 +1006,7 @@
     }
 
     function renderPlans() {
+      once(seen, "preview", function () { track("transform_plan_preview_view"); });
       var t = state.chosen;
       var p = calcPlan(state, t);
       s6.innerHTML = "";
@@ -1085,6 +1039,11 @@
         s6.appendChild(sb);
       }
 
+      /* --- KOSTENLOSE VORSCHAU (Phase 5.1): die Landkarte, nicht das
+         Fahrzeug. Zielkalorien, Protein, Frequenz, Schrittziel, drei erste
+         Maßnahmen und Woche-1-Skizze sind gratis — kompletter Split,
+         Mahlzeitenstruktur, Progressions-/Anpassungslogik und Supplementplan
+         gehören in DAS PROTOKOLL bzw. My MaleMetrix. --- */
       var mrow = el("div", "mm-metric-row trf-plan-metrics");
       function metric(v, unit, k, cls) {
         var m = el("div", "mm-metric" + (cls ? " " + cls : ""));
@@ -1092,99 +1051,129 @@
         m.appendChild(el("span", "k", k));
         return m;
       }
-      mrow.appendChild(metric(p.kcal, "KCAL", "pro Tag (" + (p.cut ? "−" : "+") + p.kcalDelta + " zum Erhalt)"));
+      var stepsGoal = p.cut ? "8-10K" : "7K+";
+      mrow.appendChild(metric(p.kcal, "KCAL", "Zielkalorien pro Tag (" + (p.cut ? "−" : "+") + p.kcalDelta + " zum Erhalt)"));
       mrow.appendChild(metric(p.protein, "G", "Protein — nicht verhandelbar", "is-up"));
-      mrow.appendChild(metric(p.fett, "G", "Fett"));
-      mrow.appendChild(metric(p.carbs, "G", "Kohlenhydrate"));
+      mrow.appendChild(metric(state.days + "×", "", "Kraft pro Woche"));
+      mrow.appendChild(metric(stepsGoal, "", "Schritte täglich"));
       mrow.appendChild(metric(p.usedRate.toFixed(2).replace(".", ","), "KG/WO", (p.cut ? "Abnahme" : "Aufbau") + "-Rate"));
       mrow.appendChild(metric(p.realWeeks, "WO", "bis " + t + " kg, ehrlich"));
       s6.appendChild(mrow);
 
-      var grid = el("div", "trf-plan-grid");
-
-      /* --- Ernährung (Ernährungsstil verändert die Beispiele) --- */
-      var colE = el("div", "trf-plan-col");
-      colE.appendChild(el("h3", null, "Ernährung"));
       var veggie = state.diet === "veggie";
-      var mealsE;
-      if (p.cut) {
-        mealsE = [
-          ["FRÜH", "<strong>Magerquark/Skyr (300 g)</strong> mit Beeren &amp; Haferflocken — ~40 g Protein"],
-          ["MITTAG", veggie ? "<strong>Tofu/Tempeh (250 g) oder Linsen</strong> + Reis/Kartoffeln + Gemüse" : "<strong>Hähnchen/Rind/Fisch (200 g)</strong> + Reis/Kartoffeln + Gemüse"],
-          ["ABEND", veggie ? "<strong>Eier/Halloumi/Tofu</strong> + großes Gemüse + Olivenöl" : "<strong>Eier/Fisch/Tofu</strong> + großes Gemüse + Olivenöl"],
-          ["SNACK", "<strong>Whey-Shake oder Hüttenkäse</strong> — schließt die Proteinlücke"],
-          ["REGEL", "Wiegen täglich morgens, gewertet wird nur der <strong>Wochenschnitt</strong>. Liegt er 2 Wochen über der Ziel-Rate: −150 kcal."]
-        ];
-      } else {
-        mealsE = [
-          ["FRÜH", "<strong>Haferflocken (100 g)</strong> + Whey + Banane + Nüsse"],
-          ["MITTAG", veggie ? "<strong>Tofu/Tempeh/Hülsenfrüchte</strong> + große Portion Reis/Nudeln + Gemüse" : "<strong>Fleisch/Fisch (200 g)</strong> + große Portion Reis/Nudeln + Gemüse"],
-          ["ABEND", veggie ? "<strong>Eier/Skyr</strong> + Kartoffeln + Avocado" : "<strong>Eier/Lachs</strong> + Kartoffeln + Avocado"],
-          ["SNACKS", "Shake + Obst nach dem Training, <strong>Quark vor dem Schlafen</strong>"],
-          ["REGEL", "Wiegen täglich morgens, Wochenschnitt zählt. Baut er 2 Wochen nichts auf: +150 kcal."]
-        ];
-      }
-      if (veggie) mealsE.push(["VEGETARISCH", "Protein ist der Engpass: plane <strong>je Mahlzeit eine konkrete Proteinquelle</strong> (Quark, Eier, Tofu, Tempeh, Whey) — sonst wird das " + p.protein + "-g-Ziel unrealistisch."]);
-      colE.appendChild(rows(mealsE));
-      grid.appendChild(colE);
+      var splitName = state.days <= 3
+        ? (state.equip === "home" ? "Ganzkörper A/B mit Kurzhanteln" : "Ganzkörper A/B")
+        : state.days === 4 ? "Oberkörper/Unterkörper" : state.days === 5 ? "Push/Pull/Legs + OK/UK" : "Push/Pull/Legs ×2";
 
-      /* --- Training --- */
-      var colT = el("div", "trf-plan-col");
-      colT.appendChild(el("h3", null, "Training"));
-      colT.appendChild(rows(trainingRows(state, p)));
-      grid.appendChild(colT);
+      var colM = el("div", "trf-plan-col");
+      colM.appendChild(el("h3", null, "Deine ersten 3 Maßnahmen"));
+      colM.appendChild(rows([
+        ["1 · PROTEIN", "<strong>" + p.protein + " g täglich</strong> ab morgen — " +
+          (veggie ? "vegetarisch heißt: je Mahlzeit eine konkrete Quelle (Quark, Eier, Tofu, Tempeh, Whey)" : "verteilt auf 3-4 Mahlzeiten mit je einer klaren Proteinquelle") + "."],
+        ["2 · TRAINING", "<strong>" + state.days + "× " + splitName + "</strong> fest in den Kalender — " +
+          (state.equip === "home" ? "zuhause mit Kurzhanteln machbar" : "im Gym") + ", Termin wie ein Meeting."],
+        ["3 · MESSEN", "Täglich morgens wiegen, " + (p.cut ? "<strong>" + stepsGoal + " Schritte</strong> täglich, " : "") +
+          "gewertet wird nur der <strong>Wochenschnitt</strong> — Einzeltage lügen."]
+      ]));
+      s6.appendChild(colM);
 
-      /* --- Supplemente --- */
-      var colS = el("div", "trf-plan-col");
-      colS.appendChild(el("h3", null, "Supplemente"));
-      var rowsS = [
-        ["WHEY", "Nur um die <strong>" + p.protein + " g Protein</strong> real zu erreichen — Essen zuerst"],
-        ["KREATIN", "<strong>3-5 g Monohydrat täglich</strong>, jeden Tag, egal wann"],
-        ["VITAMIN D3", "Nach <strong>Blutwert</strong> dosieren (Ziel 40-60 ng/ml) — erst messen, dann schlucken"],
-        ["OMEGA-3", "1-2 g EPA/DHA täglich"],
-        ["MAGNESIUM", "300-400 mg abends"]
-      ];
-      if (p.cut) rowsS.push(["KOFFEIN", "Vor dem Training — der einzige legale „Fatburner“, der wirkt. Der Rest im Fatburner-Regal ist Dekoration."]);
-      rowsS.push(["EHRLICH", "Supplemente sind die letzten 5 % — die ersten 95 % stehen in den beiden Spalten links."]);
-      colS.appendChild(rows(rowsS));
-      grid.appendChild(colS);
+      var colW = el("div", "trf-plan-col");
+      colW.appendChild(el("h3", null, "Woche 1 — Vorschau"));
+      colW.appendChild(rows([
+        ["TAG 1", "Einkauf nach Proteinliste + erstes Training (" + splitName.split(" ")[0] + " A) + Startgewicht notieren"],
+        ["TAG 2-6", state.days + " Trainingseinheiten im Wechsel" + (p.cut ? ", täglich " + stepsGoal + " Schritte" : ", Fokus saubere Technik") + ", jeden Morgen wiegen"],
+        ["TAG 7", "Wochenschnitt bilden — er ist deine einzige Zahl, die zählt. Ab Woche 2 übernimmt die Progressionslogik."]
+      ]));
+      s6.appendChild(colW);
 
-      /* --- Enhanced: Stack-Rahmen & Monitoring (ohne Dosierungen) --- */
       if (p.enh) {
-        var colX = el("div", "trf-plan-col");
-        colX.appendChild(el("h3", null, "Enhanced — Stack-Rahmen & Monitoring"));
-        colX.appendChild(rows([
-          ["VOR START", "<strong>Basis-Blutbild</strong>: großes Blutbild, Lipide, Leberwerte, Hämatokrit, Testosteron/E2, Blutdruck. Ohne Ausgangswerte ist keine Veränderung bewertbar."],
-          ["ALLE 8-12 WO", "Dieselben Werte erneut, mit <strong>ärztlicher Begleitung</strong>. Enhanced ohne Daten ist Blindflug — das ist nicht optional."],
-          ["WÖCHENTLICH", "Blutdruck, Ruhepuls, Schlaf in den Tracker — die frühesten Warnsignale sind banal messbar."],
-          ["STACK", "Bewusst <strong>keine Substanz- oder Dosierungsempfehlungen</strong> in diesem Plan. Welcher Wirkstoff was tut, Risiken, Wechselwirkungen, Mythen — nüchtern eingeordnet in der <a href=\"anabole-matrix.html\">Anabolen Matrix</a>."]
-        ]));
-        grid.appendChild(colX);
+        var enhNote = el("div", "trf-verdict is-tight");
+        enhNote.appendChild(el("span", "vk", "ENHANCED — SICHERHEIT ZUERST"));
+        enhNote.appendChild(el("span", "vt", "Vor dem Start: <strong>Basis-Blutbild</strong> (großes Blutbild, Lipide, Leberwerte, Hämatokrit, Testosteron/E2) + Blutdruck, danach alle 8-12 Wochen mit ärztlicher Begleitung. Keine Substanz- oder Dosierungsempfehlungen auf dieser Seite — Einordnung liefert die <a href=\"anabole-matrix.html\">Anabole Matrix</a>."));
+        s6.appendChild(enhNote);
       }
 
-      s6.appendChild(grid);
+      /* --- Was DAS PROTOKOLL zusätzlich freischaltet (ehrlich benannt) --- */
+      var locked = el("div", "trf-locked");
+      locked.appendChild(el("span", "lk", "IM VOLLSTÄNDIGEN PLAN — DAS PROTOKOLL"));
+      var lockedList = el("ul", null,
+        "<li>Kompletter <strong>Trainingssplit</strong> mit allen Übungen, Sätzen und Wiederholungen</li>" +
+        "<li>Vollständige <strong>Mahlzeitenstruktur</strong> für deine " + p.kcal + " kcal / " + p.protein + " g Protein</li>" +
+        "<li><strong>Progressionsregeln</strong> Woche für Woche + komplette Wochenplanung</li>" +
+        "<li><strong>Supplementplan</strong> mit Dosierung und Timing</li>" +
+        "<li>Mehrmonatige <strong>Anpassungslogik</strong>: Plateau-, Diätpausen- und Eskalationsregeln</li>" +
+        "<li><strong>Tracker + Wochenreviews</strong> in My MaleMetrix — dein Plan reagiert auf echte Daten</li>");
+      locked.appendChild(lockedList);
+      s6.appendChild(locked);
 
-      /* --- Konversions-Staffel --- */
+      /* --- Phase-1-Logik (5.4): DAS PROTOKOLL ist ein 12-Wochen-System.
+         Dauert das Gesamtziel länger, wird ehrlich ein Zwischenziel für
+         die ersten 12 Wochen gerechnet — kein „alles in 12 Wochen". --- */
+      var phase1 = null;
+      if (p.realWeeks > 12) {
+        var p1mid = p.cut ? state.currentKg - p.usedRate * 12 : state.currentKg + p.usedRate * 12;
+        phase1 = { lo: Math.round(p1mid - 1), hi: Math.round(p1mid + 1) };
+        if (p.cut && phase1.lo < t) phase1.lo = t;
+        if (!p.cut && phase1.hi > t) phase1.hi = t;
+      }
+      // Preis aus der bestehenden Quelle der Wahrheit (shop-data), kein
+      // zweiter hartcodierter Preis.
+      var protoPrice = 99;
+      try {
+        var prod = (window.MM_PRODUCTS || []).filter(function (x) { return x.id === "protokoll"; })[0];
+        if (prod && prod.price) protoPrice = Math.round(prod.price);
+      } catch (e) {}
+
       var access = {};
       try { if (window.MM && MM.account && MM.account.getDashboardState) access = MM.account.getDashboardState().access || {}; } catch (e) {}
       var isCustomer = !!(access.protocol || access.twelve_week || access.coaching);
+
       if (isCustomer) {
+        /* --- Protokoll-Besitzer (5.3): kein erneuter Verkauf — Ziel
+           nachvollziehbar in My MaleMetrix übernehmen. Die Roadmap-Ansicht
+           (#transform) liest mm_transform_goal und füllt sich vor. --- */
         var cta = el("div", "trf-cta");
         cta.appendChild(el("span", "ck", "MM / NEXT"));
         cta.appendChild(el("h3", "ct", "Dein Ziel gehört ins System."));
-        cta.appendChild(el("p", "cp", "Du bist Kunde. Trag dein Ziel " + t + " kg in My MaleMetrix ein — Programm, Tracker und Intelligence arbeiten dann " + p.realWeeks + " Wochen lang genau darauf hin, mit Wochen-Reviews statt guter Vorsätze."));
-        var goApp = el("a", "btn btn-primary", "Weiter in My MaleMetrix");
-        goApp.href = "mein-protokoll.html";
-        goApp.setAttribute("data-track", "transform_cta_mymm");
+        cta.appendChild(el("p", "cp", "Du hast DAS PROTOKOLL. Übernimm dein Ziel <strong>" + t + " kg</strong> (" +
+          (state.months ? state.months + " Monate" : "~" + p.realWeeks + " Wochen") + ", " + p.kcal + " kcal, " + p.protein + " g Protein, " + state.days + "× Training) in My MaleMetrix — Roadmap, Tracker und Wochenreviews arbeiten dann genau darauf hin."));
+        var adoptMsg = el("p", "cp"); adoptMsg.style.display = "none";
+        var goApp = el("a", "btn btn-primary", "Ziel in My MaleMetrix übernehmen");
+        goApp.href = "mein-protokoll.html#transform";
+        goApp.addEventListener("click", function () {
+          track("transform_goal_adopted");
+          adoptMsg.innerHTML = "<strong>Ziel übernommen ✓</strong> — die Roadmap in My MaleMetrix ist mit deinen Werten vorbereitet.";
+          adoptMsg.style.display = "";
+        });
         cta.appendChild(goApp);
+        cta.appendChild(adoptMsg);
         s6.appendChild(cta);
         removeSticky();
       } else {
+        /* --- Personalisierter Verkaufsblock (5.2): der CTA verkauft DEIN
+           Ziel, nicht ein allgemeines Produkt. --- */
         var reco = (p.enh || p.verdict === "unreal") ? "coaching" : "protokoll";
         var intro = el("div", "trf-cta");
-        intro.appendChild(el("span", "ck", "MM / NEXT — DEIN WEG ZU " + t + " KG"));
-        intro.appendChild(el("h3", "ct", "Die Bilder zeigen, wohin. Jetzt entscheidet sich, ob du ankommst."));
-        intro.appendChild(el("p", "cp", "Dein Plan steht: <strong>" + p.delta + " kg bis " + t + " kg, ehrlich gerechnet " + p.realWeeks + " Wochen.</strong> Allein durchziehen scheitert bei den meisten zwischen Woche 3 und 6 — nicht am Wissen, sondern an System und Accountability. Dafür gibt es drei Wege:"));
+        intro.appendChild(el("span", "ck", "MM / NEXT — DEIN ZIEL: " + t + " KG IN ~" + p.realWeeks + " WOCHEN"));
+        intro.appendChild(el("h3", "ct", phase1
+          ? "Starte Phase 1: deine ersten 12 Wochen."
+          : "Starte jetzt: dein 12-Wochen-Plan."));
+        intro.appendChild(el("p", "cp",
+          (phase1
+            ? "Dein Gesamtziel: <strong>" + t + " kg in ehrlich ~" + p.realWeeks + " Wochen</strong>. Phase 1 bringt dich in 12 Wochen auf <strong>" + phase1.lo + "–" + phase1.hi + " kg</strong> — mit vollständigem Trainingsplan, Ernährungssystem, Tracker, Wochenreviews und automatischen Anpassungen. Die nächste Phase baut auf deinem echten Fortschritt auf."
+            : "Dein Ziel: <strong>" + t + " kg in ~" + p.realWeeks + " Wochen</strong> — komplett innerhalb eines 12-Wochen-Durchlaufs. Vollständiger Trainingsplan, Ernährungssystem, Tracker, Wochenreviews und automatische Anpassungen.") +
+          " <strong>" + protoPrice + " €, einmalig, kein Abo.</strong>"));
+        var unlock = el("a", "btn btn-primary", "Meinen 12-Wochen-Plan freischalten");
+        unlock.href = "protokoll.html";
+        unlock.setAttribute("data-track", "transform_cta_unlock");
+        intro.appendChild(unlock);
+        var alt = el("a", "btn btn-ghost btn-sm", "DAS PROTOKOLL ansehen");
+        alt.href = "protokoll.html";
+        alt.style.marginLeft = "10px";
+        alt.setAttribute("data-track", "transform_offer_protokoll");
+        intro.appendChild(alt);
+
+        /* Sekundäre Wege — Circle und Coaching, ohne den Haupt-CTA zu verwässern. */
         var offers = el("div", "trf-offers");
         function offer(key, name, price, desc, btnLabel, href, trackId) {
           var o = el("div", "trf-offer" + (reco === key ? " is-reco" : ""));
@@ -1192,15 +1181,12 @@
           o.appendChild(el("h4", "on", name));
           o.appendChild(el("span", "op", price));
           o.appendChild(el("p", "od", desc));
-          var b = el("a", "btn " + (reco === key ? "btn-primary" : "btn-dark"), btnLabel);
+          var b = el("a", "btn btn-dark", btnLabel);
           b.href = href;
           b.setAttribute("data-track", trackId);
           o.appendChild(b);
           return o;
         }
-        offers.appendChild(offer("protokoll", "DAS PROTOKOLL", "99 € · EINMALIG · KEIN ABO",
-          "Das System hinter deinem Plan: <strong>12-Wochen-Programm, Tracker mit Progression, Wochen-Reviews und Intelligence</strong> — gerechnet auf dein Ziel " + t + " kg. Einmal kaufen, komplett besitzen.",
-          "DAS PROTOKOLL holen", "protokoll.html", "transform_offer_protokoll"));
         var circlePrice = 15;
         try { circlePrice = (window.MM_CONFIG && MM_CONFIG.circle && MM_CONFIG.circle.priceMonthly) || circlePrice; } catch (e) {}
         offers.appendChild(offer("circle", "MALEMETRIX CIRCLE", circlePrice + " € / MONAT · JEDERZEIT KÜNDBAR",
@@ -1212,7 +1198,7 @@
         intro.appendChild(offers);
         s6.appendChild(intro);
         track("transform_offers_view");
-        renderSticky(t, p);
+        renderSticky(t, p, phase1, protoPrice);
       }
 
       s6.appendChild(el("p", "trf-hint trf-plan-note",

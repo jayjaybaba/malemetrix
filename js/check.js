@@ -552,20 +552,18 @@
 
     /* ---------- Brücke zur Transformation ---------------------------------
        Wer auf transformation.html bereits ein Ziel gewählt hat
-       (mm_transform_goal), kam höchstwahrscheinlich WEGEN des Pakets hierher —
-       dieser Block schließt die Schleife Bild → Score → Paket als erste
-       Handlung nach dem Ergebnis. Ohne gewähltes Ziel erscheint nichts. */
+       (mm_transform_goal), kam von seiner Visualisierung hierher — dieser
+       Block führt direkt zurück zum Ziel und in den Plan. Der Score ist
+       kein Gate, aber er kalibriert die Planvorschau auf den Engpass. */
     (function () {
       const g = MM.store.get("transform_goal", null);
       const kg = g && Number(g.target_kg);
       if (!kg || !isFinite(kg)) return;
       html += '<div class="card dash-block" style="margin-top:16px;border-color:var(--accent-line)">' +
         '<span class="card-num">MM / TRANSFORM</span>' +
-        '<h3 style="margin:4px 0 6px">Dein Paket für ' + kg + ' kg ist jetzt freigeschaltet</h3>' +
-        '<p class="small muted" style="margin:0 0 12px">Du hast dein Zukunfts-Ich bei ' + kg + ' kg gewählt. Mit diesem Score ist dein maßgeschneidertes Paket komplett: Ernährungsplan, Trainingsplan, Supplementplan' +
-        (g.mode === "enhanced" ? ' und Enhanced-Monitoring' : '') +
-        ' — kalibriert auf deinen Engpass ' + esc(V.primaryBottleneck.name).toUpperCase() + '.</p>' +
-        '<a class="btn btn-primary" href="transformation.html#trfPlanSec" data-track="score_to_transform_click">Mein Paket ansehen</a>' +
+        '<h3 style="margin:4px 0 6px">Dein Ziel: ' + kg + ' kg — jetzt mit deinem Engpass kalibriert</h3>' +
+        '<p class="small muted" style="margin:0 0 12px">Du hast dein mögliches Ziel bei ' + kg + ' kg gewählt. Dein Score fließt ab jetzt in deine Planvorschau ein — größter Hebel: ' + esc(V.primaryBottleneck.name).toUpperCase() + '.</p>' +
+        '<a class="btn btn-primary" href="transformation.html#trfPlanSec" data-track="score_to_transform_click">Zurück zu meinem Ziel</a>' +
         '</div>';
     })();
 
