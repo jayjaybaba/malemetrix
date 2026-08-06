@@ -50,6 +50,9 @@
     MM.account.registerStateDomain("simple_checkins", "mm_" + KEYS.checkins, { append: true });
     MM.account.registerStateDomain("legacy_snapshot", "mm_" + KEYS.snapshot);
     MM.account.registerStateDomain("flags_user", "mm_" + KEYS.flagsUser);
+    // Das gewählte Transformationsziel folgt dem Konto (Funnel-Fortsetzung
+    // auf anderem Gerät); Owner bleibt js/transformation.js.
+    MM.account.registerStateDomain("transform_goal", "mm_transform_goal");
     registered = true;
     return true;
   }
