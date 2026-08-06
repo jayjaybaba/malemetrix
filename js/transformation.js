@@ -909,31 +909,41 @@
         ? cur * (enh ? 0.010 : 0.0075)
         : (BULK_RATE[st.exp] || 0.25) * (enh ? 1.5 : 1);
 
-      var verdict, usedRate, wishWeeks = null, neededRate = null;
+      /* Phase 7.2: Kleine Ziele über lange Zeiträume werden NICHT mehr in
+         einen künstlich aggressiven Dauer-Cut gezwungen (früher: mindestens
+         0,25 kg/Woche + 300 kcal Defizit). Ist die nötige Rate sehr niedrig,
+         plant das System eine KURZE moderate aktive Phase und danach
+         Erhaltung/Stabilisierung bis zum Zieldatum. */
+      var verdict, usedRate, wishWeeks = null, neededRate = null, maintWeeks = 0;
       if (st.months) {
         wishWeeks = Math.round(st.months * 4.345);
         neededRate = delta / wishWeeks;
-        if (neededRate <= maxRate * 0.85) verdict = "ok";
-        else if (neededRate <= maxRate) verdict = "tight";
-        else verdict = "unreal";
-        usedRate = Math.min(neededRate, maxRate);
+        if (cut && neededRate < 0.15) {
+          verdict = "phased_small";
+          usedRate = Math.min(maxRate, Math.max(0.3, cur * 0.004));
+        } else if (neededRate <= maxRate * 0.85) { verdict = "ok"; usedRate = neededRate; }
+        else if (neededRate <= maxRate) { verdict = "tight"; usedRate = neededRate; }
+        else { verdict = "unreal"; usedRate = maxRate; }
       } else {
         verdict = "open";
-        usedRate = cut ? Math.min(maxRate, cur * 0.006) : maxRate * 0.8;
+        usedRate = cut ? Math.min(maxRate, Math.max(0.3, cur * 0.006)) : maxRate * 0.8;
       }
-      usedRate = Math.max(usedRate, cut ? 0.25 : 0.1);
+      usedRate = Math.max(usedRate, 0.05);   // reiner Divisionsschutz, kein Plan-Minimum
 
       var kcalDelta = Math.round(usedRate * 7700 / 7);
       var kcal;
       if (cut) {
-        kcalDelta = Math.min(Math.max(kcalDelta, 300), enh ? 900 : 700);
+        // Deckel bleibt (Muskelschutz); ein Zwangs-Minimum gibt es nicht mehr —
+        // die aktive Phase rechnet ohnehin mit einer messbaren Rate.
+        kcalDelta = Math.min(kcalDelta, enh ? 900 : 700);
         kcal = Math.max(tdee - kcalDelta, 1500);
       } else {
         kcalDelta = Math.min(Math.max(kcalDelta, 150), 500);
         kcal = tdee + kcalDelta;
       }
-      var realWeeks = Math.ceil(delta / usedRate);
-      var bestWeeks = Math.ceil(delta / maxRate);
+      var realWeeks = Math.max(1, Math.ceil(delta / usedRate));
+      var bestWeeks = Math.max(1, Math.ceil(delta / maxRate));
+      if (verdict === "phased_small" && wishWeeks) maintWeeks = Math.max(0, wishWeeks - realWeeks);
 
       var protein = Math.round((cut ? 2.2 : (enh ? 2.2 : 2.0)) * t);
       var fett = Math.max(60, Math.round(1.0 * t));
@@ -942,7 +952,8 @@
         cut: cut, delta: delta, enh: enh, bmr: bmr, tdee: tdee,
         kcal: kcal, kcalDelta: kcalDelta, protein: protein, fett: fett, carbs: carbs,
         verdict: verdict, usedRate: usedRate, neededRate: neededRate,
-        wishWeeks: wishWeeks, realWeeks: realWeeks, bestWeeks: bestWeeks
+        wishWeeks: wishWeeks, realWeeks: realWeeks, bestWeeks: bestWeeks,
+        maintWeeks: maintWeeks
       };
     }
 
@@ -970,6 +981,9 @@
         cls = "is-unreal"; label = "NICHT SERIÖS MACHBAR";
         var needed = p.neededRate.toFixed(2).replace(".", ",");
         text = "<strong>" + p.delta + " kg in " + months + " Monaten</strong> hieße " + needed + " kg/Woche — das kostet " + (p.cut ? "Muskeln und endet im Jojo" : "mehr Fett als Muskeln") + ". Wir rechnen nichts schön: Der Plan unten nutzt die schnellste seriöse Rate (" + rate + " kg/Woche) und braucht dafür <strong>" + p.realWeeks + " Wochen</strong>.";
+      } else if (p.verdict === "phased_small") {
+        cls = "is-ok"; label = "KLEINES ZIEL — PHASEN STATT DAUERDEFIZIT";
+        text = "<strong>" + p.delta + " kg in " + months + " Monaten</strong> braucht kein monatelanges Defizit. Der Plan fährt eine <strong>kurze aktive Phase von ~" + p.realWeeks + " Wochen</strong> (" + rate + " kg/Woche, moderates Defizit) und danach <strong>~" + p.maintWeeks + " Wochen Erhaltung/Stabilisierung</strong> — das Ziel hält so auch nach dem Zieldatum.";
       } else {
         cls = "is-open"; label = "OHNE DATUM — NACHHALTIG";
         text = "Kein Zieldatum gewählt: Der Plan fährt eine nachhaltige Rate von " + rate + " kg/Woche. Realistischer Zeitrahmen für " + p.delta + " kg: <strong>" + p.realWeeks + " Wochen</strong> (schnellste seriöse Variante: " + p.bestWeeks + ").";

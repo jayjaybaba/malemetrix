@@ -157,6 +157,22 @@ test("Prompts: Aufbau wird nie als reine Muskelmasse beschrieben", () => {
    Datenschutz-Header senden und die Einwilligung erzwingen. Quelltext-
    Invarianten nach dem Muster von security-guards.test.js. */
 const fs = require("node:fs");
+
+test("10./11. Planengine: keine Zwangs-Minimums, keine stillen Defaults", () => {
+  const src = fs.readFileSync(path.join(__dirname, "..", "..", "js", "transformation.js"), "utf8");
+  // Kleines Ziel über langen Zeitraum → Phasen statt erzwungenem 0,25-kg-Cut:
+  assert.ok(!src.includes("Math.max(usedRate, cut ? 0.25"), "kein 0,25-kg-Wochen-Zwang mehr");
+  assert.ok(!/Math\.max\(kcalDelta, 300\)/.test(src), "kein 300-kcal-Zwangsdefizit mehr");
+  assert.ok(src.includes("phased_small"), "kleine Ziele bekommen aktive Phase + Stabilisierung");
+  assert.ok(/Erhaltung\/Stabilisierung/.test(src), "Erhaltungsphase wird kommuniziert");
+  // Fehlende Angaben → Feldfeedback statt erfundener Werte:
+  assert.ok(!/heightCm\s*\)?\s*\|\|\s*180/.test(src), "kein stiller 180-cm-Fallback");
+  assert.ok(!/\bage\s*\)?\s*\|\|\s*35\b/.test(src), "kein stiller 35-Jahre-Fallback");
+  assert.ok(/ohne Alter ist keine seriöse Kalorienrechnung/.test(src), "Alter ist Pflicht mit Klartext-Feedback");
+  // Enhanced ohne Pauschal-Volumengarantie:
+  assert.ok(!/20-30\s*%/.test(src), "keine 20-30-Prozent-Volumen-Pauschale mehr");
+});
+
 test("13. Edge Function erzwingt Zielengine, Consent und Datenschutz-Header", () => {
   const src = fs.readFileSync(path.join(__dirname, "..", "..", "supabase", "functions", "mm-transform", "index.ts"), "utf8");
   assert.ok(src.includes('from "../_shared/transform-goals.mjs"'), "importiert die geteilte Zielengine");
