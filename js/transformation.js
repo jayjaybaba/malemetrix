@@ -133,6 +133,7 @@
     }
 
     loadSaved();
+    track("transform_view");
 
     /* =========================================================
        SCHRITT 01 — FOTO + EINWILLIGUNG
@@ -359,7 +360,10 @@
       }
       cVerdict.innerHTML = badge + " " + text;
     }
-    cIn.addEventListener("input", checkCustom);
+    cIn.addEventListener("input", function () {
+      once(seen, "custom_changed", function () { track("transform_custom_target_changed"); });
+      checkCustom();
+    });
     cUse.addEventListener("click", function () {
       var t = num(cIn.value);
       if (!t) return;
@@ -438,6 +442,8 @@
       }
       renderGate();
     }
+    s3.appendChild(el("p", "trf-hint trf-plan-note",
+      "Das Bild zeigt eine mögliche visuelle Richtung, keine garantierte Zukunft. Genetik, Fettverteilung, Muskelmasse, Haut, Alter, Training und Umsetzung beeinflussen das echte Ergebnis — deshalb begrenzt MaleMetrix Ziele auf physiologisch plausible Bereiche."));
     root.appendChild(s3);
 
     /* =========================================================

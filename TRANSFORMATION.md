@@ -1,206 +1,236 @@
-# TRANSFORMATION — Körper-Visualisierung + Zielpläne
+# TRANSFORMATION — Flaggschiff: KI-Körperzielvisualisierung + Umsetzungssystem
 
-Stand: 05.08.2026 · Seite: `transformation.html` · Logik: `js/transformation.js`
+Stand: 06.08.2026 (Neuausrichtung, Funnel v8) · Seite: `transformation.html` ·
+Logik: `js/transformation.js` · Zielengine: `supabase/functions/_shared/transform-goals.mjs`
 · Server: `supabase/functions/mm-transform/index.ts`
 
-## Was das Feature tut
+## Produktrolle
 
-1. Der Nutzer lädt ein Foto von sich hoch — oberkörperfrei ist ideal
-   (frontal, gut beleuchtet, Shorts/Unterwäsche): Je mehr Körper sichtbar,
-   desto realistischer die Transformation.
-2. Er wählt die **Richtung** (ABNEHMEN oder MUSKELAUFBAU — eigener Toggle,
-   Stand 05.08. v6), dann aktuelles Gewicht und ZWEI Zielgewichte
-   (Richtungs-Chips: −10/−20/−30 % beim Abnehmen, +5/+10/+15 % beim Aufbau —
-   frei überschreibbar, aber beide Ziele müssen zur Richtung passen) und
-   beantwortet den **Transformations-Fragebogen**. Jede Antwort verändert
-   etwas, keine Deko-Fragen:
-   · **Zeitraum** (3/6/12 Monate/offen) → Kalorien zielen auf den Zeitrahmen;
-     die Seite urteilt ehrlich (machbar / knapp / NICHT seriös machbar — dann
-     rechnet der Plan mit der schnellsten seriösen Rate und sagt das).
-   · **Wunsch-Look** → fließt als validierter Enum in den Bild-Prompt ein.
-     Richtungsabhängig: beim Abnehmen definiert/athletisch, beim Aufbau
-     zusätzlich massiv — „massiv + abnehmen" war ein Widerspruch und ist
-     seit v6 nicht mehr wählbar (Umschalten auf Abnehmen setzt einen
-     gewählten Massiv-Look auf athletisch zurück).
-   · **Trainingserfahrung** (<1 J / 1-4 J / 4+ J) → Progressionsschema und
-     realistische Aufbaurate (0,35/0,25/0,15 kg/Woche natural).
-   · **Trainingstage** (2-6) → eigener Split je Frequenz (GK 2× · GK A/B ·
-     OK/UK · PPL+OK/UK · PPL×2).
-   · **Natural/Enhanced** → Raten (Cut-Limit 0,75 %/1,0 % KG pro Woche),
-     Volumenhinweis, Pflicht-Zeile Blutbild-Monitoring. BEWUSST keine
-     Substanz-/Dosierungsempfehlungen — Einordnung liefert die Anabole Matrix.
-   · **Equipment** (Gym/Zuhause) → Übungsauswahl (Langhantel vs. Kurzhantel).
-3. Die Edge Function `mm-transform` lässt das Bild-Editing-Modell
-   (`fal-ai/nano-banana/edit`) je Ziel eine fotorealistische Vorschau
-   generieren: dieselbe Person, gleiche Pose/Kleidung/Hintergrund, veränderte
-   Körperkomposition. Die Ergebnisse liegen als Vorher/Nachher-Regler über
-   dem eigenen Foto.
-4. Der Nutzer wählt EIN Ziel — dafür rendert die Seite **deterministisch**
-   (Mifflin-St-Jeor + feste Regeln, KEINE KI-Zahlen, §9): Zeitrahmen-Urteil,
-   Makro-Instrumente (kcal/Protein/Fett/Carbs/Rate/Wochen), Ernährungsplan,
-   Trainingsplan nach Tagen+Equipment+Erfahrung, Supplementplan (Whey,
-   Kreatin, D3 nach Blutwert, Omega-3, Magnesium — bewusst ohne
-   Fatburner-Märchen; enhanced zusätzlich Monitoring-Pflichtzeile).
+Die Transformation ist der zentrale Hook und Akquisitionshebel von
+MaleMetrix — kein Zusatzwerkzeug. Kernversprechen: **Sieh deinen möglichen
+Körper. Wähle dein realistisches Ziel. MaleMetrix baut den Weg dorthin.**
+Die Startseite (`index.html`) verkauft die Transformation im Hero; der
+Score bleibt der sekundäre Einstieg und kalibriert später den Plan.
 
-## Funnel & Monetarisierung (Kundengewinnungs-Maschine, Stand v7)
+## Funnel (v8) — minimale Reibung vor dem Wow-Moment
 
-Die Transformation ist KEIN freies Spielzeug, sondern der zentrale
-Akquise-Funnel — und seit v7 fester System-Bestandteil:
-**Konto → Bilder (der Haken) → Zielwahl → SCORE → maßgeschneidertes
-Paket → Angebot.**
+    01 Foto + Pflicht-Einwilligung (4 Checkboxen, keine vorausgewählt)
+    02 Ausgangslage: Gewicht, Größe, Taille, grobe Körperform, Richtung
+    03 ZWEI berechnete Ziele (vor jedem Konto-Gate sichtbar)
+       · Ziel A — realistischer nächster Zustand (~12-16 Wochen)
+       · Ziel B — ambitioniertes langfristiges Ziel (mehrphasig)
+       · „Eigenes Ziel prüfen" nur sekundär, live validiert
+    04 Konto-Gate ERST unmittelbar vor der Generierung (Magic Link,
+       Premium-Copy: Zuordnung zum Profil — keine Kosten-Rechtfertigung)
+       → beide Zielbilder mit KI-Kennzeichnung + Vorher/Nachher-Regler
+    05 EIN Ziel wählen (mm_transform_goal wird System-Zustand)
+    06 Erst jetzt Planfragen: Zeitraum, Erfahrung, Trainingstage,
+       Equipment, Ernährungsstil, Natural/Enhanced, Alter + Aktivität —
+       jede Frage verändert den Plan nachweislich; Alter/Größe sind
+       Pflicht OHNE stille Fallbacks
+    07 Begrenzte Planvorschau + personalisierter Kauf-CTA
 
-- **Paket-Gate statt Score-Gate (v7):** Die Bilder kommen ZUERST (auf
-  4 Gratis-Bilder gedeckelt — der emotionale Haken darf nicht hinter einem
-  Fragebogen verhungern). Nach der Zielwahl verlangt das PAKET den Score:
-  `renderPlans()` zeigt ohne Score das Gate `.trf-scoregate` („Dein Score
-  schnürt das Paket") mit CTA zu `check.html` (Events
-  `transform_package_gate_view/_click`). Kommt der Score an — auch aus
-  einem anderen Tab (mm:store/storage-Listener) — ersetzt das Paket sein
-  Gate automatisch. Kunden (Entitlement) überspringen das Gate.
-- **Ziel als System-Zustand:** Die Zielwahl schreibt `mm_transform_goal`
-  (MM.store: Ziel-kg, Richtung, Zeitraum, Look, Erfahrung, Tage,
-  natural/enhanced, Equipment). Die Score-Ergebnisseite (`js/check.js`)
-  liest es und rendert direkt unter dem Score-Hero die Brücke „Dein Paket
-  für X kg ist jetzt freigeschaltet" → `transformation.html#trfPlanSec`
-  (Event `score_to_transform_click`). Die Schleife Bild → Score → Paket
-  ist damit in beide Richtungen geschlossen.
-- **Maßgeschneidertes Paket:** Mit Score rendert der Plan zusätzlich den
-  Kalibrierungs-Block „DEIN SCORE X/100 — ENGPASS: …" (Name + Text des
-  primären Engpasses aus dem Score-Ergebnis) über den Spalten. Enhanced
-  bekommt eine EIGENE vierte Spalte „Enhanced — Stack-Rahmen & Monitoring"
-  (Basis-Blutbild, 8-12-Wochen-Messplan, Wochen-Warnsignale). Haus-Regel
-  unverändert: KEINE Substanz-/Dosierungsempfehlungen — die Einordnung
-  liefert die Anabole Matrix.
-- **Gratis-Kontingent:** Nicht-Kunden haben LIFETIME 4 erfolgreiche Bilder
-  (= 2 komplette Läufe). Die Antwort liefert `free_remaining`, die Seite
-  zeigt den Zähler unter dem Button (`.trf-quota`). Danach `free_quota_
-  exhausted` → Panel zeigt direkt den Protokoll-CTA (`transform_quota_wall`,
-  `transform_quota_cta`). Kunden generieren mit Stundenlimit weiter.
-- **Angebots-Staffel nach der Zielwahl:** Statt eines einzelnen CTA rendert
-  der Plan die dreistufige Staffel `.trf-offers` — DAS PROTOKOLL (99 €
-  einmalig), MALEMETRIX CIRCLE (15 €/Monat), 1:1 COACHING (199 €/Monat,
-  Erstgespräch kostenlos) — mit personalisierten Zahlen (Ziel-kg, ehrliche
-  Wochen) und einer Empfehlung aus den eigenen Antworten (enhanced oder
-  unrealistischer Zeitwunsch → Coaching, sonst Protokoll). Dazu eine
-  Sticky-Leiste (`.trf-sticky`, wegklickbar, nie für Kunden). Bestandskunden
-  sehen weiterhin den Weg in die App statt Verkauf.
-- **Wasserzeichen + Teilen:** Generierte Bilder tragen ein dezentes
-  MALEMETRIX-Wasserzeichen (Canvas, clientseitig). Der Teilen-Button baut ein
-  Vorher/Nachher-Composite (1080×1350, Systemlook, malemetrix.com) und nutzt
-  die Web-Share-API (Fallback: Download; Composite unmöglich → Link teilen).
-- **Funnel-Messung** über die bestehende anonyme Telemetrie: `transform_run`,
-  `transform_goal`, `transform_share`, `transform_package_gate_view`,
-  `transform_package_gate_click`, `score_to_transform_click` (check.js),
-  `transform_offers_view`, `transform_offer_protokoll`,
-  `transform_offer_circle`, `transform_offer_coaching`,
-  `transform_sticky_cta`, `transform_quota_wall`, `transform_quota_cta`,
-  `transform_cta_mymm`.
+Tiefe Planfragen vor den Bildern gibt es nicht mehr. Bewusst NICHT
+abgefragt werden Verletzungen/Einschränkungen: nichts in der kostenlosen
+Vorschau würde sich dadurch ändern — das gehört in das Protokoll-/
+Coaching-Intake, eine Deko-Frage wäre gelogen.
 
-## Datenfluss & Datenschutz (P0-Stand, ehrlich dokumentiert)
+## Zielengine (`transform-goals.mjs` — EINE Quelle der Wahrheit)
 
-- **Tatsächlicher Datenfluss:** Das Foto wird clientseitig auf 1280 px JPEG
-  verkleinert und als Data-URI über die Edge Function an **fal.ai (USA)**
-  übertragen — die Seite sagt das dem Nutzer VOR dem Upload so (keine
-  „bleibt auf deinem Gerät"-Behauptungen mehr). Bei MaleMetrix existiert das
-  Foto nur im Arbeitsspeicher der Anfrage: nicht im localStorage, nicht in
-  Supabase-Tabellen. In `ai_request_log` landen nur `task/model/ok/ip_hash`
-  — nie Bilddaten oder Bild-URLs.
-- **Datensparsamkeit bei fal.ai (implementiert, Header-Versand = Code-Fakt):**
-  `x-fal-store-io: 0` (Request-Payloads werden laut fal-Doku „Data
-  Retention" nicht gespeichert; Standard wären 30 Tage) und
+Läuft identisch in der Edge Function (Server-Validierung + Prompts), im
+Browser (ES-Modul via `transformation.html`) und in den Node-Tests.
+
+- **Schätzung:** Körperfett als BEREICH (lo-hi) aus WHtR (Taille/Größe)
+  gemittelt mit der Körperform-Selbsteinschätzung (5 Stufen: deutlich
+  übergewichtig / kräftig / durchschnittlich / athletisch / definiert).
+  Nie als Messung kommuniziert.
+- **Vorschläge:** `proposeGoals()` — A: ~5 Körperfettpunkte runter,
+  mindestens sichtbar relevant (≥3 kg / 4 %), nie unter BMI-20-Nähe.
+  B: Richtung 12-14 % Körperfett, hart begrenzt durch BMI 20 und max.
+  25 % Gesamtabnahme, als mehrphasig markiert. Aufbau: A ~+3,5 %,
+  B ~+8 % (BMI-Deckel 28) — konservativ, da die Erfahrungsfrage erst
+  nach der Zielwahl kommt. Schlanke Ausgangslage (BMI < 20,5 oder
+  KFA ≤ 14) → KEINE Abnahmevorschläge, stattdessen Rekomposition +
+  moderater Aufbau mit erklärendem Hinweis.
+- **Harte Grenzen (`validateTarget`)**: Ziel-BMI < 20 blockiert (auch
+  manuell), > 35 % Abnahme blockiert, geschätzter Ziel-KFA < 8 %
+  blockiert, Aufbau > 15 % oder Ziel-BMI > 32 blockiert, Ziel = Ist
+  blockiert, Ziel A = Ziel B blockiert (`validatePair`).
+- **Vier Verdikte:** plausibel (≤10 % Abnahme / ≤5 % Aufbau) ·
+  ambitioniert (≤25 % / ≤10 %, mehrphasig) · nicht_serioes · blockiert.
+  Nur plausibel/ambitioniert sind zur Generierung freigegeben.
+- **Dynamische Alternativen:** blockierte/nicht seriöse Ziele liefern
+  eine berechnete realistische Spanne (altLo-altHi) — UI und Server-
+  Antwort (`target_blocked` + alt_lo/alt_hi) zeigen sie an.
+
+Beispiele blockierter Ziele: 70 kg/180 cm → 49 kg (BMI 15,1) ·
+70 kg/190 cm → 49 kg · 75 kg → 90 kg Aufbau (+20 %) · Ziel = Ist.
+Beispiel Alternative: 70 kg/175 cm, Wunsch 50 kg → „plausibel wären
+ungefähr 61-63 kg".
+
+## Bild-Prompts (physiologisch plausibel)
+
+Die Zieloptik hängt am GESCHÄTZTEN ZIEL-KÖRPERFETT, nicht am verlorenen
+Prozentsatz (`targetLookFragment`): ≥30 % „deutlich schlanker, aber
+weich, KEINE Abs" · 22-30 % „klar schlanker, kein Sixpack" · 17-22 %
+„athletisch, angedeutete Abs" · 12-17 % „lean, natürlich" · <12 % „sehr
+lean, aber kein Wettkampf-Look". 160→136 kg ergibt also KEIN Sixpack
+mehr. Aufbau wird nie als reine Muskelmasse beschrieben (enthält ehrlich
+Fettanteil). `IDENTITY_FRAGMENT` erzwingt: gleiche Person, Gesicht ohne
+Verschönerung, Frisur, Hautfarbe, Tattoos, Pose, Perspektive,
+Hintergrund, Beleuchtung, Kleidung. Rekompositions-Ziele werden als
+kleine freigegebene Abnahme (~3 %) visualisiert und ehrlich beschriftet.
+
+## Datenfluss & Datenschutz (P0)
+
+- **Ehrliche Kommunikation:** Die Seite sagt VOR dem Upload, dass das
+  Foto über unseren Server an fal.ai (USA) übertragen wird — keine
+  „bleibt auf deinem Gerät"-Behauptungen. Datenschutzerklärung Abschnitt
+  „5. Transformation (KI-Körpervisualisierung)", Stand August 2026.
+- **Einwilligung:** 4 nicht vorausgewählte Checkboxen (18+, eigenes
+  Foto, Nutzungsrecht, Verarbeitung). Client blockiert ohne sie, Server
+  erzwingt `consent:true` (`consent_required`, 400). Merkmal nur im
+  Sitzungszustand, nicht persistiert.
+- **Datensparsamkeit bei fal.ai (Code-Fakt):** `x-fal-store-io: 0`
+  (keine Payload-Speicherung; Standard wären 30 Tage) und
   `x-fal-object-lifecycle-preference: {"expiration_duration_seconds":3600}`
-  (generierte CDN-Bilder verfallen laut fal-Doku „Media Expiration" nach
-  1 h statt ≥7 Tagen). **Offener Punkt:** die tatsächliche Löschung passiert
-  beim Anbieter und ist von uns nicht direkt messbar — dokumentiert, nicht
-  behauptet.
-- **Einwilligung (Pflicht):** Vier nicht vorausgewählte Checkboxen (18+,
-  eigenes Foto, Nutzungsrecht, Verarbeitung) VOR jeder Übertragung; der
-  Client blockiert ohne sie, der Server verlangt zusätzlich `consent:true`
-  (`consent_required`, 400). Das Merkmal lebt nur im Sitzungszustand und
-  wird nicht dauerhaft gespeichert.
-- **KI-Kennzeichnung:** „KI-VISUALISIERUNG · KEIN ECHTES ZUKUNFTSFOTO" liegt
-  als DOM-Badge auf jedem Ergebnis-Panel UND wird in das Pixelmaterial
-  gerendert (Wasserzeichen-Canvas → auch Downloads tragen es) sowie auf die
-  Share-Card gezeichnet. Share-Wortlaut: „Meine mögliche Zielvisualisierung"
-  — nie „meine Transformation" im Sinne eines eingetretenen Ergebnisses.
-- Die Seite persistiert nur Gewichte/Ziel/Rahmendaten (`mm_transform_v1`,
-  `mm_transform_goal`), nie Bild-URLs. Bild-Ergebnisse leben pro Sitzung;
-  durch den 1-h-Verfall beim CDN sind alte URLs ohnehin tot.
-- Datenschutzerklärung: eigener Abschnitt „5. Transformation
-  (KI-Körpervisualisierung)" in `datenschutz.html` (Stand August 2026) —
-  Zweck, Datenarten, Drittland, Rechtsgrundlage, Widerruf, Speicher- und
-  Löschverhalten, KI-Hinweis. Die rechtliche Bewertung bleibt extern zu
-  prüfen; die technischen Aussagen dort entsprechen dem Code.
-- Der Prompt wird **serverseitig aus validierten Zahlen** gebaut — der Client
-  liefert keinen Freitext ans Bildmodell (keine Prompt-Injection-Fläche).
-  `look` ist Enum-validiert (lean/athletic/muscular, sonst athletic),
-  `enhanced` strikt Boolean; beide mappen auf konstante Prompt-Fragmente.
-- **Nacktfotos:** Oberkörperfrei ist ausdrücklich erwünscht (bestes
-  Ergebnis). Nur KOMPLETT nackte Fotos (ganz ohne Unterwäsche) lehnt das
-  Bildmodell ab (Antwort 422 → `content_rejected`, als Klartext im UI) —
-  die Seite sagt das VOR dem Upload, nicht erst als Fehlermeldung.
+  (CDN-Bilder verfallen nach 1 h statt ≥7 Tagen) — gemäß fal-Doku
+  „Data Retention"/„Media Expiration". **Offener Punkt:** die
+  tatsächliche Löschung liegt beim Anbieter und ist von uns nicht
+  messbar; so dokumentiert, nicht behauptet.
+- **Bei MaleMetrix gespeichert:** `mm_transform_v2` (Ausgangslage,
+  Ziele, Planantworten) und `mm_transform_goal` (gewähltes Ziel) im
+  localStorage; `ai_request_log` serverseitig nur task/model/ok/ip_hash.
+  NIE gespeichert: Foto, Bild-URLs, Einwilligungsdetails.
+- **KI-Kennzeichnung:** „KI-VISUALISIERUNG · KEIN ECHTES ZUKUNFTSFOTO"
+  als DOM-Badge auf jedem Ergebnis, ins Pixelmaterial gerendert (auch
+  Downloads) und auf der Share-Card („Mögliche Zielvisualisierung",
+  Tags VORHER / MÖGLICHES ZIEL). Englische Fassungen fest verdrahtet.
 
-## Schutz & Kosten (Schichten, Stand v7/Function v9)
+## Kontingent & Missbrauchsschutz (Function v10)
 
-- Auth im Handler (P0.6-Standard), CORS-Allowlist (P0.7),
-  `verify_jwt = false` in `config.toml` (macht nichts öffentlich).
-- Seit v9 bewusst KEINE Score-Pflicht mehr VOR der Generierung — der Score
-  sitzt clientseitig vor dem Paket (Funnel-Abschnitt oben). Die
-  Kostenbremse übernimmt vollständig das Freikontingent.
-- **Schicht 1 — Stundenlimit pro Nutzer:** 12 Bilder/Stunde, gezählt über
-  `ai_request_log` task `BODY_TRANSFORM` — getrennt vom mm-ai-Kontingent.
-- **Schicht 2 — Lifetime-Freikontingent:** Nicht-Kunden max. 4 erfolgreiche
-  Bilder insgesamt (`free_quota_exhausted`, 403). Fehlgeschlagene Bilder
-  zählen nicht. „Kunde" = irgendein aktives Entitlement ODER die
-  server-vergebene Owner-Rolle (user_roles). Gegenmittel gegen
-  Wegwerf-Konten: das Konto ist gratis, aber pro Konto gibt es nur noch
-  4 Bilder statt 288/Tag.
-- **Schicht 3 — IP-Limit:** 24 Bilder/Stunde pro IP über ALLE Konten
-  (Wegwerf-Konten teilen sich die Leitung). Die IP wird NIE roh gespeichert —
-  nur SHA-256 mit serverseitigem Schlüssel (`ip_hash` in `ai_request_log`,
-  Migration `20260805000016_mm_transform_abuse_guards.sql`).
-- **Schicht 4 — Globaler Tages-Deckel:** 400 Bilder/24h über alle Nutzer
-  (`daily_capacity`, 503). Kosten-Notbremse: schlimmster Tag ≈ 16 €.
-- Bewusst KEINE Gesichtserkennung: unverhältnismäßig (biometrische Daten,
-  Art. 9 DSGVO) und leicht umgehbar — die Schichten oben schützen die
-  Credits wirksamer und ohne neue Datenschutz-Baustelle.
-- Payload-Grenzen: 8 MB Body, Gewichte 40-300 kg, max. 60 % Differenz
-  (mehr ergibt kein glaubwürdiges Bild und verbrennt nur Geld).
+- **Modell:** Erstlauf = 2 Gratis-Zielbilder + begrenzte
+  Einzel-Regenerationen — insgesamt `FREE_LIFETIME_IMAGES = 4`
+  erfolgreiche Bilder pro Konto (Fehlschläge zählen nicht). Danach
+  `free_quota_exhausted` → Produktzugang. Kunden (aktives Entitlement
+  oder Owner-Rolle) sind vom Freikontingent ausgenommen. Antwort liefert
+  `free_remaining` für den sichtbaren Zähler.
+- **Atomare Prüfung:** Vor den Zählungen wird eine Reservierungszeile
+  (`ok=null`) geschrieben; alle Limits zählen sie mit. Parallele
+  Race-Anfragen sehen einander → im Grenzfall beide abgelehnt, nie
+  überzogen. Erfolg löst ein (`ok=true`), jeder Fehlerpfad gibt frei
+  (`ok=false`).
+- **Weitere Schichten:** 12 Bilder/h/Nutzer · 24/h/IP über alle Konten
+  (SHA-256-`ip_hash` mit Server-Schlüssel, nie die rohe IP; Migration
+  `20260805000016`) · globaler Tages-Deckel 400 Bilder (~16 €
+  Worst-Case). Serverseitige Zielvalidierung mit derselben Engine —
+  Client-Blockaden sind per API nicht umgehbar.
+- **Client:** „Erneut visualisieren" erzeugt nie automatisch beide
+  Bilder neu — Regeneration pro Ziel (↻), Fehler-Retry pro Panel,
+  danach „Anderes Foto verwenden" / „Ziele neu berechnen".
+  inFlight-Guard gegen parallele Doppel-Requests.
 
-## Aktivierung — Stand 05.08.2026: SCHARF
+## Kostenlos vs. DAS PROTOKOLL (Phase 5)
 
-Beide Voraussetzungen sind erfüllt und live gemessen:
+**Kostenlos sichtbar:** gewähltes Ziel, Ausgangs-/Zielgewicht,
+Machbarkeitsurteil (inkl. „Kleines Ziel — Phasen statt Dauerdefizit"),
+Zielkalorien, Protein, Trainingsfrequenz, Schrittziel, Abnahme-/
+Aufbaurate, ehrliche Wochen, die drei wichtigsten ersten Maßnahmen,
+Woche-1-Skizze, Enhanced-Sicherheitszeile (Blutbild/Monitoring —
+Sicherheit wird nicht paywalled), Score-Engpass-Kalibrierung falls
+vorhanden.
 
-- **FAL_KEY:** liegt verschlüsselt im **Supabase-Vault** (Wert bewusst nicht
-  im Repo). Die Function löst den Key auf: Function-Secret `FAL_KEY` (falls
-  gesetzt, gewinnt) → sonst Vault über `public.mm_get_fal_key()` — SECURITY
-  DEFINER, ausführbar NUR für service_role (Migration
-  `20260805000015_mm_transform_vault_fal_key.sql`; verifiziert: service_role
-  liest, anon → permission denied). Key-Rotation: neuen Wert per
-  `vault.update_secret` setzen ODER Function-Secret `FAL_KEY` anlegen.
-- **fal.ai-Guthaben:** Konto war am 05.08. gesperrt („Exhausted balance“),
-  ist inzwischen aufgeladen — der Key authentifiziert und das Konto ist
-  aktiv (Testaufruf antwortet mit normaler Validierung statt 403). Läuft
-  das Guthaben wieder leer, antwortet die Function mit `provider_balance`
-  und die Seite zeigt „Kontingent aufgebraucht“ statt eines falschen
-  Schlüssel-Fehlers.
+**Nur in DAS PROTOKOLL / My MaleMetrix** (sichtbar als `.trf-locked`
+markiert): kompletter Trainingssplit mit Übungen/Sätzen/Wiederholungen,
+vollständige Mahlzeitenstruktur, Progressionsregeln + Wochenplanung,
+Supplementplan mit Dosierung/Timing, mehrmonatige Anpassungs-/Plateau-
+Logik, Tracker + Wochenreviews.
 
-```bash
-# Live nachmessen statt glauben:
-bash tools-dev/check-functions.sh    # mm-transform ist in der Messliste
-```
+**Personalisierter CTA:** „Dein Ziel: X kg in ~W Wochen" mit
+Phase-1-Logik — dauert das Ziel länger als 12 Wochen, rechnet die Seite
+ein ehrliches Zwischenziel („Phase 1 bringt dich auf Y-Z kg"). Primär:
+„Meinen 12-Wochen-Plan freischalten" (Preis aus `MM_PRODUCTS`,
+shop-data als Quelle der Wahrheit). Sekundär: Protokoll-Link, Circle
+(Preis aus `MM_CONFIG`), Coaching. Sticky-Leiste mit Phase-1-Ziel,
+wegklickbar, nie für Kunden.
 
-Ohne Secret antwortet die Function ehrlich mit `provider_not_configured` —
-die Seite zeigt dann „serverseitig noch nicht freigeschaltet“ an, es gibt
-keinen stillen Fake-Modus.
+**Protokoll-Besitzer:** kein Verkauf — „Ziel in My MaleMetrix
+übernehmen" mit sichtbarer Bestätigung; die Roadmap
+(`mein-protokoll.html#transform`, `js/os/app.js` vTransform) liest
+`mm_transform_goal` und füllt Zielgewicht/Ausgangsgewicht/Zeitraum
+sichtbar vor. Bilddaten werden nie übernommen.
 
-## Fehlercodes (Function → UI-Klartext in js/transformation.js)
+## Planengine (Phase 7)
 
-`auth_missing/auth_invalid_token` 401 ·
-`free_quota_exhausted` 403 (Gratis-Kontingent aufgebraucht) ·
-`rate_limited` 429 (Nutzer- ODER IP-Limit) · `daily_capacity` 503
-(globaler Tages-Deckel) ·
-`invalid_current_kg/invalid_target_kg/invalid_target_range/invalid_image` 400 ·
-`payload_too_large` 413 · `provider_not_configured` 503 ·
-`provider_balance` 503 (fal-Guthaben leer) · `content_rejected` 422 ·
-`provider_auth_failed`/`provider_error` 502.
+Mifflin-St-Jeor mit PFLICHT-Größe (Ausgangslage) und PFLICHT-Alter
+(Planfragen) — keine stillen 180-cm-/35-Jahre-Fallbacks, ohne Angaben
+keine Berechnung. Keine Zwangs-Minimums mehr (früher 0,25 kg/Woche +
+300 kcal): sehr kleine Ziele bekommen eine kurze moderate aktive Phase
+plus ausgewiesene Erhaltungs-/Stabilisierungswochen. Enhanced ohne
+Pauschalgarantien (keine „+20-30 % Volumen"-Aussage) — dafür
+Monitoring-Pflichtzeile; Substanz-/Dosierungsempfehlungen gibt es
+weiterhin bewusst nicht (Einordnung: Anabole Matrix).
+
+## Analytics-Funnel (anonym, feste Event-Namen, keine sensiblen Werte)
+
+`home_transform_cta` (Startseite) · `transform_view` ·
+`transform_upload_start` · `transform_upload_success` ·
+`transform_consent_confirmed` · `transform_targets_computed` ·
+`transform_custom_target_open` · `transform_custom_target_changed` ·
+`transform_target_blocked` · `transform_account_gate_view` ·
+`transform_magic_link_requested` · `transform_generate_start` ·
+`transform_image_a_ok` / `transform_image_b_ok` ·
+`transform_generate_failed` · `transform_regen_single` ·
+`transform_quota_wall` / `transform_quota_cta` ·
+`transform_goal_selected` · `transform_plan_questions_start` ·
+`transform_plan_preview_view` · `transform_cta_unlock` ·
+`transform_offer_protokoll` / `_circle` / `_coaching` ·
+`transform_sticky_cta` · `transform_cta_mymm` ·
+`transform_goal_adopted` · `transform_share` ·
+`score_to_transform_click` (Score-Ergebnisseite).
+Übertragen wird NIE: Foto, Bild-URL, Gewicht, Größe, Taille,
+Körperform, Zielgewicht, Gesundheitsangaben, E-Mail.
+
+## Fehlercodes (Function → UI-Klartext)
+
+`auth_missing/auth_invalid_token` 401 · `consent_required` 400 ·
+`invalid_current_kg/invalid_height/invalid_image` 400 ·
+`target_blocked` 400 (mit verdict/code/alt_lo/alt_hi) ·
+`free_quota_exhausted` 403 · `rate_limited` 429 (Nutzer ODER IP) ·
+`daily_capacity` 503 · `payload_too_large` 413 ·
+`provider_not_configured` 503 · `provider_balance` 503 ·
+`content_rejected` 422 · `provider_auth_failed`/`provider_error` 502.
+
+## Tests & Verifikation
+
+- `tools-dev/tests/transform-goals.test.js` (18 Tests): Abnahmekriterien
+  1-11 + 13, Prompt-Plausibilität, Server-Invarianten (Engine-Import,
+  Consent, Datenschutz-Header, Reservierungsmuster), Planengine-
+  Invarianten. Gesamtsuite über `node --test tools-dev/tests/*.test.js`.
+- Browser-verifiziert (Playwright/Chromium): Funnel-Aufbau, Zielkarten
+  nach Ausgangslage (95 kg/180/104/kräftig → A 89 kg, B 78 kg), 49-kg-
+  Blockade mit Alternative, gesperrter Generieren-Button, begrenzte
+  Planvorschau ohne Vollplan-Leck, Phase-1-Zwischenziel (98→82 kg ⇒
+  „90-92 kg nach 12 Wochen"), Responsive 320/360/390/768/1440 ohne
+  Überlauf, Tastatur-Upload (Tab+Enter → Dateidialog).
+- Live-Messung: `bash tools-dev/check-functions.sh` (mm-transform in der
+  Messliste); Deploy-Stand siehe EDGE_FUNCTIONS.md.
+
+## Offene Punkte / externe Prüfungen
+
+1. **fal.ai-Löschung:** Header-Versand ist implementiert; die
+   tatsächliche Lösch-Ausführung liegt beim Anbieter (extern nicht
+   messbar). Bei Gelegenheit im fal-Dashboard stichprobenartig prüfen.
+2. **Rechtliche Bewertung** von Einwilligungstexten und
+   Datenschutzerklärung (Art. 9 DSGVO, Drittlandübermittlung) ist
+   fachjuristisch nicht geprüft — die technischen Aussagen entsprechen
+   dem Code, mehr wird nicht behauptet.
+3. **Bildqualität der neuen Prompts** (Ziel-KFA-Stufen) ist mit echten
+   Generierungen zu kalibrieren, sobald Traffic da ist — die alte
+   Live-Erkenntnis „Definition skaliert mit dem Defizit" ist jetzt über
+   die KFA-Stufen abgebildet, nicht mehr über Prozent-Heuristik.
+4. **Frontend-/Server-Kopplung:** Function v10 verlangt consent +
+   height_cm — der neue Client sendet beides. Bis Branch-Merge + Pages-
+   Deploy antwortet die Live-Seite (alter Client) mit
+   `consent_required`; Generierung ist so lange effektiv gesperrt
+   (Credits geschützt). Nach dem Merge ist der Zustand konsistent.
