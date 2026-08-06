@@ -131,8 +131,20 @@
     .trf-scan .st2 { font-family: var(--font-mono); font-size: 0.56rem; letter-spacing: 0.14em; color: var(--muted-2); }
     .trf-scan-err { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 18px; text-align: center; }
 
+    /* Sichtbarer Fokus für die Upload-Fläche (echtes role=button) */
+    .trf-drop:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; }
+    .trf-drop:focus-visible .tick { border-color: var(--accent-2); }
+
     /* Vorher/Nachher-Regler */
     .trf-ba { touch-action: none; cursor: ew-resize; }
+    /* Echte Range-Steuerung: unauffällige Leiste am unteren Rand, deutlicher
+       Fokus — Tastatur und Screenreader bedienen den Vergleich hierüber. */
+    .trf-ba-range { position: absolute; left: 10px; right: 10px; bottom: 8px; width: calc(100% - 20px); z-index: 3; height: 18px; margin: 0; background: transparent; -webkit-appearance: none; appearance: none; cursor: ew-resize; }
+    .trf-ba-range::-webkit-slider-runnable-track { height: 2px; background: rgba(240, 238, 233, 0.35); }
+    .trf-ba-range::-moz-range-track { height: 2px; background: rgba(240, 238, 233, 0.35); }
+    .trf-ba-range::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent-2); margin-top: -6px; border: 2px solid var(--bg-0); }
+    .trf-ba-range::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--accent-2); border: 2px solid var(--bg-0); }
+    .trf-ba-range:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
     .trf-ba .after { clip-path: inset(0 0 0 var(--ba, 50%)); }
     .trf-ba-handle { position: absolute; top: 0; bottom: 0; left: var(--ba, 50%); width: 1px; background: var(--accent-2); pointer-events: none; }
     .trf-ba-handle::after { content: "◂ ▸"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.62rem; letter-spacing: 0.05em; color: var(--bg-0); background: var(--accent-2); padding: 5px 7px; border-radius: 99px; white-space: nowrap; }

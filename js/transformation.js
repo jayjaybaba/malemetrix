@@ -87,6 +87,9 @@
     function track(ev) { try { if (window.MM && MM.track) MM.track(ev); } catch (e) {} }
     function once(flagObj, key, fn) { if (!flagObj[key]) { flagObj[key] = true; fn(); } }
     var seen = {};
+    /* Sprache für Texte, die in PIXEL gerendert werden (Canvas: KI-Label,
+       Share-Card) — dort greift der i18n-MutationObserver nicht. */
+    function isEn() { try { return String(document.documentElement.lang || "de").slice(0, 2) === "en"; } catch (e) { return false; } }
 
     var FEHLERTEXT = {
       not_signed_in: "Bitte melde dich zuerst an — die Generierung braucht ein Konto.",
@@ -140,7 +143,13 @@
       "<strong>Frontal, gut beleuchtet, mindestens Kopf bis Hüfte</strong> — ideal oberkörperfrei oder in eng anliegender Sportkleidung, mit Shorts oder Unterwäsche. Keine vollständige Nacktheit, keine weiteren Personen im Bild. " +
       "Zur Erstellung der KI-Visualisierung wird dein Foto über unseren Server an unseren Bildverarbeitungsdienst übertragen. MaleMetrix speichert das hochgeladene Foto nicht dauerhaft; Details zur Verarbeitung und Löschung stehen in der <a href=\"datenschutz.html\">Datenschutzerklärung</a>."));
 
+    /* Upload-Fläche: echtes interaktives Element (Phase 8.1) — Tastatur
+       (Tab, Enter, Leertaste), sichtbarer Fokus, Screenreader-Text, plus
+       Drag-and-drop, Touch und Klick. */
     var drop = el("div", "trf-drop");
+    drop.setAttribute("role", "button");
+    drop.setAttribute("tabindex", "0");
+    drop.setAttribute("aria-label", "Foto auswählen oder hier ablegen — JPG, PNG oder WebP; wird nur zur Generierung übertragen");
     drop.innerHTML =
       '<span class="tick tl"></span><span class="tick tr"></span><span class="tick bl"></span><span class="tick br"></span>' +
       '<div class="trf-drop-inner">' +
@@ -150,8 +159,17 @@
       '</div>';
     var fileIn = el("input");
     fileIn.type = "file"; fileIn.accept = "image/jpeg,image/png,image/webp"; fileIn.className = "file-hidden";
+    fileIn.setAttribute("aria-hidden", "true"); fileIn.tabIndex = -1;
     var photoErr = el("p", "trf-error"); photoErr.style.display = "none"; photoErr.style.marginTop = "10px";
+    photoErr.setAttribute("role", "alert");
     drop.addEventListener("click", function () { once(seen, "up_start", function () { track("transform_upload_start"); }); fileIn.click(); });
+    drop.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+        e.preventDefault();
+        once(seen, "up_start", function () { track("transform_upload_start"); });
+        fileIn.click();
+      }
+    });
     drop.addEventListener("dragover", function (e) { e.preventDefault(); drop.classList.add("is-over"); });
     drop.addEventListener("dragleave", function () { drop.classList.remove("is-over"); });
     drop.addEventListener("drop", function (e) {
@@ -520,7 +538,11 @@
     }
 
     /* ================= KI-Kennzeichnung, Wasserzeichen, Teilen ================= */
-    var AI_LABEL = "KI-VISUALISIERUNG · KEIN ECHTES ZUKUNFTSFOTO";
+    var AI_LABEL_DE = "KI-VISUALISIERUNG · KEIN ECHTES ZUKUNFTSFOTO";
+    var AI_LABEL_EN = "AI VISUALIZATION · NOT A REAL FUTURE PHOTO";
+    // Funktion statt Konstante: die Sprache kann nach dem Laden umgeschaltet
+    // werden — jedes Canvas-Rendering fragt den aktuellen Stand ab.
+    function AI_LABEL() { return isEn() ? AI_LABEL_EN : AI_LABEL_DE; }
     function loadImg(src, cross) {
       return new Promise(function (resolve, reject) {
         var img = new Image();
@@ -552,11 +574,11 @@
       x.save();
       x.textBaseline = "alphabetic"; x.textAlign = "left";
       x.font = "600 " + fs + "px 'JetBrains Mono', monospace";
-      var tw = x.measureText(AI_LABEL).width;
+      var tw = x.measureText(AI_LABEL()).width;
       x.fillStyle = "rgba(7,10,15,0.72)";
       x.fillRect(0, 0, Math.min(cw, tw + fs * 1.6), fs * 2.1);
       x.fillStyle = "rgba(240,238,233,0.95)";
-      x.fillText(AI_LABEL, fs * 0.8, fs * 1.45);
+      x.fillText(AI_LABEL(), fs * 0.8, fs * 1.45);
       x.restore();
     }
     function watermark(url) {
@@ -589,7 +611,7 @@
         x.fillStyle = "#16C4F4";
         x.fillText("MM / TRANSFORM", 48, 76);
         x.fillStyle = "rgba(255,255,255,0.35)";
-        x.fillText("MÖGLICHE ZIELVISUALISIERUNG", 48, 112);
+        x.fillText(isEn() ? "POSSIBLE TARGET VISUALIZATION" : "MÖGLICHE ZIELVISUALISIERUNG", 48, 112);
         var top = 150, bh = 980, gap = 10, bw = (W - 96 - gap) / 2;
         drawCover(x, imgs[0], 48, top, bw, bh);
         drawCover(x, imgs[1], 48 + bw + gap, top, bw, bh);
@@ -603,11 +625,11 @@
           x.fillStyle = "rgba(240,238,233,0.95)";
           x.fillText(label, tx + 14, top + 48);
         }
-        tag(48 + 18, "VORHER · " + curKg + " KG");
-        tag(48 + bw + gap + 18, "MÖGLICHES ZIEL · " + targetKg + " KG");
+        tag(48 + 18, (isEn() ? "BEFORE" : "VORHER") + " · " + curKg + " KG");
+        tag(48 + bw + gap + 18, (isEn() ? "POSSIBLE TARGET" : "MÖGLICHES ZIEL") + " · " + targetKg + " KG");
         x.font = "600 24px 'JetBrains Mono', monospace";
         x.fillStyle = "#16C4F4";
-        x.fillText("KI-VISUALISIERUNG · KEIN ECHTES ZUKUNFTSFOTO", 48, top + bh + 44);
+        x.fillText(AI_LABEL(), 48, top + bh + 44);
         drawBrand(x, 48, H - 84, 44);
         x.font = "500 26px 'JetBrains Mono', monospace";
         x.fillStyle = "rgba(255,255,255,0.45)";
@@ -623,7 +645,9 @@
         if (!blob) throw new Error("blob");
         var file = new File([blob], "malemetrix-zielvisualisierung.jpg", { type: "image/jpeg" });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          return navigator.share({ files: [file], title: "Meine mögliche Zielvisualisierung", text: "Meine mögliche Zielvisualisierung mit MaleMetrix (KI-Visualisierung) — malemetrix.com/transformation.html" }).catch(function () {});
+          return navigator.share(isEn()
+            ? { files: [file], title: "My possible target visualization", text: "My possible target visualization with MaleMetrix (AI visualization) — malemetrix.com/transformation.html" }
+            : { files: [file], title: "Meine mögliche Zielvisualisierung", text: "Meine mögliche Zielvisualisierung mit MaleMetrix (KI-Visualisierung) — malemetrix.com/transformation.html" }).catch(function () {});
         }
         var a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
@@ -646,19 +670,34 @@
       view.appendChild(b); view.appendChild(a);
       view.appendChild(el("div", "trf-ba-handle"));
       view.appendChild(el("div", "trf-ba-tags", "<span>VORHER</span><span>MÖGLICHES ZIEL</span>"));
-      view.appendChild(el("div", "trf-ai-tag", AI_LABEL));
+      view.appendChild(el("div", "trf-ai-tag", AI_LABEL()));
+      function setPct(pct) {
+        pct = Math.max(0, Math.min(100, pct));
+        view.style.setProperty("--ba", pct.toFixed(1) + "%");
+        range.value = String(Math.round(pct));
+        range.setAttribute("aria-valuetext", Math.round(pct) + " % — links dein Ausgangsfoto, rechts die KI-Visualisierung des möglichen Ziels");
+      }
       function setFrom(e) {
         var r = view.getBoundingClientRect();
-        var pct = Math.max(0, Math.min(100, ((e.clientX - r.left) / r.width) * 100));
-        view.style.setProperty("--ba", pct.toFixed(1) + "%");
+        setPct(((e.clientX - r.left) / r.width) * 100);
       }
       view.addEventListener("pointerdown", function (e) {
+        if (e.target === range) return;
         view.setPointerCapture(e.pointerId);
         setFrom(e);
       });
       view.addEventListener("pointermove", function (e) {
-        if (e.buttons) setFrom(e);
+        if (e.buttons && e.target !== range) setFrom(e);
       });
+      /* Echte Range-Steuerung (Phase 8.2): Tastatur + Screenreader. Der
+         Regler vergleicht Ausgangsfoto und KI-Visualisierung — genau das
+         sagt er auch an. */
+      var range = el("input", "trf-ba-range");
+      range.type = "range"; range.min = "0"; range.max = "100"; range.step = "1"; range.value = "50";
+      range.setAttribute("aria-label", "Vorher-Nachher-Vergleich: dein Foto gegen die KI-Visualisierung des möglichen Ziels (kein echtes Zukunftsfoto)");
+      range.addEventListener("input", function () { setPct(Number(range.value)); });
+      view.appendChild(range);
+      setPct(50);
     }
 
     /* ================= Generierung =================

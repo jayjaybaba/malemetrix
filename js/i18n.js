@@ -139,6 +139,12 @@
     "home.s.targets.h": { de: "Keine Fantasiekörper. <span class=\"text-grad\">Zwei ehrliche Optionen.</span>",
                           en: "No fantasy bodies. <span class=\"text-grad\">Two honest options.</span>" },
 
+    /* ---------- Transformation (Hero der Funktionsseite) ---------- */
+    "trf.h1a": { de: "Dein Körper in der Zukunft.", en: "Your body in the future." },
+    "trf.h1b": { de: "Heute sichtbar.", en: "Visible today." },
+    "trf.lead": { de: "Ein Foto von dir — und MaleMetrix erstellt zwei realistische KI-Visualisierungen möglicher Zielzustände, aus deinem eigenen Bild. Du wählst EIN Ziel, und MaleMetrix baut den Weg dorthin: Ernährung, Training, System.",
+                  en: "One photo of you — and MaleMetrix creates two realistic AI visualizations of possible target states, from your own picture. You pick ONE target, and MaleMetrix builds the path: nutrition, training, system." },
+
     /* Sektions-Kicker + Überschriften */
     "home.s.problem.k": { de: "Das eigentliche Problem", en: "The real problem" },
     "home.s.problem.h": { de: "Du brauchst nicht mehr Informationen. Du brauchst die richtige <span class=\"text-grad\">Reihenfolge</span>.",
