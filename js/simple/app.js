@@ -66,6 +66,20 @@
     metrics().forEach(function (x) { if (x.type === "weight" && x.date) byDate[x.date] = x.value; });
     return Object.keys(byDate).sort().map(function (d) { return { date: d, kg: byDate[d] }; });
   }
+  /* NUR Gewichte ab Planstart: Alt-Messwerte auf dem Gerät (Legacy-Tests,
+     Score-Import) dürfen "Aktuell" und den Trend nicht verfälschen. */
+  function planWeights(p) {
+    if (!p || !p.startDate) return weightSeries();
+    return weightSeries().filter(function (w) { return w.date >= p.startDate; });
+  }
+  /* Beim Planstart zählt das angegebene Startgewicht als Tag-1-Messwert —
+     "Aktuell" beginnt damit beim Start, nicht bei Datenmüll oder leer. */
+  function seedStartWeight(p) {
+    var start = p && p.selectedTransformation && p.selectedTransformation.startWeightKg;
+    if (!start || !p.startDate) return;
+    var has = weightSeries().some(function (w) { return w.date === p.startDate; });
+    if (!has) logWeight(start, p.startDate);
+  }
 
   function access() {
     try { return (MM.account && MM.account.getDashboardState) ? (MM.account.getDashboardState().access || {}) : {}; } catch (e) { return {}; }
@@ -138,7 +152,7 @@
 
   /* Gewichts-Sheet: großer Wert, gestern-Kontext, Trend-Feedback. */
   function openWeightSheet(ymd, onSaved) {
-    var series = weightSeries();
+    var series = planWeights(activePlan());
     var last = series.length ? series[series.length - 1] : null;
     openSheet(function (sheet) {
       sheet.appendChild(el("h3", null, tx("Gewicht heute", "Weight today")));
@@ -162,7 +176,7 @@
         if (!v || v < 30 || v > 300) { fb.textContent = tx("Bitte einen plausiblen Wert (30–300 kg).", "Please enter a plausible value (30–300 kg)."); fb.style.color = "var(--red)"; return; }
         logWeight(v, ymd);
         track("weight_logged");
-        var tr = weekly.trend(weightSeries(), ymd);
+        var tr = weekly.trend(planWeights(activePlan()), ymd);
         fb.style.color = "var(--green)";
         fb.textContent = tr
           ? tx("Gespeichert ✓ — Trend: " + (tr.deltaPerWeek > 0 ? "+" : "") + tr.deltaPerWeek + " kg/Woche", "Saved ✓ — trend: " + (tr.deltaPerWeek > 0 ? "+" : "") + tr.deltaPerWeek + " kg/week")
@@ -203,17 +217,23 @@
   /* ================================================================
      ROUTER
      ================================================================ */
-  var VIEWS = ["heute", "plan", "fortschritt", "profil", "einrichten", "check", "workout"];
+  var VIEWS = ["heute", "plan", "fortschritt", "profil", "einrichten", "check", "workout", "anpassen"];
   function view() {
     var h = (location.hash || "#heute").slice(1).split("?")[0];
     return VIEWS.indexOf(h) >= 0 ? h : "heute";
   }
   var root = document.getElementById("sapp");
 
+  var lastView = null;
   function render() {
     var v = view();
     var p = activePlan();
     if (!p && ["heute", "fortschritt", "check", "workout"].indexOf(v) >= 0) v = "einrichten";
+    // Scroll-Position NUR bei echtem Ansichtswechsel zurücksetzen —
+    // Re-Renders innerhalb derselben Ansicht (Chip angeklickt, Frage
+    // beantwortet, Satz abgehakt) dürfen die Leseposition nicht verlieren.
+    var viewChanged = v !== lastView;
+    var keepY = window.scrollY;
     root.innerHTML = "";
     document.querySelectorAll(".s-nav a").forEach(function (a) {
       a.classList.toggle("on", a.getAttribute("href") === "#" + (v === "einrichten" ? "heute" : v));
@@ -225,7 +245,12 @@
     else if (v === "profil") vProfile();
     else if (v === "check") vCheck();
     else if (v === "workout") vWorkout();
-    window.scrollTo(0, 0);
+    else if (v === "anpassen") vEdit();
+    try {
+      if (viewChanged) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      else window.scrollTo({ top: keepY, left: 0, behavior: "instant" });
+    } catch (e) { window.scrollTo(0, viewChanged ? 0 : keepY); }
+    lastView = v;
   }
   window.addEventListener("hashchange", render);
   document.addEventListener("mm:langchange", render);
@@ -421,6 +446,7 @@
           p2.startDate = todayYmd();
           p2.endDate = model.addDays(p2.startDate, 83);
           store.adoptPlan(p2, { force: true });
+          seedStartWeight(p2);
           store.setFunnelStep("plan_active");
           track("plan_activated"); track("plan_created");
           // Bestandsnutzer: Migrationsstatus festschreiben (§27.5-Referenzen)
@@ -513,7 +539,7 @@
     var st = p.selectedTransformation, pg = p.phaseGoal;
     head.appendChild(el("div", "goal", st.finalTargetWeightKg + " kg" +
       (pg.isFinalPhase ? "" : " <span style='color:var(--muted);font-weight:400'>· " + tx("Phase 1 bis", "phase 1 to") + " " + pg.week12TargetMinKg + "–" + pg.week12TargetMaxKg + " kg</span>")));
-    var tr = weekly.trend(weightSeries(), ymd);
+    var tr = weekly.trend(planWeights(p), ymd);
     if (tr) {
       var target = weekly.plannedRate(p) || 0;
       var onTrack = Math.abs(tr.deltaPerWeek - target) <= Math.max(0.15, Math.abs(target) * 0.4);
@@ -563,7 +589,7 @@
     }
     var wd = new Date(ymd + "T12:00:00").getDay();
     if (p.dailyTargets.weighInWeekdays.indexOf(wd) >= 0) {
-      var todaysWeight = weightSeries().filter(function (w) { return w.date === ymd; })[0];
+      var todaysWeight = planWeights(p).filter(function (w) { return w.date === ymd; })[0];
       chip("weigh", todaysWeight ? ("⚖ " + todaysWeight.kg + " kg ✓") : tx("⚖ Gewicht eintragen", "⚖ Log weight"), !!todaysWeight, function () {
         openWeightSheet(ymd, render);
       });
@@ -606,7 +632,7 @@
 
   function vCompleted(p) {
     root.appendChild(el("h2", null, tx("12 Wochen geschafft.", "12 weeks done.")));
-    var series = weightSeries();
+    var series = planWeights(p);
     var startW = p.selectedTransformation.startWeightKg;
     var lastW = series.length ? series[series.length - 1].kg : null;
     root.appendChild(el("div", "s-card",
@@ -796,7 +822,11 @@
   function vPlan() {
     var p = activePlan() || plan();
     if (!p) { location.hash = "#einrichten"; return; }
-    root.appendChild(el("h2", null, tx("Mein Plan", "My plan")));
+    var planHead = el("h2", null, tx("Mein Plan", "My plan"));
+    root.appendChild(planHead);
+    var editLink = el("p", "s-sub");
+    editLink.innerHTML = '<a href="#anpassen" style="color:var(--accent-2)">' + tx("Plan anpassen →", "Adjust plan →") + "</a>";
+    root.appendChild(editLink);
     var tabs = ["woche", "training", "ernaehrung", "einkauf", "iphone"];
     var names = { woche: tx("Woche", "Week"), training: "Training", ernaehrung: tx("Ernährung", "Nutrition"), einkauf: tx("Einkauf", "Shopping"), iphone: "iPhone" };
     var cur = MM.store.get("simple_plan_tab", "woche");
@@ -986,7 +1016,8 @@
   function vProgress() {
     var p = activePlan();
     var ymd = todayYmd();
-    var series = weightSeries();
+    seedStartWeight(p);
+    var series = planWeights(p);
     var st = p.selectedTransformation, pg = p.phaseGoal;
     root.appendChild(el("h2", null, tx("Fortschritt", "Progress")));
 
@@ -1158,7 +1189,7 @@
 
     var go = el("button", "btn btn-primary", tx("Auswerten", "Evaluate"));
     go.addEventListener("click", function () {
-      var ctx = { plan: p, week: week, todayYmd: ymd, weights: weightSeries(), answers: checkAnswers };
+      var ctx = { plan: p, week: week, todayYmd: ymd, weights: planWeights(p), answers: checkAnswers };
       var d = weekly.decide(ctx);
       root.innerHTML = "";
       root.appendChild(el("h2", null, tx("Entscheidung", "Decision")));
@@ -1188,6 +1219,113 @@
       schlechter: tx("schlechter", "worse"), krank: tx("krank", "sick"), reise: tx("Reise", "travel"),
       stress: "Stress", verletzung: tx("Verletzung", "injury") };
     return m[o] || String(o);
+  }
+
+  /* ================================================================
+     PLAN ANPASSEN — Trainingstage, Zeiten, Ernährung jederzeit ändern
+     ================================================================ */
+  function planToAnswers(p) {
+    var st = p.selectedTransformation || {}, t = p.training || {}, n = p.nutrition || {},
+        d = p.dailyTargets || {}, l = p.lifestyle || {}, r = p.reminderPreferences || {};
+    var expMap = { beginner: "neu", intermediate: "mid", advanced: "pro" };
+    var firstTime = null;
+    try { firstTime = t.preferredTimes && t.weekdays.length ? t.preferredTimes[t.weekdays[0]] : null; } catch (e) {}
+    return {
+      age: st.age, activity: st.activity,
+      daysPerWeek: t.daysPerWeek, weekdays: (t.weekdays || []).slice(),
+      preferredTime: firstTime || "18:00",
+      location: t.location, experience: expMap[t.experienceLevel] || "mid",
+      injuries: (t.injuries || []).slice(),
+      maxSessionMinutes: t.maximumSessionMinutes,
+      mealCount: n.mealCount, diet: (n.dietaryPreferences || [])[0] || "misch",
+      exclusions: (n.exclusions || []).slice(),
+      cookingMinutesMax: n.cookingMinutesMax || 20,
+      eatingOutPerWeek: n.eatingOutPerWeek != null ? n.eatingOutPerWeek : 1,
+      shoppingDay: n.shoppingDay, mealPrepDay: n.mealPrepDay,
+      householdSize: n.householdSize || 1,
+      wakeTime: l.wakeTime || r.morningBriefTime || "06:30",
+      sleepTime: l.sleepTime || "22:30",
+      workPattern: l.workPattern || "day",
+      steps: d.steps, reviewWeekday: r.weeklyReviewWeekday
+    };
+  }
+
+  var editAnswers = null;
+  function vEdit() {
+    var p = activePlan() || plan();
+    if (!p) { location.hash = "#einrichten"; return; }
+    if (!editAnswers) editAnswers = planToAnswers(p);
+    root.appendChild(el("h2", null, tx("Plan anpassen", "Adjust plan")));
+    root.appendChild(el("p", "s-sub", tx(
+      "Ändere Trainingstage, Zeiten und Ernährung — dein Fortschritt, deine Historie und dein Startdatum bleiben erhalten. Die Anpassung wird als neue Planversion festgehalten.",
+      "Change training days, times and nutrition — your progress, history and start date stay. The adjustment is recorded as a new plan version.")));
+
+    var tg = MM.store.get("transform_goal", null);
+    var card = el("div", "s-card");
+    var qs = input.questionsFor({ tg: tg, trf: input.mapTransformation(tg), answers: editAnswers });
+    qs.forEach(function (q) {
+      var wrap = el("div", "s-q");
+      wrap.appendChild(el("div", "lbl", esc(en() ? q.labelEn : q.label)));
+      wrap.appendChild(el("div", "why", tx("Warum: ", "Why: ") + esc(en() ? q.whyEn : q.why)));
+      var val = editAnswers[q.id] != null ? editAnswers[q.id] : q.value;
+      if (q.type === "choice" || q.type === "weekday") {
+        var opts = el("div", "opts");
+        var options = q.type === "weekday" ? [0, 1, 2, 3, 4, 5, 6] : q.options;
+        options.forEach(function (o) {
+          var b = el("button", String(val) === String(o) ? "on" : "", q.type === "weekday" ? wdName(o) : esc(labelFor(q.id, o)));
+          b.type = "button";
+          b.addEventListener("click", function () { editAnswers[q.id] = o; render(); });
+          opts.appendChild(b);
+        });
+        wrap.appendChild(opts);
+      } else if (q.type === "weekdays" || q.type === "multi") {
+        var cur = Array.isArray(val) ? val.slice() : [];
+        var opts2 = el("div", "opts");
+        var options2 = q.type === "weekdays" ? [1, 2, 3, 4, 5, 6, 0] : q.options;
+        options2.forEach(function (o) {
+          var b = el("button", cur.indexOf(o) >= 0 ? "on" : "", q.type === "weekdays" ? wdName(o) : esc(labelFor(q.id, o)));
+          b.type = "button";
+          b.addEventListener("click", function () {
+            var ix = cur.indexOf(o);
+            if (ix >= 0) cur.splice(ix, 1); else cur.push(o);
+            editAnswers[q.id] = cur.slice(); render();
+          });
+          opts2.appendChild(b);
+        });
+        wrap.appendChild(opts2);
+      } else {
+        var inp = el("input");
+        inp.type = q.type === "time" ? "time" : "number";
+        if (q.min != null) inp.min = q.min;
+        if (q.max != null) inp.max = q.max;
+        inp.value = val != null ? val : "";
+        inp.addEventListener("change", function () {
+          editAnswers[q.id] = q.type === "time" ? inp.value : parseFloat(inp.value);
+        });
+        wrap.appendChild(inp);
+      }
+      card.appendChild(wrap);
+    });
+    root.appendChild(card);
+
+    var err = el("p", "s-err"); err.style.display = "none";
+    var save = el("button", "btn btn-primary", tx("Anpassung speichern", "Save adjustment"));
+    save.addEventListener("click", function () {
+      var collected = input.collect({ transformGoal: tg, checkResult: MM.store.get("check_result", null), answers: editAnswers });
+      if (!collected.ok) { err.textContent = tx("Es fehlt noch: ", "Still missing: ") + collected.missing.join(", "); err.style.display = ""; return; }
+      var r = engine.createPlan(collected, p.startDate || todayYmd());
+      if (!r.ok) { err.textContent = r.errors.join("; "); err.style.display = ""; return; }
+      var rc = store.reconfigurePlan(r.plan, tx("Vom Nutzer angepasst (Plan-Einstellungen)", "Adjusted by the user (plan settings)"));
+      if (!rc.ok) { err.textContent = rc.errors.join("; "); err.style.display = ""; return; }
+      track("plan_reconfigured");
+      editAnswers = null;
+      location.hash = "#heute";
+    });
+    root.appendChild(save);
+    var cancel = el("a", "btn btn-ghost btn-sm", tx("Abbrechen", "Cancel"));
+    cancel.href = "#profil"; cancel.style.marginLeft = "10px";
+    cancel.addEventListener("click", function () { editAnswers = null; });
+    root.appendChild(cancel);
   }
 
   /* ================================================================
@@ -1233,6 +1371,10 @@
           pm.appendChild(el("p", "hint", "v" + h.version + " (" + (h.changedAt || "").slice(0, 10) + ", " + h.source + "): " + esc(h.reason)));
         });
       }
+      var editBtn = el("a", "btn btn-primary btn-sm", tx("Plan anpassen (Training, Ernährung, Zeiten)", "Adjust plan (training, nutrition, times)"));
+      editBtn.href = "#anpassen";
+      editBtn.style.marginRight = "8px";
+      pm.appendChild(editBtn);
       if (p.status === "active") {
         var pause = el("button", "btn btn-ghost btn-sm", tx("Plan pausieren", "Pause plan"));
         pause.addEventListener("click", function () {
