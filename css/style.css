@@ -2796,54 +2796,88 @@ body > * { position: relative; z-index: 0; }
 .os14-sysline { display: flex; align-items: center; gap: 12px; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.24em; color: var(--status-active); margin-bottom: 22px; }
 .os14-sysline::after { content: ""; flex: 0 0 64px; height: 1px; background: linear-gradient(90deg, var(--status-active), transparent); }
 
-.os14-hero { position: relative; padding: calc(var(--header-h) + 64px) 0 72px; overflow: hidden; }
-/* Obergrenze 4.2rem statt 5.4rem: Die neue Headline "Bau deinen Körper." ist
-   drei Zeichen länger als die alte — bei 5.4rem brach sie am Desktop mitten
-   im Satz um ("Bau deinen / Körper."). Jede Aussage gehört auf eine Zeile. */
-.os14-hero .h-display { font-size: clamp(2.7rem, 8.5vw, 3.75rem); line-height: 1.04; letter-spacing: -0.02em; text-transform: none; }
-.os14-hero .lead { max-width: 52ch; margin-top: 26px; font-size: 1.02rem; color: var(--muted); }
-/* Mobiler Umbruch der Headline: nur unter 640px aktiv (Zeile 2/3:
-   "Steuere dein" / "System."). Am Desktop existiert der Umbruch nicht. */
+.os14-hero { position: relative; padding: calc(var(--header-h) + clamp(52px, 8vh, 88px)) 0 clamp(52px, 8vh, 84px); overflow: hidden; }
+/* Eine Textspalte, bewusst begrenzt: beide Headline-Sätze passen am Desktop
+   auf je eine Zeile, rechts bleibt Raum für das Hintergrundmotiv. */
+.os14-hero .os14-hero-copy { max-width: 780px; }
+/* Größe exakt auf die Headline-Zeilen bemessen (Space Grotesk 700,
+   -0.02em): "Sieh deinen möglichen Körper." misst 14,08× die Schriftgröße —
+   bei 3.35rem ≈ 755px, passt in die 780px-Spalte. Ergebnis: exakt 2 Zeilen. */
+.os14-hero .h-display { font-size: clamp(2.55rem, 4.5vw, 3.35rem); line-height: 1.04; letter-spacing: -0.02em; text-transform: none; }
+/* margin-bottom: 0 neutralisiert .hero .lead (36px) — der Abstand zum CTA
+   gehört allein .hero-ctas (26px), sonst addieren sich beide Systeme. */
+.os14-hero .lead { max-width: 52ch; margin-top: 22px; margin-bottom: 0; font-size: 1.06rem; line-height: 1.5; color: #C9C4B8; }
+/* Mobiler Umbruch der Headline: nur unter 640px aktiv — Satz 1 bricht nach
+   "möglichen", Satz 2 bleibt ganz. Am Desktop existiert der Umbruch nicht. */
 .br-m { display: none; }
+/* Primär-CTA: das kontraststärkste Element im Hero. Verlauf + subtile Tiefe
+   (Innenlicht oben, weicher Schatten), kein Dauer-Glow, keine Neonwirkung. */
+.os14-hero .hero-ctas { margin: 26px 0 0; }
+.os14-hero .hero-ctas .btn {
+  min-height: 54px; padding: 14px 30px;
+  font-size: 1.06rem; font-weight: 600; letter-spacing: 0.005em;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 10px 30px rgba(13, 90, 200, 0.38), 0 2px 8px rgba(0,0,0,0.35);
+}
+.os14-hero .hero-ctas .btn:hover, .os14-hero .hero-ctas .btn:focus-visible {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), 0 12px 36px rgba(13, 90, 200, 0.5), 0 2px 8px rgba(0,0,0,0.35);
+  transform: translateY(-1px);
+}
+.os14-hero .hero-ctas .btn:active { transform: translateY(1px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 4px 14px rgba(13, 90, 200, 0.3); }
+.os14-hero .hero-ctas .btn:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; }
+/* Score-Link: bewusst zweitrangig — keine Fläche, kein Rahmen, aber volle
+   Touch-Höhe (~44px) und klar als Link erkennbar. */
+.os14-scoreline { margin-top: 6px; }
+.os14-scorelink { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 2px 2px 2px 0; font-size: 0.95rem; transition: color 0.2s; }
+.os14-scorelink .pre { color: var(--muted-2); }
+.os14-scorelink .act {
+  color: #9adcf2;
+  text-decoration: underline; text-decoration-color: rgba(22, 196, 244, 0.35);
+  text-decoration-thickness: 1px; text-underline-offset: 4px;
+  transition: color 0.2s, text-decoration-color 0.2s;
+}
+.os14-scorelink:hover .act, .os14-scorelink:focus-visible .act { color: var(--accent-2); text-decoration-color: var(--accent-2); }
+.os14-scorelink:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; border-radius: 6px; }
 /* Vertrauenszeile: dem CTA klar untergeordnet, im warmen Sandton — der
    einzige Ort im Hero, an dem der Sekundärakzent auftaucht. */
-.os14-trust { color: var(--sand-2); margin-top: 14px; }
-.os14-howlink-wrap { margin-top: 12px; }
-.os14-howlink { color: var(--muted); text-decoration: none; font-size: 0.95rem; transition: color 0.2s; }
-.os14-howlink:hover, .os14-howlink:focus-visible { color: var(--accent-2); }
+.os14-trust { color: var(--sand-2); margin-top: 16px; font-size: 0.84rem; letter-spacing: 0.01em; }
+/* Zweispaltiges Text/Instrument-Grid — seit dem Hero-Neuaufbau (August 2026)
+   nur noch von Content-Sektionen unterhalb des Heros genutzt (DAS PROTOKOLL). */
 .os14-hero-inner { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.9fr); gap: clamp(28px, 6vw, 84px); align-items: center; }
 @media (max-width: 900px) { .os14-hero-inner { grid-template-columns: 1fr; } }
 
 /* =========================================================================
-   HERO MOBIL (Founder-Review, Juli 2026): kompakter, CTA im ersten Viewport
-   -------------------------------------------------------------------------
-   Ziel-Reihenfolge auf dem Telefon: Eyebrow → 3-zeilige Headline → 4 Zeilen
-   Nutzen → CTA → Vertrauenszeile → Score-Link. Alles oberhalb des ersten
-   Scrollpunkts auf üblichen Geräten (~700px sichtbare Höhe).
-   Der Hintergrund (Video, Scrim, Grid) bleibt unangetastet.
+   HERO MOBIL: kompakt, alles Wesentliche im ersten Viewport, der Beginn des
+   Data-Bands bleibt auf ~800px hohen Geräten sichtbar.
+   Ziel-Reihenfolge: Eyebrow → 3-zeilige Headline → max. 4 Zeilen Nutzen →
+   CTA (volle Breite) → Score-Link → Vertrauenszeile.
    ========================================================================= */
 @media (max-width: 640px) {
   .br-m { display: inline; }
-  .os14-hero { padding: calc(var(--header-h) + 26px) 0 44px; }
-  .os14-sysline { margin-bottom: 14px; }
-  /* 9.2vw statt der Desktop-Untergrenze 2.7rem: bei 320px ergäbe die alte
-     Formel 43px — "Bau deinen Körper." bräuchte dann ~425px Breite und
-     bräche mitten im Wort. 9.2vw hält die Zeile auf jeder Breite ganz. */
-  .os14-hero .h-display { font-size: clamp(2.05rem, 9.2vw, 3.1rem); line-height: 1.04; }
-  .os14-hero .lead { margin-top: 14px; font-size: 0.97rem; line-height: 1.55; max-width: 46ch; }
-  .os14-hero .hero-ctas { margin-top: 20px; }
-  /* CTA einzeilig UND kompakter: global dürfen Buttons mobil umbrechen
-     (weiter unten), der Hero-CTA aber nie — sein Text ist dafür bemessen. */
-  .os14-hero .hero-ctas .btn { white-space: nowrap; padding: 13px 18px; font-size: 0.93rem; }
-  .os14-trust { margin-top: 12px; font-size: 0.8rem; }
-  .os14-howlink-wrap { margin-top: 8px; }
-  .os14-howlink { font-size: 0.9rem; }
-  /* Übergang: das Diagnose-Instrument beginnt mit klarem Abstand statt
-     zufällig angeschnitten unter der Falz zu hängen. */
-  .os14-hero-inner { gap: 44px; }
+  .os14-hero { padding: calc(var(--header-h) + 24px) 0 40px; }
+  /* Eyebrow: enger gesetzt, damit die Zeile auf 360px ganz bleibt; die
+     dekorative Linie entfällt mobil — sie wirkte gedrängt. */
+  .os14-hero .os14-sysline { margin-bottom: 20px; font-size: 0.55rem; letter-spacing: 0.16em; }
+  .os14-hero .os14-sysline::after { display: none; }
+  /* Exakt bemessen statt geschätzt: die längste Zeile "Bevor du dafür
+     arbeitest." misst 11,69× die Schriftgröße. 8.3vw − 0.25rem füllt die
+     Content-Breite (100vw − 48px) auf jeder Gerätebreite fast vollständig,
+     ohne dass die Zeile je bricht → immer exakt 3 Zeilen, nie 4. */
+  .os14-hero .h-display { font-size: clamp(1.4rem, calc(8.3vw - 0.25rem), 2.35rem); line-height: 1.08; }
+  .os14-hero .lead { margin-top: 20px; font-size: 1rem; line-height: 1.45; max-width: 40ch; }
+  .os14-hero .hero-ctas { margin-top: 26px; }
+  /* CTA: volle Containerbreite, einzeilig, ~54px hoch. */
+  .os14-hero .hero-ctas .btn { width: 100%; white-space: nowrap; min-height: 54px; padding: 13px 18px; font-size: 1.06rem; }
+  .os14-scoreline { margin-top: 4px; }
+  .os14-scorelink { font-size: 0.94rem; }
+  .os14-trust { margin-top: 8px; font-size: 0.8rem; }
 }
-@media (max-width: 360px) {
-  .os14-hero .hero-ctas .btn { font-size: 0.86rem; padding: 12px 14px; }
+@media (max-width: 374px) {
+  .os14-hero .hero-ctas .btn { font-size: 0.99rem; }
+}
+/* Unter ~380px braucht die Beschreibung eine Stufe weniger, sonst wird aus
+   vier Zeilen eine fünfte. */
+@media (max-width: 379px) {
+  .os14-hero .lead { font-size: 0.94rem; }
 }
 
 /* ---- Signature-Hero-Video: cinematischer Hintergrund, Content bleibt lesbar. */
@@ -2854,30 +2888,23 @@ body > * { position: relative; z-index: 0; }
   opacity: 0; transition: opacity 1.2s ease;
 }
 .os14-hero-video.is-live { opacity: 1; }
-/* Scrim: links tiefes Schwarz für die Headline, sanfter Auslauf über dem Motiv,
-   unten Übergang in die Seite. Cyan-Signal bleibt mittig-rechts sichtbar. */
+/* Scrim: links tiefes Schwarz für die Headline (gegenüber Juli-Stand ~15-20%
+   stärker abgedunkelt), kontrollierter Auslauf nach rechts — das Motiv bleibt
+   sichtbar, keine Vignette, kein Blur. */
 .os14-hero-scrim {
   position: absolute; inset: 0;
   background:
-    linear-gradient(90deg, var(--bg-0) 0%, rgba(7,9,13,0.94) 28%, rgba(7,9,13,0.5) 60%, rgba(7,9,13,0.34) 100%),
-    linear-gradient(180deg, rgba(7,9,13,0.55) 0%, transparent 22%, transparent 58%, var(--bg-0) 100%);
+    linear-gradient(90deg, var(--bg-0) 0%, rgba(7,9,13,0.97) 30%, rgba(7,9,13,0.62) 62%, rgba(7,9,13,0.42) 100%),
+    linear-gradient(180deg, rgba(7,9,13,0.6) 0%, transparent 24%, transparent 56%, var(--bg-0) 100%);
 }
 .os14-hero > .container { position: relative; z-index: 1; }
-/* Instrument-Karte als schwebendes Glas-Panel über dem Video (Lesbarkeit). */
-.os14-hero .os14-diag {
-  background: rgba(9,12,18,0.58);
-  -webkit-backdrop-filter: blur(12px) saturate(1.15);
-  backdrop-filter: blur(12px) saturate(1.15);
-  border: 1px solid var(--hairline);
-  border-radius: 16px;
-  padding: 22px 22px 18px;
-}
 @media (max-width: 900px) {
-  /* Einspaltig: Motiv nach oben rücken, stärkeres vertikales Scrim für Text. */
+  /* Einspaltig: Motiv nach oben rücken (Oberkörper sichtbar, nicht
+     angeschnitten), stärkeres vertikales Scrim hinter dem Text. */
   .os14-hero-video { object-position: 70% 30%; }
   .os14-hero-scrim {
     background:
-      linear-gradient(180deg, rgba(7,9,13,0.72) 0%, rgba(7,9,13,0.82) 40%, rgba(7,9,13,0.92) 72%, var(--bg-0) 100%);
+      linear-gradient(180deg, rgba(7,9,13,0.78) 0%, rgba(7,9,13,0.88) 42%, rgba(7,9,13,0.95) 74%, var(--bg-0) 100%);
   }
 }
 @media (prefers-reduced-motion: reduce) { .os14-hero-video { transition: none; } }

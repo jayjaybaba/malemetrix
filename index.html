@@ -148,59 +148,21 @@
     </div>
     <div class="hero-bg"></div>
     <div class="hero-grid-bg"></div>
-    <div class="container os14-hero-inner">
-      <div>
-        <div class="os14-sysline">MM / TRANSFORM · BODY TARGET ENGINE</div>
-        <h1 class="h-display" data-i18n-html="home.h1">Sieh deinen möglichen Körper.<br><span class="text-grad">Bevor du dafür <br class="br-m">arbeitest.</span></h1>
-        <p class="lead" data-i18n="home.lead">Lade ein aktuelles Foto hoch. MaleMetrix erstellt zwei realistische KI-Visualisierungen möglicher Zielzustände. Du wählst das Ziel — MaleMetrix baut den Weg dorthin.</p>
+    <!-- Hero-Neuaufbau (August 2026): genau sechs Ebenen — Eyebrow, Headline,
+         Beschreibung, Primär-CTA, Score-Link, Vertrauenszeile. Die
+         Transformation ist das Produkt, der Score nur der leise Nebeneingang.
+         Zeilenumbrüche der Headline werden explizit gesetzt (br-m nur mobil),
+         nie dem Browser überlassen. -->
+    <div class="container">
+      <div class="os14-hero-copy">
+        <div class="os14-sysline">MALEMETRIX TRANSFORM · BODY TARGET ENGINE</div>
+        <h1 class="h-display" data-i18n-html="home.h1">Sieh deinen <br class="br-m">möglichen Körper.<br><span class="text-grad">Bevor du dafür arbeitest.</span></h1>
+        <p class="lead" data-i18n="home.lead">Lade ein aktuelles Foto hoch. MaleMetrix zeigt dir zwei realistische Zielkörper. Du wählst dein Ziel – und erhältst deinen persönlichen 12-Wochen-Plan für Training und Ernährung.</p>
         <div class="hero-ctas">
-          <a href="transformation.html" class="btn btn-primary btn-lg btn-arrow" data-track="home_transform_cta" data-i18n="cta.seeTransform">Meine mögliche Transformation sehen</a>
-          <a href="check.html" class="btn btn-dark btn-lg" data-track="score_start_click" data-i18n="cta.startCheck">Kostenlosen Score starten</a>
+          <a href="transformation.html" class="btn btn-primary btn-lg btn-arrow" data-track="home_transform_cta" data-i18n="home.ctaPrimary">Meine Zielkörper visualisieren</a>
         </div>
-        <p class="small os14-trust" data-i18n="home.trustline">Zwei realistische Zielvorschläge · eigenes Ziel frei wählbar · KI-Visualisierung, klar gekennzeichnet · Konto erst vor der Generierung</p>
-        <p class="os14-howlink-wrap"><a href="#so-gehts" class="os14-howlink" data-i18n="home.howLink">So funktioniert es&nbsp;↓</a></p>
-      </div>
-      <!-- Ziel-Instrument (Schema, als solches markiert): HEUTE → ZIEL A →
-           ZIEL B als Messinstrument. Bewusst KEINE Beispiel-Fotoperson —
-           schematische Silhouetten statt Stock- oder Fake-Fotos. -->
-      <div class="os14-diag" aria-label="Schema der MaleMetrix Transformation: heute, realistisches Ziel, ambitioniertes Ziel">
-        <div class="head"><span data-i18n="home.diag.head">MM / TRANSFORM · BEISPIELRECHNUNG</span><span class="live">KI-SCHEMA</span></div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:16px 0 6px">
-          <div style="text-align:center">
-            <svg viewBox="0 0 120 178" role="img" aria-label="Schematische Silhouette: heute" style="width:100%;max-width:96px;display:block;margin:0 auto">
-              <circle cx="60" cy="22" r="13" fill="none" stroke="rgba(240,238,233,0.55)" stroke-width="2"/>
-              <path d="M38,44 C29,62 25,78 30,97 C34,113 46,120 60,120 C74,120 86,113 90,97 C95,78 91,62 82,44 Z" fill="rgba(240,238,233,0.10)" stroke="rgba(240,238,233,0.55)" stroke-width="2"/>
-              <rect x="43" y="122" width="13" height="48" rx="6" fill="none" stroke="rgba(240,238,233,0.4)" stroke-width="2"/>
-              <rect x="64" y="122" width="13" height="48" rx="6" fill="none" stroke="rgba(240,238,233,0.4)" stroke-width="2"/>
-              <line x1="18" y1="86" x2="102" y2="86" stroke="rgba(22,196,244,0.45)" stroke-dasharray="3 4" stroke-width="1"/>
-            </svg>
-            <span style="display:block;margin-top:8px;font-family:var(--font-mono);font-size:0.56rem;letter-spacing:0.14em;color:var(--muted-2)">HEUTE<br><b style="color:var(--text)">98 KG</b></span>
-          </div>
-          <div style="text-align:center">
-            <svg viewBox="0 0 120 178" role="img" aria-label="Schematische Silhouette: realistisches Ziel" style="width:100%;max-width:96px;display:block;margin:0 auto">
-              <circle cx="60" cy="22" r="13" fill="none" stroke="rgba(22,196,244,0.7)" stroke-width="2"/>
-              <path d="M37,44 C32,62 31,80 36,98 C40,113 50,120 60,120 C70,120 80,113 84,98 C89,80 88,62 83,44 Z" fill="rgba(22,196,244,0.08)" stroke="rgba(22,196,244,0.7)" stroke-width="2"/>
-              <rect x="44" y="122" width="12" height="48" rx="6" fill="none" stroke="rgba(22,196,244,0.5)" stroke-width="2"/>
-              <rect x="64" y="122" width="12" height="48" rx="6" fill="none" stroke="rgba(22,196,244,0.5)" stroke-width="2"/>
-              <line x1="22" y1="88" x2="98" y2="88" stroke="rgba(22,196,244,0.55)" stroke-dasharray="3 4" stroke-width="1"/>
-            </svg>
-            <span style="display:block;margin-top:8px;font-family:var(--font-mono);font-size:0.56rem;letter-spacing:0.14em;color:var(--muted-2)">ZIEL A · REALISTISCH<br><b style="color:var(--accent-2)">91 KG · 12-16 WO</b></span>
-          </div>
-          <div style="text-align:center">
-            <svg viewBox="0 0 120 178" role="img" aria-label="Schematische Silhouette: ambitioniertes Ziel" style="width:100%;max-width:96px;display:block;margin:0 auto">
-              <circle cx="60" cy="22" r="13" fill="none" stroke="#16C4F4" stroke-width="2.4"/>
-              <path d="M35,44 C35,60 37,78 41,98 C45,113 52,120 60,120 C68,120 75,113 79,98 C83,78 85,60 85,44 Z" fill="rgba(22,196,244,0.14)" stroke="#16C4F4" stroke-width="2.4"/>
-              <rect x="45" y="122" width="11" height="48" rx="6" fill="none" stroke="rgba(22,196,244,0.8)" stroke-width="2"/>
-              <rect x="64" y="122" width="11" height="48" rx="6" fill="none" stroke="rgba(22,196,244,0.8)" stroke-width="2"/>
-              <line x1="26" y1="90" x2="94" y2="90" stroke="#16C4F4" stroke-dasharray="3 4" stroke-width="1"/>
-            </svg>
-            <span style="display:block;margin-top:8px;font-family:var(--font-mono);font-size:0.56rem;letter-spacing:0.14em;color:var(--muted-2)">ZIEL B · AMBITIONIERT<br><b style="color:var(--accent-2)">82 KG · MEHRPHASIG</b></span>
-          </div>
-        </div>
-        <div class="diag-foot">
-          <p class="lead-out" data-i18n-html="home.diag.leadOut"><b>Beide Vorschläge ehrlich gerechnet</b> — aus Gewicht, Größe, Taille und Ausgangsform. Dein eigenes Wunschziel bleibt frei wählbar.</p>
-          <p class="note" data-i18n="home.diag.note">Schema mit Beispielwerten, keine echte Person. Deine Visualisierung entsteht aus deinem eigenen Foto und ist klar als KI gekennzeichnet.</p>
-        </div>
+        <p class="os14-scoreline"><a href="check.html" class="os14-scorelink" data-track="score_start_click" data-i18n-html="home.scoreLink"><span class="pre">Oder zuerst:</span> <span class="act">Kostenlosen Score starten</span></a></p>
+        <p class="small os14-trust" data-i18n="home.trustline">Zwei realistische Zielbilder · Ziel frei wählbar · Klar als KI gekennzeichnet</p>
       </div>
     </div>
   </section>
