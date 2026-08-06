@@ -1307,8 +1307,8 @@
           : "Starte jetzt: dein 12-Wochen-Plan."));
         intro.appendChild(el("p", "cp",
           (phase1
-            ? "Dein Gesamtziel: <strong>" + t + " kg in ehrlich ~" + p.realWeeks + " Wochen</strong>. Phase 1 bringt dich in 12 Wochen auf <strong>" + phase1.lo + "–" + phase1.hi + " kg</strong> — mit vollständigem Trainingsplan, Ernährungssystem, Tracker, Wochenreviews und automatischen Anpassungen. Die nächste Phase baut auf deinem echten Fortschritt auf."
-            : "Dein Ziel: <strong>" + t + " kg in ~" + p.realWeeks + " Wochen</strong> — komplett innerhalb eines 12-Wochen-Durchlaufs. Vollständiger Trainingsplan, Ernährungssystem, Tracker, Wochenreviews und automatische Anpassungen.") +
+            ? "Dein Gesamtziel: <strong>" + t + " kg in ehrlich ~" + p.realWeeks + " Wochen</strong>. Phase 1 bringt dich in 12 Wochen auf <strong>" + phase1.lo + "–" + phase1.hi + " kg</strong>. Du bekommst nicht nur einen Plan: MaleMetrix prüft zwölf Wochen lang, welchen Verlauf du gerade aufbaust, und verändert jede Woche nur den einen Hebel, der jetzt wirklich zählt. Die nächste Phase baut auf deinem echten Fortschritt auf."
+            : "Dein Ziel: <strong>" + t + " kg in ~" + p.realWeeks + " Wochen</strong> — komplett innerhalb eines 12-Wochen-Durchlaufs. Du bekommst nicht nur einen Plan: MaleMetrix prüft zwölf Wochen lang, welchen Verlauf du gerade aufbaust, und verändert jede Woche nur den einen Hebel, der jetzt wirklich zählt.") +
           " <strong>" + protoPrice + " €, einmalig, kein Abo.</strong>"));
         var unlock = el("a", "btn btn-primary", "Meinen 12-Wochen-Plan freischalten");
         unlock.href = "protokoll.html";
