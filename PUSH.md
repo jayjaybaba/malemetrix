@@ -1,5 +1,17 @@
 # Web Push — ehrliche Status-Klassifikation (Phase 6)
 
+> **UPDATE 06.08.2026 — AKTIVIERT.** VAPID-Keypair + SCHEDULER_SECRET sind in
+> den Supabase-Edge-Function-Secrets gesetzt (Founder), der Public Key steht
+> in `js/config.js` (`VAPID_PUBLIC_KEY`). Scheduler: pg_cron ruft
+> `send-brief` täglich 05:00 UTC (Morning Brief) und So 16:00 UTC
+> (Weekly Review) über `public.mm_send_brief()` auf — das Secret liest der
+> Job aus dem Supabase Vault (`scheduler_secret`), nichts liegt im Repo
+> (Migration `20260806000018_push_scheduler.sql`). Verifiziert: falscher
+> Header → 403, korrekter → 200; DB→Vault→pg_net→Function Ende-zu-Ende 200.
+> Aktivieren pro Gerät: meinplan.html → Mein Plan → iPhone →
+> „Benachrichtigungen aktivieren" (Konto nötig; auf iOS nur als installierte
+> PWA — Apple-Regel). Der Rest dieser Datei beschreibt den Weg dorthin.
+
 ## Was HEUTE funktioniert (ohne weitere Konfiguration)
 - **Reminder-Engine** (`js/os/execution.js`): Wert-Filter (nur actionable, nie
   für Erledigtes), Dedup pro Tag, Quiet Hours, max. N/Tag, Eskalation genau 1×.
