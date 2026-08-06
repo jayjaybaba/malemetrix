@@ -1,0 +1,127 @@
+/* ==========================================================================
+   MaleMetrix Generation 2 — vereinfachte App (meinplan.html)
+   Nutzt die Design-Tokens aus style.css (dunkles Interface, Cyan-Akzente,
+   präzise Typografie). Bewusst wenige Komponenten: Karte, Aufgabe, Chip,
+   Bottom-Nav. Keine Systembegriffe, keine Karten-Flut.
+   ========================================================================== */
+
+.sapp { max-width: 640px; margin: 0 auto; padding: 18px 16px calc(84px + env(safe-area-inset-bottom)); min-height: 70vh; }
+.sapp h1, .sapp h2, .sapp h3 { letter-spacing: 0.01em; }
+.sapp h2 { font-size: 1.35rem; margin: 4px 0 4px; }
+.sapp .s-sub { color: var(--muted); font-size: 0.92rem; margin: 0 0 14px; }
+
+/* Kopfzeile: Woche · Ziel */
+.s-head { border: 1px solid var(--line); border-radius: 14px; background: var(--card); padding: 14px 16px; margin-bottom: 14px; }
+.s-head .k { font-size: 0.68rem; letter-spacing: 0.14em; color: var(--accent-2); text-transform: uppercase; display: block; margin-bottom: 4px; }
+.s-head .goal { color: var(--text); font-weight: 600; }
+.s-head .phase { color: var(--muted); font-size: 0.9rem; margin-top: 3px; }
+.s-head .status { margin-top: 8px; font-size: 0.88rem; color: var(--green); }
+.s-head .status.warn { color: var(--amber); }
+
+/* Aufgabenliste (max. 3 primäre) */
+.s-tasks { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
+.s-task { display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); padding: 13px 14px; cursor: pointer; transition: border-color 0.15s; }
+.s-task:hover { border-color: var(--accent-line); }
+.s-task .box { width: 26px; height: 26px; border-radius: 8px; border: 2px solid var(--line-strong); flex: 0 0 auto; display: grid; place-items: center; font-size: 15px; color: transparent; }
+.s-task.done .box { border-color: var(--green); background: var(--green-soft); color: var(--green); }
+.s-task .t { flex: 1; }
+.s-task .t b { display: block; font-weight: 600; }
+.s-task.done .t b { text-decoration: line-through; color: var(--muted); }
+.s-task .t span { color: var(--muted); font-size: 0.85rem; }
+.s-task .go { color: var(--accent-2); font-size: 0.82rem; white-space: nowrap; }
+
+/* Sekundär-Chips (Einkauf, Prep, Wiegen, Foto, Wochencheck) */
+.s-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; }
+.s-chip { border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px; font-size: 0.82rem; color: var(--muted); background: transparent; cursor: pointer; }
+.s-chip.on { color: var(--green); border-color: var(--green); background: var(--green-soft); }
+.s-chip.cta { color: var(--accent-2); border-color: var(--accent-line); }
+
+/* Karten */
+.s-card { border: 1px solid var(--line); border-radius: 14px; background: var(--card); padding: 15px 16px; margin: 12px 0; }
+.s-card h3 { font-size: 1.02rem; margin: 0 0 8px; }
+.s-card .hint { color: var(--muted-2); font-size: 0.84rem; }
+.s-note { border-left: 3px solid var(--accent-2); padding: 10px 14px; background: var(--accent-soft); border-radius: 0 10px 10px 0; font-size: 0.9rem; margin: 12px 0; }
+.s-note.warn { border-left-color: var(--amber); background: var(--amber-soft); }
+
+/* Untertabs in "Mein Plan" */
+.s-subtabs { display: flex; gap: 6px; overflow-x: auto; margin: 0 0 12px; padding-bottom: 4px; }
+.s-subtabs button { border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 999px; padding: 8px 14px; font-size: 0.86rem; cursor: pointer; white-space: nowrap; }
+.s-subtabs button.on { color: var(--text); border-color: var(--accent-line); background: var(--accent-soft); }
+
+/* Woche */
+.s-week { display: flex; flex-direction: column; gap: 6px; }
+.s-week .d { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; font-size: 0.9rem; }
+.s-week .d.today { border-color: var(--accent-line); background: var(--accent-soft); }
+.s-week .d .wd { width: 34px; color: var(--muted); font-size: 0.78rem; letter-spacing: 0.08em; }
+.s-week .d .what { flex: 1; }
+.s-week .d .tag { color: var(--accent-2); font-size: 0.78rem; }
+
+/* Training */
+.s-ex { border-top: 1px solid var(--line); padding: 10px 0; display: flex; align-items: center; gap: 10px; }
+.s-ex:first-of-type { border-top: 0; }
+.s-ex .n { flex: 1; }
+.s-ex .n b { font-weight: 600; display: block; }
+.s-ex .n span { color: var(--muted); font-size: 0.82rem; }
+.s-ex .short-mark { color: var(--accent-2); font-size: 0.7rem; letter-spacing: 0.1em; }
+.s-ex input[type="number"] { width: 64px; background: var(--bg-2); border: 1px solid var(--line-strong); color: var(--text); border-radius: 8px; padding: 7px 8px; font-size: 0.9rem; }
+.s-ex .setbox { display: flex; gap: 5px; }
+.s-ex .setbox button { width: 30px; height: 30px; border-radius: 8px; border: 1.5px solid var(--line-strong); background: transparent; color: var(--muted); cursor: pointer; font-size: 0.8rem; }
+.s-ex .setbox button.on { border-color: var(--green); color: var(--green); background: var(--green-soft); }
+.s-ex select { background: var(--bg-2); border: 1px solid var(--line); color: var(--muted); border-radius: 8px; padding: 6px; font-size: 0.8rem; max-width: 130px; }
+
+/* Ernährung */
+.s-meal { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 10px 0; }
+.s-meal .slot { font-size: 0.7rem; letter-spacing: 0.12em; color: var(--accent-2); text-transform: uppercase; }
+.s-meal .opt { border-top: 1px solid var(--line); padding: 9px 0; }
+.s-meal .opt:first-of-type { border-top: 0; }
+.s-meal .opt .row { display: flex; align-items: baseline; gap: 8px; }
+.s-meal .opt .row b { flex: 1; font-weight: 600; }
+.s-meal .opt .row .kp { color: var(--muted); font-size: 0.82rem; white-space: nowrap; }
+.s-meal .opt .items, .s-meal .opt .prep { color: var(--muted-2); font-size: 0.82rem; margin-top: 3px; }
+.s-meal .opt.chosen { background: var(--accent-soft); border-radius: 8px; padding-left: 10px; padding-right: 10px; }
+.s-meal .opt button { margin-top: 6px; }
+
+/* Einkaufsliste */
+.s-shop .cat { font-size: 0.72rem; letter-spacing: 0.12em; color: var(--accent-2); text-transform: uppercase; margin: 14px 0 6px; }
+.s-shop label { display: flex; gap: 10px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line); cursor: pointer; font-size: 0.92rem; }
+.s-shop label input { width: 18px; height: 18px; accent-color: var(--accent-2); }
+.s-shop label.done span { text-decoration: line-through; color: var(--muted-2); }
+.s-shop .amt { margin-left: auto; color: var(--muted); font-size: 0.84rem; }
+
+/* Fortschritt */
+.s-stat { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 12px 0; }
+.s-stat .cell { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: var(--card); }
+.s-stat .cell .v { font-size: 1.35rem; font-weight: 650; }
+.s-stat .cell .l { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
+.s-bars { display: flex; gap: 3px; align-items: flex-end; height: 60px; margin: 10px 0; }
+.s-bars .b { flex: 1; background: var(--accent-soft); border-radius: 3px 3px 0 0; min-height: 4px; position: relative; }
+.s-bars .b.hit { background: var(--accent-2); }
+
+/* Formulare (Fragebogen, Wochencheck) */
+.s-q { margin: 14px 0; }
+.s-q .lbl { font-weight: 600; margin-bottom: 3px; }
+.s-q .why { color: var(--muted-2); font-size: 0.8rem; margin-bottom: 8px; }
+.s-q .opts { display: flex; flex-wrap: wrap; gap: 7px; }
+.s-q .opts button { border: 1px solid var(--line-strong); background: transparent; color: var(--muted); border-radius: 999px; padding: 8px 15px; cursor: pointer; font-size: 0.88rem; }
+.s-q .opts button.on { color: var(--text); border-color: var(--accent-2); background: var(--accent-soft); }
+.s-q input[type="number"], .s-q input[type="time"] { background: var(--bg-2); border: 1px solid var(--line-strong); color: var(--text); border-radius: 9px; padding: 9px 11px; font-size: 0.95rem; width: 120px; }
+.s-err { color: var(--red); font-size: 0.87rem; margin: 8px 0; }
+
+/* Bottom-Navigation — genau vier Bereiche */
+.s-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; display: flex; justify-content: space-around; background: rgba(9, 12, 17, 0.96); backdrop-filter: blur(10px); border-top: 1px solid var(--line-strong); padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); }
+.s-nav a { display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--muted); font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; text-decoration: none; padding: 5px 10px; border-radius: 10px; min-width: 62px; }
+.s-nav a svg { width: 21px; height: 21px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+.s-nav a.on { color: var(--accent-2); }
+
+/* Wizard */
+.s-steps { display: flex; gap: 6px; margin: 6px 0 16px; }
+.s-steps i { height: 3px; flex: 1; background: var(--line); border-radius: 2px; }
+.s-steps i.on { background: var(--accent-2); }
+
+.s-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+
+@media (max-width: 360px) {
+  .sapp { padding-left: 12px; padding-right: 12px; }
+  .s-stat { grid-template-columns: 1fr 1fr; }
+  .s-ex input[type="number"] { width: 54px; }
+}

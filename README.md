@@ -98,6 +98,18 @@ Die Seite trackt die wichtigsten Funnel-Schritte (Check gestartet/abgeschlossen,
 
 > Hinweis: Da die Seite serverlos ist, läuft die PayPal-Zahlung clientseitig (Standard-Smart-Buttons). Für hohe Umsätze später ggf. serverseitige Order-Capture ergänzen.
 
+## Generation 2 — der einfache 12-Wochen-Begleiter (Rollout Stufe 1)
+
+Die neue, radikal vereinfachte App lebt unter **`meinplan.html`**
+(Heute · Mein Plan · Fortschritt · Profil): Transformation → Ziel → Score →
+wenige Planfragen → persönlicher 12-Wochen-Plan → tägliche Umsetzung →
+Wochencheck. Kern: `js/simple/` + `js/flags.js` (Feature-Flags, Rollout-
+Stufen in `js/config.js`). Die bisherige OS-Oberfläche bleibt vollständig
+erhalten (`mein-protokoll.html?legacy=1`) und ist als `malemetrix-os-v1`
+archiviert. Doku: `PRODUCT_ARCHITECTURE.md`, `PLAN_MODEL.md`, `ROLLBACK.md`,
+`MIGRATION.md`, `IPHONE_INTEGRATION.md`, `LEGACY_RESTORE.md`,
+Abschlussbericht `GEN2_FINAL_REPORT.md`.
+
 ## 12-Wochen-Programm (Selbststudium, ohne Coaching)
 
 Ein Online-Programm zum Selbermachen — dasselbe System wie das Coaching, aber ohne 1:1-Betreuung. **Teil von DAS PROTOKOLL (99 € einmalig), kein separater Kauf.**

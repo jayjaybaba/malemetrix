@@ -1,0 +1,62 @@
+# Einmaliger Archivierungs-Workflow: erzeugt Tag + GitHub-Release für die
+# eingefrorene Produktgeneration "MaleMetrix OS v1".
+#
+# Hintergrund: Die Claude-Code-Remote-Umgebung darf nur auf ihren Arbeitsbranch
+# pushen (Tag-Push → 403). Dieser Workflow holt das nach — idempotent, vom
+# festgepinnten Produktions-Commit, ohne History-Umschreibung.
+#
+# Ausführen: Actions → "archive-os-v1" → Run workflow (nachdem diese Datei auf
+# dem Default-Branch liegt). Mehrfaches Ausführen ist ungefährlich.
+name: archive-os-v1
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TAG: malemetrix-os-v1-final
+      # Produktions-Commit von main am 06.08.2026 (Tree identisch zu master@89bc382)
+      SHA: d5cd0ce4b66771cc697d86d4d9a482a61f180a62
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Tag erzeugen (idempotent, nie verschieben)
+        run: |
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "Tag $TAG existiert bereits auf $(git rev-list -n1 $TAG) — unverändert."
+          else
+            git tag "$TAG" "$SHA"
+            git push origin "refs/tags/$TAG"
+            echo "Tag $TAG auf $SHA erzeugt."
+          fi
+      - name: Archiv-Branch verifizieren
+        run: |
+          git fetch origin archive/malemetrix-os-v1
+          AB=$(git rev-parse origin/archive/malemetrix-os-v1)
+          [ "$(git rev-parse $AB^{tree})" = "$(git rev-parse $SHA^{tree})" ] \
+            && echo "archive/malemetrix-os-v1 Tree == Produktions-Tree ✔" \
+            || { echo "::error::Archiv-Branch-Tree weicht vom Produktions-Commit ab"; exit 1; }
+      - name: Release erzeugen (idempotent)
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release existiert bereits — unverändert."
+          else
+            gh release create "$TAG" \
+              --title "MaleMetrix OS v1 — eingefrorener Produktionsstand" \
+              --notes "Vollständig archivierte Produktgeneration **MaleMetrix OS v1** (Stand 06.08.2026).
+
+- Produktions-Commit: \`$SHA\` (Branch \`main\`, GitHub Pages)
+- Archiv-Branch: \`archive/malemetrix-os-v1\` (Tree-identisch)
+- Wiederherstellung: siehe \`LEGACY_RESTORE.md\` auf \`main\`
+- Modul-Inventar & Reaktivierung: \`LEGACY_MODULES.md\`
+- Supabase-Schema: 16 Repo-Migrationen + \`supabase/schema-capture/remote_only_20260806.sql\`
+- Enthält keine Secrets und keine Nutzerdaten (Quellcode-Archiv wird von GitHub automatisch aus dem Tag erzeugt)."
+          fi

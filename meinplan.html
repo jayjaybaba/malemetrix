@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Mein Plan — MaleMetrix</title>
+  <meta name="description" content="Dein persönlicher 12-Wochen-Plan: Training, Ernährung, Einkaufsliste und dein heutiger Tag.">
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="css/fonts.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/simple.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23070A0F'/%3E%3Cpath d='M8.5 8.5l5.5 5.5M8.5 23.5l5.5-5.5' stroke='%23F0EEE9' stroke-width='3.4' stroke-linecap='round' fill='none'/%3E%3Cpath d='M23.5 8.5l-5.5 5.5M23.5 23.5l-5.5-5.5' stroke='%2316C4F4' stroke-width='3.4' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+  <link rel="canonical" href="https://www.malemetrix.com/meinplan.html">
+  <meta name="theme-color" content="#070A0F">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+</head>
+<body>
+
+<header class="site-header" id="siteHeader">
+  <div class="container header-inner">
+    <a href="index.html" class="logo" aria-label="MaleMetrix Startseite"><span class="logo-word">MALEMETRI</span><svg class="logo-x" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path d="M22 22 42 42 M22 78 42 58" stroke="#F0EEE9" stroke-width="12" stroke-linecap="round" fill="none"/><path d="M78 22 58 42 M78 78 58 58" stroke="#16C4F4" stroke-width="12" stroke-linecap="round" fill="none"/></svg></a>
+    <div class="header-actions">
+      <button class="lang-toggle" data-lang-toggle aria-label="Sprache wechseln"><span class="lang-code">EN</span></button>
+    </div>
+  </div>
+</header>
+
+<main class="sapp" id="sapp" aria-live="polite"></main>
+
+<nav class="s-nav" aria-label="App-Navigation">
+  <a href="#heute"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span data-i18n="sapp.today">Heute</span></a>
+  <a href="#plan"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="17" rx="2"/><path d="M8 2v4M16 2v4M4 10h16"/></svg><span data-i18n="sapp.plan">Mein Plan</span></a>
+  <a href="#fortschritt"><svg viewBox="0 0 24 24"><path d="M4 19h16M6 16v-5M11 16V8M16 16v-3M21 16V5"/></svg><span data-i18n="sapp.progress">Fortschritt</span></a>
+  <a href="#profil"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"/></svg><span data-i18n="sapp.profile">Profil</span></a>
+</nav>
+
+<script src="js/config.js"></script>
+<script src="js/flags.js"></script>
+<script src="js/analytics.js"></script>
+<script src="js/shop-data.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/main.js"></script>
+<script>
+  // Flag-Weiche: Ist die vereinfachte App deaktiviert, führt der Weg zurück
+  // zur klassischen Oberfläche (Rollback ohne Codeänderung, ROLLBACK.md).
+  if (window.MM && MM.flags && !MM.flags.get("simpleAppEnabled")) {
+    location.replace("mein-protokoll.html?legacy=1");
+  }
+  if (window.MM && MM.i18n && MM.i18n.extend) {
+    MM.i18n.extend({
+      "sapp.today": { de: "Heute", en: "Today" },
+      "sapp.plan": { de: "Mein Plan", en: "My plan" },
+      "sapp.progress": { de: "Fortschritt", en: "Progress" },
+      "sapp.profile": { de: "Profil", en: "Profile" }
+    });
+  }
+</script>
+<script src="js/account.js"></script>
+<script src="js/simple/plan-model.js"></script>
+<script src="js/simple/plan-input.js"></script>
+<script src="js/simple/plan-engine.js"></script>
+<script src="js/simple/weekly-check.js"></script>
+<script src="js/simple/ics.js"></script>
+<script src="js/simple/plan-store.js"></script>
+<script src="js/simple/migration.js"></script>
+<script src="js/simple/iphone.js"></script>
+<script src="js/simple/app.js"></script>
+</body>
+</html>

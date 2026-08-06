@@ -434,6 +434,37 @@ window.MM_CONFIG = {
     }
   },
 
+  // --- Feature Flags (Generation 2 — Rollout-Schalter) ----------------------
+  // Zentrale Deploy-Ebene des Flag-Systems (js/flags.js; Ebenen: Defaults <
+  // DIESE CONFIG < Konto < Gerät). Rollback = Werte ändern + deployen,
+  // keine Codeänderung (ROLLBACK.md).
+  //
+  // Rollout-Stufen (PRODUCT_ARCHITECTURE.md §Rollout):
+  //   AKTUELLER STAND: Stufe 4 — die neue App ist Standard (Founder-
+  //   Entscheidung 06.08.2026, "live erleben"); Rückweg pro Nutzer über
+  //   das Profil, global über simpleAppDefault: false.
+  //   Stufe 1 (intern):        simpleAppDefault: false
+  //     Die neue App ist unter /meinplan.html erreichbar (Admin/Tester
+  //     öffnen sie direkt oder per MM.flags.setLocal("simpleAppDefault",true)),
+  //     Legacy bleibt für alle Standard.
+  //   Stufe 2 (Testkonten):    ausgewählte Konten per
+  //     MM.flags.setUser("simpleAppDefault", true) — synct über das Konto.
+  //   Stufe 3 (neue Nutzer):   Funnel-Links (Transformation/Score) auf
+  //     meinplan.html umstellen; Bestand bleibt auf Legacy.
+  //   Stufe 4 (Bestand):       simpleAppDefault: true — Legacy-Fallback
+  //     bleibt pro Nutzer über das Profil verfügbar.
+  //   Stufe 5 (Standard):      zusätzlich legacyAppAdminOnly: true —
+  //     erst wenn Backups/Migration/Rollback/Entitlements verifiziert sind.
+  //     Legacy wird NIE physisch gelöscht.
+  featureFlags: {
+    simpleAppEnabled: true,
+    simpleAppDefault: true,
+    legacyAppEnabled: true,
+    legacyAppAdminOnly: false,
+    newPlanEngineEnabled: true,
+    legacyPlanFallbackEnabled: true
+  },
+
   // --- Rechtliches ----------------------------------------------------------
   // Diese Angaben werden im Impressum & in Bestellbestätigungen verwendet.
   legal: {
