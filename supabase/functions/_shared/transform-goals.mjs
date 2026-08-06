@@ -217,50 +217,63 @@ export function validatePair(aKg, bKg) {
    ============================================================ */
 const EMPHASIS =
   "The transformation must be immediately OBVIOUS and dramatic — a striking, unmistakable " +
-  "before/after difference in silhouette, belly, waist and face. Never produce a subtle or " +
-  "barely visible change. ";
+  "before/after difference. Do NOT return the photo unchanged or nearly unchanged; the body " +
+  "must look clearly different at first glance. ";
+
+// Die bewährte Kernanweisung des allerersten Live-Stands (78→70 kg ergab
+// damals ein Sixpack — Betreiber: „Das war TOP"): Definition steigt mit dem
+// Verlust, der Bauch wird nie weichgezeichnet.
+const CUT_RULE =
+  "IMPORTANT: muscle definition INCREASES with the amount of weight lost — at this weight he " +
+  "must look MORE defined than at any smaller loss. Never soften or smooth the abdominal area. ";
 
 export function targetLookFragment({ weightKg, heightCm, waistCm, shape, targetKg }) {
   const est = estimateBf({ weightKg, heightCm, waistCm, shape });
   const lean = leanMass(weightKg, est.mid);
   const cut = targetKg < weightKg;
   if (cut) {
+    const pct = Math.round(((weightKg - targetKg) / weightKg) * 100);
     const tBf = bfAtWeight(lean, targetKg).mid;
-    if (tBf >= 30) {
+    // Einzige Ehrlichkeits-Kappe: Wer am Ziel geschätzt noch ~28 %+
+    // Körperfett hat, bekommt dramatischen Fettverlust, aber kein Sixpack.
+    if (tBf >= 28) {
       return EMPHASIS + "He is dramatically slimmer: a much smaller belly, drastically reduced waist, " +
-        "visibly slimmer face, chest and arms — a completely changed silhouette. NO six-pack at this " +
-        "stage, but the fat loss is massive and unmistakable. ";
+        "visibly slimmer face, chest and arms — a completely changed silhouette. The fat loss is " +
+        "massive and unmistakable, though there is NO six-pack at this stage. ";
     }
-    if (tBf >= 22) {
-      return EMPHASIS + "He is dramatically slimmer: flat stomach, much narrower waist, clearly slimmer " +
-        "face and sharper jawline — first hints of upper-ab outlines, but NO full six-pack yet. ";
+    // Darunter: die bewährte prozentbasierte Staffel des ersten Live-Stands.
+    if (pct >= 15) {
+      return EMPHASIS + "At this large loss he is VERY lean (low body fat): a sharply defined six-pack, " +
+        "clear muscle separation, visible veins on the arms, tight chest and a leaner, more angular face. " +
+        CUT_RULE;
     }
-    if (tBf >= 17) {
-      return EMPHASIS + "He looks impressively athletic: flat, hard stomach with clearly visible ab " +
-        "outlines, defined chest, shoulders and arms, tight waist, sharper facial features. ";
+    if (pct >= 8) {
+      return EMPHASIS + "He is now lean: a clearly visible six-pack, defined tight waist, defined chest " +
+        "and arms, noticeably slimmer face. " + CUT_RULE;
     }
-    if (tBf >= 12) {
-      return EMPHASIS + "He is lean and defined: a clearly visible six-pack, sharp V-shaped waist, " +
-        "defined chest, shoulders and arms, lean angular face. IMPORTANT: muscle definition INCREASES " +
-        "with the amount of weight lost — never soften or smooth the abdominal area. ";
-    }
-    return EMPHASIS + "He is extremely lean: a sharply defined six-pack, deep muscle separation, " +
-      "visible veins on arms and shoulders, tight angular face. IMPORTANT: muscle definition INCREASES " +
-      "with the amount of weight lost — never soften or smooth the abdominal area. ";
+    return EMPHASIS + "He is clearly leaner: visibly flatter stomach with first ab outlines, narrower " +
+      "waist, slimmer face. " + CUT_RULE;
   }
+  // Aufbau: Der Muskelzuwachs muss UNÜBERSEHBAR sein — „unverändertes Bild"
+  // ist der dokumentierte Fehlermodus des Modells bei zu zahmen Prompts.
   const frac = (targetKg - weightKg) / weightKg;
-  if (frac <= 0.05) {
-    return EMPHASIS + "He has gained clearly visible muscle: noticeably fuller chest, broader shoulders, " +
-      "thicker arms, same tight waist — a visibly more powerful physique. ";
+  if (frac <= 0.06) {
+    return EMPHASIS + "He is visibly more muscular: clearly fuller and broader chest, wider shoulders, " +
+      "noticeably thicker arms, more muscular back — the muscle gain must be clearly visible in the " +
+      "photo, not subtle. Waist stays tight. ";
   }
-  return EMPHASIS + "He is significantly more muscular: broad shoulders, thick chest and arms, powerful " +
-    "V-taper, strong legs — an impressively built, dense physique. ";
+  return EMPHASIS + "He is dramatically more muscular, like after years of dedicated bodybuilding " +
+    "training: much bigger chest, much broader shoulders, thick arms with clearly larger biceps and " +
+    "triceps, wide muscular back with a powerful V-taper, fuller legs. The muscle mass must be " +
+    "strikingly larger than in the original photo. ";
 }
 
-// Identitäts-Block: gilt für JEDEN Prompt (Regel 2.8).
+// Identitäts-Block: kurz und bewährt. Der ausführliche „same everything"-
+// Block vom 06.08. drückte das Modell in die Vorsicht — Ergebnis: kaum
+// sichtbare Veränderung (Betreiber-Befund). Kernpunkte bleiben: gleiche
+// Person, Gesicht ohne Verschönerung, Frisur/Tattoos, Pose, Hintergrund.
 export const IDENTITY_FRAGMENT =
-  "Keep the SAME person and identity, strictly: identical face without any beautification, " +
-  "same facial structure, same hairstyle and hair color, same skin tone, same tattoos and " +
-  "body hair (do not add, remove or alter tattoos), same pose, same perspective and camera " +
-  "angle, same background, same lighting, same clothing (if any — do NOT add clothing to a " +
-  "bare torso). Photorealistic, natural skin texture. Change nothing except his body composition.";
+  "Keep the SAME person and identity: identical face (do not beautify it), same hairstyle, " +
+  "same skin tone, same tattoos, same pose, same clothing (if any — do NOT add clothing to a " +
+  "bare torso), same background, same lighting and camera angle. Photorealistic, natural skin " +
+  "texture. Change ONLY his body composition — but change it strongly.";

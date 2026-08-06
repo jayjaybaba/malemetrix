@@ -135,13 +135,13 @@ test("Prompts: jede Stufe verlangt einen dramatischen, unübersehbaren Unterschi
   [[160, 185, 135, "adipoes", 136], [90, 182, 96, "durchschnitt", 76], [80, 180, 84, "athletisch", 72], [75, 180, 82, "athletisch", 82]].forEach(([w, h, wa, s, tk]) => {
     const f = G.targetLookFragment({ weightKg: w, heightCm: h, waistCm: wa, shape: s, targetKg: tk });
     assert.ok(/OBVIOUS and dramatic/i.test(f), "Wow-Anweisung fehlt: " + f.slice(0, 80));
-    assert.ok(/Never produce a subtle/i.test(f), "Anti-Subtil-Anweisung fehlt");
+    assert.ok(/Do NOT return the photo unchanged/i.test(f), "Anti-No-Op-Anweisung fehlt");
   });
 });
 
 test("Prompts: Identität bleibt strikt erhalten", () => {
   assert.ok(/same tattoos/i.test(G.IDENTITY_FRAGMENT), "Tattoos bleiben");
-  assert.ok(/without any beautification/i.test(G.IDENTITY_FRAGMENT), "keine Gesichtsverschönerung");
+  assert.ok(/do not beautify/i.test(G.IDENTITY_FRAGMENT), "keine Gesichtsverschönerung");
   assert.ok(/same hairstyle/i.test(G.IDENTITY_FRAGMENT), "keine neue Frisur");
   assert.ok(/same background/i.test(G.IDENTITY_FRAGMENT), "Hintergrund bleibt");
 });
