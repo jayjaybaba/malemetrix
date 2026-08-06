@@ -21,7 +21,7 @@ import { corsHeaders, jsonResponse, preflight, requireUser } from "../_shared/ed
 // Zielengine: EINE Quelle der Wahrheit für Grenzen, Schätzungen und
 // Prompt-Bausteine — dieselbe Datei läuft im Browser und in den Node-Tests.
 // Direkt manipulierte API-Aufrufe treffen hier auf dieselben Regeln wie die UI.
-import { IDENTITY_FRAGMENT, SHAPES, targetLookFragment, validateTarget } from "../_shared/transform-goals.mjs";
+import { IDENTITY_FRAGMENT, SHAPES, targetLookFragment } from "../_shared/transform-goals.mjs";
 
 // 12 Bilder/Stunde pro Nutzer = 6 komplette Läufe (2 Ziele je Lauf).
 // Bewusst knapper als mm-ai (30/h): ein Bild kostet ~4 Cent statt Bruchteilen.
@@ -151,9 +151,11 @@ Deno.serve(async (req) => {
       .eq("user_id", user.id).eq("status", "active");
     const isCustomer = roleRow?.role === "owner" || (entCount ?? 0) > 0;
 
-    // --- Payload-Validierung: alle Felder hart geprüft. Die Zielprüfung
-    //     läuft über die Zielengine — clientseitig blockierte Werte können
-    //     nicht per direktem API-Aufruf umgangen werden (Phase 2/6). ---
+    // --- Payload-Validierung: technische Grenzen, hart geprüft.
+    //     Produktentscheidung des Betreibers (06.08.2026): Zielgewichte
+    //     werden NICHT mehr blockiert — der Nutzer wählt frei innerhalb
+    //     40-300 kg. Die Zielengine liefert im Client nur noch die ehrliche
+    //     EINORDNUNG (plausibel/ambitioniert/nicht seriös), keine Sperre. ---
     const currentKg = Number(body.current_kg);
     const targetKg = Number(body.target_kg);
     const heightCm = Number(body.height_cm);
@@ -167,14 +169,8 @@ Deno.serve(async (req) => {
     if (!Number.isFinite(heightCm) || heightCm < 140 || heightCm > 220) {
       return json({ error: "invalid_height" }, 400);
     }
-    const verdictRes = validateTarget({ weightKg: currentKg, heightCm, waistCm, shape, targetKg });
-    if (verdictRes.verdict !== "plausibel" && verdictRes.verdict !== "ambitioniert") {
-      // Blockierte Ziele bekommen die dynamische Alternative mitgeliefert —
-      // die UI macht daraus eine Empfehlung statt einer Sackgasse.
-      return json({
-        error: "target_blocked", verdict: verdictRes.verdict, code: verdictRes.code,
-        alt_lo: verdictRes.altLo ?? null, alt_hi: verdictRes.altHi ?? null,
-      }, 400);
+    if (!Number.isFinite(targetKg) || targetKg < 40 || targetKg > 300 || Math.round(targetKg) === Math.round(currentKg)) {
+      return json({ error: "invalid_target_kg" }, 400);
     }
     if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(image)) {
       return json({ error: "invalid_image" }, 400);
