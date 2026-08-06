@@ -55,9 +55,10 @@
     // Das gewählte Transformationsziel folgt dem Konto (Funnel-Fortsetzung
     // auf anderem Gerät); Owner bleibt js/transformation.js.
     MM.account.registerStateDomain("transform_goal", "transform_goal");
-    // Tagesprotokoll + Einkaufs-Häkchen der Gen-2-App.
+    // Tagesprotokoll + Einkaufs-Häkchen + Migrationsstatus der Gen-2-App.
     MM.account.registerStateDomain("simple_daylog", "simple_daylog");
     MM.account.registerStateDomain("simple_shopping", "simple_shopping");
+    MM.account.registerStateDomain("simple_migration", "simple_migration");
     // Gewichtsreihe: identische Domain wie OS v1 (os-core registriert
     // "osmetrics" → "os_metrics"); die Registrierung hier ist idempotent
     // und sorgt dafür, dass Gewichte auch ohne geladenes OS syncen.

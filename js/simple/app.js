@@ -144,6 +144,29 @@
       "Das ist dein Ziel. Das wird dein Plan. Danach sagt dir MaleMetrix jeden Tag, was konkret zu tun ist.",
       "This is your goal. This becomes your plan. After that, MaleMetrix tells you every day exactly what to do.")));
 
+    /* Bestandsmigration (Phase 7, nicht-destruktiv): Legacy-Daten erkennen,
+       Snapshot sichern, Fragebogen aus zuverlässigen Daten vorbefüllen.
+       Originaldaten werden nie verändert. */
+    var mig = MMSimple.migration ? MMSimple.migration.detect() : { hasLegacy: false };
+    if (mig.hasLegacy && MMSimple.migration.status() == null) {
+      track("migration_started");
+      var snapR = MMSimple.migration.captureSnapshot();
+      var pre = MMSimple.migration.prefillFromLegacy();
+      Object.keys(pre.answers).forEach(function (k) {
+        if (wizardAnswers[k] == null) wizardAnswers[k] = pre.answers[k];
+      });
+      saveDraft();
+      if (snapR.ok) track(snapR.snapshot && snapR.snapshot.migrationWarnings.length ? "migration_warning" : "migration_succeeded");
+      var note = el("div", "s-note", tx(
+        "Dein bisheriger MaleMetrix-Stand wurde erkannt und vollständig gesichert. Bekannte Angaben sind unten vorbefüllt — nichts geht verloren, die klassische Ansicht bleibt im Profil erreichbar.",
+        "Your existing MaleMetrix data was detected and fully preserved. Known answers are prefilled below — nothing is lost, the classic view stays available in your profile."));
+      if (mig.activeProgram && mig.programDay > 1 && mig.programDay <= 84) {
+        note.innerHTML += "<br>" + esc(tx("Hinweis: Dein laufendes Programm (Tag " + mig.programDay + ") bleibt in der klassischen Ansicht vollständig erhalten; der neue Plan zählt ab seinem Start neu.",
+          "Note: your running program (day " + mig.programDay + ") stays fully intact in the classic view; the new plan counts from its own start."));
+      }
+      root.appendChild(note);
+    }
+
     var stepIdx = !tg ? 0 : (!wizardAnswers._questionsDone ? 1 : (draftPlan && draftPlan.status === "draft" ? 3 : 2));
     var steps = el("div", "s-steps");
     for (var i = 0; i < 4; i++) steps.appendChild(el("i", i <= stepIdx ? "on" : ""));
@@ -297,6 +320,10 @@
           store.adoptPlan(p2, { force: true });
           store.setFunnelStep("plan_active");
           track("plan_activated"); track("plan_created");
+          // Bestandsnutzer: Migrationsstatus festschreiben (§27.5-Referenzen)
+          if (MMSimple.migration && MMSimple.migration.detect().hasLegacy) {
+            MMSimple.migration.markMigrated(p2, store.getSnapshot());
+          }
           location.hash = "#heute";
         });
         pv.appendChild(act);
@@ -944,6 +971,18 @@
           "Done — My MaleMetrix will open the classic view from now on. Reversible in the classic app or via support."));
       });
       legacy.appendChild(makeDefault);
+      var ms = MMSimple.migration ? MMSimple.migration.status() : null;
+      if (ms && ms.status === "migrated") {
+        var rb = el("button", "btn btn-ghost btn-sm", tx("Migration zurücksetzen", "Undo migration"));
+        rb.style.marginLeft = "8px";
+        rb.addEventListener("click", function () {
+          if (!confirm(tx("Zurück zur klassischen Ansicht? Der neue Plan wird pausiert (nicht gelöscht), deine alten Daten waren nie verändert.",
+            "Back to the classic view? The new plan is paused (not deleted); your old data was never modified."))) return;
+          MMSimple.migration.revert("user");
+          location.href = "mein-protokoll.html?legacy=1";
+        });
+        legacy.appendChild(rb);
+      }
     }
     root.appendChild(legacy);
 
