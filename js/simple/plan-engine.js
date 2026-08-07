@@ -26,6 +26,45 @@
   var ACTIVITY_F = { sitzend: 1.2, leicht: 1.375, moderat: 1.55, hoch: 1.725 };
   var BULK_RATE = { neu: 0.35, mid: 0.25, pro: 0.15 };
 
+  /* --- Gemessener Verbrauch (Apple Health) statt Aktivitaetsfaktor ---------
+     Der Aktivitaetsfaktor oben ist eine Schaetzung aus einem Auswahlfeld.
+     Liegt ein wirklich gemessener Tagesverbrauch vor (Aktiv- plus
+     Grundumsatz ueber mehrere volle Tage), ist er die bessere Zahl.
+
+     Aber nur unter Leitplanken. Eine nicht getragene Uhr meldet 800 kcal;
+     daraus darf niemals ein Kalorienziel entstehen. Deshalb wird ein
+     gemessener Wert nur uebernommen, wenn er genug Tage abdeckt UND in
+     einem plausiblen Korridor um die Formel liegt. Sonst gilt die Formel
+     weiter — und die App sagt, warum. */
+  var MEASURED = {
+    minDays: 5,           // weniger volle Tage: zu duenne Grundlage
+    minKcalPerDay: 1200,  // darunter kann kein Mensch dauerhaft liegen
+    lowerFactor: 0.75,    // gemessen darf hoechstens 25 % unter der Formel liegen
+    upperFactor: 1.40     // und hoechstens 40 % darueber
+  };
+
+  /**
+   * Entscheidet zwischen Formel und Messung. Rein, ohne Seiteneffekte.
+   * @param {number} formulaTdee  Schaetzung aus Mifflin-St-Jeor x Aktivitaet
+   * @param {object|null} measured  { tdee, days } aus Apple Health
+   * @returns {{tdee:number, source:string, measuredTdee:(number|null), reason:(string|null)}}
+   */
+  function resolveTdee(formulaTdee, measured) {
+    var out = { tdee: formulaTdee, source: "formel", measuredTdee: null, reason: null };
+    if (!measured || typeof measured.tdee !== "number" || !isFinite(measured.tdee) || measured.tdee <= 0) {
+      return out;                       // nichts gemessen — kein Grund, etwas zu melden
+    }
+    out.measuredTdee = Math.round(measured.tdee);
+    var days = typeof measured.days === "number" ? measured.days : 0;
+    if (days < MEASURED.minDays) { out.reason = "zu_wenige_tage"; return out; }
+    if (measured.tdee < MEASURED.minKcalPerDay ||
+        measured.tdee < formulaTdee * MEASURED.lowerFactor) { out.reason = "unplausibel_niedrig"; return out; }
+    if (measured.tdee > formulaTdee * MEASURED.upperFactor) { out.reason = "unplausibel_hoch"; return out; }
+    out.tdee = Math.round(measured.tdee);
+    out.source = measured.source || "apple_health";
+    return out;
+  }
+
   function computeTargets(input) {
     var trf = input.transformation, a = input.answers;
     var eff = (input.score && input.score.effects) || {};
@@ -35,7 +74,9 @@
     var enh = trf.mode === "enhanced";
 
     var bmr = Math.round(10 * cur + 6.25 * (trf.heightCm || 175) - 5 * a.age + 5);
-    var tdee = Math.round(bmr * (ACTIVITY_F[a.activity] || ACTIVITY_F.moderat));
+    var formulaTdee = Math.round(bmr * (ACTIVITY_F[a.activity] || ACTIVITY_F.moderat));
+    var res = resolveTdee(formulaTdee, input.measured);
+    var tdee = res.tdee;
 
     var maxRate = cut ? cur * (enh ? 0.010 : 0.0075)
                       : (BULK_RATE[a.experience] || 0.25) * (enh ? 1.5 : 1);
@@ -77,6 +118,10 @@
 
     return {
       cut: cut, bmr: bmr, tdee: tdee,
+      tdeeFormula: formulaTdee,       // die Schaetzung bleibt sichtbar, auch wenn gemessen wird
+      tdeeSource: res.source,         // "formel" | "apple_health"
+      tdeeMeasured: res.measuredTdee, // was Health geliefert hat (auch wenn verworfen)
+      tdeeRejected: res.reason,       // warum verworfen (null = kein Grund)
       kcal: kcal, kcalRange: [kcal - 100, kcal + 50 + (cut ? 50 : 100)],
       ratePerWeek: Math.round(rate * 100) / 100,
       expectedTotalWeeks: expectedTotalWeeks,
@@ -621,7 +666,11 @@
     };
     p.lifestyle = { wakeTime: a.wakeTime || null, sleepTime: a.sleepTime || null, workPattern: a.workPattern || "day" };
     p.week = buildWeekStructure(training, nutrition, a);
-    p.derived = { bmr: targets.bmr, tdee: targets.tdee, ratePerWeek: targets.ratePerWeek, cut: targets.cut };
+    p.derived = {
+      bmr: targets.bmr, tdee: targets.tdee, ratePerWeek: targets.ratePerWeek, cut: targets.cut,
+      tdeeSource: targets.tdeeSource, tdeeFormula: targets.tdeeFormula,
+      tdeeMeasured: targets.tdeeMeasured, tdeeRejected: targets.tdeeRejected
+    };
 
     var v = model.validate(p);
     if (!v.ok) return { ok: false, errors: v.errors };
@@ -636,7 +685,8 @@
   }
 
   return {
-    ACTIVITY_F: ACTIVITY_F,
+    ACTIVITY_F: ACTIVITY_F, MEASURED: MEASURED,
+    resolveTdee: resolveTdee,
     EX: EX, TEMPLATES: TEMPLATES,
     FOODS: FOODS, MEAL_BLOCKS: MEAL_BLOCKS, PRACTICAL_RULES: PRACTICAL_RULES,
     CATEGORY_NAMES: CATEGORY_NAMES,

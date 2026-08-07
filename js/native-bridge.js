@@ -226,6 +226,154 @@
     return true;
   };
 
+  /* ---------- 5 · Apple Health ----------------------------------------
+     Zweck: den geschaetzten Tagesverbrauch durch einen gemessenen ersetzen.
+     Die Plausibilitaetspruefung liegt bewusst NICHT hier, sondern in
+     MMSimple.engine.resolveTdee — an einer Stelle, getestet, fuer Web und
+     App identisch. Diese Bruecke holt nur Zahlen und legt sie ab. */
+  var HEALTH_KEY = "health_energy";      // -> mm_health_energy
+  var H = P.Health;
+
+  MM.native.health = {
+    supported: !!H,
+
+    /** Fragt die Berechtigung ab und liest danach sofort. */
+    connect: function () {
+      if (!H) return Promise.reject(new Error("Apple Health ist in dieser App-Version nicht eingebaut"));
+      return H.requestAuthorization().then(function (r) {
+        if (!r || !r.available) throw new Error("Apple Health ist auf diesem Geraet nicht verfuegbar");
+        return MM.native.health.refresh();
+      });
+    },
+
+    /**
+     * Liest Tageswerte und Baseline und legt den gemessenen Verbrauch ab.
+     * Gibt zurueck, was wirklich ankam — auch wenn nichts ankam. Apple sagt
+     * aus Datenschutzgruenden nicht, ob Lesen erlaubt wurde; leere Daten und
+     * verweigerte Erlaubnis sehen gleich aus und werden gleich behandelt.
+     */
+    refresh: function () {
+      if (!H) return Promise.resolve(null);
+      return Promise.all([H.today(), H.baseline()]).then(function (res) {
+        var today = res[0] || {}, base = res[1] || {};
+        var out = { today: today, baseline: base, stored: null };
+        if (typeof base.tdee === "number" && base.tdee > 0) {
+          var rec = {
+            tdee: Math.round(base.tdee),
+            days: base.tdeeDays || 0,
+            source: "apple_health",
+            readAt: new Date().toISOString()
+          };
+          if (MM.store) MM.store.set(HEALTH_KEY, rec);
+          out.stored = rec;
+        }
+        return out;
+      });
+    },
+
+    /** Trennt: gespeicherte Messung verwerfen. Die Erlaubnis selbst kann nur
+        der Nutzer in den iPhone-Einstellungen zuruecknehmen — das sagt die UI. */
+    forget: function () {
+      if (MM.store) MM.store.remove(HEALTH_KEY);
+      return Promise.resolve();
+    },
+
+    stored: function () { return MM.store ? MM.store.get(HEALTH_KEY, null) : null; }
+  };
+
+  /**
+   * Rendert den Health-Abschnitt in „iPhone einrichten". Wird von
+   * js/simple/iphone.js aufgerufen, wenn die App nativ laeuft.
+   */
+  MM.native.renderHealth = function (card, helpers) {
+    var el = helpers.el;
+    if (!H) {
+      card.appendChild(el("p", "hint", tx("Diese App-Version hat die Apple-Health-Anbindung nicht.",
+        "This app version does not include the Apple Health connection.")));
+      return true;
+    }
+    card.appendChild(el("p", "hint", tx(
+      "Ohne Health schaetzt MaleMetrix deinen Tagesverbrauch aus Groesse, Gewicht, Alter und einem Auswahlfeld. Mit Health nimmt es deinen gemessenen Verbrauch der letzten Tage — Aktiv- plus Grundumsatz von Uhr oder iPhone. Gelesen wird nur, was der Plan braucht; nichts verlaesst dein Geraet.",
+      "Without Health, MaleMetrix estimates your daily burn from height, weight, age and a dropdown. With Health it uses your measured burn of the last days — active plus basal energy from your watch or iPhone. Only what the plan needs is read; nothing leaves your device.")));
+
+    var status = el("p", "hint");
+    var detail = el("div");
+    var btn = el("button", "btn btn-primary btn-sm", tx("Mit Apple Health verbinden", "Connect Apple Health"));
+    var offBtn = el("button", "btn btn-ghost btn-sm", tx("Messung verwerfen", "Discard measurement"));
+    offBtn.style.marginLeft = "8px";
+
+    function n(v, digits) { return typeof v === "number" && isFinite(v) ? v.toFixed(digits || 0) : null; }
+
+    function paint(live) {
+      detail.innerHTML = "";
+      var rec = MM.native.health.stored();
+      offBtn.style.display = rec ? "" : "none";
+      if (!rec) {
+        btn.textContent = tx("Mit Apple Health verbinden", "Connect Apple Health");
+        btn.disabled = false;
+      } else {
+        btn.textContent = tx("Werte aktualisieren", "Refresh values");
+        btn.disabled = false;
+        var rows = [[tx("Gemessener Tagesverbrauch", "Measured daily burn"), rec.tdee + " kcal"],
+                    [tx("Volle Messtage", "Full measured days"), String(rec.days)]];
+        if (live && live.today) {
+          var t = live.today;
+          if (n(t.steps)) rows.push([tx("Schritte heute", "Steps today"), n(t.steps)]);
+          if (n(t.sleepHours, 1)) rows.push([tx("Schlaf letzte Nacht", "Sleep last night"), n(t.sleepHours, 1) + " h"]);
+          if (n(t.restingHeartRate)) rows.push([tx("Ruhepuls", "Resting heart rate"), n(t.restingHeartRate) + " bpm"]);
+          if (n(t.hrvMs)) rows.push([tx("HRV", "HRV"), n(t.hrvMs) + " ms"]);
+          if (n(t.weightKg, 1)) rows.push([tx("Gewicht (Health)", "Weight (Health)"), n(t.weightKg, 1) + " kg"]);
+        }
+        rows.forEach(function (r) {
+          var p = el("p", "hint");
+          p.textContent = r[0] + ": " + r[1];
+          detail.appendChild(p);
+        });
+        if (rec.days < 5) {
+          detail.appendChild(el("p", "hint", tx(
+            "Unter 5 vollen Messtagen bleibt die Formel massgeblich — zu wenig Grundlage. Trage die Uhr ein paar Tage, dann hier aktualisieren.",
+            "Below 5 full measured days the formula stays in charge — too little basis. Wear the watch for a few days, then refresh here.")));
+        }
+      }
+    }
+
+    btn.addEventListener("click", function () {
+      btn.disabled = true; status.textContent = "…";
+      MM.native.health.connect().then(function (r) {
+        if (!r || !r.stored) {
+          status.textContent = tx(
+            "Verbunden, aber es kamen keine Verbrauchsdaten an. Entweder ist der Zugriff in Einstellungen > Datenschutz > Health noch nicht erlaubt, oder es liegen noch keine Tage vor.",
+            "Connected, but no energy data arrived. Either access is not yet allowed in Settings > Privacy > Health, or there are no days recorded yet.");
+        } else {
+          status.textContent = tx("Verbunden ✓ — dein naechster Plan rechnet mit dem gemessenen Verbrauch.",
+            "Connected ✓ — your next plan uses the measured burn.");
+          track("health_connected", { days: r.stored.days });
+        }
+        paint(r);
+      }).catch(function (e) {
+        status.textContent = String((e && e.message) || e);
+        paint(null);
+      }).then(function () { btn.disabled = false; });
+    });
+
+    offBtn.addEventListener("click", function () {
+      MM.native.health.forget().then(function () {
+        track("health_forgotten");
+        status.textContent = tx(
+          "Verworfen — es gilt wieder die Schaetzformel. Die Health-Erlaubnis selbst nimmst du in Einstellungen > Datenschutz & Sicherheit > Health zurueck.",
+          "Discarded — the estimate formula applies again. Revoke the Health permission itself in Settings > Privacy & Security > Health.");
+        paint(null);
+      });
+    });
+
+    card.appendChild(btn);
+    card.appendChild(offBtn);
+    card.appendChild(status);
+    card.appendChild(detail);
+    paint(null);
+    return true;
+  };
+
   /* Nach einem Neustart der App die Planung auffrischen (iOS behaelt geplante
      Mitteilungen zwar, aber nach Sprach- oder Zeitwechsel sollen sie stimmen).
      Erst wenn MM.store steht (js/main.js ist dann geladen). */

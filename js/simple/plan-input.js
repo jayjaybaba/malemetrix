@@ -273,7 +273,23 @@
       missing: missing,
       transformation: trf,
       score: score,               // null erlaubt: Score ist Input, kein Gate
-      answers: vals
+      answers: vals,
+      // Gemessener Tagesverbrauch (Apple Health, nur native App). Optional:
+      // fehlt er, rechnet die Engine wie bisher mit dem Aktivitaetsfaktor.
+      measured: mapMeasured(sources.measured)
+    };
+  }
+
+  /* Nimmt nur an, was auch gebraucht wird — und nur, wenn es Zahlen sind.
+     Die fachliche Plausibilitaetspruefung macht die Engine (resolveTdee),
+     damit sie an EINER Stelle steht und getestet ist. */
+  function mapMeasured(m) {
+    if (!m || typeof m.tdee !== "number" || !isFinite(m.tdee) || m.tdee <= 0) return null;
+    return {
+      tdee: m.tdee,
+      days: typeof m.days === "number" ? m.days : 0,
+      source: m.source || "apple_health",
+      readAt: m.readAt || null
     };
   }
 
@@ -284,6 +300,7 @@
     mapTransformation: mapTransformation,
     mergeEffects: mergeEffects,
     questionsFor: questionsFor,
+    mapMeasured: mapMeasured,
     collect: collect
   };
 });

@@ -52,6 +52,10 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>MaleMetrix liest deinen gemessenen Kalorienverbrauch, Schritte, Schlaf, Herzfrequenzvariabilitaet, Ruhepuls und Gewicht aus Apple Health, um dein Kalorienziel aus deinem echten Verbrauch zu berechnen statt aus einer Schaetzformel. Die Daten bleiben auf dem Geraet.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>MaleMetrix kann ein von dir eingetragenes Gewicht in Apple Health speichern, damit alle deine Gesundheits-Apps denselben Stand sehen. Das passiert nur, wenn du es einschaltest.</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>arm64</string>

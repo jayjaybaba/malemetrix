@@ -145,6 +145,65 @@ group("iOS-Projekt: Formalien fuer den Upload");
     "App-Icon ohne Alphakanal — sonst weist der Upload es zurueck (PNG-Farbtyp " + colorType + ")");
 }
 
+group("Apple Health: im Xcode-Projekt vollstaendig verdrahtet");
+{
+  ok(exists("ios-app/App/App/HealthPlugin.swift"), "das Plugin existiert");
+  const pbx = read("ios-app/App/App.xcodeproj/project.pbxproj");
+  ok(/HealthPlugin\.swift in Sources/.test(pbx),
+    "es wird auch uebersetzt (Sources-Build-Phase) — sonst faellt es lautlos aus");
+  ok(/CODE_SIGN_ENTITLEMENTS = App\/App\.entitlements;/.test(pbx),
+    "die Entitlements sind im Target gesetzt");
+  ok((pbx.match(/CODE_SIGN_ENTITLEMENTS/g) || []).length === 2,
+    "in beiden Konfigurationen (Debug und Release), nicht nur in einer");
+
+  const ent = read("ios-app/App/App/App.entitlements");
+  ok(/com\.apple\.developer\.healthkit/.test(ent), "HealthKit-Berechtigung beantragt");
+  // Nur echte Schluessel pruefen — im Kommentar darueber stehen die Namen
+  // absichtlich, als Begruendung fuer ihr Fehlen.
+  ok(!/<key>com\.apple\.developer\.healthkit\.(recalibrate-estimates|background-delivery)<\/key>/.test(ent) &&
+     !/<key>com\.apple\.developer\.healthkit\.clinical-health-records<\/key>/.test(ent),
+    "keine Berechtigung mehr als noetig (keine Patientenakten, kein Hintergrundempfang)");
+
+  const plist = read("ios-app/App/App/Info.plist");
+  // Ohne diese beiden Texte stuerzt iOS beim ersten Health-Zugriff ab und
+  // Apple lehnt die App im Review ab.
+  ok(/NSHealthShareUsageDescription/.test(plist), "Lesetext fuer den Berechtigungsdialog vorhanden");
+  ok(/NSHealthUpdateUsageDescription/.test(plist), "Schreibtext vorhanden");
+  ok(/bleiben auf dem Geraet/.test(plist), "der Dialogtext sagt, dass die Daten das Geraet nicht verlassen");
+
+  const swift = read("ios-app/App/App/HealthPlugin.swift");
+  ok(/CAPBridgedPlugin/.test(swift) && /public let jsName = "Health"/.test(swift),
+    "als Capacitor-Plugin registriert, erreichbar als Capacitor.Plugins.Health");
+  ["isAvailable", "requestAuthorization", "today", "baseline", "writeWeight"].forEach((m) =>
+    ok(new RegExp('CAPPluginMethod\\(name: "' + m + '"').test(swift), "Methode angemeldet: " + m));
+  ok(/writeTypes: Set<HKSampleType> \{ \[qt\(\.bodyMass\)\] \}/.test(swift),
+    "geschrieben wird ausschliesslich das Gewicht");
+  ok(/b > 800 && sum > 1200/.test(swift),
+    "Tage ohne getragene Uhr fliegen schon nativ aus dem Schnitt");
+}
+
+group("Apple Health: die Weboberflaeche bleibt ohne App unveraendert");
+{
+  const bridge = read("js/native-bridge.js");
+  ok(/MM\.native\.health = \{/.test(bridge), "die Bruecke bietet MM.native.health an");
+  ok(bridge.indexOf("MM.native.health") > bridge.indexOf("if (!isNative) return;"),
+    "aber erst NACH dem Ausstieg fuer den Browser — im Web existiert sie nicht");
+  ok(/MM\.native\.renderHealth/.test(bridge), "und rendert den Abschnitt selbst");
+
+  const iph = read("js/simple/iphone.js");
+  ok(/isNativeApp\(\) && MM\.native\.renderHealth/.test(iph),
+    "iphone.js zeigt den Health-Abschnitt nur in der App");
+
+  // Die fachliche Grenze liegt in der Engine, nicht in der Bruecke — sonst
+  // gaebe es zwei Wahrheiten (App und Web) statt einer.
+  ok(!/1200|lowerFactor|minDays/.test(bridge),
+    "die Bruecke enthaelt KEINE Plausibilitaetsgrenzen (die liegen in der Engine)");
+  const eng = read("js/simple/plan-engine.js");
+  ok(/function resolveTdee/.test(eng), "resolveTdee ist die eine Stelle dafuer");
+  ok(/minKcalPerDay: 1200/.test(eng) && /lowerFactor: 0\.75/.test(eng),
+    "und traegt die Grenzen sichtbar im Quelltext");
+}
+
 group("Keine Geheimnisse im App-Bundle");
 {
   const suspicious = [];

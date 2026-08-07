@@ -47,6 +47,8 @@ Grundlage: `DATENSCHUTZ_GEN2.md`, `ANALYTICS.md`, `PRODUCT_ARCHITECTURE.md`.
 > · 19 Rechner: BMI, Koerperfett, FFMI, BMR/TDEE, Makros, 1RM und mehr
 > · Fortschritt: Gewichtsverlauf, Umsetzungsquote, Foto-Checkpoints
 > · Zwei Erinnerungen pro Woche, von deinem iPhone geplant
+> · Apple Health (optional): dein Kalorienziel rechnet mit dem gemessenen
+>   Tagesverbrauch von Uhr oder iPhone statt mit einer Schaetzformel
 >
 > **Was NICHT drin ist**
 > Kein Abo. Keine Werbung. Kein Tracking. Deine Daten bleiben auf dem
@@ -71,6 +73,10 @@ Grundlage: `DATENSCHUTZ_GEN2.md`, `ANALYTICS.md`, `PRODUCT_ARCHITECTURE.md`.
 > suggestions from last time. The Sunday weekly check walks you through five
 > questions and adjusts the plan by fixed rules, not by mood.
 >
+> Optionally connect Apple Health: your calorie target is then based on your
+> measured daily burn from watch or iPhone instead of an estimate formula.
+> Health data stays on your device.
+>
 > No subscription. No ads. No tracking. Your data stays on the device — an
 > account is optional and only syncs your plan between devices. Progress
 > photos are never uploaded.
@@ -81,9 +87,9 @@ Grundlage: `DATENSCHUTZ_GEN2.md`, `ANALYTICS.md`, `PRODUCT_ARCHITECTURE.md`.
 ## Schluesselbegriffe (max. 100 Zeichen)
 
 ```
-Trainingsplan,Muskelaufbau,Abnehmen,Fitness,Kalorien,Makros,Krafttraining,Tracker,12 Wochen
+Trainingsplan,Muskelaufbau,Abnehmen,Kalorien,Makros,Krafttraining,Tracker,Health,12 Wochen
 ```
-(97 Zeichen. „MaleMetrix" nicht wiederholen — der Name zaehlt ohnehin.)
+(90 Zeichen. „MaleMetrix" nicht wiederholen — der Name zaehlt ohnehin.)
 
 ## Neuheiten in dieser Version (v1.0)
 
@@ -104,6 +110,7 @@ der Nutzer freiwillig ein Konto anlegt.
 |---|---|---|---|---|
 | E-Mail-Adresse | nur mit Konto | App-Funktionalitaet (Anmeldung per Magic Link) | ja | **nein** |
 | Fitness- und Gesundheitsdaten (Gewicht, Trainingsprotokoll, Planziele) | nur mit Konto | App-Funktionalitaet (Synchronisierung zwischen Geraeten) | ja | **nein** |
+| Apple-Health-Daten (Verbrauch, Schritte, Schlaf, HRV, Ruhepuls) | **nein** — bleiben auf dem Geraet, nur der gemittelte Tagesverbrauch geht in die lokale Planrechnung | — | — | — |
 | Fotos | **nein** — Fortschrittsfotos verlassen das Geraet nie, gespeichert wird nur ein Haekchen | — | — | — |
 | Standort, Kontakte, Kennungen, Nutzungsdaten, Diagnose | **nein** | — | — | — |
 
@@ -131,10 +138,19 @@ Erwartetes Ergebnis: **12+**.
 > vollstaendig offline: alle Inhalte sind im App-Bundle enthalten, es wird
 > keine Website nachgeladen.
 >
-> Nativ genutzt werden lokale Mitteilungen (zwei Erinnerungen pro Woche,
-> vollstaendig auf dem Geraet geplant), Haptik und die sichere Ablage der
-> Plandaten. Ein Konto ist optional; ohne Konto ist die App vollstaendig
+> Nativ genutzt werden HealthKit, lokale Mitteilungen (zwei Erinnerungen pro
+> Woche, vollstaendig auf dem Geraet geplant), Haptik und die sichere Ablage
+> der Plandaten. Ein Konto ist optional; ohne Konto ist die App vollstaendig
 > nutzbar und sendet keine Daten.
+>
+> **Zu HealthKit:** Gelesen werden Aktiv- und Grundumsatz, Schritte, Schlaf,
+> HRV, Ruhepuls und Gewicht — ausschliesslich, um das Kalorienziel aus dem
+> gemessenen Tagesverbrauch statt aus einer Schaetzformel zu berechnen.
+> Geschrieben wird nur ein vom Nutzer eingetragenes Gewicht, und nur auf
+> ausdrueckliche Aktion. Health-Daten verlassen das Geraet nicht, werden nicht
+> an einen Server gesendet, nicht fuer Werbung genutzt und nicht mit Dritten
+> geteilt. Die App laeuft vollstaendig ohne Health-Zugriff; die Anbindung ist
+> optional und jederzeit widerrufbar.
 >
 > Die App enthaelt keine Kaeufe, keine Abonnements und keine Verweise auf
 > externe Kaufmoeglichkeiten.

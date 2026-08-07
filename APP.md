@@ -36,16 +36,18 @@ capacitor.config.json          Bundle-ID de.malemetrix.app, Startseite = Mein Pl
 scripts/build-app.mjs          baut aus der Website das App-Bundle (app-build/)
 scripts/build-app-assets.mjs   App-Icon (1024, ohne Alpha) und Startbild
 scripts/asc.mjs                legt Bundle-ID und App-Eintrag bei Apple an
+ios-app/App/App/HealthPlugin.swift   Apple Health (nur lesen, was der Plan braucht)
 js/native-bridge.js            Bruecke Web -> nativ (nur im App-Bundle geladen)
 css/native.css                 App-Anpassungen (Website-Navigation aus)
 ios-app/                       das Xcode-Projekt (von Capacitor erzeugt)
-tools-dev/tests/native-app.test.js   46 Pruefungen, laufen ohne Mac
+tools-dev/tests/native-app.test.js    70 Pruefungen, laufen ohne Mac
+tools-dev/tests/health-energy.test.js 50 Pruefungen fuer die Health-Leitplanken
 .github/workflows/ios-app.yml  Build + Simulator-Test + TestFlight
 ```
 
-Der Ordner `ios/` bleibt unberuehrt: das ist der fruehere SwiftUI-Entwurf mit
-der HealthKit-Anbindung. Er ist nicht verworfen — sein `HealthKitManager.swift`
-ist die Vorlage fuer Schritt 2 (siehe „Was als Naechstes kommt").
+Der Ordner `ios/` bleibt unberuehrt: der fruehere SwiftUI-Entwurf. Seine
+HealthKit-Logik ist die Vorlage fuer `HealthPlugin.swift` gewesen — jetzt
+haengt sie am bestehenden Planmotor, statt eine zweite Rechnung danebenzustellen.
 
 ### Was die App nativ kann, was die Website nicht kann
 
@@ -55,12 +57,50 @@ ist die Vorlage fuer Schritt 2 (siehe „Was als Naechstes kommt").
 | Zuverlaessige Erinnerungen | ⚠️ nur mit Konto + Server-Push | ✅ von iOS geplant, ohne Konto, ohne Server |
 | Haptisches Feedback, Statusleiste, Startbild | ❌ | ✅ |
 | Im App Store auffindbar | ❌ | ✅ |
-| Apple Health (Schritte, HRV, echter Verbrauch) | ❌ | noch nicht — Schritt 2 |
+| Apple Health (Schritte, HRV, echter Verbrauch) | ❌ technisch unmoeglich | ✅ |
 
 Die Erinnerungen laufen ueber **lokale Mitteilungen**: das iPhone plant sie
 selbst, es geht kein Datum an einen Server. Der Schalter dafuer steht in der
 App unter *Mein Plan → iPhone einrichten → Benachrichtigungen*. Wird die
 Erlaubnis verweigert, zeigt die App das ehrlich an, statt „aktiv" zu behaupten.
+
+### Apple Health — gemessen statt geschaetzt
+
+Das ist der eigentliche Grund fuer eine App: HealthKit ist fuer Websites
+technisch unerreichbar.
+
+Bisher rechnet der Planmotor `Grundumsatz x Aktivitaetsfaktor`, und der Faktor
+kommt aus einem Auswahlfeld („sitzend" bis „hoch"). Das ist eine Schaetzung
+ueber einen Menschen, den man nicht kennt. Apple Health kennt den echten Wert:
+Aktiv- plus Grundumsatz, gemessen von Uhr oder iPhone.
+
+Der Unterschied ist nicht kosmetisch. Ein Beispiel aus der Testsuite — jemand
+mit 95 kg, Ziel 85 kg, im Fragebogen „sitzend", tatsaechlich aber 2950 kcal
+Verbrauch: Kalorienziel **1688 → 2323 kcal**. Die Schaetzung haette ihn dicht
+an die Untergrenze von 1500 gedrueckt.
+
+**Die Leitplanken sind der wichtigere Teil.** Eine nicht getragene Uhr meldet
+800 kcal; wuerde das durchgehen, entstuende ein Hungerziel. Deshalb wird ein
+gemessener Wert nur uebernommen, wenn er
+
+- mindestens **5 volle Tage** abdeckt,
+- ueber **1200 kcal** liegt,
+- und im Korridor **75 %–140 %** der Formel bleibt.
+
+Sonst gilt weiter die Formel — und die App schreibt unter das Kalorienziel,
+welcher Wert gemeldet und warum er nicht uebernommen wurde. Diese Pruefung
+liegt in `MMSimple.engine.resolveTdee`, also an EINER Stelle fuer App und Web,
+und ist mit 50 Assertions abgedeckt (`tools-dev/tests/health-energy.test.js`).
+
+Gelesen werden: Aktiv- und Grundumsatz, Schritte, HRV, Ruhepuls, Schlaf,
+Gewicht. Geschrieben wird ausschliesslich das Gewicht, und nur auf Aktion.
+Nichts verlaesst das Geraet. Einschalten in der App unter *Mein Plan → iPhone
+einrichten → Apple Health*.
+
+> **Noch nicht auf einem echten Geraet geprueft.** Der Simulator hat keine
+> Health-Daten; die CI beweist nur, dass es uebersetzt und startet. Ob die
+> Werte stimmen, zeigt der erste TestFlight-Build auf deinem iPhone. Bis
+> dahin ist das eine begruendete Erwartung, kein Nachweis.
 
 ### Was in der App ist — und was bewusst nicht
 
@@ -159,7 +199,7 @@ die App und koennen ueber das Echte reden statt ueber Vermutungen.
 Der Job **build** in `.github/workflows/ios-app.yml` laeuft bei jeder
 Aenderung, ohne jeden Zugang, auf einem echten Mac. Er
 
-- fuehrt die 46 Fachpruefungen aus (`tools-dev/tests/native-app.test.js`),
+- fuehrt die 120 Fachpruefungen aus (`native-app.test.js`, `health-energy.test.js`),
 - uebersetzt die App mit Xcode,
 - startet sie im iPhone-Simulator und prueft, dass sie den ersten Bildschirm
   ueberlebt (ein Absturz im WebView wuerde hier auffallen),
@@ -184,11 +224,6 @@ nicht.
 
 ## Was als Naechstes kommt
 
-1. **Apple Health** — Schritte, HRV, Ruhepuls, echter Kalorienverbrauch.
-   Das ist der Grund, warum eine App ueberhaupt mehr kann als die Website.
-   Die Logik liegt fertig in `ios/Sources/HealthKitManager.swift` und wird als
-   Capacitor-Plugin eingehaengt, damit der bestehende Planmotor sie nutzt statt
-   sie zu duplizieren.
-2. **Android** — Capacitor kann das aus demselben Bundle, ohne Mac. Google Play
+1. **Android** — Capacitor kann das aus demselben Bundle, ohne Mac. Google Play
    kostet einmalig 25 $ statt 99 €/Jahr. Sag Bescheid, dann kommt es dazu.
 3. **In-App-Purchase**, falls in der App verkauft werden soll.

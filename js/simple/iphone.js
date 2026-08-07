@@ -306,6 +306,15 @@
     }
     root.appendChild(pwa);
 
+    /* 2b — Apple Health (nur native App: eine Website kommt nicht an HealthKit) */
+    if (isNativeApp() && MM.native.renderHealth) {
+      var health = el("div", "s-card");
+      health.appendChild(el("h3", null, tx("Apple Health — gemessen statt geschätzt",
+        "Apple Health — measured instead of estimated")));
+      MM.native.renderHealth(health, { el: el, esc: esc, tx: tx });
+      root.appendChild(health);
+    }
+
     /* 3 — Benachrichtigungen (Server-Push, seit 06.08.2026 aktiv) */
     var push = el("div", "s-card");
     push.appendChild(el("h3", null, tx("3 · Benachrichtigungen", "3 · Notifications")));

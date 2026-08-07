@@ -41,6 +41,22 @@
   function wdName(i) { return (en() ? WD.en : WD.de)[i]; }
 
   /* ---------------- Daten ---------------- */
+  /* Gemessener Tagesverbrauch aus Apple Health (nur native App). Der Wert
+     wird von der Bruecke beim Verbinden abgelegt; hier wird er nur gelesen
+     und nach 14 Tagen als zu alt verworfen — ein halbes Jahr alter Schnitt
+     beschreibt niemanden mehr. Ohne App oder ohne Health: null, und die
+     Engine rechnet wie bisher mit dem Aktivitaetsfaktor. */
+  var MEASURED_MAX_AGE_MS = 14 * 24 * 3600 * 1000;
+  function measuredEnergy() {
+    var m = MM.store.get("health_energy", null);
+    if (!m || typeof m.tdee !== "number") return null;
+    if (m.readAt) {
+      var age = Date.now() - Date.parse(m.readAt);
+      if (isFinite(age) && age > MEASURED_MAX_AGE_MS) return null;
+    }
+    return m;
+  }
+
   function plan() { return store.getPlan(); }
   function activePlan() { var p = plan(); return p && p.status === "active" ? p : null; }
   function daylog() { return MM.store.get("simple_daylog", {}); }
@@ -394,7 +410,7 @@
       var err = el("p", "s-err"); err.style.display = "none";
       var goPrev = el("button", "btn btn-primary", tx("Zur Planvorschau", "See plan preview"));
       goPrev.addEventListener("click", function () {
-        var collected = input.collect({ transformGoal: tg, checkResult: cr, answers: wizardAnswers });
+        var collected = input.collect({ transformGoal: tg, checkResult: cr, answers: wizardAnswers, measured: measuredEnergy() });
         if (!collected.ok) {
           err.textContent = tx("Es fehlt noch: ", "Still missing: ") + collected.missing.join(", ");
           err.style.display = "";
@@ -893,11 +909,37 @@
     root.appendChild(rules);
   }
 
+  /* Woher die Zahl kommt, auf der alles andere aufbaut. Wer sein
+     Kalorienziel sieht, soll wissen, ob es gemessen oder geschaetzt ist —
+     und wenn eine Messung verworfen wurde, warum. */
+  function tdeeOrigin(p) {
+    var d = p.derived || {};
+    var line = el("p", "hint");
+    if (d.tdeeSource === "apple_health") {
+      line.textContent = tx(
+        "Grundlage: dein gemessener Tagesverbrauch aus Apple Health (" + d.tdee + " kcal). Die Schätzformel hätte " + d.tdeeFormula + " kcal gesagt.",
+        "Basis: your measured daily burn from Apple Health (" + d.tdee + " kcal). The estimate formula would have said " + d.tdeeFormula + " kcal.");
+      return line;
+    }
+    var why = {
+      zu_wenige_tage: tx("zu wenige volle Messtage", "too few full measured days"),
+      unplausibel_niedrig: tx("der gemessene Wert war unplausibel niedrig — meist eine nicht getragene Uhr", "the measured value was implausibly low — usually a watch that wasn't worn"),
+      unplausibel_hoch: tx("der gemessene Wert war unplausibel hoch", "the measured value was implausibly high")
+    }[d.tdeeRejected];
+    line.textContent = why
+      ? tx("Grundlage: Schätzformel (" + d.tdee + " kcal). Apple Health meldete " + d.tdeeMeasured + " kcal, das wurde nicht übernommen — " + why + ".",
+           "Basis: estimate formula (" + d.tdee + " kcal). Apple Health reported " + d.tdeeMeasured + " kcal, which was not used — " + why + ".")
+      : tx("Grundlage: Schätzformel aus Größe, Gewicht, Alter und Aktivität (" + d.tdee + " kcal).",
+           "Basis: estimate from height, weight, age and activity (" + d.tdee + " kcal).");
+    return line;
+  }
+
   function subNutrition(p) {
     var n = p.nutrition;
     root.appendChild(el("p", "s-sub",
       n.calorieTarget + " kcal (" + n.calorieRangeMin + "–" + n.calorieRangeMax + ") · " +
       n.proteinTargetGrams + " g " + tx("Protein", "protein") + " · " + n.mealCount + " " + tx("Mahlzeiten", "meals")));
+    root.appendChild(tdeeOrigin(p));
     (n.meals || []).forEach(function (m, mi) {
       var slotNames = { breakfast: tx("Frühstück", "Breakfast"), lunch: tx("Mittagessen", "Lunch"), dinner: tx("Abendessen", "Dinner"), snack: "Snack" };
       var card = el("div", "s-meal");
@@ -1311,7 +1353,7 @@
     var err = el("p", "s-err"); err.style.display = "none";
     var save = el("button", "btn btn-primary", tx("Anpassung speichern", "Save adjustment"));
     save.addEventListener("click", function () {
-      var collected = input.collect({ transformGoal: tg, checkResult: MM.store.get("check_result", null), answers: editAnswers });
+      var collected = input.collect({ transformGoal: tg, checkResult: MM.store.get("check_result", null), answers: editAnswers, measured: measuredEnergy() });
       if (!collected.ok) { err.textContent = tx("Es fehlt noch: ", "Still missing: ") + collected.missing.join(", "); err.style.display = ""; return; }
       var r = engine.createPlan(collected, p.startDate || todayYmd());
       if (!r.ok) { err.textContent = r.errors.join("; "); err.style.display = ""; return; }
