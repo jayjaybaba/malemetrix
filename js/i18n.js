@@ -50,7 +50,10 @@
     "nav.circle":       { de: "Circle", en: "Circle" },
 
     /* ---------- Startseite: Premium-Transformations-Showcase ---------- */
-    "home.show.badge":    { de: "KI-BEISPIEL · KEINE ERGEBNISGARANTIE", en: "AI EXAMPLE · NO GUARANTEED RESULTS" },
+    /* Kurz gehalten: der Zusatz "keine Ergebnisgarantie" steht als
+       Vertrauens-Microcopy im Textblock. Zweimal derselbe Satz im selben
+       Viewport liest sich wie eine Warnung statt wie eine Kennzeichnung. */
+    "home.show.badge":    { de: "KI-BEISPIEL", en: "AI EXAMPLE" },
     "home.show.tagToday": { de: "HEUTE · 98 KG", en: "TODAY · 98 KG" },
     "home.show.tagA":     { de: "PHASE 1 · ~91 KG", en: "PHASE 1 · ~91 KG" },
     "home.show.tagB":     { de: "LANGFRISTIG · ~82 KG", en: "LONG-TERM · ~82 KG" },
@@ -135,17 +138,19 @@
     /* Hero-Neufassung (Founder, Juli 2026): aktivere Verben ("Bau DEINEN
        Körper", "STEUERE dein System"), kürzerer Nutzen-Text ohne "Hormone"
        und "Bauchgefühl", CTA in Ich-Form. br-m bricht nur mobil. */
-    /* Flaggschiff-Neuausrichtung (August 2026): Die Transformation ist der
-       Hero — sieh deinen möglichen Körper, wähle dein Ziel, MaleMetrix baut
-       den Weg. Der Score bleibt der sekundäre Einstieg. Die Headline bricht
-       kontrolliert: br-m nur mobil (3 Zeilen), am Desktop 2 Zeilen. */
-    "home.h1": { de: "Sieh deinen <br class=\"br-m\">möglichen Körper.<br><span class=\"text-grad\">Bevor du dafür arbeitest.</span>",
-                 en: "See your <br class=\"br-m\">possible body.<br><span class=\"text-grad\">Before you work for it.</span>" },
-    "home.lead": { de: "Lade ein aktuelles Foto hoch. MaleMetrix zeigt dir zwei realistische Zielkörper. Du wählst dein Ziel – und erhältst deinen persönlichen 12-Wochen-Plan für Training und Ernährung.",
-                   en: "Upload a current photo. MaleMetrix shows you two realistic target bodies. You pick your target – and get your personal 12-week plan for training and nutrition." },
-    "home.trustline": { de: "Zwei realistische Zielbilder · Ziel frei wählbar · Klar als KI gekennzeichnet",
-                        en: "Two realistic target images · target freely selectable · clearly labeled as AI" },
-    "home.ctaPrimary": { de: "Meine Zielkörper visualisieren", en: "Visualize my target bodies" },
+    /* Conversion-Fassung (August 2026): Die Headline ist ein Pattern
+       Interrupt — Behauptung, dann Auflösung. "Noch nicht." trägt den
+       Verlauf und steht IMMER auf einer eigenen Zeile, auf jeder Breite.
+       Die Subheadline löst die Neugier in drei kurzen Sätzen auf, der CTA
+       beantwortet exakt die Frage, die die Headline stellt. */
+    "home.h1": { de: "Das bist nicht du.<br><span class=\"text-grad\">Noch nicht.</span>",
+                 en: "This isn’t you.<br><span class=\"text-grad\">Not yet.</span>" },
+    "home.lead": { de: "Lade dein Foto hoch. Sieh zwei realistische Versionen deines möglichen Körpers. Wähle dein Ziel – MaleMetrix baut den 12-Wochen-Plan dorthin.",
+                   en: "Upload your photo. See two realistic versions of your possible body. Pick your target – MaleMetrix builds the 12-week plan to get there." },
+    "home.trustline": { de: "KI-Visualisierung · keine Ergebnisgarantie",
+                        en: "AI visualization · no guaranteed results" },
+    "home.ctaPrimary": { de: "Mein Potenzial sehen", en: "See my potential" },
+    "home.ctaNote": { de: "Foto hochladen · dauert ca. 30 Sek.", en: "Upload a photo · takes about 30 sec." },
     "home.scoreLink": { de: "<span class=\"pre\">Oder zuerst:</span> <span class=\"act\">Kostenlosen Score starten</span>",
                         en: "<span class=\"pre\">Or first:</span> <span class=\"act\">Start the free score</span>" },
     "home.howLink": { de: "So funktioniert es ↓", en: "How it works ↓" },
