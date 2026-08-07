@@ -246,6 +246,9 @@ public class HealthPlugin: CAPPlugin, CAPBridgedPlugin {
 
     /// Schlafstunden der letzten Nacht: alle „asleep"-Abschnitte der letzten
     /// 18 Stunden zusammengezaehlt (deckt auch spaete Schlafenszeiten ab).
+    ///
+    /// Die einzelnen Schlafphasen (Kern, Tief, REM) kennt HealthKit erst ab
+    /// iOS 16 — deshalb steht das Mindestziel der App auf iOS 16.0.
     private func sleepHours(endingAt now: Date, done: @escaping (Double?) -> Void) {
         let start = now.addingTimeInterval(-18 * 3600)
         let predicate = HKQuery.predicateForSamples(withStart: start, end: now, options: [])

@@ -135,6 +135,12 @@ group("iOS-Projekt: Formalien fuer den Upload");
   const pbx = read("ios-app/App/App.xcodeproj/project.pbxproj");
   ok(/PRODUCT_BUNDLE_IDENTIFIER = de\.malemetrix\.app;/.test(pbx), "Bundle-ID auch im Xcode-Projekt");
   ok(/TARGETED_DEVICE_FAMILY = 1;/.test(pbx), "iPhone-App (keine iPad-Screenshots noetig)");
+  // Die HealthKit-Schlafphasen (Kern/Tief/REM) gibt es erst ab iOS 16.
+  // Steht das Ziel niedriger, bricht der Build — genau das ist einmal passiert.
+  ok(!/IPHONEOS_DEPLOYMENT_TARGET = 1[0-5]\./.test(pbx),
+    "Mindestziel iOS 16 oder hoeher (darunter fehlen die Schlafphasen)");
+  ok((pbx.match(/IPHONEOS_DEPLOYMENT_TARGET = 16\.0;/g) || []).length === 4,
+    "und zwar in allen vier Konfigurationen, nicht nur in einer");
 
   const icon = "ios-app/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png";
   ok(exists(icon), "App-Icon vorhanden");

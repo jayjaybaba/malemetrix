@@ -92,6 +92,9 @@ welcher Wert gemeldet und warum er nicht uebernommen wurde. Diese Pruefung
 liegt in `MMSimple.engine.resolveTdee`, also an EINER Stelle fuer App und Web,
 und ist mit 50 Assertions abgedeckt (`tools-dev/tests/health-energy.test.js`).
 
+Mindestens iOS 16 (iPhone 8 und neuer) — die Schlafphasen in HealthKit gibt
+es nicht frueher.
+
 Gelesen werden: Aktiv- und Grundumsatz, Schritte, HRV, Ruhepuls, Schlaf,
 Gewicht. Geschrieben wird ausschliesslich das Gewicht, und nur auf Aktion.
 Nichts verlaesst das Geraet. Einschalten in der App unter *Mein Plan → iPhone

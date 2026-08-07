@@ -139,8 +139,11 @@ jobs:
       - name: Diagnose bei Fehlschlag
         if: failure()
         run: |
-          UDID="${{ steps.sim.outputs.udid }}" || true
-          xcrun simctl list devices | head -30 || true
+          UDID="${{ steps.sim.outputs.udid }}"
+          if [ -z "$UDID" ]; then
+            echo "Kein Simulator angelegt — der Fehler liegt vor dem Start (siehe Build-Schritt oben)."
+            exit 0
+          fi
           xcrun simctl spawn "$UDID" log show --last 3m --predicate 'process == "App"' --style compact | tail -100 || true
 
       - uses: actions/upload-artifact@v4
