@@ -19,7 +19,8 @@
   if (!document.getElementById("sapp")) return;   // nur auf meinplan.html
 
   var store = MMSimple.store, model = MMSimple.model,
-      input = MMSimple.input, engine = MMSimple.engine, weekly = MMSimple.weekly;
+      input = MMSimple.input, engine = MMSimple.engine, weekly = MMSimple.weekly,
+      decide = MMSimple.decide;
 
   /* ---------------- Helpers ---------------- */
   function el(tag, cls, html) {
@@ -55,6 +56,29 @@
       if (isFinite(age) && age > MEASURED_MAX_AGE_MS) return null;
     }
     return m;
+  }
+
+  /* Health-Werte, die die Bruecke beim letzten Verbinden abgelegt hat.
+     Ohne App oder ohne Health: leer — und die Entscheidung laeuft ohne sie. */
+  function healthToday() {
+    var h = MM.store.get("health_today", null);
+    if (!h || !h.date || h.date !== todayYmd()) return null;   // nur der heutige Stand zaehlt
+    return h;
+  }
+  function healthSteps() { return MM.store.get("health_steps_by_day", {}) || {}; }
+
+  /* „Heute anpassen": eine gemeldete Ausnahme, die NUR fuer diesen Tag gilt.
+     Bewusst nicht im Plan gespeichert — ein Restaurantbesuch ist keine
+     Planaenderung und darf morgen keine Spuren hinterlassen. */
+  function modifiers() { return MM.store.get("simple_day_modifier", {}); }
+  function todaysModifier(ymd) { return modifiers()[ymd] || null; }
+  function setModifier(ymd, mod) {
+    var m = modifiers();
+    if (mod) m[ymd] = mod; else delete m[ymd];
+    // Alte Eintraege aufraeumen: was aelter als 30 Tage ist, hilft niemandem.
+    var cutoff = model.addDays(todayYmd(), -30);
+    Object.keys(m).forEach(function (k) { if (k < cutoff) delete m[k]; });
+    MM.store.set("simple_day_modifier", m);
   }
 
   function plan() { return store.getPlan(); }
@@ -549,32 +573,59 @@
     var isDeload = p.training.deloadWeeks.indexOf(week) >= 0;
     var session = info.training ? sessionForWeekday(p, new Date(ymd + "T12:00:00").getDay()) : null;
 
+    /* ---- Die Entscheidung des Tages, bevor irgendetwas gezeichnet wird ----
+       Der Screen bildet nicht mehr den Plan ab, sondern den Tagesauftrag:
+       aus Plan + gemessener Ausführung + Health + gemeldeten Umständen. */
+    var tr = weekly.trend(planWeights(p), ymd);
+    var exec = decide.executionScore(p, daylog(), ymd, {
+      days: 14, weights: planWeights(p), stepsByDay: healthSteps()
+    });
+    var rxToday = decide.dailyPrescription({
+      plan: p, todayYmd: ymd, daylog: daylog(),
+      weightTrend: tr, execution: exec,
+      health: healthToday(), modifier: todaysModifier(ymd)
+    });
+
     /* Kopf */
     var head = el("div", "s-head");
     head.appendChild(el("span", "k", tx("Woche", "Week") + " " + week + " · " + tx("Tag", "Day") + " " + day + " / 84" + (isDeload ? " · " + tx("reduzierte Woche", "deload week") : "")));
-    var st = p.selectedTransformation, pg = p.phaseGoal;
-    head.appendChild(el("div", "goal", st.finalTargetWeightKg + " kg" +
-      (pg.isFinalPhase ? "" : " <span style='color:var(--muted);font-weight:400'>· " + tx("Phase 1 bis", "phase 1 to") + " " + pg.week12TargetMinKg + "–" + pg.week12TargetMaxKg + " kg</span>")));
-    var tr = weekly.trend(planWeights(p), ymd);
-    if (tr) {
-      var target = weekly.plannedRate(p) || 0;
-      var onTrack = Math.abs(tr.deltaPerWeek - target) <= Math.max(0.15, Math.abs(target) * 0.4);
-      var s = el("div", "status" + (onTrack ? "" : " warn"),
-        onTrack ? tx("Du bist auf Kurs.", "You are on track.")
-                : tx("Trend weicht ab — der Wochencheck prüft das.", "Trend deviates — the weekly check will look at it."));
-      head.appendChild(s);
+    head.appendChild(el("div", "goal", esc(pick(rxToday.headline))));
+    if (rxToday.focus) {
+      head.appendChild(el("div", "status" + (rxToday.mode === "reentry" || rxToday.mode === "recover" ? " warn" : ""),
+        tx("Fokus heute: ", "Today's focus: ") + esc(pick(rxToday.focus))));
     }
     root.appendChild(head);
 
-    /* Maximal drei primäre Aufgaben */
+    /* Begründung — der Unterschied zwischen Ansage und Anweisung.
+       Nur wenn es wirklich etwas zu begründen gibt. */
+    if (rxToday.why.length) {
+      var whyBox = el("div", "s-why");
+      rxToday.why.slice(0, 2).forEach(function (w) { whyBox.appendChild(el("p", null, esc(pick(w)))); });
+      root.appendChild(whyBox);
+    }
+
+    /* Maximal drei primäre Aufgaben — aus dem Tagesauftrag, nicht aus dem Plan */
     var tasks = [];
-    if (session) {
-      tasks.push({ id: "training", b: (pick(session.name)) + " " + tx("absolvieren", "complete"), s: isDeload ? tx("Reduzierte Woche: 1 Satz weniger, ~80 % Last", "Deload: one set less, ~80% load") : tx("Progression: 1 Wiederholung mehr als letztes Mal", "Progression: one more rep than last time"), go: "#workout" });
+    if (session && rxToday.training) {
+      var sub;
+      if (rxToday.mode === "short" || rxToday.mode === "reentry") {
+        sub = tx("Kurzfassung: " + rxToday.sessionMinutes + " Minuten, die ersten Übungen zuerst",
+                 "Short version: " + rxToday.sessionMinutes + " minutes, first exercises first");
+      } else if (rxToday.mode === "recover") {
+        sub = tx("Ein Satz weniger je Übung, Last bleibt", "One set less per exercise, load stays");
+      } else if (rxToday.mode === "deload") {
+        sub = tx("Reduzierte Woche: 1 Satz weniger, ~80 % Last", "Deload: one set less, ~80% load");
+      } else {
+        sub = tx("Progression: 1 Wiederholung mehr als letztes Mal", "Progression: one more rep than last time");
+      }
+      tasks.push({ id: "training", b: (pick(session.name)) + " " + tx("absolvieren", "complete"), s: sub, go: "#workout" });
+    } else if (session && !rxToday.training) {
+      tasks.push({ id: "movement", b: tx("Heute kein Training", "No training today"), s: tx("So entschieden — siehe Begründung oben", "Decided that way — see the reason above") });
     } else {
       tasks.push({ id: "movement", b: tx("30 Minuten gehen", "Walk 30 minutes"), s: tx("Ruhetag — Bewegung statt Training", "Rest day — movement instead of training") });
     }
-    tasks.push({ id: "protein", b: tx("Mindestens ", "At least ") + p.nutrition.proteinTargetGrams + " g " + tx("Protein erreichen", "of protein"), s: tx("Mahlzeiten ansehen unter Mein Plan", "See meals under My Plan"), go: "#plan" });
-    tasks.push({ id: "steps", b: p.dailyTargets.steps + " " + tx("Schritte erreichen", "steps"), s: null });
+    tasks.push({ id: "protein", b: tx("Mindestens ", "At least ") + rxToday.protein + " g " + tx("Protein erreichen", "of protein"), s: rxToday.kcal + " kcal " + tx("Tagesziel", "daily target"), go: "#plan" });
+    tasks.push({ id: "steps", b: rxToday.steps + " " + tx("Schritte erreichen", "steps"), s: null });
 
     var list = el("div", "s-tasks");
     tasks.slice(0, 3).forEach(function (t) {
@@ -610,6 +661,12 @@
         openWeightSheet(ymd, render);
       });
     }
+    var activeMod = todaysModifier(ymd);
+    chip("modify", activeMod ? tx("✎ Heute angepasst · zurücknehmen", "✎ Today adjusted · undo")
+                             : tx("✎ Heute passt nicht", "✎ Today doesn't fit"), !!activeMod, function () {
+      if (activeMod) { setModifier(ymd, null); track("day_modifier_cleared"); render(); return; }
+      openModifySheet(ymd);
+    });
     if (info.shopping) chip("shop", tx("🛒 Einkaufstag", "🛒 Shopping day"), !!entry.tasks.shopping, function () { location.hash = "#plan"; MM.store.set("simple_plan_tab", "einkauf"); render(); });
     if (info.mealPrep) chip("prep", tx("🍳 Meal-Prep", "🍳 Meal prep"), !!entry.tasks.prep, function () { entry.tasks.prep = !entry.tasks.prep; setDayEntry(ymd, entry); render(); });
     if (info.review && week >= 2) chip("review", tx("📋 Wochencheck fällig", "📋 Weekly check due"), false, function () { location.hash = "#check"; });
@@ -644,6 +701,37 @@
       render();
     });
     root.appendChild(closeBtn);
+  }
+
+  /* Die Ausnahmen, die im Alltag wirklich vorkommen. Bewusst wenige und
+     bewusst ohne Freitextfeld: jede Option führt zu einer definierten,
+     getesteten Entscheidung — nicht zu einer improvisierten. */
+  var MODIFIERS = [
+    { type: "zeit", minutes: 30, de: "Ich habe nur 30 Minuten", en: "I only have 30 minutes" },
+    { type: "zeit", minutes: 20, de: "Ich habe nur 20 Minuten", en: "I only have 20 minutes" },
+    { type: "auswaerts", de: "Ich esse heute auswärts", en: "I'm eating out today" },
+    { type: "reise", de: "Ich bin unterwegs / kein Gym", en: "I'm travelling / no gym" },
+    { type: "krank", de: "Ich bin krank", en: "I'm ill" }
+  ];
+
+  function openModifySheet(ymd) {
+    track("day_modifier_opened");
+    openSheet(function (box) {
+      box.appendChild(el("h3", null, tx("Was passt heute nicht?", "What doesn't fit today?")));
+      box.appendChild(el("p", "hint", tx(
+        "Gilt nur für heute. Dein Plan bleibt unverändert — es wird nichts nachgeholt und nichts kompensiert.",
+        "Applies to today only. Your plan stays unchanged — nothing gets made up, nothing gets compensated.")));
+      MODIFIERS.forEach(function (m) {
+        var b = el("button", "btn btn-ghost", esc(tx(m.de, m.en)));
+        b.style.cssText = "display:block;width:100%;margin-bottom:8px;text-align:left";
+        b.addEventListener("click", function () {
+          setModifier(ymd, { type: m.type, minutes: m.minutes || null });
+          track("day_modifier_set", { type: m.type });
+          closeSheet(); render();
+        });
+        box.appendChild(b);
+      });
+    });
   }
 
   function vCompleted(p) {
@@ -1087,6 +1175,67 @@
       root.appendChild(el("div", "s-note", tx("Noch zu wenige Gewichtsdaten für einen Trend — wiege dich an deinen festen Wiege-Tagen.", "Not enough weight data for a trend yet — weigh in on your fixed days.")));
     }
 
+    /* ---- Ausführung: was DU tust, getrennt von dem, was dein Körper tut ----
+       Diese Trennung ist der Grund, warum ein Nutzer bei 55 % Umsetzung
+       nicht denkt, sein Plan sei kaputt. */
+    var exec = decide.executionScore(p, daylog(), ymd, {
+      days: 14, weights: series, stepsByDay: healthSteps()
+    });
+    if (exec.score != null) {
+      var ec = el("div", "s-card");
+      ec.appendChild(el("h3", null, tx("Ausführung — letzte " + exec.days + " Tage", "Execution — last " + exec.days + " days")));
+      ec.appendChild(el("div", "goal", exec.score + " / 100"));
+      var eg = el("div", "s-stat");
+      function ecell(v, l) {
+        var c = el("div", "cell");
+        c.appendChild(el("div", "v", v == null ? "—" : v + " %"));
+        c.appendChild(el("div", "l", l)); eg.appendChild(c);
+      }
+      ecell(exec.training, tx("Training", "Training"));
+      ecell(exec.nutrition, tx("Ernährung", "Nutrition"));
+      ecell(exec.steps, tx("Schritte", "Steps"));
+      ecell(exec.weighIn, tx("Wiegen", "Weigh-ins"));
+      ec.appendChild(eg);
+      // Jede Zahl bekommt eine Konsequenz. Sonst ist sie Dekoration.
+      ec.appendChild(el("p", "hint", exec.score < decide.EXEC.poor
+        ? tx("Unter " + decide.EXEC.poor + " % wird der Plan bewusst NICHT verschärft. Ein Plateau bei dieser Umsetzung ist kein Planproblem — die nächste Woche entscheidet Ausführung, nicht Kalorien.",
+             "Below " + decide.EXEC.poor + "% the plan is deliberately NOT tightened. A plateau at this execution level is not a plan problem — next week is about execution, not calories.")
+        : (exec.score >= decide.EXEC.good
+          ? tx("Ab " + decide.EXEC.good + " % sind deine Zahlen aussagekräftig: Anpassungen im Wochencheck wirken jetzt wirklich auf den Körper und nicht auf Lücken.",
+               "From " + decide.EXEC.good + "% your numbers mean something: weekly adjustments now act on your body, not on gaps.")
+          : tx("Zwischen " + decide.EXEC.poor + " und " + decide.EXEC.good + " %: brauchbar, aber der Trend schwankt dadurch stärker als nötig.",
+               "Between " + decide.EXEC.poor + " and " + decide.EXEC.good + "%: workable, but it makes the trend noisier than necessary."))));
+      root.appendChild(ec);
+    }
+
+    /* ---- Verlauf: wohin führt das aktuelle Verhalten? ------------------- */
+    var traj = decide.trajectory(p, tr, ymd, exec);
+    if (traj) {
+      var tc = el("div", "s-card");
+      tc.appendChild(el("h3", null, tx("Wenn du so weitermachst", "If you continue like this")));
+      if (traj.projectedDate) {
+        tc.appendChild(el("div", "goal", traj.goalKg + " kg " + tx("am", "on") + " " + traj.projectedDate));
+        var vs = traj.daysVsPlan;
+        if (vs != null && Math.abs(vs) >= 7) {
+          tc.appendChild(el("p", "hint", vs > 0
+            ? tx("Das sind " + vs + " Tage vor Plan.", "That is " + vs + " days ahead of plan.")
+            : tx("Das sind " + Math.abs(vs) + " Tage später als geplant.", "That is " + Math.abs(vs) + " days later than planned.")));
+        }
+        tc.appendChild(el("p", "hint", tx(
+          "Gerechnet mit deiner gemessenen Rate von " + traj.actualRatePerWeek + " kg/Woche, nicht mit der geplanten. Ändert sich dein Verhalten, ändert sich dieses Datum.",
+          "Calculated from your measured rate of " + traj.actualRatePerWeek + " kg/week, not the planned one. Change your behaviour and this date changes.")));
+      } else if (traj.status === "stalled") {
+        tc.appendChild(el("p", null, tx(
+          "Dein Gewicht bewegt sich gerade nicht. Ein Zieldatum daraus zu rechnen wäre eine erfundene Zahl — deshalb steht hier keine.",
+          "Your weight is not moving right now. Projecting a date from that would be a made-up number — so there is none here.")));
+      } else if (traj.status === "wrong_direction") {
+        tc.appendChild(el("p", null, tx(
+          "Der Trend läuft aktuell in die andere Richtung (" + traj.actualRatePerWeek + " kg/Woche). Der Wochencheck sieht sich zuerst deine Ausführung an, nicht deine Kalorien.",
+          "The trend currently runs the other way (" + traj.actualRatePerWeek + " kg/week). The weekly check looks at your execution first, not your calories.")));
+      }
+      root.appendChild(tc);
+    }
+
     /* Training: geplant vs. absolviert (keine Streaks) */
     var d = daylog();
     var planned = 0, done = 0;
@@ -1231,7 +1380,11 @@
 
     var go = el("button", "btn btn-primary", tx("Auswerten", "Evaluate"));
     go.addEventListener("click", function () {
-      var ctx = { plan: p, week: week, todayYmd: ymd, weights: planWeights(p), answers: checkAnswers };
+      // Die gemessene Ausführung geht mit in die Entscheidung: sie kann eine
+      // wohlwollende Selbsteinschätzung überstimmen, nie umgekehrt.
+      var ctx = { plan: p, week: week, todayYmd: ymd, weights: planWeights(p), answers: checkAnswers,
+                  execution: decide.executionScore(p, daylog(), ymd, {
+                    days: 14, weights: planWeights(p), stepsByDay: healthSteps() }) };
       var d = weekly.decide(ctx);
       root.innerHTML = "";
       root.appendChild(el("h2", null, tx("Entscheidung", "Decision")));

@@ -139,9 +139,25 @@
         null, null);
     }
 
-    /* 7 — Stagnation (Cut) */
+    /* 7 — Stagnation (Cut)
+       „Eingehalten" heißt hier: selbst berichtet UND — sofern gemessen —
+       auch belegt. Ohne diese zweite Bedingung würde eine wohlwollende
+       Selbsteinschätzung zu einer Kalorienkürzung führen, obwohl der Plan
+       gar nicht ausgeführt wurde. Das ist der häufigste und schädlichste
+       Fehler adaptiver Systeme: Symptom behandeln statt Ursache.
+       ctx.execution ist optional — ohne Messung bleibt alles wie bisher. */
+    var ex = ctx.execution || null;
+    var measuredOk = !ex || ex.score == null || ex.score >= 70;
     var stalled = cut ? tr.deltaPerWeek > target + tol : tr.deltaPerWeek < target - tol;
-    if (stalled && a.nutritionAdherence === "gut" && (a.trainingsDone == null || a.trainingsDone >= Math.max(1, plan.training.daysPerWeek - 1))) {
+
+    if (stalled && a.nutritionAdherence === "gut" && !measuredOk) {
+      return res("wr_stall_selfreport_gap", "keep",
+        "Du hast die Woche als gut eingeschätzt, dein Tagesprotokoll zeigt aber " + ex.score + " % Umsetzung über " + ex.days + " Tage. Bei dieser Lücke wird nicht am Plan gedreht — eine Kalorienkürzung würde ein Ausführungsproblem als Stoffwechselproblem behandeln.",
+        "You rated the week as good, but your daily log shows " + ex.score + "% execution over " + ex.days + " days. With that gap the plan is not adjusted — cutting calories would treat an execution problem as a metabolic one.",
+        null, null);
+    }
+
+    if (stalled && a.nutritionAdherence === "gut" && measuredOk && (a.trainingsDone == null || a.trainingsDone >= Math.max(1, plan.training.daysPerWeek - 1))) {
       if (cut) {
         var down = Math.max(kcal - 120, L.kcalMin);
         if (down < kcal) {

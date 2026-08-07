@@ -18,6 +18,13 @@
 .s-head .status { margin-top: 8px; font-size: 0.88rem; color: var(--green); }
 .s-head .status.warn { color: var(--amber); }
 
+/* Begruendung des Tagesauftrags. Bewusst zurueckhaltend: Der Auftrag steht
+   oben, die Begruendung liest, wer sie braucht — sie draengt sich nicht auf.
+   Linke Kante statt Kasten, damit der Screen nicht in Boxen zerfaellt. */
+.s-why { border-left: 2px solid var(--line-strong); padding: 2px 0 2px 12px; margin: 0 0 14px; }
+.s-why p { color: var(--muted); font-size: 0.88rem; line-height: 1.5; margin: 0 0 6px; }
+.s-why p:last-child { margin-bottom: 0; }
+
 /* Aufgabenliste (max. 3 primäre) */
 .s-tasks { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
 .s-task { display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); padding: 13px 14px; cursor: pointer; transition: border-color 0.15s; }
