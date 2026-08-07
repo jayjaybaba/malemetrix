@@ -37,6 +37,11 @@
 > Deploy = Push auf `main`. `master` ist nur ein Spiegel und deployt nichts.
 > Verbindliche Regeln und Verifikation: [DEPLOYMENT.md](DEPLOYMENT.md).
 
+> **Die iOS-App** liegt in `ios-app/` (Capacitor, dieselben Dateien wie die
+> Website — kein zweiter Planmotor). Gebaut wird auf kostenlosen
+> GitHub-macOS-Runnern, ein gemieteter Mac ist nicht nötig. Was zu tun ist:
+> [APP.md](APP.md). Store-Angaben: [STORE.md](STORE.md).
+
 ## Neues Ebook hinzufügen (ohne Code zu schreiben)
 
 Die Ebook-Bibliothek ist **datengetrieben** — du pflegst nur eine Liste, der Rest baut sich von selbst.
