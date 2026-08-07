@@ -2802,16 +2802,21 @@ body > * { position: relative; z-index: 0; }
    schmal, dass die Headline nicht mehr in zwei Zeilen passt. */
 .os14-hero-grid { display: grid; grid-template-columns: 1fr; }
 .os14-hero .os14-hero-copy { max-width: 780px; }
-/* Größe exakt auf die Headline-Zeilen bemessen (Space Grotesk 700,
-   -0.02em): "Sieh deinen möglichen Körper." misst 14,08× die Schriftgröße —
-   bei 3.35rem ≈ 755px, passt in die 780px-Spalte. Ergebnis: exakt 2 Zeilen. */
-.os14-hero .h-display { max-width: 780px; font-size: clamp(2.55rem, 4.5vw, 3.35rem); line-height: 1.04; letter-spacing: -0.02em; text-transform: none; }
+/* Die Headline ist der Pattern Interrupt und darf entsprechend groß stehen.
+   Bemessung (Space Grotesk 700, -0.02em): die längere Zeile "Das bist nicht
+   du." misst 8,15× die Schriftgröße — bei 4.2rem sind das 548px und damit
+   deutlich unter jeder Spaltenbreite. Beide Sätze stehen über <br> fest auf
+   eigenen Zeilen, auf jeder Breite. */
+/* margin-bottom: 0 hebt `.hero h1 { margin-bottom: 22px }` auf. Im
+   einspaltigen Grid (display:contents) kollabieren Margins nicht — die 22px
+   hätten sich dort zum margin-top des Leads addiert und genau den Abstand
+   erzeugt, der weg soll. Der Abstand gehört allein dem Lead. */
+.os14-hero .h-display { max-width: 780px; margin-bottom: 0; font-size: clamp(3.4rem, 4.6vw, 4.2rem); line-height: 1.02; letter-spacing: -0.025em; text-transform: none; }
 @media (min-width: 1000px) {
   /* 1.45fr/1fr ≈ 59 % Textspalte: bei 1440px sind das ~658px, bei 1000px
-     noch ~534px. Die Headline ist auf beide Enden bemessen (2.25rem ≈ 507px,
-     2.85rem ≈ 642px Zeilenbreite) und bleibt damit durchgehend zweizeilig. */
+     noch ~534px — die Headline braucht bei 4.2rem nur 548px bzw. bei 46px
+     Schrift 375px und bleibt überall sicher zweizeilig. */
   .os14-hero-grid { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: clamp(40px, 5vw, 64px); align-items: center; }
-  .os14-hero .h-display { font-size: clamp(2.25rem, 3.3vw, 2.85rem); }
   /* Die Karte inkl. Zielwahl und Fußnote muss in den ersten Viewport passen:
      bei 900px Fensterhöhe bleiben nach Header und Hero-Padding ~684px, und
      Badge, Zielwahl und Fußnote belegen davon ~193px. 52vh hält die Bühne
@@ -2832,21 +2837,24 @@ body > * { position: relative; z-index: 0; }
   .os14-hero .lead { order: 3; }
   .os14-hero .trf-show { order: 4; margin-top: 28px; }
   .os14-hero .hero-ctas { order: 5; }
-  .os14-hero .os14-scoreline { order: 6; }
-  .os14-hero .os14-trust { order: 7; }
+  .os14-hero .os14-ctanote { order: 6; }
+  .os14-hero .os14-scoreline { order: 7; }
+  .os14-hero .os14-trust { order: 8; }
   /* Die 3:4-Karte darf nicht auf Containerbreite laufen: bei 768px wären das
      720px Breite und das Porträt würde über die max-height stark beschnitten. */
   .os14-hero .trf-show { max-width: 460px; }
 }
-/* margin-bottom: 0 neutralisiert .hero .lead (36px) — der Abstand zum CTA
-   gehört allein .hero-ctas (26px), sonst addieren sich beide Systeme. */
-.os14-hero .lead { max-width: 52ch; margin-top: 22px; margin-bottom: 0; font-size: 1.06rem; line-height: 1.5; color: #C9C4B8; }
-/* Mobiler Umbruch der Headline: nur unter 640px aktiv — Satz 1 bricht nach
-   "möglichen", Satz 2 bleibt ganz. Am Desktop existiert der Umbruch nicht. */
+/* Rhythmus des Textblocks — bewusst asymmetrisch: Luft VOR der Headline,
+   wenig darunter. Behauptung und Auflösung sollen als ein Block gelesen
+   werden, nicht als zwei Abschnitte. 15px statt der früheren 22px, und
+   margin-bottom: 0 neutralisiert .hero .lead (36px), sonst addieren sich
+   beide Systeme zum Abstand von .hero-ctas. */
+.os14-hero .os14-sysline { margin-bottom: 28px; }
+.os14-hero .lead { max-width: 48ch; margin-top: 15px; margin-bottom: 0; font-size: 1.06rem; line-height: 1.5; color: #C9C4B8; }
 .br-m { display: none; }
 /* Primär-CTA: das kontraststärkste Element im Hero. Verlauf + subtile Tiefe
    (Innenlicht oben, weicher Schatten), kein Dauer-Glow, keine Neonwirkung. */
-.os14-hero .hero-ctas { margin: 26px 0 0; }
+.os14-hero .hero-ctas { margin: 30px 0 0; }
 .os14-hero .hero-ctas .btn {
   min-height: 54px; padding: 14px 30px;
   font-size: 1.06rem; font-weight: 600; letter-spacing: 0.005em;
@@ -2858,9 +2866,13 @@ body > * { position: relative; z-index: 0; }
 }
 .os14-hero .hero-ctas .btn:active { transform: translateY(1px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 4px 14px rgba(13, 90, 200, 0.3); }
 .os14-hero .hero-ctas .btn:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; }
+/* Handlungs-Microcopy direkt am CTA: beantwortet vor dem Klick, was danach
+   passiert und wie lange es dauert. Klein und grau — sie soll den Button
+   stützen, nicht mit ihm konkurrieren. */
+.os14-ctanote { margin-top: 11px; font-size: 0.82rem; line-height: 1.4; color: var(--muted-2); }
 /* Score-Link: bewusst zweitrangig — keine Fläche, kein Rahmen, aber volle
    Touch-Höhe (~44px) und klar als Link erkennbar. */
-.os14-scoreline { margin-top: 6px; }
+.os14-scoreline { margin-top: 4px; }
 .os14-scorelink { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 2px 2px 2px 0; font-size: 0.95rem; transition: color 0.2s; }
 .os14-scorelink .pre { color: var(--muted-2); }
 .os14-scorelink .act {
@@ -2871,45 +2883,72 @@ body > * { position: relative; z-index: 0; }
 }
 .os14-scorelink:hover .act, .os14-scorelink:focus-visible .act { color: var(--accent-2); text-decoration-color: var(--accent-2); }
 .os14-scorelink:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; border-radius: 6px; }
-/* Vertrauenszeile: dem CTA klar untergeordnet, im warmen Sandton — der
-   einzige Ort im Hero, an dem der Sekundärakzent auftaucht. */
-.os14-trust { color: var(--sand-2); margin-top: 16px; font-size: 0.84rem; letter-spacing: 0.01em; }
+/* Vertrauens-Microcopy: als technische Kennzeichnung gesetzt (Mono,
+   Versalien via CSS statt im Markup, damit Screenreader den Satz normal
+   vorlesen). Sie soll wie ein Systemlabel wirken — nicht wie ein Warnhinweis
+   und nicht wie Kleingedrucktes. */
+.os14-trust {
+  margin-top: 12px;
+  font-family: var(--font-mono); font-size: 0.62rem;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--muted-2);
+}
 /* Zweispaltiges Text/Instrument-Grid — seit dem Hero-Neuaufbau (August 2026)
    nur noch von Content-Sektionen unterhalb des Heros genutzt (DAS PROTOKOLL). */
 .os14-hero-inner { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.9fr); gap: clamp(28px, 6vw, 84px); align-items: center; }
 @media (max-width: 900px) { .os14-hero-inner { grid-template-columns: 1fr; } }
 
 /* =========================================================================
-   HERO MOBIL: kompakt gesetzt, damit Headline, Nutzen und der Beginn des
-   Showcase gemeinsam in den ersten Viewport passen.
-   Ziel-Reihenfolge: Eyebrow → 3-zeilige Headline → max. 4 Zeilen Nutzen →
-   Showcase → CTA (volle Breite) → Score-Link → Vertrauenszeile.
+   HERO MOBIL — die wichtigste Ansicht (Traffic aus Instagram/TikTok).
+   Reihenfolge: Eyebrow → 2-zeilige Headline → 3 Zeilen Nutzen → Showcase →
+   CTA (volle Breite) → CTA-Microcopy → Score-Link → Vertrauens-Microcopy.
+   Die Abstände sind hier noch enger als am Desktop, damit der Textblock als
+   eine Einheit steht und das Visual früh ins Bild kommt.
    ========================================================================= */
 @media (max-width: 640px) {
-  .br-m { display: inline; }
-  .os14-hero { padding: calc(var(--header-h) + 24px) 0 40px; }
+  .os14-hero { padding: calc(var(--header-h) + 22px) 0 36px; }
   /* Eyebrow: enger gesetzt, damit die Zeile auf 360px ganz bleibt; die
      dekorative Linie entfällt mobil — sie wirkte gedrängt. */
-  .os14-hero .os14-sysline { margin-bottom: 20px; font-size: 0.55rem; letter-spacing: 0.16em; }
+  .os14-hero .os14-sysline { margin-bottom: 24px; font-size: 0.55rem; letter-spacing: 0.16em; }
   .os14-hero .os14-sysline::after { display: none; }
-  /* Exakt bemessen statt geschätzt: die längste Zeile "Bevor du dafür
-     arbeitest." misst 11,69× die Schriftgröße. 8.3vw − 0.25rem füllt die
-     Content-Breite (100vw − 48px) auf jeder Gerätebreite fast vollständig,
-     ohne dass die Zeile je bricht → immer exakt 3 Zeilen, nie 4. */
-  .os14-hero .h-display { font-size: clamp(1.4rem, calc(8.3vw - 0.25rem), 2.35rem); line-height: 1.08; }
-  .os14-hero .lead { margin-top: 20px; font-size: 1rem; line-height: 1.45; max-width: 40ch; }
+  /* Exakt bemessen: "Das bist nicht du." misst 8,15× die Schriftgröße.
+     11.6vw − 5.6px füllt die Content-Breite (100vw − 48px) zu ~95 % — die
+     Headline wird so groß wie irgend möglich, ohne je zu brechen: 36px bei
+     360px Gerätebreite, 40px bei 390px, 44px bei 430px. */
+  .os14-hero .h-display { font-size: clamp(1.9rem, calc(11.6vw - 5.6px), 2.9rem); line-height: 1.04; }
+  /* Der entscheidende Abstand: 12px statt der früheren 20px. Behauptung und
+     Auflösung müssen als EIN Block gelesen werden. */
+  .os14-hero .lead { margin-top: 12px; font-size: 1rem; line-height: 1.45; max-width: none; }
   .os14-hero .hero-ctas { margin-top: 26px; }
   /* CTA: volle Containerbreite, einzeilig, ~54px hoch. */
   .os14-hero .hero-ctas .btn { width: 100%; white-space: nowrap; min-height: 54px; padding: 13px 18px; font-size: 1.06rem; }
-  .os14-scoreline { margin-top: 4px; }
+  .os14-ctanote { margin-top: 10px; font-size: 0.8rem; }
+  .os14-scoreline { margin-top: 2px; }
   .os14-scorelink { font-size: 0.94rem; }
-  .os14-trust { margin-top: 8px; font-size: 0.8rem; }
+  .os14-trust { margin-top: 10px; font-size: 0.58rem; }
+  /* Der CTA gehört auf dem Telefon unmittelbar unter das Bild — Zielwahl und
+     Erklärtext der Karte würden ihn sonst rund 150px tiefer schieben, aus dem
+     ersten Viewport heraus. display:contents löst die Karte dafür in ihre
+     Teile auf; die Bühne behält ihre Breite über die Kinder selbst. Reihenfolge:
+     Bild → CTA → Zielwahl → Kartentext → Score → Kennzeichnung. */
+  .os14-hero .trf-show { display: contents; }
+  .os14-hero .trf-show .ai-badge { order: 4; margin-top: 26px; }
+  .os14-hero .trf-show .stage { order: 5; }
+  .os14-hero .hero-ctas { order: 6; margin-top: 22px; }
+  .os14-hero .os14-ctanote { order: 7; }
+  .os14-hero .trf-show .goals { order: 8; margin-top: 20px; }
+  .os14-hero .trf-show .note { order: 9; }
+  .os14-hero .os14-scoreline { order: 10; margin-top: 14px; }
+  .os14-hero .os14-trust { order: 11; }
+  .os14-hero .trf-show .stage,
+  .os14-hero .trf-show .goals,
+  .os14-hero .trf-show .note { max-width: 460px; }
 }
 @media (max-width: 374px) {
   .os14-hero .hero-ctas .btn { font-size: 0.99rem; }
 }
 /* Unter ~380px braucht die Beschreibung eine Stufe weniger, sonst wird aus
-   vier Zeilen eine fünfte. */
+   drei Zeilen eine vierte. */
 @media (max-width: 379px) {
   .os14-hero .lead { font-size: 0.94rem; }
 }
@@ -3147,9 +3186,10 @@ body > * { position: relative; z-index: 0; }
    Zweit-Button in der Karte (.cta-m) ist deshalb entfallen. */
 @media (max-width: 999px) {
   /* Einspaltig steht das Showcase über dem CTA — je höher die Bühne, desto
-     tiefer rutscht der Button. 48vh ist der Punkt, an dem das Motiv noch
-     ganzfigurig wirkt und der CTA direkt an der Falz liegt. */
-  .trf-show .stage { max-height: min(48vh, 420px); }
+     tiefer rutscht der Button. 46vh ist der Punkt, an dem das Motiv noch
+     ganzfigurig wirkt und der CTA auf 800px hohen Geräten gerade noch
+     vollständig über der Falz landet. */
+  .trf-show .stage { max-height: min(46vh, 420px); }
   .trf-show .stage img { object-position: 50% 10%; }
   .trf-show .goals { margin-top: 12px; }
   .trf-show .note { margin-top: 12px; font-size: 0.82rem; }
