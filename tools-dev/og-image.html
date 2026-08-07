@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>og-image</title>
+<!-- Vorlage für /og-image.png (1200x630). Rendern mit:
+     node tools-dev/build-og-image.mjs
+     Nutzt bewusst die echten Marken-Assets: lokale Schriften, die
+     Systemfarben aus style.css und dieselben Showcase-Bilder wie der Hero —
+     die Share-Vorschau soll aussehen wie die Seite, die sie ankündigt. -->
+<link rel="stylesheet" href="/css/fonts.css">
+<style>
+  :root {
+    --bg-0: #070A0F; --text: #F0EEE9; --muted-2: #98948A;
+    --accent-2: #16C4F4; --hairline: rgba(255,255,255,0.10);
+    --grad: linear-gradient(135deg, #258CFF 0%, #16C4F4 100%);
+    --font-display: "Space Grotesk", system-ui, sans-serif;
+    --font-body: "Inter", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1200px; height: 630px; background: var(--bg-0); color: var(--text);
+         font-family: var(--font-body); overflow: hidden; }
+  .sheet { position: relative; width: 1200px; height: 630px; display: grid;
+           grid-template-columns: 700px 500px; }
+
+  /* Feines Raster wie im Seitenhintergrund — Struktur, kein Dekor. */
+  .grid-bg { position: absolute; inset: 0; opacity: 0.5;
+    background-image: linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px);
+    background-size: 56px 56px; }
+
+  .left { position: relative; padding: 54px 40px 46px 62px; display: flex;
+          flex-direction: column; justify-content: space-between; }
+
+  .logo { display: flex; align-items: center; gap: 2px;
+          font-family: var(--font-display); font-weight: 700; font-size: 27px;
+          letter-spacing: 0.10em; }
+  .logo svg { width: 27px; height: 27px; margin-left: 1px; }
+
+  .eyebrow { font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.22em;
+             color: var(--accent-2); margin-bottom: 20px; }
+  h1 { font-family: var(--font-display); font-weight: 700; font-size: 70px;
+       line-height: 1.0; letter-spacing: -0.028em; }
+  h1 .grad { background: var(--grad); -webkit-background-clip: text;
+             background-clip: text; -webkit-text-fill-color: transparent; }
+  .sub { margin-top: 20px; font-size: 21px; line-height: 1.42; color: #C9C4B8;
+         max-width: 30ch; }
+
+  .foot { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+  .domain { font-family: var(--font-mono); font-size: 15px; letter-spacing: 0.10em;
+            color: var(--muted-2); }
+  .disclaimer { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.13em;
+                color: var(--muted-2); text-transform: uppercase; }
+
+  /* Rechts: derselbe Vorher/Nachher-Vergleich wie im Hero, fest bei 50 %. */
+  .right { position: relative; overflow: hidden; }
+  .right img { position: absolute; inset: 0; width: 100%; height: 100%;
+               object-fit: cover; object-position: 50% 14%; }
+  .right .after { position: absolute; inset: 0; clip-path: inset(0 0 0 50%); }
+  .right .split { position: absolute; top: 0; bottom: 0; left: 50%; width: 2px;
+                  background: rgba(240,238,233,0.92); }
+  /* Weicher Übergang zur Textseite — bewusst schmal: reicht er zu weit ins
+     Bild, verschluckt er die Vorher-Hälfte und der Vergleich verliert seine
+     Aussage. */
+  .right .fade { position: absolute; inset: 0;
+    background: linear-gradient(90deg, var(--bg-0) 0%, rgba(7,9,13,0.42) 7%, transparent 20%); }
+  .tag { position: absolute; bottom: 22px; font-family: var(--font-mono); font-size: 12px;
+         letter-spacing: 0.13em; padding: 7px 11px; border-radius: 8px;
+         background: rgba(7,10,15,0.78); border: 1px solid var(--hairline); }
+  .tag.l { left: 24px; }
+  .tag.r { right: 24px; color: var(--accent-2); border-color: rgba(37,140,255,0.4); }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="grid-bg"></div>
+
+  <div class="left">
+    <div class="logo">MALEMETRI<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M22 22 42 42 M22 78 42 58" stroke="#F0EEE9" stroke-width="12" stroke-linecap="round" fill="none"/><path d="M78 22 58 42 M78 78 58 58" stroke="#16C4F4" stroke-width="12" stroke-linecap="round" fill="none"/></svg></div>
+
+    <div>
+      <div class="eyebrow">MALEMETRIX TRANSFORM</div>
+      <h1>Das bist nicht du.<br><span class="grad">Noch nicht.</span></h1>
+      <p class="sub">Ein Foto. Zwei realistische Versionen deines möglichen Körpers. Dein Ziel, dein 12-Wochen-Plan.</p>
+    </div>
+
+    <div class="foot">
+      <span class="domain">www.malemetrix.com</span>
+      <span class="disclaimer">KI-Beispiel</span>
+    </div>
+  </div>
+
+  <div class="right">
+    <img src="/assets/transform/trf-heute-1080.webp" alt="">
+    <div class="after"><img src="/assets/transform/trf-ziel-lang-1080.webp" alt=""></div>
+    <div class="split"></div>
+    <div class="fade"></div>
+    <span class="tag l">HEUTE</span>
+    <span class="tag r">MÖGLICHES ZIEL</span>
+  </div>
+</div>
+</body>
+</html>
