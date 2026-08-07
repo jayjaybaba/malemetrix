@@ -48,6 +48,19 @@
     "nav.stackBuilder": { de: "Stack Builder", en: "Stack Builder" },
     "nav.transform":    { de: "Transformation", en: "Transformation" },
     "nav.circle":       { de: "Circle", en: "Circle" },
+
+    /* ---------- Startseite: Premium-Transformations-Showcase ---------- */
+    "home.show.badge":    { de: "KI-BEISPIEL · KEINE ERGEBNISGARANTIE", en: "AI EXAMPLE · NO GUARANTEED RESULTS" },
+    "home.show.tagToday": { de: "HEUTE · 98 KG", en: "TODAY · 98 KG" },
+    "home.show.tagA":     { de: "PHASE 1 · ~91 KG", en: "PHASE 1 · ~91 KG" },
+    "home.show.tagB":     { de: "LANGFRISTIG · ~82 KG", en: "LONG-TERM · ~82 KG" },
+    "home.show.goalA":    { de: "Realistische erste Phase", en: "Realistic first phase" },
+    "home.show.goalAData":{ de: "98 → 91 kg · ~12–16 Wochen", en: "98 → 91 kg · ~12–16 weeks" },
+    "home.show.goalB":    { de: "Langfristige Zielrichtung", en: "Long-term direction" },
+    "home.show.goalBData":{ de: "98 → 82 kg · mehrere Phasen", en: "98 → 82 kg · several phases" },
+    "home.show.note":     { de: "MaleMetrix berechnet aus Gewicht, Größe, Taille und Ausgangsform zwei plausible Zielrichtungen. Du wählst das Ziel — MaleMetrix erstellt den Weg dorthin.", en: "MaleMetrix computes two plausible target directions from your weight, height, waist and starting shape. You choose the goal — MaleMetrix builds the way there." },
+    "home.show.cta":      { de: "Meine zwei Ziele sehen", en: "See my two goals" },
+    "home.show.trust":    { de: "2 realistische Zieloptionen · KI-Visualisierung in ~30 Sekunden", en: "2 realistic goal options · AI visualization in ~30 seconds" },
     /* Nur die Gruppenüberschrift bekommt einen Schlüssel. Die Kapiteltitel
        selbst bleiben ohne — wie „Ergebnisse" und „Produktvorschau" — und
        laufen über die dynamische Übersetzung. Siebzehn feste EN-Strings

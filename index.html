@@ -148,12 +148,12 @@
     </div>
     <div class="hero-bg"></div>
     <div class="hero-grid-bg"></div>
-    <!-- Hero-Neuaufbau (August 2026): genau sechs Ebenen — Eyebrow, Headline,
-         Beschreibung, Primär-CTA, Score-Link, Vertrauenszeile. Die
-         Transformation ist das Produkt, der Score nur der leise Nebeneingang.
+    <!-- Hero-Neuaufbau (August 2026): links genau sechs Ebenen — Eyebrow,
+         Headline, Beschreibung, Primär-CTA, Score-Link, Vertrauenszeile.
+         Rechts das fotografische Transformations-Showcase (mm-v181).
          Zeilenumbrüche der Headline werden explizit gesetzt (br-m nur mobil),
          nie dem Browser überlassen. -->
-    <div class="container">
+    <div class="container os14-hero-grid">
       <div class="os14-hero-copy">
         <div class="os14-sysline">MALEMETRIX TRANSFORM · BODY TARGET ENGINE</div>
         <h1 class="h-display" data-i18n-html="home.h1">Sieh deinen <br class="br-m">möglichen Körper.<br><span class="text-grad">Bevor du dafür arbeitest.</span></h1>
@@ -164,17 +164,47 @@
         <p class="os14-scoreline"><a href="check.html" class="os14-scorelink" data-track="score_start_click" data-i18n-html="home.scoreLink"><span class="pre">Oder zuerst:</span> <span class="act">Kostenlosen Score starten</span></a></p>
         <p class="small os14-trust" data-i18n="home.trustline">Zwei realistische Zielbilder · Ziel frei wählbar · Klar als KI gekennzeichnet</p>
       </div>
-    </div>
-  </section>
-
-<!-- ============================ DATA BAND ============================ -->
-  <section class="section-tight">
-    <div class="container">
-      <div class="os14-band reveal">
-        <div><div class="stat-num">2</div><div class="stat-label">realistische Zieloptionen</div></div>
-        <div><div class="stat-num">~30<small style="font-size:0.45em"> SEK</small></div><div class="stat-label">pro KI-Visualisierung</div></div>
-        <div><div class="stat-num">FREI</div><div class="stat-label">eigenes Wunschziel wählbar</div></div>
-        <div><div class="stat-num">0<small style="font-size:0.45em"> €</small></div><div class="stat-label">Zielvorschläge &amp; Score</div></div>
+      <!-- PREMIUM-SHOWCASE: fotografische Beispiel-Transformation.
+           Synthetische KI-Beispielperson, eigens für MaleMetrix erzeugt
+           (assets/transform/) — keine echte Person, keine Nutzerdaten,
+           keine Stockfotos. Vorher/Nachher-Regler + Zielumschalter; Logik
+           unten im Seiten-Script. Default ist das LANGFRISTIGE Ziel (B):
+           Phase 1 liegt visuell zu nah am Ausgangszustand — der erste
+           Eindruck soll die maximale ehrliche Differenz zeigen. -->
+      <div class="trf-show" id="trfShow">
+        <div class="ai-badge" data-i18n="home.show.badge">KI-BEISPIEL · KEINE ERGEBNISGARANTIE</div>
+        <div class="stage" id="trfStage">
+          <picture>
+            <source type="image/webp" srcset="assets/transform/trf-heute-480.webp 480w, assets/transform/trf-heute-768.webp 768w, assets/transform/trf-heute-1080.webp 1080w" sizes="(max-width:900px) 92vw, 420px">
+            <img id="trfImgBase" src="assets/transform/trf-heute-768.jpg" width="1792" height="2400" alt="Synthetisches KI-Beispiel: Ausgangszustand — keine echte Person." fetchpriority="high">
+          </picture>
+          <div class="after" id="trfAfter">
+            <picture id="trfPicA" hidden>
+              <source type="image/webp" srcset="assets/transform/trf-ziel-12w-480.webp 480w, assets/transform/trf-ziel-12w-768.webp 768w, assets/transform/trf-ziel-12w-1080.webp 1080w" sizes="(max-width:900px) 92vw, 420px">
+              <img src="assets/transform/trf-ziel-12w-768.jpg" width="1792" height="2400" loading="lazy" alt="Synthetisches KI-Beispiel einer möglichen körperlichen Veränderung nach der ersten Phase — keine Ergebnisgarantie.">
+            </picture>
+            <picture id="trfPicB">
+              <source type="image/webp" srcset="assets/transform/trf-ziel-lang-480.webp 480w, assets/transform/trf-ziel-lang-768.webp 768w, assets/transform/trf-ziel-lang-1080.webp 1080w" sizes="(max-width:900px) 92vw, 420px">
+              <img src="assets/transform/trf-ziel-lang-768.jpg" width="1792" height="2400" fetchpriority="high" alt="Synthetisches KI-Beispiel einer möglichen langfristigen körperlichen Veränderung — keine Ergebnisgarantie.">
+            </picture>
+          </div>
+          <div class="divider" id="trfDivider" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" aria-label="Vorher-Nachher-Vergleich: links heute, rechts das gewählte Ziel. Mit Pfeiltasten verschieben.">
+            <span class="grip" aria-hidden="true">⇤⇥</span>
+          </div>
+          <span class="tag left" data-i18n="home.show.tagToday">HEUTE · 98 KG</span>
+          <span class="tag right" id="trfTagAfter" data-i18n="home.show.tagB">LANGFRISTIG · ~82 KG</span>
+        </div>
+        <div class="goals" role="tablist" aria-label="Zielauswahl">
+          <button type="button" class="goal" id="trfGoalA" role="tab" aria-selected="false">
+            <b data-i18n="home.show.goalA">Realistische erste Phase</b>
+            <span data-i18n="home.show.goalAData">98 → 91 kg · ~12–16 Wochen</span>
+          </button>
+          <button type="button" class="goal on" id="trfGoalB" role="tab" aria-selected="true">
+            <b data-i18n="home.show.goalB">Langfristige Zielrichtung</b>
+            <span data-i18n="home.show.goalBData">98 → 82 kg · mehrere Phasen</span>
+          </button>
+        </div>
+        <p class="note" data-i18n="home.show.note">MaleMetrix berechnet aus Gewicht, Größe, Taille und Ausgangsform zwei plausible Zielrichtungen. Du wählst das Ziel — MaleMetrix erstellt den Weg dorthin.</p>
       </div>
     </div>
   </section>
@@ -210,15 +240,15 @@
       </div>
       <div class="grid-2 reveal">
         <div class="card" style="border-left:3px solid var(--accent-2)">
-          <span class="card-num" style="color:var(--accent-2)">ZIEL A — REALISTISCHER NÄCHSTER ZUSTAND</span>
+          <span class="card-num" style="color:var(--accent-2)">REALISTISCHE ERSTE PHASE</span>
           <p style="margin-top:10px">Moderat, sichtbar relevant, in einer ersten Phase erreichbar — typischerweise 12-16 Wochen. Das Ziel, das dich tatsächlich in Bewegung bringt.</p>
         </div>
         <div class="card" style="border-left:3px solid var(--accent-2)">
-          <span class="card-num" style="color:var(--accent-2)">ZIEL B — AMBITIONIERTES LANGFRIST-ZIEL</span>
+          <span class="card-num" style="color:var(--accent-2)">LANGFRISTIGE ZIELRICHTUNG</span>
           <p style="margin-top:10px">Deutlich stärker, aber weiterhin physiologisch plausibel — als mehrphasiges Ziel geplant, nicht als Crash-Versprechen.</p>
         </div>
       </div>
-      <p class="reveal" style="margin-top:22px;color:var(--muted);max-width:64ch;margin-left:auto;margin-right:auto;text-align:center">Die Vorschläge sind ehrlich gerechnet — wer schon schlank ist, bekommt Rekomposition oder moderaten Aufbau statt weiterer Abnahme. Dein eigenes Wunschziel trägst du frei ein; MaleMetrix ordnet es offen ein (plausibel, ambitioniert oder nicht seriös), die Entscheidung bleibt bei dir. Das Bild zeigt eine mögliche visuelle Richtung, keine garantierte Zukunft.</p>
+      <p class="reveal" style="margin-top:22px;color:var(--muted);max-width:64ch;margin-left:auto;margin-right:auto;text-align:center">Zwei plausible Zielrichtungen für deine Ausgangslage — wer schon schlank ist, bekommt Rekomposition oder moderaten Aufbau statt weiterer Abnahme. Dein eigenes Wunschziel trägst du frei ein; MaleMetrix ordnet es offen ein (plausibel, ambitioniert oder nicht seriös), die Entscheidung bleibt bei dir. Das Bild zeigt eine mögliche visuelle Richtung, keine garantierte Zukunft.</p>
     </div>
   </section>
 
@@ -597,6 +627,75 @@
 <script src="js/shop-data.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/main.js"></script>
+<script>
+/* Premium-Transformations-Showcase: Vorher/Nachher-Regler + Zielumschalter.
+   Kein Framework, keine Dauer-Animation — Position wird direkt gesetzt
+   (ruckelfrei), Tastatur ±5 %, Touch/Maus per Pointer Events. */
+(function () {
+  "use strict";
+  var stage = document.getElementById("trfStage");
+  if (!stage) return;
+  var after = document.getElementById("trfAfter");
+  var divider = document.getElementById("trfDivider");
+  var picA = document.getElementById("trfPicA");
+  var picB = document.getElementById("trfPicB");
+  var tagAfter = document.getElementById("trfTagAfter");
+  var goalA = document.getElementById("trfGoalA");
+  var goalB = document.getElementById("trfGoalB");
+  var pos = 50, sliderUsed = false;
+
+  function setPos(p) {
+    pos = Math.max(4, Math.min(96, p));
+    after.style.clipPath = "inset(0 0 0 " + pos + "%)";
+    divider.style.left = pos + "%";
+    divider.setAttribute("aria-valuenow", Math.round(pos));
+  }
+  function posFromEvent(ev) {
+    var r = stage.getBoundingClientRect();
+    return ((ev.clientX - r.left) / r.width) * 100;
+  }
+  var dragging = false;
+  stage.addEventListener("pointerdown", function (ev) {
+    dragging = true;
+    stage.setPointerCapture && stage.setPointerCapture(ev.pointerId);
+    setPos(posFromEvent(ev));
+    if (!sliderUsed) { sliderUsed = true; if (window.MM && MM.track) MM.track("home_show_slider_used"); }
+    ev.preventDefault();
+  });
+  stage.addEventListener("pointermove", function (ev) { if (dragging) setPos(posFromEvent(ev)); });
+  ["pointerup", "pointercancel"].forEach(function (t) { stage.addEventListener(t, function () { dragging = false; }); });
+  divider.addEventListener("keydown", function (ev) {
+    if (ev.key === "ArrowLeft") { setPos(pos - 5); ev.preventDefault(); }
+    else if (ev.key === "ArrowRight") { setPos(pos + 5); ev.preventDefault(); }
+    else if (ev.key === "Home") { setPos(4); ev.preventDefault(); }
+    else if (ev.key === "End") { setPos(96); ev.preventDefault(); }
+  });
+
+  function t(key, fallback) {
+    var s = (window.MM && MM.i18n && MM.i18n.t) ? MM.i18n.t(key) : null;
+    return s || fallback;
+  }
+  /* Der Startzustand steht im HTML (Ziel B / langfristig ist vorausgewählt) —
+     die erste sichtbare Differenz muss die größte ehrliche sein. Phase 1
+     unterscheidet sich zu wenig vom Ausgangsbild, um als Einstieg zu tragen. */
+  function selectGoal(which) {
+    var isA = which === "A";
+    picA.hidden = !isA;
+    picB.hidden = isA;
+    goalA.classList.toggle("on", isA); goalB.classList.toggle("on", !isA);
+    goalA.setAttribute("aria-selected", String(isA));
+    goalB.setAttribute("aria-selected", String(!isA));
+    tagAfter.textContent = isA ? t("home.show.tagA", "PHASE 1 · ~91 KG") : t("home.show.tagB", "LANGFRISTIG · ~82 KG");
+    if (window.MM && MM.track) MM.track("home_show_goal_" + (isA ? "a" : "b"));
+  }
+  goalA.addEventListener("click", function () { selectGoal("A"); });
+  goalB.addEventListener("click", function () { selectGoal("B"); });
+  document.addEventListener("mm:langchange", function () {
+    tagAfter.textContent = picB.hidden ? t("home.show.tagA", "PHASE 1 · ~91 KG") : t("home.show.tagB", "LANGFRISTIG · ~82 KG");
+  });
+  setPos(50);
+})();
+</script>
 <script>
 /* Hero-Video: nur abspielen, wenn im Viewport und nicht reduced-motion.
    preload=none → Daten laden erst beim Start; pausiert außerhalb/versteckt. */
