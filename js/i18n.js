@@ -137,13 +137,17 @@
        und "Bauchgefühl", CTA in Ich-Form. br-m bricht nur mobil. */
     /* Flaggschiff-Neuausrichtung (August 2026): Die Transformation ist der
        Hero — sieh deinen möglichen Körper, wähle dein Ziel, MaleMetrix baut
-       den Weg. Der Score bleibt der sekundäre Einstieg. */
-    "home.h1": { de: "Sieh deinen möglichen Körper.<br><span class=\"text-grad\">Bevor du dafür <br class=\"br-m\">arbeitest.</span>",
-                 en: "See your possible body.<br><span class=\"text-grad\">Before you <br class=\"br-m\">work for it.</span>" },
-    "home.lead": { de: "Lade ein aktuelles Foto hoch. MaleMetrix erstellt zwei realistische KI-Visualisierungen möglicher Zielzustände. Du wählst das Ziel — MaleMetrix baut den Weg dorthin.",
-                   en: "Upload a current photo. MaleMetrix creates two realistic AI visualizations of possible target states. You pick the target — MaleMetrix builds the path to it." },
-    "home.trustline": { de: "Zwei realistische Zielvorschläge · eigenes Ziel frei wählbar · KI-Visualisierung, klar gekennzeichnet · Konto erst vor der Generierung",
-                        en: "Two realistic target proposals · your own target freely selectable · AI visualization, clearly labeled · account only right before generation" },
+       den Weg. Der Score bleibt der sekundäre Einstieg. Die Headline bricht
+       kontrolliert: br-m nur mobil (3 Zeilen), am Desktop 2 Zeilen. */
+    "home.h1": { de: "Sieh deinen <br class=\"br-m\">möglichen Körper.<br><span class=\"text-grad\">Bevor du dafür arbeitest.</span>",
+                 en: "See your <br class=\"br-m\">possible body.<br><span class=\"text-grad\">Before you work for it.</span>" },
+    "home.lead": { de: "Lade ein aktuelles Foto hoch. MaleMetrix zeigt dir zwei realistische Zielkörper. Du wählst dein Ziel – und erhältst deinen persönlichen 12-Wochen-Plan für Training und Ernährung.",
+                   en: "Upload a current photo. MaleMetrix shows you two realistic target bodies. You pick your target – and get your personal 12-week plan for training and nutrition." },
+    "home.trustline": { de: "Zwei realistische Zielbilder · Ziel frei wählbar · Klar als KI gekennzeichnet",
+                        en: "Two realistic target images · target freely selectable · clearly labeled as AI" },
+    "home.ctaPrimary": { de: "Meine Zielkörper visualisieren", en: "Visualize my target bodies" },
+    "home.scoreLink": { de: "<span class=\"pre\">Oder zuerst:</span> <span class=\"act\">Kostenlosen Score starten</span>",
+                        en: "<span class=\"pre\">Or first:</span> <span class=\"act\">Start the free score</span>" },
     "home.howLink": { de: "So funktioniert es ↓", en: "How it works ↓" },
     "cta.seeTransform": { de: "Meine mögliche Transformation sehen", en: "See my possible transformation" },
     "home.s.how.k": { de: "So funktioniert es", en: "How it works" },
