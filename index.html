@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MaleMetrix — Sieh deinen möglichen Körper. Dann bau ihn.</title>
-  <meta name="description" content="Lade ein Foto hoch: MaleMetrix erstellt zwei realistische KI-Visualisierungen möglicher Zielzustände — klar als KI gekennzeichnet, dein Wunschziel frei wählbar. Du wählst dein Ziel, MaleMetrix baut den Weg: Score, Plan, Tracker, Wochenreviews.">
+  <!-- Titel und Share-Tags tragen dieselbe Aussage wie der Hero: Wer den Link
+       geteilt bekommt, liest denselben Satz, den die Seite dann einlöst. -->
+  <title>Das bist nicht du. Noch nicht. — MaleMetrix</title>
+  <meta name="description" content="Lade dein Foto hoch und sieh zwei realistische Versionen deines möglichen Körpers — klar als KI gekennzeichnet. Dein Ziel, dein 12-Wochen-Plan.">
   <link rel="stylesheet" href="css/fonts.css">
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23070A0F'/%3E%3Cpath d='M8.5 8.5l5.5 5.5M8.5 23.5l5.5-5.5' stroke='%23F0EEE9' stroke-width='3.4' stroke-linecap='round' fill='none'/%3E%3Cpath d='M23.5 8.5l-5.5 5.5M23.5 23.5l-5.5-5.5' stroke='%2316C4F4' stroke-width='3.4' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
@@ -15,16 +17,21 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="MaleMetrix">
   <meta property="og:locale" content="de_DE">
-  <meta property="og:title" content="MaleMetrix — Sieh deinen möglichen Körper. Dann bau ihn.">
-  <meta property="og:description" content="Ein Foto, zwei realistische KI-Visualisierungen möglicher Zielzustände — dein Ziel, dein Weg. MaleMetrix baut ihn.">
+  <!-- Ohne Markennamen: In der Vorschau steht "MaleMetrix" bereits als
+       og:site_name darunter — der Titel gehört dem Hook allein. -->
+  <meta property="og:title" content="Das bist nicht du. Noch nicht.">
+  <meta property="og:description" content="Lade dein Foto hoch und sieh zwei realistische Versionen deines möglichen Körpers. Wähle dein Ziel — MaleMetrix baut den 12-Wochen-Plan dorthin.">
   <meta property="og:url" content="https://www.malemetrix.com/">
-  <meta property="og:image" content="https://www.malemetrix.com/og-image.png">
+  <!-- Eigenes Motiv nur fuer die Startseite: og-image.png teilen sich rund
+       60 Seiten (Blog, Shop, Tools) und muss dort generisch bleiben.
+       Neu rendern: node tools-dev/build-og-image.mjs -->
+  <meta property="og:image" content="https://www.malemetrix.com/og-home.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="MaleMetrix — Sieh deinen möglichen Körper. Dann bau ihn.">
-  <meta name="twitter:description" content="Ein Foto, zwei realistische KI-Visualisierungen möglicher Zielzustände — dein Ziel, dein Weg. MaleMetrix baut ihn.">
-  <meta name="twitter:image" content="https://www.malemetrix.com/og-image.png">
+  <meta name="twitter:title" content="Das bist nicht du. Noch nicht.">
+  <meta name="twitter:description" content="Lade dein Foto hoch und sieh zwei realistische Versionen deines möglichen Körpers. Wähle dein Ziel — MaleMetrix baut den 12-Wochen-Plan dorthin.">
+  <meta name="twitter:image" content="https://www.malemetrix.com/og-home.png">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
