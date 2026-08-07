@@ -33,3 +33,11 @@ ios-app/DerivedData/
 # Bildschirmaufnahmen der Browser-QA (werden bei jedem Lauf neu erzeugt und
 # waeren sonst ueber GitHub Pages oeffentlich abrufbar).
 tools-dev/qa/out/
+
+# ---- Skills von Drittanbietern (npx skills add) ---------------------------
+# GitHub Pages liefert mit .nojekyll auch Punkt-Ordner aus — .agents/ waere
+# sonst unter malemetrix.com/.agents/... oeffentlich abrufbar. Die Skills sind
+# Arbeitswerkzeug, kein Websiteinhalt. skills-lock.json bleibt versioniert,
+# damit die Installation reproduzierbar ist.
+.agents/
+.claude/skills/
