@@ -169,6 +169,50 @@ secret**, viermal:
 > in einen Chat. GitHub zeigt sie nach dem Speichern niemandem mehr an, auch
 > dir nicht.
 
+### Wenn der .p8-Download bei Apple scheitert — Weg B: Xcode Cloud
+
+Der Download des API-Schluessels wird von Apple **nur einmal** angeboten, und
+er schlaegt gelegentlich mit „Es ist ein Fehler aufgetreten. Versuche es
+spaeter erneut" fehl. Das ist ein bekannter serverseitiger Fehler, kein
+Bedienfehler — er verschwindet meist nach einigen Stunden.
+
+**Wichtig dabei:** Ein fehlgeschlagener Download verbraucht den Schluessel
+nicht. Der Link „Laden" bleibt stehen. Es lohnt sich also NICHT, immer neue
+Schluessel anzulegen — das fuellt nur die Widerrufen-Liste.
+
+Falls es dauerhaft scheitert oder kein Computer zum Herunterladen zur
+Verfuegung steht, gibt es einen zweiten Weg, der **ganz ohne .p8** auskommt:
+
+**Xcode Cloud.** Apples eigene Bauumgebung. Sie signiert mit Apples
+Infrastruktur — kein Schluessel, kein Zertifikat, keine Datei. Einrichtung
+komplett im Browser, auch auf dem iPhone.
+
+1. App Store Connect → **Apps** → **+** → **Neue App**
+   (Plattform iOS · Name MaleMetrix · Deutsch · Bundle-ID `de.malemetrix.app`
+   · SKU `malemetrix-app-001`).
+2. In der App → **Xcode Cloud** → GitHub verbinden, dieses Repository und den
+   Branch waehlen.
+3. Workflow anlegen: Ziel **App**, Aktion **Archivieren**, Nachbearbeitung
+   **An TestFlight**.
+
+Vorbereitet ist alles: `ios-app/App/ci_scripts/ci_post_clone.sh` installiert
+Node, faehrt die Fachtests, baut das Web-Bundle und synct es ins Xcode-Projekt,
+bevor Apple uebersetzt. Ohne dieses Skript wuerde Xcode Cloud eine App mit
+leerem Inhalt bauen.
+
+Kostenlos sind 25 Rechenstunden im Monat — fuer dieses Projekt reichlich.
+
+| | GitHub Actions (Weg A) | Xcode Cloud (Weg B) |
+|---|---|---|
+| Braucht .p8 | ja | **nein** |
+| Einrichtung | 4 Secrets | im Browser, ohne Datei |
+| Kosten | kostenlos (oeffentliches Repo) | 25 h/Monat frei |
+| Simulator-Test bei jedem Push | ja | nein |
+
+Weg A bleibt der Hauptweg, weil er bei jeder Aenderung ohne Apple-Konto
+prueft. Weg B ist der Ausweg, wenn der Schluessel nicht zu bekommen ist —
+beide bauen dasselbe.
+
 ### 3 · Den Upload starten
 
 Zuerst der 20-Sekunden-Test, damit ein Tippfehler nicht erst nach 40 Minuten

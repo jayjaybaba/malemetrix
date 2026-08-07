@@ -255,6 +255,30 @@ group("Entscheidungsschicht ist in der App verdrahtet");
   ok(/ctx\.execution/.test(weekly), "der Wochencheck nimmt die Messung entgegen");
 }
 
+
+group("Xcode Cloud: der Weg ohne API-Schluessel ist vollstaendig");
+{
+  const sh = "ios-app/App/ci_scripts/ci_post_clone.sh";
+  ok(exists(sh), "das Vorbereitungsskript existiert");
+  // Apple sucht ci_scripts im Ordner des Xcode-Projekts, nicht im Repo-Wurzel.
+  ok(exists("ios-app/App/App.xcodeproj"),
+    "und liegt neben App.xcodeproj — dort sucht Xcode Cloud danach");
+  const mode = fs.statSync(path.join(ROOT, sh)).mode;
+  ok((mode & 0o111) !== 0, "es ist ausfuehrbar (sonst startet Xcode Cloud es nicht)");
+  const t = read(sh);
+  ok(/CI_PRIMARY_REPOSITORY_PATH/.test(t), "es wechselt ins Repo-Wurzelverzeichnis");
+  ok(/set -e/.test(t), "es bricht beim ersten Fehler ab statt weiterzulaufen");
+  ok(/npm ci/.test(t), "Abhaengigkeiten werden installiert");
+  ok(/build-app\.mjs/.test(t) && /cap sync ios/.test(t),
+    "das Web-Bundle entsteht VOR dem Xcode-Build — sonst baut Apple eine leere App");
+  ok(/brew install node/.test(t), "Node wird nachinstalliert (die Images haben keins)");
+  ok(/native-app\.test\.js/.test(t) && /decide\.test\.js/.test(t),
+    "die Fachtests laufen mit — ein roter Test stoppt den Build vor der Rechenzeit");
+  // Ein geteiltes Schema ist Pflicht: ohne findet Xcode Cloud kein Ziel.
+  ok(exists("ios-app/App/App.xcodeproj/xcshareddata/xcschemes/App.xcscheme"),
+    "das Schema ist geteilt — sonst sieht Xcode Cloud kein Build-Ziel");
+}
+
 group("Keine Geheimnisse im App-Bundle");
 {
   const suspicious = [];
