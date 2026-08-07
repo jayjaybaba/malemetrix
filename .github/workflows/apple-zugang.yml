@@ -1,0 +1,68 @@
+# Prueft in 20 Sekunden, ob die vier Apple-Zugangsdaten stimmen — bevor ein
+# 40-Minuten-Build daran scheitert.
+#
+# Ausfuehren: Actions -> "apple-zugang" -> Run workflow.
+#
+# Der Lauf liest nur (Apps auflisten) und aendert nichts. Er laeuft auf einem
+# Linux-Runner, weil dafuer kein Mac noetig ist.
+
+name: apple-zugang
+
+on:
+  workflow_dispatch:
+
+jobs:
+  pruefen:
+    name: Zugang zu App Store Connect pruefen
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Sind alle vier Secrets gesetzt?
+        run: |
+          FEHLT=""
+          for V in ASC_KEY_ID ASC_ISSUER_ID ASC_PRIVATE_KEY APPLE_TEAM_ID; do
+            eval "VAL=\$$V"
+            [ -z "$VAL" ] && FEHLT="$FEHLT $V"
+          done
+          if [ -n "$FEHLT" ]; then
+            echo "::error::Diese Secrets fehlen noch:$FEHLT — siehe APP.md, Abschnitt 2."
+            exit 1
+          fi
+          echo "Alle vier Secrets sind gesetzt."
+
+      - name: Form der Werte pruefen (haeufige Copy-Paste-Fehler)
+        run: |
+          FEHLER=0
+          case "$ASC_KEY_ID" in
+            *[!A-Z0-9]*|"") echo "::error::ASC_KEY_ID sieht falsch aus — erwartet werden 10 Zeichen aus Grossbuchstaben und Ziffern."; FEHLER=1 ;;
+          esac
+          case "$ASC_ISSUER_ID" in
+            *-*-*-*-*) : ;;
+            *) echo "::error::ASC_ISSUER_ID sieht falsch aus — erwartet wird eine UUID mit Bindestrichen."; FEHLER=1 ;;
+          esac
+          case "$APPLE_TEAM_ID" in
+            *[!A-Z0-9]*|"") echo "::error::APPLE_TEAM_ID sieht falsch aus — erwartet werden 10 Zeichen aus Grossbuchstaben und Ziffern."; FEHLER=1 ;;
+          esac
+          case "$ASC_PRIVATE_KEY" in
+            *"BEGIN PRIVATE KEY"*) : ;;
+            *) echo "::error::ASC_PRIVATE_KEY enthaelt keine BEGIN-Zeile — bitte den GESAMTEN Inhalt der .p8-Datei einfuegen, inklusive der -----BEGIN/END-----Zeilen."; FEHLER=1 ;;
+          esac
+          exit $FEHLER
+
+      - name: Bei Apple anmelden und Apps auflisten
+        run: node scripts/asc.mjs whoami
+
+      - name: Ergebnis
+        run: |
+          echo "Der Zugang steht. Naechster Schritt:"
+          echo "Actions -> ios-app -> Run workflow -> „Signiert bauen und zu TestFlight\" ankreuzen."

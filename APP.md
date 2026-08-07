@@ -128,6 +128,15 @@ secret**, viermal:
 
 ### 3 · Den Upload starten
 
+Zuerst der 20-Sekunden-Test, damit ein Tippfehler nicht erst nach 40 Minuten
+Build auffliegt:
+
+**Actions → apple-zugang → Run workflow.** Der Lauf prueft die Form der vier
+Werte, meldet sich bei Apple an und listet die Apps im Konto. Er aendert
+nichts. Ist er gruen, stimmen die Zugaenge.
+
+Dann der eigentliche Lauf:
+
 **Actions → ios-app → Run workflow → „Signiert bauen und zu TestFlight" ✓ →
 Run.**
 
