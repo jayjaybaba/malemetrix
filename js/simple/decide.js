@@ -275,6 +275,22 @@
 
   function tx(de, en) { return { de: de, en: en }; }
 
+  /* Interne Signalnamen gehoeren nicht in den Nutzertext. „schlaf + hrv"
+     liest sich wie ein Log-Eintrag, nicht wie eine Erklaerung. */
+  var SIGNAL_NAMES = {
+    schlaf: { de: "Schlafdauer", en: "sleep duration" },
+    hrv: { de: "Herzfrequenzvariabilität", en: "heart rate variability" },
+    ruhepuls: { de: "Ruhepuls", en: "resting heart rate" }
+  };
+  function signalNames(keys, isEn) {
+    var names = keys.map(function (k) {
+      var n = SIGNAL_NAMES[k];
+      return n ? (isEn ? n.en : n.de) : k;
+    });
+    if (names.length < 2) return names.join("");
+    return names.slice(0, -1).join(", ") + (isEn ? " and " : " und ") + names[names.length - 1];
+  }
+
   function dailyPrescription(ctx) {
     var plan = ctx.plan, ymd = ctx.todayYmd;
     var daylog = ctx.daylog || {};
@@ -393,8 +409,8 @@
       out.cardio = "keins";
       out.headline = tx("Heute leichter trainieren.", "Train lighter today.");
       out.focus = tx("Vor 23:00 Uhr schlafen", "Sleep before 11pm");
-      why("Zwei Erholungssignale gleichzeitig (" + rec.reasons.join(" + ") + "). Das Volumen sinkt heute um einen Satz je Übung, die Last bleibt.",
-          "Two recovery signals at once (" + rec.reasons.join(" + ") + "). Volume drops by one set per exercise today, the load stays.");
+      why("Zwei Werte liegen unter deinem Schnitt: " + signalNames(rec.reasons, false) + ". Das Volumen sinkt heute um einen Satz je Übung, die Last bleibt.",
+          "Two values are below your average: " + signalNames(rec.reasons, true) + ". Volume drops by one set per exercise today, the load stays.");
       why("Eine einzelne schlechte Nacht würde hier nichts auslösen — erst zwei Signale zusammen.",
           "A single bad night would trigger nothing here — only two signals together.");
     } else if (rec.low && !trainingDay) {

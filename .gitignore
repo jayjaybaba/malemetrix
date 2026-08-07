@@ -29,3 +29,7 @@ ios-app/App/build/
 ios-app/App/output/
 ios-app/DerivedData/
 *.xcuserdatad/
+
+# Bildschirmaufnahmen der Browser-QA (werden bei jedem Lauf neu erzeugt und
+# waeren sonst ueber GitHub Pages oeffentlich abrufbar).
+tools-dev/qa/out/

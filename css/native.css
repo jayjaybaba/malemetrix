@@ -17,8 +17,11 @@ html.is-native-app .site-header .nav-toggle,
 html.is-native-app .site-footer .footer-grid,
 html.is-native-app .site-footer .footer-bottom .footer-social { display: none !important; }
 
-/* Kopfzeile schlank: Logo + Sprachumschalter reichen */
+/* Kopfzeile schlank: Logo + Sprachumschalter reichen. Weil sie hier NICHT
+   fixiert ist, faellt auch der Ausgleichsabstand aus css/simple.css weg —
+   sonst klafft oben eine leere Flaeche von Kopfzeilenhoehe. */
 html.is-native-app .site-header { position: static; }
+html.is-native-app .sapp { padding-top: 18px; }
 html.is-native-app .site-header .header-inner { justify-content: space-between; }
 
 /* Verkaufsflaechen gehoeren nicht in die App-Version (App-Store-Richtlinie

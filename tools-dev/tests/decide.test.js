@@ -152,6 +152,12 @@ group("Zwei Erholungssignale zusammen: leichter, aber nicht gestrichen");
   ok(p.sessionMinutes <= 40, "Einheit verkuerzt");
   ok(p.why.some((w) => /Eine einzelne schlechte Nacht/.test(w.de)),
     "die Begruendung sagt ausdruecklich, dass eine Nacht allein nichts ausloest");
+  // Microcopy: interne Schluessel duerfen nicht in den Nutzertext lecken
+  const alleTexte = p.why.map((w) => w.de + " " + w.en).join(" ");
+  ok(!/\bhrv\b|\bschlaf \+|\bruhepuls\b/.test(alleTexte),
+    "keine internen Signalnamen im Text — es heisst 'Herzfrequenzvariabilitaet', nicht 'hrv'");
+  ok(/Schlafdauer und Herzfrequenzvariabilität/.test(p.why[0].de),
+    "die Signale werden ausgeschrieben und mit 'und' verbunden");
 }
 
 group("ADVERSARIELL: ein verpasster Tag wird nicht kommentiert");

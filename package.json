@@ -10,7 +10,8 @@
     "build:assets": "node scripts/build-app-assets.mjs",
     "sync:ios": "npm run build:web && npx cap sync ios",
     "open:ios": "npx cap open ios",
-    "test": "node tools-dev/tests/native-app.test.js"
+    "test": "node tools-dev/tests/native-app.test.js",
+    "qa:today": "node tools-dev/qa/today-screen.mjs"
   },
   "repository": {
     "type": "git",
@@ -25,6 +26,7 @@
   "homepage": "https://github.com/jayjaybaba/malemetrix#readme",
   "devDependencies": {
     "@capacitor/cli": "^8.5.0",
+    "playwright": "^1.62.1",
     "sharp": "^0.35.3"
   },
   "dependencies": {

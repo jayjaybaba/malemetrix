@@ -5,7 +5,11 @@
    Bottom-Nav. Keine Systembegriffe, keine Karten-Flut.
    ========================================================================== */
 
-.sapp { max-width: 640px; margin: 0 auto; padding: 18px 16px calc(84px + env(safe-area-inset-bottom)); min-height: 70vh; }
+/* Die Kopfzeile der Website ist position:fixed — ohne diesen Abstand liegt
+   die erste Zeile des Tagesauftrags darunter und ist unlesbar.
+   (Gefunden von tools-dev/qa/today-screen.mjs, nicht von einem Unit-Test:
+   die Logik war korrekt, nur unsichtbar.) */
+.sapp { max-width: 640px; margin: 0 auto; padding: calc(var(--header-h) + 18px) 16px calc(84px + env(safe-area-inset-bottom)); min-height: 70vh; }
 .sapp h1, .sapp h2, .sapp h3 { letter-spacing: 0.01em; }
 .sapp h2 { font-size: 1.35rem; margin: 4px 0 4px; }
 .sapp .s-sub { color: var(--muted); font-size: 0.92rem; margin: 0 0 14px; }
