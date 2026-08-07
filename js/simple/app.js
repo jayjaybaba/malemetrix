@@ -20,7 +20,7 @@
 
   var store = MMSimple.store, model = MMSimple.model,
       input = MMSimple.input, engine = MMSimple.engine, weekly = MMSimple.weekly,
-      decide = MMSimple.decide;
+      decide = MMSimple.decide, foodlog = MMSimple.foodlog;
 
   /* ---------------- Helpers ---------------- */
   function el(tag, cls, html) {
@@ -79,6 +79,38 @@
     var cutoff = model.addDays(todayYmd(), -30);
     Object.keys(m).forEach(function (k) { if (k < cutoff) delete m[k]; });
     MM.store.set("simple_day_modifier", m);
+  }
+
+  /* ---- Essens-Protokoll ------------------------------------------------
+     Eine Zeile je Tag: { entries: [...], kcalTarget }. Das Tagesziel wird
+     mitgeschrieben, weil es sich aendern kann (Auswaertsessen, Wochencheck)
+     — sonst waere ein alter Tag spaeter falsch bewertet. */
+  function foodLog() { return MM.store.get("simple_foodlog", {}); }
+  function saveFoodLog(l) { MM.store.set("simple_foodlog", l); }
+  function foodDay(ymd) { var l = foodLog(); return l[ymd] || { entries: [], kcalTarget: null }; }
+  function addFood(ymd, entry, kcalTarget) {
+    var l = foodLog();
+    var d = l[ymd] || { entries: [], kcalTarget: null };
+    d.entries.push(entry);
+    if (typeof kcalTarget === "number") d.kcalTarget = kcalTarget;
+    l[ymd] = d; saveFoodLog(l);
+  }
+  function removeFood(ymd, id) {
+    var l = foodLog(); var d = l[ymd];
+    if (!d) return;
+    d.entries = d.entries.filter(function (e) { return e.id !== id; });
+    l[ymd] = d; saveFoodLog(l);
+  }
+  /* Fuer den Execution Score: je Tag ein echtes Urteil, wo protokolliert
+     wurde. Tage ohne Eintrag tauchen hier nicht auf — dort bleibt das
+     Haekchen die Quelle. */
+  function nutritionByDay(p) {
+    var l = foodLog(), out = {};
+    Object.keys(l).forEach(function (ymd) {
+      var r = foodlog.dayHit(p.nutrition, l[ymd].entries, l[ymd].kcalTarget);
+      if (r) out[ymd] = r.hit;
+    });
+    return out;
   }
 
   function plan() { return store.getPlan(); }
@@ -578,7 +610,7 @@
        aus Plan + gemessener Ausführung + Health + gemeldeten Umständen. */
     var tr = weekly.trend(planWeights(p), ymd);
     var exec = decide.executionScore(p, daylog(), ymd, {
-      days: 14, weights: planWeights(p), stepsByDay: healthSteps()
+      days: 14, weights: planWeights(p), stepsByDay: healthSteps(), nutritionByDay: nutritionByDay(p)
     });
     var rxToday = decide.dailyPrescription({
       plan: p, todayYmd: ymd, daylog: daylog(),
@@ -624,21 +656,40 @@
     } else {
       tasks.push({ id: "movement", b: tx("30 Minuten gehen", "Walk 30 minutes"), s: tx("Ruhetag — Bewegung statt Training", "Rest day — movement instead of training") });
     }
-    tasks.push({ id: "protein", b: tx("Mindestens ", "At least ") + rxToday.protein + " g " + tx("Protein erreichen", "of protein"), s: rxToday.kcal + " kcal " + tx("Tagesziel", "daily target"), go: "#plan" });
+    // Ernährung: solange nichts eingetragen ist, bleibt es beim Häkchen.
+    // Sobald der erste Eintrag steht, zeigt die Zeile echte Zahlen und das
+    // Häkchen verschwindet — eine Messung schlägt eine Selbsteinschätzung.
+    var fd = foodDay(ymd);
+    var rest = foodlog.remaining(p.nutrition, fd.entries, rxToday.kcal);
+    if (fd.entries.length) {
+      tasks.push({ id: "protein", measured: true,
+        b: (rest.protein > 0 ? tx("Noch ", "Still ") + rest.protein + " g " + tx("Protein", "protein")
+                             : tx("Protein erreicht ✓", "Protein reached ✓")),
+        s: rest.eaten.kcal + " / " + rest.kcalGoal + " kcal · " +
+           (rest.kcal >= 0 ? tx("noch ", "still ") + rest.kcal + " frei" : Math.abs(rest.kcal) + " " + tx("darüber", "over")),
+        go: "sheet" });
+    } else {
+      tasks.push({ id: "protein", b: tx("Mindestens ", "At least ") + rxToday.protein + " g " + tx("Protein erreichen", "of protein"), s: rxToday.kcal + " kcal " + tx("Tagesziel", "daily target"), go: "sheet" });
+    }
     tasks.push({ id: "steps", b: rxToday.steps + " " + tx("Schritte erreichen", "steps"), s: null });
 
     var list = el("div", "s-tasks");
     tasks.slice(0, 3).forEach(function (t) {
-      var done = !!entry.tasks[t.id];
+      // Bei gemessener Ernaehrung entscheidet das Protokoll, nicht das Haekchen.
+      var done = t.measured ? !!(foodlog.dayHit(p.nutrition, foodDay(ymd).entries, rxToday.kcal) || {}).hit
+                            : !!entry.tasks[t.id];
       var row = el("div", "s-task" + (done ? " done" : ""));
       row.appendChild(el("span", "box", "✓"));
       var tt = el("div", "t");
       tt.appendChild(el("b", null, esc(t.b)));
       if (t.s) tt.appendChild(el("span", null, esc(t.s)));
       row.appendChild(tt);
-      if (t.go && !done) { var go = el("span", "go", t.id === "training" ? tx("Starten →", "Start →") : tx("Ansehen →", "View →")); row.appendChild(go); }
+      if (t.go && !done) { var go = el("span", "go", t.id === "training" ? tx("Starten →", "Start →") : (t.id === "protein" ? tx("Eintragen →", "Log →") : tx("Ansehen →", "View →"))); row.appendChild(go); }
       row.addEventListener("click", function (ev2) {
         if (t.id === "training" && !done) { location.hash = "#workout"; return; }
+        // Sobald gemessen wird, ist das Haekchen kein Zustand mehr, den man
+        // setzen koennte — es ergibt sich aus den Eintraegen.
+        if (t.id === "protein") { openFoodSheet(ymd, rxToday); return; }
         entry.tasks[t.id] = !done;
         setDayEntry(ymd, entry);
         render();
@@ -731,6 +782,120 @@
         });
         box.appendChild(b);
       });
+    });
+  }
+
+  /* ================================================================
+     ESSEN EINTRAGEN — drei Wege, keine Datenbank
+
+     Grundsatz: Wer nach Plan isst, tippt einmal. Wer auswaerts isst,
+     schaetzt einmal. Wer dasselbe oft isst, tippt ab dem zweiten Mal
+     wieder nur einmal. Alles andere waere eine schlechtere Kopie von
+     MyFitnessPal — und widerspricht „weniger Tracking mit der Zeit".
+     ================================================================ */
+  function openFoodSheet(ymd, rx) {
+    var p = activePlan();
+    track("food_sheet_opened");
+    openSheet(function (box) {
+      var fd = foodDay(ymd);
+      var rest = foodlog.remaining(p.nutrition, fd.entries, rx.kcal);
+
+      box.appendChild(el("h3", null, tx("Heute gegessen", "Eaten today")));
+      box.appendChild(el("p", "ctx",
+        rest.eaten.kcal + " / " + rest.kcalGoal + " kcal · " +
+        rest.eaten.protein + " / " + rest.proteinGoal + " g " + tx("Protein", "protein")));
+      if (rest.protein > 0 || rest.kcal > 0) {
+        box.appendChild(el("p", "hint",
+          tx("Es fehlen noch ", "Still missing ") +
+          Math.max(0, rest.protein) + " g " + tx("Protein", "protein") + " und " +
+          Math.max(0, rest.kcal) + " kcal."));
+      }
+
+      /* Bereits eingetragen — mit der Möglichkeit, einen Fehler zu löschen */
+      fd.entries.forEach(function (e) {
+        var row = el("div", "s-food-row");
+        var t = el("div", "t");
+        t.appendChild(el("b", null, esc(e.label)));
+        t.appendChild(el("span", null, e.kcal + " kcal · " + e.protein + " g"));
+        row.appendChild(t);
+        var del = el("button", "btn btn-ghost btn-sm", "✕");
+        del.setAttribute("aria-label", tx("Eintrag löschen", "Delete entry"));
+        del.addEventListener("click", function () {
+          removeFood(ymd, e.id); closeSheet(); openFoodSheet(ymd, rx);
+        });
+        row.appendChild(del);
+        box.appendChild(row);
+      });
+
+      function addAndReopen(entry) {
+        if (!entry) return;
+        addFood(ymd, entry, rx.kcal);
+        track("food_logged", { source: entry.source });
+        closeSheet(); openFoodSheet(ymd, rx);
+      }
+      function optionButton(label, kcal, protein, source, blockId) {
+        var b = el("button", "btn btn-ghost");
+        b.style.cssText = "display:block;width:100%;margin-bottom:8px;text-align:left";
+        b.innerHTML = "<b>" + esc(label) + "</b><br><span style='color:var(--muted);font-size:0.85rem'>" +
+          kcal + " kcal · " + protein + " g " + tx("Protein", "protein") + "</span>";
+        b.addEventListener("click", function () {
+          addAndReopen(foodlog.makeEntry({ label: label, kcal: kcal, protein: protein,
+            source: source, blockId: blockId || null, at: ymd }));
+        });
+        return b;
+      }
+
+      /* 1 — Was zur Lücke passt, aus dem eigenen Plan */
+      var vorschlaege = foodlog.suggest(p.nutrition, rest, 3);
+      if (vorschlaege.length) {
+        box.appendChild(el("h4", null, tx("Passt zu dem, was noch fehlt", "Fits what's still missing")));
+        vorschlaege.forEach(function (o) {
+          box.appendChild(optionButton(pick(o.name), o.kcal, o.protein, "plan", o.blockId));
+        });
+      }
+
+      /* 2 — Eigene Mahlzeiten, die schon mehrfach vorkamen */
+      var favs = foodlog.favourites(foodLog(), 4);
+      if (favs.length) {
+        box.appendChild(el("h4", null, tx("Deine üblichen", "Your usual")));
+        favs.forEach(function (f) {
+          box.appendChild(optionButton(f.label, f.kcal, f.protein, "eigene"));
+        });
+      }
+
+      /* 3 — Freie Eingabe für alles andere */
+      box.appendChild(el("h4", null, tx("Etwas anderes", "Something else")));
+      var form = el("div", "s-food-form");
+      var name = document.createElement("input");
+      name.type = "text"; name.className = "s-input";
+      name.placeholder = tx("Was war es? (z. B. Pizza)", "What was it? (e.g. pizza)");
+      name.setAttribute("aria-label", tx("Bezeichnung", "Label"));
+      var kc = document.createElement("input");
+      kc.type = "number"; kc.inputMode = "numeric"; kc.className = "s-input";
+      kc.placeholder = "kcal"; kc.setAttribute("aria-label", "Kalorien");
+      var pr = document.createElement("input");
+      pr.type = "number"; pr.inputMode = "numeric"; pr.className = "s-input";
+      pr.placeholder = tx("g Protein", "g protein"); pr.setAttribute("aria-label", tx("Protein in Gramm", "Protein in grams"));
+      form.appendChild(name); form.appendChild(kc); form.appendChild(pr);
+      box.appendChild(form);
+      var hinweis = el("p", "hint");
+      box.appendChild(hinweis);
+      var save = el("button", "btn btn-primary", tx("Eintragen", "Log it"));
+      save.addEventListener("click", function () {
+        var e = foodlog.makeEntry({ label: name.value, kcal: parseFloat(kc.value),
+          protein: parseFloat(pr.value), source: "frei", at: ymd });
+        if (!e) {
+          // Ehrlich sagen, was fehlt, statt still nichts zu tun.
+          hinweis.textContent = tx("Bitte eine Bezeichnung und mindestens einen Wert eintragen. Schätzen ist ausdrücklich erlaubt — ungefähr richtig ist besser als gar nichts.",
+            "Please enter a label and at least one value. Estimating is fine — roughly right beats nothing.");
+          return;
+        }
+        addAndReopen(e);
+      });
+      box.appendChild(save);
+      box.appendChild(el("p", "hint", tx(
+        "Schätzwerte genügen. Diese Zahlen entscheiden nicht über dich, sondern darüber, ob MaleMetrix bei einem Plateau deinen Plan anfasst oder deine Umsetzung anspricht.",
+        "Estimates are enough. These numbers don't judge you — they decide whether MaleMetrix touches your plan or your execution when progress stalls.")));
     });
   }
 
@@ -1179,7 +1344,7 @@
        Diese Trennung ist der Grund, warum ein Nutzer bei 55 % Umsetzung
        nicht denkt, sein Plan sei kaputt. */
     var exec = decide.executionScore(p, daylog(), ymd, {
-      days: 14, weights: series, stepsByDay: healthSteps()
+      days: 14, weights: series, stepsByDay: healthSteps(), nutritionByDay: nutritionByDay(p)
     });
     if (exec.score != null) {
       var ec = el("div", "s-card");
@@ -1384,7 +1549,7 @@
       // wohlwollende Selbsteinschätzung überstimmen, nie umgekehrt.
       var ctx = { plan: p, week: week, todayYmd: ymd, weights: planWeights(p), answers: checkAnswers,
                   execution: decide.executionScore(p, daylog(), ymd, {
-                    days: 14, weights: planWeights(p), stepsByDay: healthSteps() }) };
+                    days: 14, weights: planWeights(p), stepsByDay: healthSteps(), nutritionByDay: nutritionByDay(p) }) };
       var d = weekly.decide(ctx);
       root.innerHTML = "";
       root.appendChild(el("h2", null, tx("Entscheidung", "Decision")));

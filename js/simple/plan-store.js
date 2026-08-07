@@ -18,6 +18,7 @@
      simple_plan_history  append-only Versionshistorie
      simple_funnel        Funnelstatus (Transformation→Score→Fragen→Plan)
      simple_checkins      append-only Wochencheck-Ergebnisse
+     simple_foodlog       Essens-Protokoll je Tag (Eintraege + Tagesziel)
      legacy_snapshot      Migrations-Snapshot der v1-Daten (§27.3)
      flags_user           Konto-Ebene der Feature-Flags (Rollback je Nutzer)
    ========================================================================== */
@@ -57,6 +58,10 @@
     MM.account.registerStateDomain("transform_goal", "transform_goal");
     // Tagesprotokoll + Einkaufs-Häkchen + Migrationsstatus der Gen-2-App.
     MM.account.registerStateDomain("simple_daylog", "simple_daylog");
+    // Essens-Protokoll: gehoert zum Tagesgeschehen und muss zwischen
+    // Geraeten mitwandern, sonst faellt der Execution Score auf einem
+    // zweiten Geraet grundlos ab.
+    MM.account.registerStateDomain("simple_foodlog", "simple_foodlog");
     MM.account.registerStateDomain("simple_shopping", "simple_shopping");
     MM.account.registerStateDomain("simple_migration", "simple_migration");
     // Gewichtsreihe: identische Domain wie OS v1 (os-core registriert

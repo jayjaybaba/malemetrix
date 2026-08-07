@@ -279,6 +279,32 @@ group("Xcode Cloud: der Weg ohne API-Schluessel ist vollstaendig");
     "das Schema ist geteilt — sonst sieht Xcode Cloud kein Build-Ziel");
 }
 
+
+group("Essens-Protokoll ist vollstaendig verdrahtet");
+{
+  const page = read("meinplan.html");
+  ok(/js\/simple\/foodlog\.js/.test(page), "foodlog.js wird geladen");
+  ok(page.indexOf("foodlog.js") < page.indexOf("decide.js"),
+    "und zwar vor decide.js — der Score braucht die Auswertung");
+  const app = read("js/simple/app.js");
+  ok(/foodlog = MMSimple\.foodlog/.test(app), "app.js kennt das Modul");
+  ok(/nutritionByDay: nutritionByDay\(p\)/.test(app),
+    "die gemessene Ernaehrung geht in JEDEN Execution-Score-Aufruf");
+  ok((app.match(/nutritionByDay: nutritionByDay\(p\)/g) || []).length === 3,
+    "in alle drei Aufrufe (Today, Fortschritt, Wochencheck) — sonst waeren die Zahlen widerspruechlich");
+  ok(/openFoodSheet/.test(app), "das Eintragen-Blatt existiert");
+
+  const store = read("js/simple/plan-store.js");
+  ok(/registerStateDomain\("simple_foodlog"/.test(store),
+    "das Protokoll synct mit dem Konto — sonst faellt der Score auf einem zweiten Geraet grundlos ab");
+
+  const fl = read("js/simple/foodlog.js");
+  ok(!/fetch\(|XMLHttpRequest|https:\/\//.test(fl),
+    "das Modul ruft nichts ab — keine Naehrwertdatenbank, keine Verbindung nach draussen");
+  ok(/return null/.test(fl) && /minEntriesForDay/.test(fl),
+    "ein leerer Tag liefert kein Urteil (sonst waere jedes Vergessen ein Diaetfehler)");
+}
+
 group("Keine Geheimnisse im App-Bundle");
 {
   const suspicious = [];

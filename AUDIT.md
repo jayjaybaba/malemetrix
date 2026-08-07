@@ -289,8 +289,11 @@ echten iPhone mit echten Daten ueber echte Wochen.
 3. **Monetarisierung** ist undefiniert. Die App enthaelt bewusst keine
    Kaeufe (Richtlinie 3.1.1); womit sie langfristig Geld verdient, ist eine
    Produktentscheidung, keine technische.
-4. **Ernaehrungserfassung** existiert nur als Bausteine. Wer flexibel isst,
-   hat in MaleMetrix keinen Weg — das ist die groesste Funktionsluecke.
-5. **Der Execution Score haengt an Haekchen.** Training und Ernaehrung sind
-   selbst bestaetigt. Erst Health-Workouts und eine echte Mahlzeitenerfassung
-   machen ihn faelschungssicher.
+4. ~~**Ernaehrungserfassung** existiert nur als Bausteine.~~ **Geschlossen:**
+   `js/simple/foodlog.js` — drei Wege (Planbaustein, eigene Wiederholung,
+   freie Eingabe), keine Naehrwertdatenbank. Der Execution Score nimmt jetzt
+   je Tag die beste verfuegbare Quelle: gemessen, wo protokolliert wurde,
+   sonst das Haekchen.
+5. **Der Execution Score haengt beim Training noch am Haekchen.** Die
+   Ernaehrung ist jetzt messbar, das Training nicht — erst importierte
+   Health-Workouts machen auch diesen Teil faelschungssicher.

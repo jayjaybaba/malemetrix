@@ -103,6 +103,15 @@ async function buildState(scenario) {
   } else if (scenario === "auswaerts") {
     fill(14, 1, true);
     store.mm_simple_day_modifier = { [todayYmd]: { type: "auswaerts", minutes: null } };
+  } else if (scenario === "essen") {
+    fill(14, 1, true);
+    // Halber Tag gegessen: die Zeile muss den REST zeigen, nicht das Ziel.
+    store.mm_simple_foodlog = {
+      [todayYmd]: { kcalTarget: plan.nutrition.calorieTarget, entries: [
+        { id: "fe:1", label: "Frühstück", kcal: 520, protein: 42, source: "plan" },
+        { id: "fe:2", label: "Mittag", kcal: 640, protein: 51, source: "plan" }
+      ] }
+    };
   } else if (scenario === "schwache_umsetzung") {
     for (let i = 14; i >= 1; i--) {
       const d = new Date(today); d.setDate(d.getDate() - i);
@@ -119,6 +128,7 @@ const SZENARIEN = [
   { id: "wiedereinstieg", hash: "#heute", de: "Fuenf Tage Pause" },
   { id: "erholung", hash: "#heute", de: "Zwei Erholungssignale" },
   { id: "auswaerts", hash: "#heute", de: "Auswaertsessen gemeldet" },
+  { id: "essen", hash: "#heute", de: "Halber Tag gegessen" },
   { id: "schwache_umsetzung", hash: "#fortschritt", de: "Schwache Umsetzung (Fortschritt)" }
 ];
 
@@ -196,6 +206,14 @@ async function main() {
     if (s.id === "auswaerts") {
       ok(/Auswärtsessen|Auswaertsessen/.test(headline), "die Meldung ist oben sichtbar");
       ok(/Protein früh/.test(focus + bodyText), "und fuehrt zu einer Verteilungsregel");
+    }
+    if (s.id === "essen") {
+      ok(/Noch \d+ g Protein/.test(bodyText),
+        "die Zeile zeigt, was noch FEHLT, nicht das Tagesziel");
+      ok(/1160 \/ \d+ kcal/.test(bodyText),
+        "gegessene Kalorien stehen gegen das Ziel (1160 aus zwei Eintraegen)");
+      ok(!/Mindestens \d+ g Protein erreichen/.test(bodyText),
+        "die alte Haekchen-Formulierung ist verschwunden, sobald gemessen wird");
     }
     if (s.id === "schwache_umsetzung") {
       ok(/Ausführung/.test(bodyText), "die Execution-Karte ist da");

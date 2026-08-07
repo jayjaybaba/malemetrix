@@ -72,12 +72,17 @@
    * @param {object} plan
    * @param {object} daylog   { "YYYY-MM-DD": { tasks:{}, workout, closed } }
    * @param {string} todayYmd
-   * @param {object} [opts]   { days=14, weights=[], stepsByDay={} }
+   * @param {object} [opts]   { days=14, weights=[], stepsByDay={}, nutritionByDay={} }
+   *   nutritionByDay: { "YYYY-MM-DD": true|false } aus dem Essens-Protokoll.
+   *   Wo ein Tag dort steht, zaehlt die Messung statt des Haekchens; wo nicht,
+   *   bleibt es beim Haekchen. Beides gemischt ist kein Problem — jeder Tag
+   *   wird einzeln nach der besten verfuegbaren Quelle bewertet.
    */
   function executionScore(plan, daylog, todayYmd, opts) {
     opts = opts || {};
     var days = opts.days || 14;
     var stepsByDay = opts.stepsByDay || {};
+    var nutritionByDay = opts.nutritionByDay || {};
     var weights = opts.weights || [];
     daylog = daylog || {};
 
@@ -104,8 +109,13 @@
 
       if (isWorkoutDay(plan, ymd)) { tPlanned++; if (tasks.training) tDone++; }
 
+      // Gemessen schlaegt Haekchen — hier ist der Unterschied am groessten:
+      // „Protein erreicht" war bisher eine Selbsteinschaetzung und wog 30 %
+      // im Score, der ueber Planaenderungen mitentscheidet.
       nPlanned++;
-      if (tasks.protein) nDone++;
+      var loggedHit = nutritionByDay[ymd];
+      if (typeof loggedHit === "boolean") { if (loggedHit) nDone++; }
+      else if (tasks.protein) nDone++;
 
       sPlanned++;
       var measured = stepsByDay[ymd];
