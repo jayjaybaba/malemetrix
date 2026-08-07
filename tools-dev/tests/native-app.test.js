@@ -210,6 +210,51 @@ group("Apple Health: die Weboberflaeche bleibt ohne App unveraendert");
     "und traegt die Grenzen sichtbar im Quelltext");
 }
 
+
+group("Health-Daten haben Konsequenzen — die Verdrahtung haelt");
+{
+  const bridge = read("js/native-bridge.js");
+  const app = read("js/simple/app.js");
+  const swift = read("ios-app/App/App/HealthPlugin.swift");
+
+  // Der teuerste Fehler waere ein Schluessel, den einer schreibt und keiner
+  // liest (oder umgekehrt): dann waere das Erholungssignal reine Dekoration.
+  ["health_energy", "health_today", "health_steps_by_day"].forEach((k) => {
+    ok(new RegExp('"' + k + '"').test(bridge), "die Bruecke schreibt " + k);
+  });
+  ok(/MM\.store\.get\("health_today"/.test(app), "die App liest health_today");
+  ok(/MM\.store\.get\("health_steps_by_day"/.test(app), "die App liest health_steps_by_day");
+  ok(/MM\.store\.get\("health_energy"/.test(app), "die App liest health_energy");
+
+  ok(/baselineHrv/.test(bridge) && /baselineRhr/.test(bridge),
+    "die Baseline wird mitgespeichert — 45 ms HRV sind ohne sie bedeutungslos");
+  ok(/out\["stepsByDay"\] = stepMap/.test(swift), "das Plugin liefert die Schrittreihe");
+  ok(/yyyy-MM-dd/.test(swift), "und zwar in derselben Datumsform wie das Tagesprotokoll");
+  ok(/en_US_POSIX/.test(swift),
+    "mit festem Locale — sonst liefert ein arabischer Kalender unbrauchbare Schluessel");
+
+  ok(/MM\.store\.remove\(TODAY_KEY\)/.test(bridge) && /MM\.store\.remove\(STEPS_KEY\)/.test(bridge),
+    "beim Trennen wird alles entfernt, nicht nur der Verbrauchswert");
+
+  // Der heutige Health-Stand darf nicht von gestern stammen.
+  ok(/h\.date !== todayYmd\(\)/.test(app),
+    "veraltete Tageswerte werden verworfen statt fuer heute ausgegeben");
+}
+
+group("Entscheidungsschicht ist in der App verdrahtet");
+{
+  const page = read("meinplan.html");
+  ok(/js\/simple\/decide\.js/.test(page), "decide.js wird geladen");
+  ok(page.indexOf("decide.js") < page.indexOf("app.js"), "und zwar vor app.js");
+  const app = read("js/simple/app.js");
+  ok(/decide = MMSimple\.decide/.test(app), "app.js kennt das Modul");
+  ok(/decide\.dailyPrescription\(/.test(app), "Today nutzt den Tagesauftrag");
+  ok(/decide\.executionScore\(/.test(app), "Fortschritt und Wochencheck nutzen den Execution Score");
+  ok(/decide\.trajectory\(/.test(app), "Fortschritt zeigt den Verlauf");
+  const weekly = read("js/simple/weekly-check.js");
+  ok(/ctx\.execution/.test(weekly), "der Wochencheck nimmt die Messung entgegen");
+}
+
 group("Keine Geheimnisse im App-Bundle");
 {
   const suspicious = [];

@@ -151,6 +151,13 @@ public class HealthPlugin: CAPPlugin, CAPBridgedPlugin {
         dailySeries(.restingHeartRate, unit: bpm, days: 14, options: .discreteAverage) { m in
             rhr = m.values.filter { $0 > 0 }; group.leave()
         }
+        // Schrittreihe: geht in den Execution Score ein. Gelaufen ist gelaufen,
+        // auch wenn der Nutzer das Haekchen vergessen hat.
+        var steps: [Date: Double] = [:]
+        group.enter()
+        dailySeries(.stepCount, unit: .count(), days: 14, options: .cumulativeSum) { m in
+            steps = m; group.leave()
+        }
 
         group.notify(queue: .main) {
             let today = Calendar.current.startOfDay(for: Date())
@@ -170,6 +177,18 @@ public class HealthPlugin: CAPPlugin, CAPBridgedPlugin {
             }
             if !hrv.isEmpty { out["hrvMs"] = hrv.reduce(0, +) / Double(hrv.count) }
             if !rhr.isEmpty { out["restingHeartRate"] = rhr.reduce(0, +) / Double(rhr.count) }
+
+            // Tagesdatum als "YYYY-MM-DD" — dieselbe Schluesselform wie im
+            // Tagesprotokoll der Weboberflaeche, sonst passt nichts zusammen.
+            let fmt = DateFormatter()
+            fmt.calendar = Calendar(identifier: .gregorian)
+            fmt.locale = Locale(identifier: "en_US_POSIX")
+            fmt.timeZone = TimeZone.current
+            fmt.dateFormat = "yyyy-MM-dd"
+            var stepMap: [String: Int] = [:]
+            for (day, v) in steps where v > 0 { stepMap[fmt.string(from: day)] = Int(v.rounded()) }
+            out["stepsByDay"] = stepMap
+
             call.resolve(out)
         }
     }

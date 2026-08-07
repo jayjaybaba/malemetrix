@@ -231,7 +231,9 @@
      Die Plausibilitaetspruefung liegt bewusst NICHT hier, sondern in
      MMSimple.engine.resolveTdee — an einer Stelle, getestet, fuer Web und
      App identisch. Diese Bruecke holt nur Zahlen und legt sie ab. */
-  var HEALTH_KEY = "health_energy";      // -> mm_health_energy
+  var HEALTH_KEY = "health_energy";      // -> mm_health_energy (gemessener TDEE)
+  var TODAY_KEY  = "health_today";       // Tageswerte + Baseline fuer die Tagesentscheidung
+  var STEPS_KEY  = "health_steps_by_day";// Schrittreihe fuer den Execution Score
   var H = P.Health;
 
   MM.native.health = {
@@ -267,6 +269,33 @@
           if (MM.store) MM.store.set(HEALTH_KEY, rec);
           out.stored = rec;
         }
+        if (!MM.store) return out;
+
+        // Tageswerte fuer die Entscheidung von HEUTE. Ohne die Baseline daneben
+        // waeren HRV und Ruhepuls bedeutungslos — 45 ms sind fuer den einen
+        // gut und fuer den anderen schlecht.
+        var ymd = new Date().toISOString().slice(0, 10);
+        MM.store.set(TODAY_KEY, {
+          date: ymd,
+          sleepHours: today.sleepHours != null ? today.sleepHours : null,
+          hrvMs: today.hrvMs != null ? today.hrvMs : null,
+          restingHeartRate: today.restingHeartRate != null ? today.restingHeartRate : null,
+          steps: today.steps != null ? today.steps : null,
+          weightKg: today.weightKg != null ? today.weightKg : null,
+          baselineHrv: base.hrvMs != null ? base.hrvMs : null,
+          baselineRhr: base.restingHeartRate != null ? base.restingHeartRate : null
+        });
+
+        // Schrittreihe fuer den Execution Score. Zusammengefuehrt statt
+        // ersetzt: aeltere Tage aus frueheren Abrufen bleiben erhalten.
+        if (base.stepsByDay && typeof base.stepsByDay === "object") {
+          var map = MM.store.get(STEPS_KEY, {}) || {};
+          Object.keys(base.stepsByDay).forEach(function (d) { map[d] = base.stepsByDay[d]; });
+          // Aelter als 60 Tage interessiert keine Entscheidung mehr.
+          var keys = Object.keys(map).sort();
+          while (keys.length > 60) { delete map[keys.shift()]; }
+          MM.store.set(STEPS_KEY, map);
+        }
         return out;
       });
     },
@@ -274,7 +303,11 @@
     /** Trennt: gespeicherte Messung verwerfen. Die Erlaubnis selbst kann nur
         der Nutzer in den iPhone-Einstellungen zuruecknehmen — das sagt die UI. */
     forget: function () {
-      if (MM.store) MM.store.remove(HEALTH_KEY);
+      if (MM.store) {
+        MM.store.remove(HEALTH_KEY);
+        MM.store.remove(TODAY_KEY);
+        MM.store.remove(STEPS_KEY);   // nichts halb liegen lassen
+      }
       return Promise.resolve();
     },
 

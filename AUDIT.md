@@ -257,7 +257,7 @@ Alle folgenden Faelle sind als Test festgeschrieben
 | Retention | 4 | **7** | Rescue Mode ist der Hebel. Fehlt: Anschluss nach Tag 84. |
 | UX | 6 | **7** | Ein Auftrag, drei Aufgaben, eine Begruendung. Nicht auf echtem Geraet erprobt. |
 | Design | 7 | **8** | Ruhig, eigene Tokens. Nicht unverwechselbar genug ohne Logo. |
-| Engineering Quality | 8 | **9** | Pure Module, 4251 Assertions, adversarielle Tests. |
+| Engineering Quality | 8 | **9** | Pure Module, 4272 Assertions, adversarielle Tests. |
 | Trust | 8 | **9** | Jede Entscheidung begruendet, jede Nicht-Entscheidung auch. |
 | Recommendation Potential | 4 | **7** | Es gibt jetzt eine erzaehlbare Geschichte. |
 | **Overall** | **5** | **7,8** | |
