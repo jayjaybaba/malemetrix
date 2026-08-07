@@ -148,21 +148,23 @@
     </div>
     <div class="hero-bg"></div>
     <div class="hero-grid-bg"></div>
-    <!-- Hero-Neuaufbau (August 2026): links genau sechs Ebenen — Eyebrow,
-         Headline, Beschreibung, Primär-CTA, Score-Link, Vertrauenszeile.
-         Rechts das fotografische Transformations-Showcase (mm-v181).
-         Zeilenumbrüche der Headline werden explizit gesetzt (br-m nur mobil),
-         nie dem Browser überlassen. -->
+    <!-- Hero (August 2026, Conversion-Fassung): Der Textblock ist EINE
+         Einheit — Eyebrow, Headline, Subheadline, CTA + Handlungs-Microcopy,
+         Score-Link, Vertrauens-Microcopy. Die Abstände sind bewusst
+         asymmetrisch: mehr Luft vor der Headline, wenig darunter, damit
+         Behauptung und Erklärung als ein Block gelesen werden.
+         Rechts das fotografische Transformations-Showcase (mm-v181). -->
     <div class="container os14-hero-grid">
       <div class="os14-hero-copy">
         <div class="os14-sysline">MALEMETRIX TRANSFORM · BODY TARGET ENGINE</div>
-        <h1 class="h-display" data-i18n-html="home.h1">Sieh deinen <br class="br-m">möglichen Körper.<br><span class="text-grad">Bevor du dafür arbeitest.</span></h1>
-        <p class="lead" data-i18n="home.lead">Lade ein aktuelles Foto hoch. MaleMetrix zeigt dir zwei realistische Zielkörper. Du wählst dein Ziel – und erhältst deinen persönlichen 12-Wochen-Plan für Training und Ernährung.</p>
+        <h1 class="h-display" data-i18n-html="home.h1">Das bist nicht du.<br><span class="text-grad">Noch nicht.</span></h1>
+        <p class="lead" data-i18n="home.lead">Lade dein Foto hoch. Sieh zwei realistische Versionen deines möglichen Körpers. Wähle dein Ziel – MaleMetrix baut den 12-Wochen-Plan dorthin.</p>
         <div class="hero-ctas">
-          <a href="transformation.html" class="btn btn-primary btn-lg btn-arrow" data-track="home_transform_cta" data-i18n="home.ctaPrimary">Meine Zielkörper visualisieren</a>
+          <a href="transformation.html" class="btn btn-primary btn-lg btn-arrow" data-track="home_transform_cta" data-i18n="home.ctaPrimary">Mein Potenzial sehen</a>
         </div>
+        <p class="os14-ctanote" data-i18n="home.ctaNote">Foto hochladen · dauert ca. 30 Sek.</p>
         <p class="os14-scoreline"><a href="check.html" class="os14-scorelink" data-track="score_start_click" data-i18n-html="home.scoreLink"><span class="pre">Oder zuerst:</span> <span class="act">Kostenlosen Score starten</span></a></p>
-        <p class="small os14-trust" data-i18n="home.trustline">Zwei realistische Zielbilder · Ziel frei wählbar · Klar als KI gekennzeichnet</p>
+        <p class="os14-trust" data-i18n="home.trustline">KI-Visualisierung · keine Ergebnisgarantie</p>
       </div>
       <!-- PREMIUM-SHOWCASE: fotografische Beispiel-Transformation.
            Synthetische KI-Beispielperson, eigens für MaleMetrix erzeugt
@@ -172,7 +174,7 @@
            Phase 1 liegt visuell zu nah am Ausgangszustand — der erste
            Eindruck soll die maximale ehrliche Differenz zeigen. -->
       <div class="trf-show" id="trfShow">
-        <div class="ai-badge" data-i18n="home.show.badge">KI-BEISPIEL · KEINE ERGEBNISGARANTIE</div>
+        <div class="ai-badge" data-i18n="home.show.badge">KI-BEISPIEL</div>
         <div class="stage" id="trfStage">
           <picture>
             <source type="image/webp" srcset="assets/transform/trf-heute-480.webp 480w, assets/transform/trf-heute-768.webp 768w, assets/transform/trf-heute-1080.webp 1080w" sizes="(max-width:900px) 92vw, 420px">
