@@ -1,0 +1,42 @@
+{
+  "name": "malemetrix-app",
+  "version": "1.0.0",
+  "description": "Native iOS-App von MaleMetrix (Capacitor-Huelle um die bestehende Weboberflaeche)",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "build:web": "node scripts/build-app.mjs",
+    "build:assets": "node scripts/build-app-assets.mjs",
+    "sync:ios": "npm run build:web && npx cap sync ios",
+    "open:ios": "npx cap open ios",
+    "test": "node tools-dev/tests/native-app.test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jayjaybaba/malemetrix.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jayjaybaba/malemetrix/issues"
+  },
+  "homepage": "https://github.com/jayjaybaba/malemetrix#readme",
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.0",
+    "sharp": "^0.35.3"
+  },
+  "dependencies": {
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/browser": "^8.0.4",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "^8.5.0",
+    "@capacitor/local-notifications": "^8.2.1",
+    "@capacitor/share": "^8.0.1",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.3"
+  },
+  "private": true
+}

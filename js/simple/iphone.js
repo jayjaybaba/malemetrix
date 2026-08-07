@@ -24,7 +24,9 @@
   function pick(o) { return o == null ? "" : (typeof o === "object" ? (en() ? (o.en || o.de) : o.de) : o); }
   function track(ev, p) { try { if (MM.track) MM.track(ev, p); } catch (e) {} }
   function isIos() { return /iPhone|iPad|iPod/.test(navigator.userAgent); }
+  function isNativeApp() { return !!(window.MM && MM.native && MM.native.isApp); }
   function isStandalone() {
+    if (isNativeApp()) return true; // native App = installierte App, nur ehrlicher
     try { return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; } catch (e) { return false; }
   }
   var WDN = { de: ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"], en: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] };
@@ -107,6 +109,11 @@
     return out;
   }
   function renderPushSection(card) {
+    // In der nativen App plant iOS die Erinnerungen selbst — kein Web-Push,
+    // kein Konto noetig. Die native Bruecke rendert diesen Abschnitt dann.
+    if (isNativeApp() && MM.native.renderNotifications) {
+      if (MM.native.renderNotifications(card, { el: el, esc: esc, tx: tx })) return;
+    }
     var key = (window.MM_CONFIG && MM_CONFIG.VAPID_PUBLIC_KEY) || "";
     var supported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
     var signedIn = false;

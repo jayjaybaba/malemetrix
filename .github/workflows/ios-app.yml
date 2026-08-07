@@ -1,0 +1,285 @@
+# Native iOS-App: bauen, im Simulator starten, auf Wunsch zu TestFlight.
+#
+# Warum hier und nicht auf einem gemieteten Mac: Dieses Repository ist
+# oeffentlich, damit sind GitHub-macOS-Runner kostenlos und unbegrenzt. Der
+# Runner ist ein echter Mac mit Xcode — er kann alles, was ein gemieteter Mac
+# auch koennte, und braucht keine Fernwartung.
+#
+# Zwei Jobs:
+#   build   — laeuft bei jeder Aenderung, OHNE Apple-Konto. Beweist, dass die
+#             App uebersetzt, startet und wie geplant aussieht (Screenshots
+#             liegen danach als Artefakt bereit).
+#   release — nur auf Knopfdruck. Baut signiert und laedt zu TestFlight.
+#             Braucht die vier Secrets aus APP.md; fehlen sie, sagt der Job
+#             das klar und bricht ab, statt halb zu laufen.
+
+name: ios-app
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "js/**"
+      - "css/**"
+      - "icons/**"
+      - "*.html"
+      - "ios-app/**"
+      - "scripts/build-app*.mjs"
+      - "capacitor.config.json"
+      - "package*.json"
+      - ".github/workflows/ios-app.yml"
+  workflow_dispatch:
+    inputs:
+      testflight:
+        description: "Signiert bauen und zu TestFlight hochladen"
+        type: boolean
+        default: false
+      build_number:
+        description: "Build-Nummer (leer = Nummer des Workflow-Laufs)"
+        type: string
+        default: ""
+
+concurrency:
+  group: ios-app-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Bauen und im Simulator pruefen
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Xcode waehlen (neueste installierte Version)
+        run: |
+          LATEST=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
+          [ -n "$LATEST" ] && sudo xcode-select -s "$LATEST"
+          xcodebuild -version
+
+      - name: Abhaengigkeiten
+        run: npm ci
+
+      - name: Fachtests (Bundle, Bruecke, Projektformalien)
+        run: node tools-dev/tests/native-app.test.js
+
+      - name: Web-Bundle bauen und in das Xcode-Projekt syncen
+        run: |
+          node scripts/build-app.mjs
+          npx cap sync ios
+
+      - name: App fuer den Simulator uebersetzen (ohne Signatur)
+        run: |
+          xcodebuild \
+            -project ios-app/App/App.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath ios-app/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Simulator starten und App installieren
+        id: sim
+        run: |
+          set -e
+          # Geraetetyp nicht fest verdrahten: der Runner bringt mit, was er hat.
+          TYPE=$(xcrun simctl list devicetypes -j | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)['devicetypes']
+          ids=[t['identifier'] for t in d if 'iPhone' in t['name']]
+          pref=[i for i in ids if 'iPhone-16-Pro' in i] or [i for i in ids if 'iPhone-16' in i] or ids
+          print(pref[-1])")
+          RUNTIME=$(xcrun simctl list runtimes -j | python3 -c "
+          import json,sys
+          r=[x for x in json.load(sys.stdin)['runtimes'] if x['isAvailable'] and 'iOS' in x['name']]
+          print(sorted(r, key=lambda x: x['version'])[-1]['identifier'])")
+          echo "Geraet: $TYPE auf $RUNTIME"
+          UDID=$(xcrun simctl create mm-test "$TYPE" "$RUNTIME")
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          APP=$(find ios-app/DerivedData/Build/Products -name "App.app" -maxdepth 3 | head -1)
+          echo "Gefundenes Bundle: $APP"
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl launch "$UDID" de.malemetrix.app
+
+      - name: Startet die App wirklich? (kein Absturz beim Start)
+        run: |
+          set -e
+          UDID="${{ steps.sim.outputs.udid }}"
+          for i in $(seq 1 10); do
+            if xcrun simctl spawn "$UDID" launchctl list 2>/dev/null | grep -qi 'de.malemetrix.app'; then
+              echo "App laeuft."
+              sleep 6   # WebView baut den ersten Bildschirm auf
+              # Nach dem Aufbau erneut pruefen: ein Absturz im WebView zeigt sich erst hier.
+              xcrun simctl spawn "$UDID" launchctl list 2>/dev/null | grep -qi 'de.malemetrix.app' \
+                || { echo "::error::App ist nach dem ersten Aufbau nicht mehr am Leben"; exit 1; }
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "::error::App ist nach dem Start nicht als laufender Prozess auffindbar"
+          exit 1
+
+      - name: Screenshots aufnehmen
+        run: |
+          UDID="${{ steps.sim.outputs.udid }}"
+          mkdir -p ios-app/output/screenshots
+          xcrun simctl io "$UDID" screenshot ios-app/output/screenshots/01-start.png
+          sleep 4
+          xcrun simctl io "$UDID" screenshot ios-app/output/screenshots/02-nach-4s.png
+
+      - name: Diagnose bei Fehlschlag
+        if: failure()
+        run: |
+          UDID="${{ steps.sim.outputs.udid }}" || true
+          xcrun simctl list devices | head -30 || true
+          xcrun simctl spawn "$UDID" log show --last 3m --predicate 'process == "App"' --style compact | tail -100 || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: simulator-screenshots
+          path: ios-app/output/screenshots
+          if-no-files-found: warn
+
+      - name: Simulator aufraeumen
+        if: always()
+        run: xcrun simctl delete "${{ steps.sim.outputs.udid }}" || true
+
+  release:
+    name: Signiert bauen und zu TestFlight
+    if: github.event_name == 'workflow_dispatch' && inputs.testflight
+    needs: build
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+    steps:
+      - name: Sind alle Zugaenge hinterlegt?
+        run: |
+          MISSING=""
+          for V in ASC_KEY_ID ASC_ISSUER_ID ASC_PRIVATE_KEY APPLE_TEAM_ID; do
+            eval "VAL=\$$V"
+            [ -z "$VAL" ] && MISSING="$MISSING $V"
+          done
+          if [ -n "$MISSING" ]; then
+            echo "::error::Es fehlen diese Repository-Secrets:$MISSING — siehe APP.md, Abschnitt 'Was nur du tun kannst'."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Xcode waehlen (neueste installierte Version)
+        run: |
+          LATEST=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
+          [ -n "$LATEST" ] && sudo xcode-select -s "$LATEST"
+          xcodebuild -version
+      - run: npm ci
+
+      - name: Web-Bundle bauen und syncen
+        run: |
+          node scripts/build-app.mjs
+          npx cap sync ios
+
+      - name: App-Store-Connect-Schluessel ablegen
+        run: |
+          mkdir -p ~/private_keys
+          printf '%s' "$ASC_PRIVATE_KEY" > ~/private_keys/AuthKey_${ASC_KEY_ID}.p8
+          chmod 600 ~/private_keys/AuthKey_${ASC_KEY_ID}.p8
+          # Xcode erwartet den Schluessel zusaetzlich an dieser Stelle, wenn es
+          # Zertifikate und Profile selbst anlegen soll.
+          mkdir -p ~/.appstoreconnect/private_keys
+          cp ~/private_keys/AuthKey_${ASC_KEY_ID}.p8 ~/.appstoreconnect/private_keys/
+
+      - name: Bundle-ID und App-Eintrag bei Apple sicherstellen
+        run: node scripts/asc.mjs ensure-app
+
+      - name: Build-Nummer setzen
+        run: |
+          NUM="${{ inputs.build_number }}"
+          [ -z "$NUM" ] && NUM="${{ github.run_number }}"
+          echo "Build-Nummer: $NUM"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $NUM" ios-app/App/App/Info.plist 2>/dev/null || true
+          cd ios-app/App && xcrun agvtool new-version -all "$NUM"
+
+      - name: Archivieren (Xcode legt Zertifikat und Profil selbst an)
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project ios-app/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath ios-app/output/MaleMetrix.xcarchive \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${ASC_KEY_ID}.p8 \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            CODE_SIGN_STYLE=Automatic
+
+      - name: Exportoptionen schreiben
+        run: |
+          cat > ios-app/output/ExportOptions.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>${APPLE_TEAM_ID}</string>
+            <key>uploadSymbols</key><true/>
+            <key>signingStyle</key><string>automatic</string>
+            <key>destination</key><string>export</string>
+          </dict>
+          </plist>
+          PLIST
+
+      - name: IPA exportieren
+        run: |
+          set -o pipefail
+          xcodebuild -exportArchive \
+            -archivePath ios-app/output/MaleMetrix.xcarchive \
+            -exportPath ios-app/output/ipa \
+            -exportOptionsPlist ios-app/output/ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${ASC_KEY_ID}.p8 \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+
+      - name: Vor dem Hochladen pruefen
+        run: |
+          IPA=$(find ios-app/output/ipa -name "*.ipa" | head -1)
+          xcrun altool --validate-app -f "$IPA" -t ios \
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+
+      - name: Zu TestFlight hochladen
+        run: |
+          IPA=$(find ios-app/output/ipa -name "*.ipa" | head -1)
+          xcrun altool --upload-app -f "$IPA" -t ios \
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+          echo "Hochgeladen. Die Verarbeitung bei Apple dauert ueblicherweise 10-30 Minuten."
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ipa
+          path: ios-app/output/ipa
+          if-no-files-found: warn
+
+      - name: Schluessel entfernen
+        if: always()
+        run: rm -rf ~/private_keys ~/.appstoreconnect

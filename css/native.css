@@ -1,0 +1,36 @@
+/* native.css — gilt ausschliesslich in der nativen App (Klasse wird von
+   js/native-bridge.js gesetzt). Im Browser ist diese Datei wirkungslos.
+
+   Zweck: Die Website-Navigation ist fuer eine Website gebaut — Menue,
+   Footer-Spalten, Verkaufsleisten. In der App fuehrt die Bottom-Navigation.
+   Alles, was doppelt fuehrt oder aus der App herausfuehrt, wird hier
+   ausgeblendet, statt es in jeder Seite einzeln anzufassen. */
+
+/* Sichtbarer Bereich unter der Statusleiste (viewport-fit=cover ist gesetzt) */
+html.is-native-app body { padding-top: env(safe-area-inset-top); }
+
+/* Website-Navigation und Footer: in der App ohne Funktion */
+html.is-native-app .site-header .nav,
+html.is-native-app .site-header .nav-more,
+html.is-native-app .site-header .nav-my,
+html.is-native-app .site-header .nav-toggle,
+html.is-native-app .site-footer .footer-grid,
+html.is-native-app .site-footer .footer-bottom .footer-social { display: none !important; }
+
+/* Kopfzeile schlank: Logo + Sprachumschalter reichen */
+html.is-native-app .site-header { position: static; }
+html.is-native-app .site-header .header-inner { justify-content: space-between; }
+
+/* Verkaufsflaechen gehoeren nicht in die App-Version (App-Store-Richtlinie
+   3.1.1: digitale Kaeufe nur ueber In-App-Purchase). */
+html.is-native-app .cta-strip,
+html.is-native-app .upsell,
+html.is-native-app .price-card,
+html.is-native-app .shop-teaser { display: none !important; }
+
+/* Rechtstexte bleiben erreichbar — sie sind Pflicht, nicht Werbung. */
+html.is-native-app .site-footer .footer-disclaimer,
+html.is-native-app .site-footer .footer-legal { display: block; }
+
+/* Platz fuer die Bottom-Navigation auf Seiten ausserhalb der App-Oberflaeche */
+html.is-native-app main:not(.sapp) { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }

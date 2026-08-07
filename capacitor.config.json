@@ -1,0 +1,21 @@
+{
+  "appId": "de.malemetrix.app",
+  "appName": "MaleMetrix",
+  "webDir": "app-build",
+  "ios": {
+    "path": "ios-app",
+    "contentInset": "always",
+    "backgroundColor": "#070A0F",
+    "limitsNavigationsToAppBoundDomains": true
+  },
+  "server": {
+    "iosScheme": "capacitor"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 600,
+      "backgroundColor": "#070A0F",
+      "showSpinner": false
+    }
+  }
+}

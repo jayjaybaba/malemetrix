@@ -18,3 +18,14 @@ proxy/.wrangler/
 # wenn sie versioniert werden soll, dann in einem privaten Repo oder als
 # um die Sicherheitsbefunde bereinigte Fassung.
 OPTIMIERUNGEN.md
+
+# ---- Native App (Capacitor) ----------------------------------------------
+# GitHub Pages liefert JEDE Datei im Wurzelverzeichnis aus. Build-Ausgaben und
+# Abhaengigkeiten der App gehoeren deshalb nicht ins Repo — sie entstehen in
+# CI neu (scripts/build-app.mjs, .github/workflows/ios-app.yml).
+node_modules/
+app-build/
+ios-app/App/build/
+ios-app/App/output/
+ios-app/DerivedData/
+*.xcuserdatad/
