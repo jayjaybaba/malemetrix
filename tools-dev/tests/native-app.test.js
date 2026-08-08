@@ -202,7 +202,37 @@ group("Apple Health: im Xcode-Projekt vollstaendig verdrahtet");
 
   const swift = read("ios-app/App/App/HealthPlugin.swift");
   ok(/CAPBridgedPlugin/.test(swift) && /public let jsName = "Health"/.test(swift),
-    "als Capacitor-Plugin registriert, erreichbar als Capacitor.Plugins.Health");
+    "erfuellt das Plugin-Protokoll und heisst 'Health'");
+
+  /* DAS HIER IST DER PUNKT, an dem die alte Zusicherung gelogen hat.
+     Sie pruefte CAPBridgedPlugin und jsName und behauptete daraufhin
+     „registriert, erreichbar als Capacitor.Plugins.Health". Beides sagt ueber
+     die Registrierung nichts: Capacitor registriert auf iOS ausschliesslich,
+     was in packageClassList steht (CapacitorBridge.registerPlugins) — und
+     dort stand HealthPlugin nie. Entitlement und Zwecktexte lagen im Binary,
+     das Plugin gab es nicht. Der Grund, ueberhaupt eine native App zu bauen,
+     war nicht ausgeliefert.
+
+     In die Liste eintragen reicht nicht: `npx cap sync ios` schreibt sie bei
+     jedem Lauf neu. Registriert wird deshalb im eigenen Code. */
+  const eigenePlugins = (swift.match(/@objc\((\w+)\)/g) || []).map((m) => m.slice(6, -1));
+  ok(eigenePlugins.indexOf("HealthPlugin") >= 0, "HealthPlugin ist eine eigene Klasse (@objc)");
+  const capCfg = JSON.parse(read("ios-app/App/App/capacitor.config.json"));
+  const inListe = (capCfg.packageClassList || []).indexOf("HealthPlugin") >= 0;
+  const bruecke = exists("ios-app/App/App/MMBridgeViewController.swift")
+    ? read("ios-app/App/App/MMBridgeViewController.swift") : "";
+  const perCode = /registerPluginInstance\(HealthPlugin\(\)\)/.test(bruecke)
+    && /override func capacitorDidLoad/.test(bruecke);
+  ok(inListe || perCode,
+    "und wird wirklich registriert — per Code in capacitorDidLoad, nicht nur behauptet");
+  ok(perCode,
+    "und zwar per Code: packageClassList wird von 'npx cap sync ios' ueberschrieben");
+  ok(/MMBridgeViewController\(\)/.test(read("ios-app/App/App/SceneDelegate.swift")),
+    "die App startet mit dieser Bruecke (SceneDelegate)");
+  ok(/customClass="MMBridgeViewController"/.test(read("ios-app/App/App/Base.lproj/Main.storyboard")),
+    "und auch der Storyboard-Weg zeigt darauf — sonst haengt es am Startweg");
+  ok(/MMBridgeViewController\.swift in Sources/.test(read("ios-app/App/App.xcodeproj/project.pbxproj")),
+    "die Datei wird ueberhaupt uebersetzt (Sources-Phase)");
   ["isAvailable", "requestAuthorization", "today", "baseline", "writeWeight"].forEach((m) =>
     ok(new RegExp('CAPPluginMethod\\(name: "' + m + '"').test(swift), "Methode angemeldet: " + m));
   ok(/writeTypes: Set<HKSampleType> \{ \[qt\(\.bodyMass\)\] \}/.test(swift),
