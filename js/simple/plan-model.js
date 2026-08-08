@@ -151,9 +151,18 @@
     if (plan.startDate && plan.endDate && plan.endDate !== addDays(plan.startDate, LIMITS.durationWeeks * 7 - 1)) {
       e.push("endDate passt nicht zu 12 Wochen ab startDate");
     }
-    if (n.calorieTarget != null) {
+    /* Der Torwaechter muss NaN zuerst abfangen: jeder Vergleich mit NaN ist
+       false, deshalb sind Unter- UND Obergrenze gleichzeitig „eingehalten".
+       Ein Plan mit calorieTarget = NaN galt so als gueltig und wurde
+       gespeichert; danach stand auf jedem Bildschirm „— kcal". */
+    if (n.calorieTarget != null && !isFinite(n.calorieTarget)) {
+      e.push("Kalorienziel ist keine Zahl");
+    } else if (n.calorieTarget != null) {
       if (n.calorieTarget < LIMITS.kcalMin) e.push("Kalorienziel unter Untergrenze " + LIMITS.kcalMin);
       if (n.calorieTarget > LIMITS.kcalMax) e.push("Kalorienziel über Obergrenze " + LIMITS.kcalMax);
+    }
+    if (n.proteinTargetGrams != null && !isFinite(n.proteinTargetGrams)) {
+      e.push("Proteinziel ist keine Zahl");
     }
     if (n.proteinTargetGrams != null && st.startWeightKg) {
       var perKg = n.proteinTargetGrams / st.startWeightKg;

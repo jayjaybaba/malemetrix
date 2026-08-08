@@ -268,7 +268,11 @@
     var q = questionsFor({ tg: sources.transformGoal, trf: trf, answers: a });
     var vals = {};
     q.forEach(function (item) {
-      if (item.value == null || (Array.isArray(item.value) && item.type === "weekdays" && !item.value.length)) {
+      /* NaN ist nicht null und war deshalb „ausgefuellt". Ein geleertes
+         Alter reichte so bis in die Kalorienrechnung durch. */
+      var kaputteZahl = typeof item.value === "number" && !isFinite(item.value);
+      if (item.value == null || kaputteZahl ||
+          (Array.isArray(item.value) && item.type === "weekdays" && !item.value.length)) {
         if (item.required) fehlt(item.id, "„" + item.label + "\u201c", "\u201c" + (item.labelEn || item.label) + "\u201d");
       } else vals[item.id] = item.value;
     });

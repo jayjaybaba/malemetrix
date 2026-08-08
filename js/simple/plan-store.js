@@ -116,8 +116,42 @@
     nextPlan.endDate = cur.endDate;
     nextPlan.createdAt = cur.createdAt;
     nextPlan.legacySource = cur.legacySource;
+    /* Was der Wochencheck aufgebaut hat, gehoert nicht dem Formular.
+       Vorher setzte JEDE Anpassung — auch „Kochzeit 20 statt 40 Minuten" —
+       das Kalorienziel auf den Wert zurueck, den der Fragebogen ausrechnet,
+       und verwarf damit still jede Kuerzung des Wochenchecks. Genau das
+       verbietet die Hausregel: keine stillen Zahlenaenderungen.
+       `engineBase` merkt sich, was der Fragebogen zuletzt errechnet hat; die
+       Differenz dazu ist der Anteil des Systems und wird mitgenommen. */
+    var basis = cur.engineBase || { kcal: cur.nutrition.calorieTarget, steps: cur.dailyTargets.steps };
+    var versatzKcal = (cur.nutrition.calorieTarget || 0) - (basis.kcal || 0);
+    var versatzSteps = (cur.dailyTargets.steps || 0) - (basis.steps || 0);
+    nextPlan.engineBase = {
+      kcal: nextPlan.nutrition.calorieTarget,
+      steps: nextPlan.dailyTargets.steps
+    };
+    if (versatzKcal && nextPlan.nutrition.calorieTarget != null) {
+      nextPlan.nutrition.calorieTarget = Math.round(nextPlan.nutrition.calorieTarget + versatzKcal);
+    }
+    if (versatzSteps && nextPlan.dailyTargets.steps != null) {
+      nextPlan.dailyTargets.steps = Math.round(nextPlan.dailyTargets.steps + versatzSteps);
+    }
+
     var v = model.validate(nextPlan);
     if (!v.ok) return { ok: false, errors: v.errors };
+
+    /* Speichern ohne Aenderung erzeugte trotzdem eine neue Version und einen
+       leeren Historieneintrag. Verglichen wird der ganze Inhalt, nicht die
+       neun beobachteten Pfade. */
+    function inhalt(x) {
+      var c = JSON.parse(JSON.stringify(x));
+      delete c.version; delete c.updatedAt; delete c.engineBase;
+      return JSON.stringify(c);
+    }
+    if (inhalt(cur) === inhalt(nextPlan)) {
+      return { ok: true, plan: cur, entry: null, unchanged: true };
+    }
+
     nextPlan.version = (cur.version || 1) + 1;
     var paths = ["training.daysPerWeek", "training.weekdays", "training.templateId",
       "training.location", "training.maximumSessionMinutes",

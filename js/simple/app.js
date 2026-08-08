@@ -45,6 +45,13 @@
      JavaScript druckt 93.7 und 2026-12-24. Beides ist im Deutschen falsch
      und liest sich wie ein Datenbankauszug. Gespeichert wird weiter
      locale-neutral — formatiert wird erst hier, an der Oberfläche. */
+  /* Aus einem Eingabefeld kommt Text. Was keine endliche Zahl ergibt, ist
+     keine Null und keine Zahl — es ist eine fehlende Angabe. */
+  function zahlOderNichts(v) {
+    var n = parseFloat(v);
+    return isFinite(n) ? n : null;
+  }
+
   function nf(v, maxDec) {
     var n = typeof v === "number" ? v : parseFloat(v);
     if (v == null || v === "" || !isFinite(n)) return "—";
@@ -383,6 +390,11 @@
     // Re-Renders innerhalb derselben Ansicht (Chip angeklickt, Frage
     // beantwortet, Satz abgehakt) dürfen die Leseposition nicht verlieren.
     var viewChanged = v !== lastView;
+    /* Wer „Plan anpassen" verlaesst, ohne zu speichern, verwirft seine
+       Eingaben. Vorher blieben sie unsichtbar im Modul stehen und wurden beim
+       naechsten Speichern mitgeschrieben — Aenderungen, die der Nutzer weder
+       sah noch wollte. */
+    if (lastView === "anpassen" && v !== "anpassen") editAnswers = null;
     var keepY = window.scrollY;
     root.innerHTML = "";
     document.querySelectorAll(".s-nav a").forEach(function (a) {
@@ -591,7 +603,11 @@
           if (q.max != null) inp.max = q.max;
           inp.value = val != null ? val : "";
           inp.addEventListener("change", function () {
-            wizardAnswers[q.id] = q.type === "time" ? inp.value : parseFloat(inp.value);
+            /* Ein geleertes Zahlenfeld ergibt parseFloat("") === NaN. NaN ist
+               nicht null, rutscht deshalb durch jede Pflichtpruefung und
+               vergiftet danach die ganze Rechnung. „Leer" heisst hier:
+               unbeantwortet. */
+            wizardAnswers[q.id] = q.type === "time" ? inp.value : zahlOderNichts(inp.value);
             saveDraft();
           });
           wrap.appendChild(inp);
@@ -1863,7 +1879,7 @@
         if (q.max != null) inp.max = q.max;
         inp.value = val != null ? val : "";
         inp.addEventListener("change", function () {
-          editAnswers[q.id] = q.type === "time" ? inp.value : parseFloat(inp.value);
+          editAnswers[q.id] = q.type === "time" ? inp.value : zahlOderNichts(inp.value);
         });
         wrap.appendChild(inp);
       }
@@ -1880,11 +1896,23 @@
       if (!r.ok) { err.textContent = r.errors.join("; "); err.style.display = ""; return; }
       var rc = store.reconfigurePlan(r.plan, tx("Vom Nutzer angepasst (Plan-Einstellungen)", "Adjusted by the user (plan settings)"));
       if (!rc.ok) { err.textContent = rc.errors.join("; "); err.style.display = ""; return; }
+      if (rc.unchanged) {
+        /* Wortlos wegzuspringen sieht aus wie ein Speichervorgang. Es gab
+           keinen — und das darf man sagen. */
+        err.textContent = tx("Nichts geändert — dein Plan bleibt, wie er ist.",
+                             "Nothing changed — your plan stays as it is.");
+        err.style.display = "";
+        return;
+      }
       track("plan_reconfigured");
       editAnswers = null;
       location.hash = "#heute";
     });
     root.appendChild(save);
+    /* Das Fehlerfeld wurde erzeugt, beschriftet, sichtbar geschaltet — und nie
+       in die Seite gehaengt. Jeder Fehlschlag beim Speichern war damit
+       vollstaendig stumm: Knopf tippen, nichts passiert, keine Erklaerung. */
+    root.appendChild(err);
     var cancel = el("a", "btn btn-ghost btn-sm", tx("Abbrechen", "Cancel"));
     cancel.href = "#profil"; cancel.style.marginLeft = "10px";
     cancel.addEventListener("click", function () { editAnswers = null; });

@@ -78,6 +78,7 @@ jobs:
       - name: Erster Weg, Bewegung, Tempo und Essens-Protokoll
         run: |
           node tools-dev/qa/onboarding.mjs
+          node tools-dev/qa/anpassen.mjs
           node tools-dev/qa/motion.mjs
           node tools-dev/qa/tempo.mjs
           node tools-dev/qa/essen.mjs
