@@ -25,6 +25,9 @@ on:
       - "*.html"
       - "ios-app/**"
       - "scripts/build-app*.mjs"
+      # Auch die Pruefwerkzeuge selbst: wer sie kaputt macht, soll es hier
+      # erfahren und nicht beim naechsten Durchlauf von Hand.
+      - "tools-dev/**"
       - "capacitor.config.json"
       - "package*.json"
       - ".github/workflows/ios-app.yml"
