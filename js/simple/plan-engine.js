@@ -89,7 +89,7 @@
     var kcalDelta = Math.round(rate * 7700 / 7);
     var kcal;
     if (cut) {
-      kcalDelta = Math.min(kcalDelta, enh ? 900 : 700);
+      kcalDelta = Math.min(kcalDelta, enh ? L.kcalDeficitMaxEnhanced : L.kcalDeficitMax);
       kcal = Math.max(tdee - kcalDelta, L.kcalMin);
     } else {
       kcalDelta = Math.min(Math.max(kcalDelta, 150), 500);
@@ -674,6 +674,14 @@
       bmr: targets.bmr, tdee: targets.tdee, ratePerWeek: targets.ratePerWeek, cut: targets.cut,
       tdeeSource: targets.tdeeSource, tdeeFormula: targets.tdeeFormula,
       tdeeMeasured: targets.tdeeMeasured, tdeeRejected: targets.tdeeRejected
+    };
+    /* Was der Fragebogen errechnet hat — der feste Bezugspunkt fuer alles,
+       was das System spaeter daran dreht. Ohne ihn wandert die Basis mit
+       jeder Anpassung mit, und jeder Deckel („hoechstens 700 kcal Defizit",
+       „hoechstens 4.000 Schritte mehr") laeuft ins Leere. */
+    p.engineBase = {
+      kcal: p.nutrition.calorieTarget,
+      steps: p.dailyTargets.steps
     };
 
     var v = model.validate(p);

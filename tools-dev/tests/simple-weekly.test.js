@@ -62,7 +62,15 @@ group("Stagnation bei guter Umsetzung → moderate Kalorienreduktion");
   ok(d.rule === "wr_stall_adherent" && d.decision === "kcal_down", "Regel greift");
   const kcalPath = d.changes && d.changes["nutrition.calorieTarget"];
   ok(typeof kcalPath === "number" && kcalPath < 3000, "neues Kalorienziel gesetzt");
-  ok(d.reason.de.indexOf("120 kcal") > 0, "Begründung nennt die konkrete Änderung");
+  /* Frueher stand hier fest „120 kcal". Seit der Deckel fuer das Defizit
+     auch im Wochencheck gilt (hoechstens 700 kcal unter dem Verbrauch), ist
+     der letzte Schritt kleiner als 120 — die Meldung muss die TATSAECHLICHE
+     Zahl nennen, nicht eine erwartete. */
+  const geplant = ctx({ weights: weights(91, 0, TODAY) }).plan.nutrition.calorieTarget;
+  const differenz = geplant - kcalPath;
+  ok(differenz > 0 && differenz <= 120, "Reduktion hoechstens 120 kcal (" + differenz + ")");
+  ok(d.reason.de.indexOf(differenz + " kcal") > 0,
+    "Begründung nennt die konkrete Änderung (" + differenz + " kcal)");
 }
 
 group("Stagnation bei schlechter Umsetzung → NICHT verschärfen");
@@ -117,6 +125,60 @@ group("Kalorien-Untergrenze → Schrittziel statt Kalorien");
   const d = weekly.decide(ctx({ plan: p, weights: weights(91, 0, TODAY) }));
   ok(d.rule === "wr_stall_steps" && d.decision === "steps_up", "Ausweich-Regel: Schritte +1000");
   ok(d.changes["dailyTargets.steps"] === p.dailyTargets.steps + 1000, "Schrittziel korrekt erhöht");
+}
+
+group("Die Ratsche: kein unbegrenztes Weiterkuerzen");
+{
+  /* Zwoelf Wochenchecks mit Stillstand und guter Umsetzung. Vorher wuchs das
+     Defizit von 627 auf 1490 kcal (2363 -> 1500) und das Schrittziel auf
+     19.000. Die Planerstellung deckelt bei 700 kcal — der Wochencheck kannte
+     diesen Deckel nicht. */
+  const plan = mkPlan();
+  const tdee = plan.derived.tdee;
+  const basisSteps = plan.dailyTargets.steps;
+  let regel = null;
+  for (let k = 0; k < 12; k++) {
+    const d = weekly.decide(ctx({ plan: plan, weights: weights(91, 0, TODAY) }));
+    regel = d.rule;
+    if (d.changes) {
+      Object.keys(d.changes).forEach(function (pfad) {
+        const seg = pfad.split(".");
+        let o = plan;
+        for (let j = 0; j < seg.length - 1; j++) o = o[seg[j]];
+        o[seg[seg.length - 1]] = d.changes[pfad];
+      });
+    }
+  }
+  const defizit = tdee - plan.nutrition.calorieTarget;
+  ok(defizit <= model.LIMITS.kcalDeficitMax,
+    "das Defizit bleibt unter dem Deckel der Planerstellung (" + defizit + " von " + model.LIMITS.kcalDeficitMax + ")");
+  ok(plan.nutrition.calorieTarget >= model.LIMITS.kcalMin,
+    "und ueber der absoluten Untergrenze (" + plan.nutrition.calorieTarget + ")");
+  const mehrSchritte = plan.dailyTargets.steps - basisSteps;
+  ok(mehrSchritte <= model.LIMITS.stepsRaiseMax,
+    "auch das Schrittziel hat einen Deckel (+" + mehrSchritte + " von +" + model.LIMITS.stepsRaiseMax + ")");
+  ok(regel === "wr_stall_exhausted",
+    "und danach wird nicht weitergedreht, sondern gesagt was Sache ist (" + regel + ")");
+  const d = weekly.decide(ctx({ plan: plan, weights: weights(91, 0, TODAY) }));
+  ok(d.changes === null, "die ausgereizte Lage aendert nichts mehr");
+  ok(/Portionen|eintragen/.test(d.reason.de), "sondern nennt die wahrscheinlichere Ursache");
+}
+
+group("Am Gesamtziel wird nicht weiter gekuerzt");
+{
+  /* Das Zielgewicht wurde im Wochencheck an KEINER Stelle gelesen: die
+     Regeln verglichen nur Wochenrate gegen Planrate. Wer sein Ziel erreicht
+     hatte, wurde fuer den Stillstand weiter ins Defizit geschickt. */
+  const plan = mkPlan();                       // 94 -> 80 kg
+  const ziel = plan.selectedTransformation.finalTargetWeightKg;
+  const d = weekly.decide(ctx({ plan: plan, weights: weights(ziel - 1, 0, TODAY) }));
+  ok(d.rule === "wr_goal_reached", "am Ziel greift eine eigene Regel (" + d.rule + ")");
+  ok(d.changes === null, "und sie aendert nichts");
+  ok(d.reason.de.indexOf("Halten") > 0, "sie sagt, was jetzt kommt: " + d.reason.de.slice(-40));
+  /* Darueber steht die Sicherheit: zu schneller Verlust wird auch am Ziel
+     noch entschaerft. */
+  const schnell = weekly.decide(ctx({ plan: mkPlan(), weights: weights(ziel + 1, -0.16, TODAY) }));
+  ok(schnell.rule === "wr_too_fast", "Sicherheitsregeln bleiben davor (" + schnell.rule + ")");
 }
 
 group("Anwendung über die Versionierung (Ende-zu-Ende)");

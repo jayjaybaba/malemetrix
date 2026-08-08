@@ -812,6 +812,9 @@
     var rxToday = decide.dailyPrescription({
       plan: p, todayYmd: ymd, daylog: daylog(),
       weightTrend: tr, execution: exec,
+      /* Auch der Ausfallzaehler muss die Messungen kennen — sonst bietet die
+         App einen Wiedereinstieg an, obwohl nichts ausgefallen ist. */
+      nutritionByDay: nutritionByDay(p), stepsByDay: healthSteps(),
       health: healthToday(), modifier: todaysModifier(ymd)
     });
 
@@ -1655,8 +1658,16 @@
     var traj = decide.trajectory(p, tr, ymd, exec);
     if (traj) {
       var tc = el("div", "s-card");
-      tc.appendChild(el("h3", null, tx("Wenn du so weitermachst", "If you continue like this")));
-      if (traj.projectedDate) {
+      /* Wer am Ziel ist, bekommt keine Prognose, sondern eine Feststellung. */
+      tc.appendChild(el("h3", null, traj.status === "goal_reached"
+        ? tx("Du bist da", "You are there")
+        : tx("Wenn du so weitermachst", "If you continue like this")));
+      if (traj.status === "goal_reached") {
+        tc.appendChild(el("div", "goal", nf(traj.currentKg) + " kg"));
+        tc.appendChild(el("p", null, tx(
+          "Das ist dein Gesamtziel von " + nf(traj.goalKg) + " kg. Hier gibt es kein Zieldatum mehr — was jetzt kommt, ist Halten, keine Diät.",
+          "That is your overall goal of " + nf(traj.goalKg) + " kg. There is no target date left here — what comes next is holding, not dieting.")));
+      } else if (traj.projectedDate) {
         tc.appendChild(el("div", "goal", nf(traj.goalKg) + " kg " + tx("am", "on") + " " + dt(traj.projectedDate)));
         var vs = traj.daysVsPlan;
         if (vs != null && Math.abs(vs) >= 7) {

@@ -204,6 +204,16 @@
     var weeksLeftInPhase = Math.max(0, ((pg.durationWeeks || 12) * 7 - dayNo) / 7);
     out.week12ProjectionKg = Math.round((current + actualRate * weeksLeftInPhase) * 10) / 10;
 
+    /* Wer sein Gesamtziel erreicht hat, braucht kein Zieldatum mehr. Vorher
+       rechnete `remaining = goal - current` ohne Vorzeichenpruefung, und
+       Math.abs machte daraus eine positive Restdauer: bei 82,9 kg und einem
+       Ziel von 85 kg stand da „85 kg am 24. Sept. — 23 Tage später als
+       geplant". Ein Datum fuer etwas, das schon passiert ist. */
+    if (cut ? current <= goal : current >= goal) {
+      out.status = "goal_reached";
+      return out;
+    }
+
     // Richtung: bewegt sich ueberhaupt etwas, und in welche Richtung?
     var movingRight = cut ? actualRate < -0.05 : actualRate > 0.05;
     if (!movingRight) {
@@ -403,18 +413,39 @@
        rest          planmaessiger Ruhetag
   */
 
-  /* Wie viele der letzten Tage wurden verpasst? Ein Tag ist „verpasst", wenn
-     er ein Trainingstag war und kein Training geloggt wurde, oder wenn der
-     Tag komplett leer blieb (kein Haekchen, kein Abschluss). */
-  function missedStreak(plan, daylog, todayYmd) {
+  /* Wie viele der letzten Tage wurden verpasst?
+     Ein Tag zaehlt als verpasst, wenn an ihm NICHTS passiert ist — weder ein
+     Haekchen, noch ein Abschluss, noch eine Messung.
+
+     Zwei Dinge waren hier falsch, beide mit derselben Folge: die App bot
+     „Wiedereinstieg nach 3 Tagen Pause" jemandem an, der nichts verpasst hat.
+     1. Nur das Tagesprotokoll wurde gelesen. Wer sein Essen ins
+        Essens-Protokoll eintraegt oder dessen Schritte aus Apple Health
+        kommen, hat kein Haekchen gesetzt — und galt als abwesend, obwohl die
+        App seine Daten hat.
+     BEWUSST NICHT GEAENDERT: dass ein leerer Ruhetag mitzaehlt. Der
+     Prueflauf hat das als zweiten Fehler gemeldet — es ist keiner. Die App
+     verlangt Protein und Schritte an JEDEM Tag, nicht nur an Trainingstagen;
+     ein Tag ganz ohne Lebenszeichen ist deshalb auch am Ruhetag ein
+     ausgelassener Tag. „Never miss twice" waere sonst ausgehebelt: zwischen
+     zwei Trainingstagen liegt oft ein Ruhetag, und die Zaehlung wuerde nie
+     zwei erreichen.
+
+     @param {object} [opts] { nutritionByDay, stepsByDay } — dieselben
+       Objekte, die auch in executionScore gehen. */
+  function missedStreak(plan, daylog, todayYmd, opts) {
     daylog = daylog || {};
+    opts = opts || {};
+    var nutritionByDay = opts.nutritionByDay || {};
+    var stepsByDay = opts.stepsByDay || {};
     var missed = 0, checked = 0;
     for (var i = 1; i <= 21; i++) {
       var ymd = model.addDays(todayYmd, -i);
       if (plan.startDate && ymd < plan.startDate) break;
       var e = daylog[ymd];
       var tasks = (e && e.tasks) || {};
-      var touched = !!(e && (e.closed || tasks.training || tasks.protein || tasks.steps));
+      var gemessen = nutritionByDay[ymd] === true || typeof stepsByDay[ymd] === "number";
+      var touched = !!(e && (e.closed || tasks.training || tasks.protein || tasks.steps)) || gemessen;
       checked++;
       if (touched) break;
       missed++;
@@ -468,7 +499,11 @@
     var isDeload = (plan.training.deloadWeeks || []).indexOf(week) >= 0;
     var trainingDay = isWorkoutDay(plan, ymd);
     var rec = recoverySignal(ctx.health);
-    var miss = missedStreak(plan, daylog, ymd);
+    /* Dieselben Messquellen wie im Execution Score — sonst gilt jemand als
+       abwesend, dessen Daten die App laengst hat. */
+    var miss = missedStreak(plan, daylog, ymd, {
+      nutritionByDay: ctx.nutritionByDay, stepsByDay: ctx.stepsByDay
+    });
 
     var out = {
       day: day, week: week,

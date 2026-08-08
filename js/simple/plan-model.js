@@ -27,11 +27,24 @@
     kcalMin: 1500,             // nie darunter planen (Muskel-/Gesundheitsschutz)
     kcalMax: 4500,
     kcalStepMax: 250,          // maximale Änderung pro Wochencheck
+    /* Groesstes Defizit unter dem gemessenen/berechneten Verbrauch. Die
+       Planerstellung hielt sich daran, der Wochencheck kannte den Wert nicht
+       und kuerzte Woche fuer Woche weiter — nach acht Checks stand ein
+       Defizit von 1490 kcal. Ein Wert an EINER Stelle, damit das nicht
+       wieder auseinanderlaeuft. */
+    kcalDeficitMax: 700,
+    kcalDeficitMaxEnhanced: 900,
     proteinPerKgMin: 1.6,
     proteinPerKgMax: 2.6,
     cutRatePerWeekMaxPct: 0.01,    // max. 1 % Körpergewicht/Woche Abnahme
     stepsMin: 4000,
-    stepsMax: 20000,
+    stepsMax: 20000,          // absolute Obergrenze eines Plans
+    /* Wie weit der Wochencheck das Schrittziel ueber den Planwert hinaus
+       treiben darf. Ohne diese Grenze lief dieselbe Ratsche wie bei den
+       Kalorien, nur eine Stellschraube weiter: bei zwoelf Wochen Stillstand
+       8.000 -> 19.000 Schritte, also rund 15 km taeglich. Irgendwann ist
+       nicht mehr das Ziel falsch, sondern die Annahme dahinter. */
+    stepsRaiseMax: 4000,
     stepsStepMax: 2000,        // maximale Schrittziel-Änderung pro Woche
     daysPerWeekMin: 2,
     daysPerWeekMax: 4,         // Gen 2 plant bewusst 2-4 realistische Tage

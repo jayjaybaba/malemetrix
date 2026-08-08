@@ -549,5 +549,51 @@ group("Phasenbilanz: keine internen Begriffe im Nutzertext, deterministisch");
   ok(b.headline && b.verdict && b.nextStep, "jeder Fall hat Überschrift, Befund und genau einen nächsten Schritt");
 }
 
+group("Am Ziel gibt es kein Zieldatum mehr");
+{
+  /* „85 kg am 24. Sept. — 23 Tage später als geplant" stand auf dem
+     Fortschritt, waehrend der Nutzer bei 82,9 kg war. remaining wurde ohne
+     Vorzeichenpruefung gerechnet, Math.abs machte daraus eine Restdauer. */
+  const amZiel = decide.trajectory(PLAN, { thisWeekAvg: 84.5, deltaPerWeek: -0.05, weeks: 4 }, "2026-07-20", { score: 90 });
+  ok(amZiel.status === "goal_reached", "unter dem Ziel -> goal_reached (" + amZiel.status + ")");
+  ok(amZiel.projectedDate === null, "und kein Datum");
+  ok(amZiel.daysVsPlan == null, "und kein 'Tage später als geplant'");
+
+  const genau = decide.trajectory(PLAN, { thisWeekAvg: 85, deltaPerWeek: -0.3, weeks: 4 }, "2026-07-20", { score: 90 });
+  ok(genau.status === "goal_reached", "genau auf dem Ziel zaehlt als erreicht");
+
+  const unterwegs = decide.trajectory(PLAN, { thisWeekAvg: 90, deltaPerWeek: -0.4, weeks: 4 }, "2026-07-20", { score: 90 });
+  ok(unterwegs.projectedDate != null, "unterwegs gibt es weiterhin ein Datum (" + unterwegs.projectedDate + ")");
+}
+
+group("Gemessene Tage sind keine Ausfalltage");
+{
+  /* Wer sein Essen protokolliert oder dessen Schritte aus Apple Health
+     kommen, setzt kein Haekchen — und galt als abwesend. Die App bot ihm
+     „Wiedereinstieg nach 3 Tagen Pause" an, obwohl sie seine Daten hat. */
+  const leer = decide.missedStreak(PLAN, {}, "2026-06-29");
+  ok(leer.days > 0, "ohne jede Spur zaehlt der Ausfall weiter (" + leer.days + ")");
+
+  const mitSchritten = decide.missedStreak(PLAN, {}, "2026-06-29", { stepsByDay: { "2026-06-28": 9000 } });
+  ok(mitSchritten.days === 0, "gemessene Schritte beenden die Zaehlung (" + mitSchritten.days + ")");
+
+  const mitEssen = decide.missedStreak(PLAN, {}, "2026-06-29", { nutritionByDay: { "2026-06-28": true } });
+  ok(mitEssen.days === 0, "ein Essens-Eintrag ebenso (" + mitEssen.days + ")");
+
+  /* Ein NICHT erreichter Tag im Essens-Protokoll ist trotzdem ein Tag, an
+     dem etwas passiert ist — aber `false` heisst „gemessen und verfehlt",
+     nicht „anwesend". Bewusst nur `true` zaehlt. */
+  const verfehlt = decide.missedStreak(PLAN, {}, "2026-06-29", { nutritionByDay: { "2026-06-28": false } });
+  ok(verfehlt.days > 0, "ein verfehlter Tag beendet die Zaehlung nicht");
+
+  /* Und der Tagesauftrag reicht die Quellen wirklich durch. */
+  const r = decide.dailyPrescription({
+    plan: PLAN, todayYmd: "2026-06-29", daylog: {},
+    stepsByDay: { "2026-06-28": 9000, "2026-06-27": 9000, "2026-06-26": 9000 },
+    execution: { score: 90, days: 14 }, health: null
+  });
+  ok(r.mode !== "reentry", "kein Wiedereinstieg, wenn Schritte gemessen wurden (" + r.mode + ")");
+}
+
 console.log("\n" + (failed ? "FAILED" : "OK") + " — " + passed + " bestanden, " + failed + " fehlgeschlagen");
 process.exit(failed ? 1 : 0);

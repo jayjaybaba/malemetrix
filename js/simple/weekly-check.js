@@ -150,6 +150,21 @@
     var measuredOk = !ex || ex.score == null || ex.score >= 70;
     var stalled = cut ? tr.deltaPerWeek > target + tol : tr.deltaPerWeek < target - tol;
 
+    /* Steht der Nutzer auf oder jenseits seines Gesamtziels, ist Stillstand
+       das GEWUENSCHTE Verhalten — und keine Aufforderung, weiter zu kuerzen.
+       Das Zielgewicht wurde hier bisher an keiner Stelle gelesen: die Regeln
+       verglichen nur Wochenrate gegen Planrate und haetten jemanden, der sein
+       Ziel erreicht hat, weiter ins Defizit geschickt. */
+    var gesamtziel = (plan.selectedTransformation || {}).finalTargetWeightKg;
+    var amZiel = gesamtziel != null && tr && tr.thisWeekAvg != null &&
+      (cut ? tr.thisWeekAvg <= gesamtziel : tr.thisWeekAvg >= gesamtziel);
+    if (amZiel) {
+      return res("wr_goal_reached", "keep",
+        "Du stehst bei " + tr.thisWeekAvg + " kg und damit an deinem Gesamtziel von " + gesamtziel + " kg. Stillstand ist hier genau richtig — das Tagesziel wird nicht weiter gekürzt. Was jetzt kommt, ist Halten, keine Diät.",
+        "You are at " + tr.thisWeekAvg + " kg, which is your overall goal of " + gesamtziel + " kg. Standing still is exactly right here — the daily target is not cut further. What comes next is holding, not dieting.",
+        null, null);
+    }
+
     if (stalled && a.nutritionAdherence === "gut" && !measuredOk) {
       return res("wr_stall_selfreport_gap", "keep",
         "Du hast die Woche als gut eingeschätzt, dein Tagesprotokoll zeigt aber " + ex.score + " % Umsetzung über " + ex.days + " Tage. Bei dieser Lücke wird nicht am Plan gedreht — eine Kalorienkürzung würde ein Ausführungsproblem als Stoffwechselproblem behandeln.",
@@ -159,17 +174,37 @@
 
     if (stalled && a.nutritionAdherence === "gut" && measuredOk && (a.trainingsDone == null || a.trainingsDone >= Math.max(1, plan.training.daysPerWeek - 1))) {
       if (cut) {
-        var down = Math.max(kcal - 120, L.kcalMin);
+        /* Nicht nur die absolute Untergrenze, sondern auch der Deckel fuer
+           das Defizit — derselbe, den die Planerstellung benutzt. Ohne ihn
+           kuerzte der Wochencheck bei jedem Stillstand um weitere 120 kcal,
+           acht Wochen lang: 2363 -> 1500, Defizit 1490 statt 627. */
+        var verbrauch = (plan.derived && plan.derived.tdee) || null;
+        var boden = verbrauch
+          ? Math.max(L.kcalMin, verbrauch - L.kcalDeficitMax)
+          : L.kcalMin;
+        var down = Math.max(kcal - 120, boden);
         if (down < kcal) {
           return res("wr_stall_adherent", "kcal_down",
             "Dein Gewicht stagniert seit zwei Wochen und du hast den Plan überwiegend eingehalten. Das Tagesziel wird deshalb moderat um " + (kcal - down) + " kcal reduziert.",
             "Your weight has stalled for two weeks while you mostly stuck to the plan. The daily target is therefore reduced moderately by " + (kcal - down) + " kcal.",
             { "nutrition.calorieTarget": down }, null);
         }
-        var stepsUp = Math.min(steps + 1000, L.stepsMax);
+        /* Auch das Schrittziel bekommt einen Deckel — und wenn beide
+           Stellschrauben ausgereizt sind, wird nicht weitergedreht, sondern
+           gesagt, was Sache ist. Immer weiter an denselben zwei Zahlen zu
+           drehen ist kein System, sondern Ratlosigkeit mit Zahlen. */
+        var basisSteps = (plan.engineBase && plan.engineBase.steps) || plan.dailyTargets.steps;
+        var stepsDeckel = Math.min(L.stepsMax, basisSteps + L.stepsRaiseMax);
+        var stepsUp = Math.min(steps + 1000, stepsDeckel);
+        if (stepsUp <= steps) {
+          return res("wr_stall_exhausted", "keep",
+            "Kalorien sind am Deckel, das Schrittziel auch — und es bewegt sich trotzdem nichts. Weiter zu kürzen wäre kein Plan, sondern Raten. Zwei Dinge sind jetzt wahrscheinlicher als ein Stoffwechselproblem: die Portionen sind größer als angenommen, oder das Gewicht schwankt gerade stärker als der Trend zeigt. Trag eine Woche lang alles ein, was du isst — danach entscheidet sich das mit Zahlen statt mit Vermutungen.",
+            "Calories are at the cap, so is the step goal — and still nothing moves. Cutting further would not be a plan, it would be guessing. Two things are more likely than a metabolic problem: portions are bigger than assumed, or your weight is simply noisier than the trend shows. Log everything you eat for one week — then this gets decided with numbers instead of guesses.",
+            null, "ausgereizt");
+        }
         return res("wr_stall_steps", "steps_up",
-          "Kalorien sind bereits an der Untergrenze — stattdessen steigt dein Schrittziel um " + (stepsUp - steps) + ".",
-          "Calories are already at the floor — your step goal rises by " + (stepsUp - steps) + " instead.",
+          "Weiter zu kürzen wäre kein Fortschritt, sondern ein zu tiefes Defizit — stattdessen steigt dein Schrittziel um " + (stepsUp - steps) + ".",
+          "Cutting further would not be progress but too deep a deficit — your step goal rises by " + (stepsUp - steps) + " instead.",
           { "dailyTargets.steps": stepsUp }, null);
       }
       var up3 = Math.min(kcal + 120, L.kcalMax);

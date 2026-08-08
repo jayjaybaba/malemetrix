@@ -630,8 +630,12 @@ group("Essens-Protokoll ist vollstaendig verdrahtet");
      Bildschirme zwei verschiedene Umsetzungsquoten. */
   const aufrufe = (app.match(/decide\.executionScore\(/g) || []).length;
   const mitEssen = (app.match(/nutritionByDay: nutritionByDay\(p\)/g) || []).length;
-  ok(aufrufe >= 3 && mitEssen === aufrufe,
-    "jeder der " + aufrufe + " Execution-Score-Aufrufe bekommt die gemessene Ernaehrung (" + mitEssen + ")");
+  /* Mindestens so viele Weitergaben wie Aufrufe: der Tagesauftrag bekommt
+     dieselben Quellen zusaetzlich fuer den Ausfallzaehler. */
+  ok(aufrufe >= 3 && mitEssen >= aufrufe,
+    "jeder der " + aufrufe + " Execution-Score-Aufrufe bekommt die gemessene Ernaehrung (" + mitEssen + " Weitergaben)");
+  ok(/nutritionByDay: nutritionByDay\(p\), stepsByDay: healthSteps\(\)/.test(app),
+    "und der Ausfallzaehler im Tagesauftrag ebenfalls");
   ok(/openFoodSheet/.test(app), "das Eintragen-Blatt existiert");
 
   const store = read("js/simple/plan-store.js");
