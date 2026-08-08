@@ -1619,7 +1619,9 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .footer-col ul { display: grid; gap: 11px; }
-.footer-col a { color: var(--muted); font-size: 0.9rem; transition: color 0.2s; }
+/* Fussnotenlinks sind 16 Punkt hoch. Als Text richtig, als Tippflaeche zu
+   klein — auf dem Telefon waechst die Flaeche, nicht die Schrift. */
+.footer-col a { color: var(--muted); font-size: 0.9rem; transition: color 0.2s; display: inline-flex; align-items: center; min-height: 44px; }
 .footer-col a:hover { color: var(--text); }
 
 .footer-disclaimer {

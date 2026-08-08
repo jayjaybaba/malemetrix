@@ -39,8 +39,9 @@
 
 /* Ein Textlink, der wie ein Link aussehen soll, aber wie ein Knopf zu
    treffen sein muss. */
-.s-inline-link { display: flex; align-items: center; min-height: 44px; margin: 0 0 6px; }
-.s-inline-link a { color: var(--accent-2); text-decoration: none; }
+.s-inline-link { margin: 0 0 6px; }
+/* Die Flaeche muss am <a> haengen, nicht am Absatz — angetippt wird der Link. */
+.s-inline-link a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent-2); text-decoration: none; }
 
 /* Kopfzeile: Woche · Ziel */
 .s-head { border: 1px solid var(--line); border-radius: 14px; background: var(--card); padding: 14px 16px; margin-bottom: 14px; }
@@ -154,7 +155,7 @@
 .s-q .lbl { font-weight: 600; margin-bottom: 3px; }
 .s-q .why { color: var(--muted-2); font-size: 0.8rem; margin-bottom: 8px; }
 .s-q .opts { display: flex; flex-wrap: wrap; gap: 7px; }
-.s-q .opts button { border: 1px solid var(--line-strong); background: transparent; color: var(--muted); border-radius: 999px; padding: 8px 15px; cursor: pointer; font-size: 0.88rem; }
+.s-q .opts button { min-width: 44px; border: 1px solid var(--line-strong); background: transparent; color: var(--muted); border-radius: 999px; padding: 8px 15px; cursor: pointer; font-size: 0.88rem; }
 .s-q .opts button.on { color: var(--text); border-color: var(--accent-2); background: var(--accent-soft); }
 .s-q input[type="number"], .s-q input[type="time"] { background: var(--bg-2); border: 1px solid var(--line-strong); color: var(--text); border-radius: 9px; padding: 9px 11px; font-size: 0.95rem; width: 120px; }
 .s-err { color: var(--red); font-size: 0.87rem; margin: 8px 0; }
@@ -166,8 +167,11 @@
 .s-nav a.on { color: var(--accent-2); }
 
 /* Bottom-Sheet (Gewicht eintragen u. a.) */
-.s-sheet-back { position: fixed; inset: 0; background: rgba(4, 6, 10, 0.66); z-index: 90; }
-.s-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 91; background: var(--bg-1); border-top: 1px solid var(--line-strong); border-radius: 18px 18px 0 0; padding: 18px 18px calc(20px + env(safe-area-inset-bottom)); max-width: 640px; margin: 0 auto; }
+/* Ueber ALLEM, auch ueber der festen Kopfzeile der Website (z-index 100).
+   Vorher lag die Kopfzeile mit Logo und Sprachknopf hell und anklickbar auf
+   dem abgedunkelten Blatt — ein Modal, das man umgehen kann, ist keins. */
+.s-sheet-back { position: fixed; inset: 0; background: rgba(4, 6, 10, 0.66); z-index: 400; }
+.s-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 401; background: var(--bg-1); border-top: 1px solid var(--line-strong); border-radius: 18px 18px 0 0; padding: 18px 18px calc(20px + env(safe-area-inset-bottom)); max-width: 640px; margin: 0 auto; }
 .s-sheet h3 { margin: 0 0 4px; }
 .s-sheet .ctx { color: var(--muted); font-size: 0.86rem; margin-bottom: 12px; }
 .s-sheet .big-input { display: flex; align-items: center; gap: 10px; margin: 10px 0 14px; }
@@ -212,6 +216,57 @@
   .sapp { padding-left: 12px; padding-right: 12px; }
   .s-stat { grid-template-columns: 1fr 1fr; }
   .s-ex input[type="number"] { width: 54px; }
+}
+
+/* ==========================================================================
+   BEWEGUNG — genau drei, und jede beantwortet eine Frage
+   ==========================================================================
+   1  Rückmeldung beim Abhaken (140 ms)   „Ist das angekommen?"
+   2  Blatt auf und zu (320 / 220 ms)     „Wo kommt das her, wo geht es hin?"
+   3  Inhalt beim Ansichtswechsel (220 ms, 40 ms versetzt)
+                                          „Was ist neu auf diesem Bildschirm?"
+
+   Bewusst NICHT: Federn und Nachwippen (eine Waage wippt nicht nach),
+   Skelett-Platzhalter (die Daten liegen lokal, es gibt nichts zu warten),
+   Übergänge zwischen den vier Tabs (die App ist ein Werkzeug, kein Karussell),
+   hochzählende Zahlen (ein Gewicht ist eine Messung, keine Show).
+
+   Wer im iPhone „Bewegung reduzieren" eingeschaltet hat, bekommt nichts
+   davon — das prüft Apple in der Review, und es ist ohnehin richtig. */
+
+/* 1 · Rückmeldung: das Kästchen füllt sich, es hüpft nicht. */
+.s-task .box { transition: border-color 140ms ease-out, background 140ms ease-out, color 140ms ease-out, transform 140ms ease-out; }
+.s-task:active .box { transform: scale(0.92); }
+.s-ex .setbox button, .s-chip, .s-q .opts button, .s-subtabs button {
+  transition: border-color 140ms ease-out, background 140ms ease-out, color 140ms ease-out;
+}
+.s-ex .setbox button:active, .s-chip:active, .s-q .opts button:active { transform: scale(0.94); }
+
+/* 2 · Das Blatt kommt von unten. Die Kurve ist die von iOS: schnell weg vom
+      Rand, langsam am Ziel — deshalb wirkt es geschoben statt eingeblendet. */
+@keyframes s-sheet-in  { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes s-sheet-out { from { transform: none; } to { transform: translateY(100%); } }
+@keyframes s-back-in   { from { opacity: 0; } to { opacity: 1; } }
+@keyframes s-back-out  { from { opacity: 1; } to { opacity: 0; } }
+.s-sheet      { animation: s-sheet-in 320ms cubic-bezier(0.32, 0.72, 0, 1) both; }
+.s-sheet-back { animation: s-back-in 320ms ease-out both; }
+.s-sheet.is-closing      { animation: s-sheet-out 220ms cubic-bezier(0.32, 0.72, 0, 1) both; }
+.s-sheet-back.is-closing { animation: s-back-out 220ms ease-out both; }
+
+/* 3 · Inhalt läuft ein — nur beim Ansichtswechsel (siehe render() in app.js),
+      und nur die ersten Blöcke. Was unter dem Falz liegt, muss nicht warten. */
+@keyframes s-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.s-enter > * { animation: s-rise 220ms cubic-bezier(0.23, 1, 0.32, 1) both; }
+.s-enter > *:nth-child(1) { animation-delay: 0ms; }
+.s-enter > *:nth-child(2) { animation-delay: 40ms; }
+.s-enter > *:nth-child(3) { animation-delay: 80ms; }
+.s-enter > *:nth-child(4) { animation-delay: 120ms; }
+.s-enter > *:nth-child(n+5) { animation-delay: 160ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .s-task .box, .s-ex .setbox button, .s-chip, .s-q .opts button, .s-subtabs button { transition: none; }
+  .s-task:active .box, .s-ex .setbox button:active, .s-chip:active, .s-q .opts button:active { transform: none; }
+  .s-sheet, .s-sheet-back, .s-sheet.is-closing, .s-sheet-back.is-closing, .s-enter > * { animation: none; }
 }
 
 /* Essens-Protokoll im Blatt. Eine Zeile je Eintrag, Loeschen rechts —

@@ -230,19 +230,42 @@
 
   /* ---------------- Bottom-Sheet (eine Schicht, wiederverwendbar) --------- */
   function openSheet(build) {
-    closeSheet();
+    closeSheet(true);       // ein noch auslaufendes Blatt sofort weg, nicht überlagert
     var back = el("div", "s-sheet-back");
     var sheet = el("div", "s-sheet");
-    back.addEventListener("click", closeSheet);
+    /* Nicht direkt closeSheet als Handler: der Klick reicht das Event als
+       erstes Argument durch, und das waere dann das "sofort"-Flag. */
+    back.addEventListener("click", function () { closeSheet(); });
     document.body.appendChild(back);
     document.body.appendChild(sheet);
     build(sheet);
     window._mmSheet = [back, sheet];
-    try { if (MM.fokusFangen) MM.fokusFangen(sheet, closeSheet); } catch (e) {}
+    try { if (MM.fokusFangen) MM.fokusFangen(sheet, function () { closeSheet(); }); } catch (e) {}
   }
-  function closeSheet() {
-    (window._mmSheet || []).forEach(function (n) { if (n.parentNode) n.parentNode.removeChild(n); });
+  /* Das Blatt geht in 320 ms auf und in 220 ms zu. Zu ist schneller als auf:
+     wer schliesst, hat sich entschieden und will nicht warten.
+     Das Entfernen aus dem DOM passiert erst NACH der Bewegung — sonst
+     verschwindet das Blatt schlagartig und die Animation ist umsonst.
+
+     `auslaufend` haelt die Knoten fest, die gerade zugehen. Sonst liegt beim
+     Wechsel von einem Blatt zum naechsten (Essen loeschen -> Liste neu) das
+     alte 220 ms lang unter dem neuen. */
+  var SHEET_OUT_MS = 220;
+  var auslaufend = [];
+  function closeSheet(sofort) {
+    var nodes = (window._mmSheet || []).concat(auslaufend);
     window._mmSheet = null;
+    auslaufend = [];
+    if (!nodes.length) return;
+    var weg = function () { nodes.forEach(function (n) { if (n.parentNode) n.parentNode.removeChild(n); }); };
+    if (sofort || reducedMotion()) { weg(); return; }
+    nodes.forEach(function (n) { n.classList.add("is-closing"); });
+    auslaufend = nodes;
+    setTimeout(function () { weg(); auslaufend = auslaufend === nodes ? [] : auslaufend; }, SHEET_OUT_MS);
+  }
+  function reducedMotion() {
+    try { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
+    catch (e) { return false; }
   }
 
   /* Gewichts-Sheet: großer Wert, gestern-Kontext, Trend-Feedback. */
@@ -345,6 +368,16 @@
       if (viewChanged) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
       else window.scrollTo({ top: keepY, left: 0, behavior: "instant" });
     } catch (e) { window.scrollTo(0, viewChanged ? 0 : keepY); }
+
+    /* Inhalt läuft nur bei einem echten Ansichtswechsel ein. render() wird
+       auch bei jedem Häkchen aufgerufen — würde dabei der ganze Bildschirm
+       neu einfliegen, wäre das Abhaken einer Aufgabe unbenutzbar. Dieselbe
+       Unterscheidung wie bei der Scroll-Position eine Zeile darüber. */
+    root.classList.remove("s-enter");
+    if (viewChanged && !reducedMotion()) {
+      void root.offsetWidth;          // erzwingt den Neustart der Animation
+      root.classList.add("s-enter");
+    }
     lastView = v;
   }
   window.addEventListener("hashchange", render);

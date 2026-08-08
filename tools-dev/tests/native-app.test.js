@@ -282,6 +282,58 @@ group("Zahlen und Daten stehen in der Sprache des Nutzers");
   ok(/function zde\(/.test(dec), "decide.js formatiert deutsche Zahlen mit Komma");
 }
 
+group("Bewegung: drei Motive, ein Ausschalter");
+{
+  const css = read("css/simple.css");
+  const app = read("js/simple/app.js");
+
+  ok(/transition:[^;]*140ms/.test(css), "Rueckmeldung beim Antippen: 140 ms");
+  ok(/animation:\s*s-sheet-in 320ms cubic-bezier\(0\.32, 0\.72, 0, 1\)/.test(css),
+    "Blatt auf: 320 ms auf der iOS-Kurve");
+  ok(/animation:\s*s-sheet-out 220ms/.test(css), "Blatt zu: 220 ms — schneller als auf");
+  ok(/animation:\s*s-rise 220ms cubic-bezier\(0\.23, 1, 0\.32, 1\)/.test(css),
+    "Inhalt laeuft in 220 ms ein");
+  ok(/nth-child\(2\)\s*{\s*animation-delay:\s*40ms/.test(css), "versetzt um 40 ms");
+  ok(/nth-child\(n\+5\)/.test(css), "aber gedeckelt — kein Wasserfall bei langen Listen");
+
+  /* Der teuerste Fehler waere, den Einlauf bei JEDEM render() zu zeigen:
+     render() laeuft auch beim Abhaken einer Aufgabe. */
+  ok(/viewChanged && !reducedMotion\(\)/.test(app),
+    "der Einlauf laeuft nur beim echten Ansichtswechsel, nicht bei jedem Haekchen");
+  ok(/classList\.remove\("s-enter"\)/.test(app), "und wird vorher zurueckgesetzt");
+
+  /* Das Blatt darf nicht verschwinden, bevor es sich bewegt hat. */
+  ok(/is-closing/.test(app) && /is-closing/.test(css),
+    "das Zugehen laeuft ueber eine Klasse, nicht ueber sofortiges Entfernen");
+  ok(/SHEET_OUT_MS\s*=\s*220/.test(app), "und die Wartezeit in JS passt zur Dauer in CSS");
+
+  /* Apple prueft das in der Review, und es ist ohnehin richtig. */
+  ok(/@media \(prefers-reduced-motion: reduce\)/.test(css),
+    "wer Bewegung reduziert hat, bekommt keine");
+  const rm = (css.match(/@media \(prefers-reduced-motion: reduce\)\s*{([\s\S]*?)\n}/) || ["", ""])[1];
+  ["s-sheet", "s-enter", "s-task"].forEach(function (k) {
+    ok(rm.indexOf(k) >= 0, "und zwar auch fuer ." + k);
+  });
+  ok(/matchMedia\("\(prefers-reduced-motion: reduce\)"\)/.test(app),
+    "auch die JS-Seite fragt die Einstellung ab, statt blind zu warten");
+
+  /* Bewusste Ablehnungen — sie stehen im Code, damit sie nicht zurueckkommen. */
+  ok(!/cubic-bezier\([^)]*,\s*-[0-9.]/.test(css) && !/\bspring\b/.test(css),
+    "keine Feder, kein Nachwippen");
+  ok(!/skeleton|shimmer/i.test(css), "keine Skelett-Platzhalter — die Daten liegen lokal");
+
+  /* Ein Blatt, ueber dem noch etwas liegt, ist kein Modal. Die feste
+     Kopfzeile der Website steht bei z-index 100 — das Blatt muss darueber. */
+  const zKopf = parseInt((read("css/style.css").match(/\.site-header\s*{[^}]*z-index:\s*(\d+)/) || [])[1], 10);
+  const zBlatt = parseInt((css.match(/\.s-sheet-back\s*{[^}]*z-index:\s*(\d+)/) || [])[1], 10);
+  const zVorn = parseInt((css.match(/\.s-sheet\s*{[^}]*z-index:\s*(\d+)/) || [])[1], 10);
+  ok(zKopf > 0 && zBlatt > zKopf, "die Abdunklung liegt ueber der Kopfzeile (" + zBlatt + " > " + zKopf + ")");
+  ok(zVorn > zBlatt, "und das Blatt ueber der Abdunklung");
+
+  ok(/tools-dev\/qa\/motion\.mjs/.test(read("tools-dev/qa/motion.mjs")),
+    "es gibt einen Browser-Nachweis fuer die Bewegung, nicht nur diesen Texttest");
+}
+
 group("App-Oberflaeche: Regeln, die auf dem Telefon anders sind als am Schreibtisch");
 {
   const css = read("css/simple.css");
