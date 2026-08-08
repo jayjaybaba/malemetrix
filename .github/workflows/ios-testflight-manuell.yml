@@ -1,0 +1,229 @@
+# TestFlight ohne App-Store-Connect-API-Schluessel.
+#
+# WARUM ES DIESEN ZWEITEN WEG GIBT
+# Der Download der .p8-Datei schlaegt bei Apple reproduzierbar fehl. Damit ist
+# ios-app.yml (Job "release") blockiert, denn dort legt Xcode Zertifikate und
+# Profile ueber genau diesen Schluessel an.
+#
+# Dieser Weg benutzt stattdessen:
+#   - ein Verteilungszertifikat, das ueber gewoehnliche Dateidownloads von
+#     developer.apple.com kommt (nicht ueber den kaputten Mechanismus)
+#   - ein app-spezifisches Passwort, das Apple als Text anzeigt
+# Beides ist ohne Computer beschaffbar. Details: tools-dev/signing/README.md
+#
+# Der Job "build" aus ios-app.yml bleibt der Waechter bei jeder Aenderung —
+# dieser Workflow laeuft nur auf Knopfdruck und nur zum Hochladen.
+
+name: ios-testflight-manuell
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: "Build-Nummer (leer = Nummer des Workflow-Laufs)"
+        type: string
+        default: ""
+
+jobs:
+  release:
+    name: Signieren und zu TestFlight
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      IOS_SIGNING_KEY: ${{ secrets.IOS_SIGNING_KEY }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      CERT: tools-dev/signing/MaleMetrix.cer
+      PROFILE: tools-dev/signing/MaleMetrix.mobileprovision
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ist alles da?
+        run: |
+          FEHLT=""
+          for V in IOS_SIGNING_KEY APPLE_ID APPLE_APP_PASSWORD APPLE_TEAM_ID; do
+            eval "VAL=\$$V"
+            [ -z "$VAL" ] && FEHLT="$FEHLT $V"
+          done
+          if [ -n "$FEHLT" ]; then
+            echo "::error::Diese Repository-Secrets fehlen:$FEHLT — siehe tools-dev/signing/README.md"
+            exit 1
+          fi
+          for F in "$CERT" "$PROFILE"; do
+            if [ ! -f "$F" ]; then
+              echo "::error::Datei fehlt im Repository: $F — sie kommt von developer.apple.com und wird ueber die GitHub-Weboberflaeche hochgeladen."
+              exit 1
+            fi
+          done
+          echo "Vier Secrets gesetzt, zwei Dateien vorhanden."
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Xcode waehlen (neueste installierte Version)
+        run: |
+          LATEST=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
+          [ -n "$LATEST" ] && sudo xcode-select -s "$LATEST"
+          xcodebuild -version
+
+      - run: npm ci
+
+      - name: Fachtests
+        run: |
+          node tools-dev/tests/native-app.test.js
+          node tools-dev/tests/decide.test.js
+          node tools-dev/tests/foodlog.test.js
+
+      - name: Web-Bundle bauen und syncen
+        run: |
+          node scripts/build-app.mjs
+          npx cap sync ios
+
+      - name: Zertifikat und privaten Schluessel zu einem .p12 verbinden
+        run: |
+          set -e
+          mkdir -p "$RUNNER_TEMP/sign"
+          cd "$RUNNER_TEMP/sign"
+          # Der private Schluessel kommt als Text aus dem Secret; das
+          # Zertifikat liegt im Repository (es ist oeffentlich).
+          printf '%s' "$IOS_SIGNING_KEY" > key.pem
+          # Apple liefert das Zertifikat in DER-Form aus.
+          openssl x509 -inform DER -in "$GITHUB_WORKSPACE/$CERT" -out cert.pem
+          # Frueh pruefen, ob Zertifikat und Schluessel zusammengehoeren —
+          # sonst scheitert erst xcodebuild, mit einer unverstaendlichen Meldung.
+          MOD_K=$(openssl rsa -noout -modulus -in key.pem | openssl md5)
+          MOD_C=$(openssl x509 -noout -modulus -in cert.pem | openssl md5)
+          if [ "$MOD_K" != "$MOD_C" ]; then
+            echo "::error::Zertifikat und privater Schluessel passen nicht zusammen. Wurde die Zertifikatsanfrage aus tools-dev/signing/ verwendet?"
+            exit 1
+          fi
+          echo "Zertifikat und Schluessel passen zusammen."
+          openssl x509 -in cert.pem -noout -subject -enddate
+          # Zufaelliges Passwort: das .p12 existiert nur in diesem Lauf.
+          P12PW=$(openssl rand -base64 24)
+          echo "::add-mask::$P12PW"
+          echo "P12PW=$P12PW" >> "$GITHUB_ENV"
+          openssl pkcs12 -export -inkey key.pem -in cert.pem -out cert.p12 -passout "pass:$P12PW"
+          rm -f key.pem
+
+      - name: Schluesselbund anlegen und Zertifikat importieren
+        run: |
+          set -e
+          KC="$RUNNER_TEMP/mm-signing.keychain-db"
+          KCPW=$(openssl rand -base64 24)
+          echo "::add-mask::$KCPW"
+          security create-keychain -p "$KCPW" "$KC"
+          security set-keychain-settings -lut 3600 "$KC"
+          security unlock-keychain -p "$KCPW" "$KC"
+          security import "$RUNNER_TEMP/sign/cert.p12" -k "$KC" -P "$P12PW" -T /usr/bin/codesign
+          # Ohne diese Freigabe fragt codesign nach einem Passwort und
+          # blockiert den Lauf bis zum Timeout.
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KCPW" "$KC" > /dev/null
+          security list-keychain -d user -s "$KC" login.keychain-db
+          echo "Im Schluesselbund:"
+          security find-identity -v -p codesigning "$KC"
+
+      - name: Bereitstellungsprofil installieren
+        id: profile
+        run: |
+          set -e
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp "$PROFILE" ~/Library/MobileDevice/Provisioning\ Profiles/MaleMetrix.mobileprovision
+          # Den Namen aus dem Profil lesen — xcodebuild braucht ihn exakt.
+          PLIST="$RUNNER_TEMP/profile.plist"
+          security cms -D -i "$PROFILE" > "$PLIST"
+          NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" "$PLIST")
+          UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" "$PLIST")
+          APPID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" "$PLIST")
+          echo "Profil: $NAME ($UUID)"
+          echo "App-ID im Profil: $APPID"
+          case "$APPID" in
+            *".de.malemetrix.app") : ;;
+            *) echo "::error::Das Profil gehoert zu $APPID, gebraucht wird de.malemetrix.app."; exit 1 ;;
+          esac
+          # HealthKit muss im Profil stehen, sonst scheitert erst der Upload.
+          if ! /usr/libexec/PlistBuddy -c "Print :Entitlements:com.apple.developer.healthkit" "$PLIST" >/dev/null 2>&1; then
+            echo "::error::Im Profil fehlt die HealthKit-Berechtigung. In den Identifiers HealthKit aktivieren und das Profil neu erzeugen."
+            exit 1
+          fi
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Build-Nummer setzen
+        run: |
+          NUM="${{ inputs.build_number }}"
+          [ -z "$NUM" ] && NUM="${{ github.run_number }}"
+          echo "Build-Nummer: $NUM"
+          cd ios-app/App && xcrun agvtool new-version -all "$NUM"
+
+      - name: Archivieren (manuelle Signatur, kein Apple-Konto noetig)
+        run: |
+          xcodebuild archive \
+            -project ios-app/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath ios-app/output/MaleMetrix.xcarchive \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            PROVISIONING_PROFILE_SPECIFIER="${{ steps.profile.outputs.name }}" \
+            CODE_SIGN_IDENTITY="Apple Distribution"
+
+      - name: Exportoptionen schreiben
+        run: |
+          mkdir -p ios-app/output
+          cat > ios-app/output/ExportOptions.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>${APPLE_TEAM_ID}</string>
+            <key>uploadSymbols</key><true/>
+            <key>signingStyle</key><string>manual</string>
+            <key>destination</key><string>export</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>de.malemetrix.app</key><string>${{ steps.profile.outputs.name }}</string>
+            </dict>
+          </dict>
+          </plist>
+          PLIST
+
+      - name: IPA exportieren
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath ios-app/output/MaleMetrix.xcarchive \
+            -exportPath ios-app/output/ipa \
+            -exportOptionsPlist ios-app/output/ExportOptions.plist
+
+      - name: Vor dem Hochladen pruefen
+        run: |
+          IPA=$(find ios-app/output/ipa -name "*.ipa" | head -1)
+          echo "IPA: $IPA"
+          xcrun altool --validate-app -f "$IPA" -t ios \
+            -u "$APPLE_ID" -p "$APPLE_APP_PASSWORD"
+
+      - name: Zu TestFlight hochladen
+        run: |
+          IPA=$(find ios-app/output/ipa -name "*.ipa" | head -1)
+          xcrun altool --upload-app -f "$IPA" -t ios \
+            -u "$APPLE_ID" -p "$APPLE_APP_PASSWORD"
+          echo "Hochgeladen. Apple verarbeitet ueblicherweise 10-30 Minuten."
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ipa
+          path: ios-app/output/ipa
+          if-no-files-found: warn
+
+      - name: Aufraeumen
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/mm-signing.keychain-db" 2>/dev/null || true
+          rm -rf "$RUNNER_TEMP/sign"
+          rm -f ~/Library/MobileDevice/Provisioning\ Profiles/MaleMetrix.mobileprovision

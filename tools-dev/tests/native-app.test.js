@@ -305,6 +305,38 @@ group("Essens-Protokoll ist vollstaendig verdrahtet");
     "ein leerer Tag liefert kein Urteil (sonst waere jedes Vergessen ein Diaetfehler)");
 }
 
+
+group("Ersatzweg zu TestFlight: ohne API-Schluessel, mit manueller Signatur");
+{
+  const wf = ".github/workflows/ios-testflight-manuell.yml";
+  ok(exists(wf), "der Workflow existiert");
+  const t = read(wf);
+  ok(!/ASC_KEY_ID|ASC_PRIVATE_KEY|authenticationKeyPath/.test(t),
+    "er braucht KEINEN App-Store-Connect-API-Schluessel — das ist sein ganzer Zweck");
+  ok(/altool --upload-app/.test(t) && /-u "\$APPLE_ID" -p "\$APPLE_APP_PASSWORD"/.test(t),
+    "der Upload laeuft ueber ein app-spezifisches Passwort (Text, kein Download)");
+  ok(/CODE_SIGN_STYLE=Manual/.test(t), "manuelle Signatur statt automatischer");
+
+  // Frueh scheitern ist billiger als spaet: beide Pruefungen muessen drin sein.
+  ok(/MOD_K" != "\$MOD_C/.test(t),
+    "Zertifikat und Schluessel werden abgeglichen, bevor Xcode startet");
+  ok(/com\.apple\.developer\.healthkit/.test(t),
+    "das Profil wird auf die HealthKit-Berechtigung geprueft — sonst faellt es erst beim Upload auf");
+  ok(/de\.malemetrix\.app/.test(t), "und auf die richtige App-ID");
+
+  ok(/set-key-partition-list/.test(t),
+    "der Schluesselbund wird freigegeben, sonst blockiert codesign bis zum Timeout");
+  ok(/security delete-keychain/.test(t) && /if: always\(\)/.test(t),
+    "Schluesselbund und Profil werden auch nach einem Fehlschlag entfernt");
+  ok(/::add-mask::/.test(t), "erzeugte Passwoerter werden im Protokoll maskiert");
+
+  ok(exists("tools-dev/signing/MaleMetrix.certSigningRequest"),
+    "die Zertifikatsanfrage liegt bereit (Download von GitHub statt von Apple)");
+  const csr = read("tools-dev/signing/MaleMetrix.certSigningRequest");
+  ok(/BEGIN CERTIFICATE REQUEST/.test(csr) && !/PRIVATE KEY/.test(csr),
+    "sie enthaelt nur den oeffentlichen Teil — kein privater Schluessel im Repository");
+}
+
 group("Keine Geheimnisse im App-Bundle");
 {
   const suspicious = [];
