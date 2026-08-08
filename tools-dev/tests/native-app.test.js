@@ -318,6 +318,37 @@ group("App-Bundle: nur was gebraucht wird — aber alles, was gebraucht wird");
     "das Bundle bleibt unter 4,5 MB (aktuell " + (groesse / 1048576).toFixed(1) + " MB)");
 }
 
+group("Keine internen Werte auf dem Bildschirm");
+{
+  /* „Status: active" stand im deutschen Profiltext — ein Speicherwert,
+     durchgereicht bis vor die Augen des Nutzers. Wo die App einen solchen
+     Wert anzeigt, braucht sie eine vollstaendige Uebersetzung. */
+  const app = read("js/simple/app.js");
+
+  const planStatus = ["draft", "active", "paused", "completed"];
+  const statusBlock = (app.match(/var statusText = \{[\s\S]*?\}\[p\.status\]/) || [""])[0];
+  planStatus.forEach(function (v) {
+    ok(statusBlock.indexOf(v + ":") >= 0, "Planstatus '" + v + "' ist uebersetzt");
+  });
+  ok(!/Status: " \+ p\.status/.test(app), "der rohe Statuswert steht nirgends mehr im Text");
+
+  /* Dasselbe fuer die Herkunft einer Planaenderung. */
+  const werBlock = (app.match(/var wer = \{[\s\S]*?\};/) || [""])[0];
+  ["user", "system", "admin"].forEach(function (v) {
+    ok(werBlock.indexOf(v + ":") >= 0, "Aenderungsquelle '" + v + "' ist uebersetzt");
+  });
+
+  /* Und fuer die Mahlzeiten-Slots: die Liste im Motor muss vollstaendig
+     abgedeckt sein, sonst erscheint irgendwann "snack2" auf dem Schirm. */
+  const slots = [...new Set((read("js/simple/plan-engine.js").match(/slot: "([a-z]+)"/g) || [])
+    .map((s) => s.replace(/slot: "|"/g, "")))];
+  const slotBlock = (app.match(/var slotNames = \{[^}]*\}/) || [""])[0];
+  slots.forEach(function (v) {
+    ok(slotBlock.indexOf(v + ":") >= 0, "Mahlzeit '" + v + "' ist uebersetzt");
+  });
+  ok(slots.length >= 4, "und der Motor kennt mindestens die vier Standard-Mahlzeiten (" + slots.length + ")");
+}
+
 group("Zahlen und Daten stehen in der Sprache des Nutzers");
 {
   const app = read("js/simple/app.js");

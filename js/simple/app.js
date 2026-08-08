@@ -1863,8 +1863,14 @@
         " · " + tx("Start", "start") + ": " + (p.startDate ? dt(p.startDate) : "—")));
       var hist = store.getHistory();
       if (hist.length) {
+        /* „user"/„system" sind Speicherwerte. Auf dem Bildschirm steht, WER
+           geaendert hat — und das Datum im Format des Nutzers, nicht als
+           abgeschnittener Zeitstempel. */
+        var wer = { user: tx("von dir", "by you"), system: tx("vom Wochencheck", "by the weekly check"),
+                    admin: tx("vom Support", "by support") };
         hist.slice(-5).reverse().forEach(function (h) {
-          pm.appendChild(el("p", "hint", "v" + h.version + " (" + (h.changedAt || "").slice(0, 10) + ", " + h.source + "): " + esc(h.reason)));
+          pm.appendChild(el("p", "hint", "v" + h.version + " · " + dt((h.changedAt || "").slice(0, 10)) +
+            " · " + (wer[h.source] || h.source) + ": " + esc(pick(h.reason))));
         });
       }
       var editBtn = el("a", "btn btn-ghost btn-sm", tx("Plan anpassen", "Adjust plan"));
