@@ -153,9 +153,14 @@ async function pruefeAnsicht(page, zustand, ansicht) {
       const r = el.getBoundingClientRect();
       if (r.width === 0 || r.height === 0) return;          // unsichtbar: zaehlt nicht
       if (getComputedStyle(el).visibility === "hidden") return;
-      if (r.height < min || r.width < min) {
+      /* Ein Kaestchen in einer Zeile ist selbst klein — angetippt wird die
+         Zeile, denn ein <label> schaltet sein Kaestchen mit. Gemessen wird
+         deshalb die Zeile, nicht das Kaestchen. */
+      const lab = el.closest("label");
+      const ziel = lab ? lab.getBoundingClientRect() : r;
+      if (ziel.height < min || ziel.width < min) {
         out.push((el.textContent || el.getAttribute("aria-label") || el.tagName).trim().slice(0, 28) +
-          " (" + Math.round(r.width) + "x" + Math.round(r.height) + ")");
+          " (" + Math.round(ziel.width) + "x" + Math.round(ziel.height) + ")");
       }
     });
     return out;
@@ -203,32 +208,54 @@ async function pruefeAnsicht(page, zustand, ansicht) {
   /* --- 2 · Tote Knoepfe ---------------------------------------------------
      Ein Knopf ohne Ereignisbehandlung, ohne Ziel und ohne type=submit tut
      nichts. Playwright kann Listener nicht direkt sehen, deshalb wird jeder
-     Knopf einzeln geklickt und geprueft, ob sich irgendetwas aendert. */
+     Knopf einzeln geklickt und geprueft, ob sich irgendetwas aendert.
+
+     Der erste Entwurf verglich die LAENGE von main.innerHTML. Das hat 30
+     funktionierende Auswahlknoepfe als tot gemeldet: wenn class="on" von
+     einem Knopf zum naechsten wandert, bleibt die Laenge gleich. Verglichen
+     wird deshalb der Inhalt, nicht seine Groesse — und ein Dialog oder ein
+     Download zaehlt genauso als Wirkung wie eine DOM-Aenderung. */
+  let dialoge = 0, downloads = 0;
+  page.on("dialog", (d) => { dialoge++; d.dismiss().catch(() => {}); });
+  page.on("download", () => { downloads++; });
+
   const knoepfe = await page.locator("main button:visible").all();
   for (let i = 0; i < Math.min(knoepfe.length, 14); i++) {
     const b = knoepfe[i];
     let label = "";
     try { label = ((await b.textContent()) || "").trim().slice(0, 30); } catch { continue; }
     if (!label) continue;
-    const vorher = await page.evaluate(() => ({
-      html: document.querySelector("main").innerHTML.length,
+    /* Einen bereits gewaehlten Knopf noch einmal zu druecken darf nichts
+       tun — das ist richtig so und kein Befund. */
+    const schonAn = await b.evaluate((el) => el.classList.contains("on")).catch(() => false);
+    if (schonAn) continue;
+
+    const zustandLesen = () => page.evaluate(() => ({
+      html: document.querySelector("main") ? document.querySelector("main").innerHTML : "",
       hash: location.hash,
       sheet: !!document.querySelector(".s-sheet"),
-      store: Object.keys(localStorage).length
+      store: JSON.stringify(Object.keys(localStorage).sort())
     }));
+    const vorher = await zustandLesen();
+    const d0 = dialoge, dl0 = downloads;
     try { await b.click({ timeout: 1200, noWaitAfter: true }); } catch { continue; }
     await page.waitForTimeout(220);
-    const nachher = await page.evaluate(() => ({
-      html: document.querySelector("main") ? document.querySelector("main").innerHTML.length : -1,
-      hash: location.hash,
-      sheet: !!document.querySelector(".s-sheet"),
-      store: Object.keys(localStorage).length
-    }));
+    const nachher = await zustandLesen();
     const passiert = vorher.html !== nachher.html || vorher.hash !== nachher.hash ||
-                     vorher.sheet !== nachher.sheet || vorher.store !== nachher.store;
+                     vorher.sheet !== nachher.sheet || vorher.store !== nachher.store ||
+                     dialoge > d0 || downloads > dl0;
     if (!passiert) {
       befund("MITTEL", zustand, ansicht, "Knopf ohne erkennbare Wirkung", "„" + label + "”");
     }
+    /* Der Sprachumschalter liegt in „Profil" mitten in der Liste. Wird er
+       geklickt, steht der Rest der Ansicht auf Englisch und jede weitere
+       Meldung nennt einen englischen Knopfnamen. Also zurueckstellen. */
+    const sprache = await page.evaluate(() => (window.MM && MM.i18n) ? MM.i18n.lang : null);
+    if (sprache && sprache !== "de") {
+      await page.evaluate(() => { try { MM.i18n.toggle(); } catch (e) {} });
+      await page.waitForTimeout(200);
+    }
+
     // Ein geoeffnetes Blatt wieder schliessen, sonst verdeckt es die naechsten.
     if (nachher.sheet) {
       await page.keyboard.press("Escape").catch(() => {});
@@ -312,6 +339,12 @@ async function main() {
   console.log(`\n${befunde.length} Befunde: ${kritisch} kritisch, ${hoch} hoch, ` +
     `${befunde.length - kritisch - hoch} mittel.`);
   console.log(`Aufnahmen: tools-dev/qa/out/sweep/`);
+
+  /* Der Bericht gehoert auf die Platte, nicht nur in die Konsole: ein Lauf
+     dauert eine halbe Stunde, und abgeschnittene Ausgabe heisst sonst, dass
+     man ihn wiederholen muss. */
+  await fs.writeFile(path.join(OUT, "bericht.json"),
+    JSON.stringify({ geprueft, kritisch, hoch, mittel: befunde.length - kritisch - hoch, befunde }, null, 1), "utf8");
   process.exit(kritisch > 0 ? 1 : 0);
 }
 

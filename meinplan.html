@@ -21,7 +21,11 @@
   <div class="container header-inner">
     <a href="index.html" class="logo" aria-label="MaleMetrix Startseite"><span class="logo-word">MALEMETRI</span><svg class="logo-x" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path d="M22 22 42 42 M22 78 42 58" stroke="#F0EEE9" stroke-width="12" stroke-linecap="round" fill="none"/><path d="M78 22 58 42 M78 78 58 58" stroke="#16C4F4" stroke-width="12" stroke-linecap="round" fill="none"/></svg></a>
     <div class="header-actions">
-      <button class="lang-toggle" data-lang-toggle aria-label="Sprache wechseln"><span class="lang-code">EN</span></button>
+      <!-- Klasse „lang-btn": daran haengt der Umschalter in js/main.js. Die
+           frueher hier stehende Klasse „lang-toggle" kam in keiner CSS- und in
+           keiner JS-Datei vor — der Knopf war unsichtbar unformatiert und ohne
+           jede Wirkung. -->
+      <button class="icon-btn lang-btn" type="button" aria-label="Sprache wechseln"><span class="lang-code">EN</span></button>
     </div>
   </div>
 </header>

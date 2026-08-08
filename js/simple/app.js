@@ -41,6 +41,29 @@
   var WD = { de: ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"], en: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] };
   function wdName(i) { return (en() ? WD.en : WD.de)[i]; }
 
+  /* ---- Zahlen und Daten in der Sprache des Nutzers --------------------
+     JavaScript druckt 93.7 und 2026-12-24. Beides ist im Deutschen falsch
+     und liest sich wie ein Datenbankauszug. Gespeichert wird weiter
+     locale-neutral — formatiert wird erst hier, an der Oberfläche. */
+  function nf(v, maxDec) {
+    var n = typeof v === "number" ? v : parseFloat(v);
+    if (v == null || v === "" || !isFinite(n)) return "—";
+    var o = { minimumFractionDigits: 0, maximumFractionDigits: maxDec == null ? 1 : maxDec };
+    try { return new Intl.NumberFormat(en() ? "en-US" : "de-DE", o).format(n); }
+    catch (e) { return String(v); }
+  }
+  /* Ganze Zahlen mit Tausenderpunkt: 2.400 kcal, 8.000 Schritte. */
+  function nfi(v) { return nf(v, 0); }
+  /* „2026-12-24" -> „24. Dez. 2026". Ohne Wochentag: das Datum steht meist
+     in einem Satz, der die Woche schon genannt hat. */
+  function dt(ymd) {
+    if (!ymd || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return String(ymd == null ? "" : ymd);
+    try {
+      return new Intl.DateTimeFormat(en() ? "en-US" : "de-DE",
+        { day: "numeric", month: "short", year: "numeric" }).format(new Date(ymd + "T12:00:00"));
+    } catch (e) { return ymd; }
+  }
+
   /* ---------------- Daten ---------------- */
   /* Gemessener Tagesverbrauch aus Apple Health (nur native App). Der Wert
      wird von der Bruecke beim Verbinden abgelegt; hier wird er nur gelesen
@@ -229,7 +252,7 @@
     openSheet(function (sheet) {
       sheet.appendChild(el("h3", null, tx("Gewicht heute", "Weight today")));
       sheet.appendChild(el("div", "ctx", last
-        ? tx("Zuletzt: ", "Last: ") + last.kg + " kg (" + last.date.slice(5) + ")"
+        ? tx("Zuletzt: ", "Last: ") + nf(last.kg) + " kg (" + dt(last.date) + ")"
         : tx("Erster Eintrag — ab jetzt zählt der Trend, nicht der einzelne Tag.", "First entry — from now on the trend counts, not the single day.")));
       var row = el("div", "big-input");
       var minus = el("button", null, "−"); minus.type = "button";
@@ -376,7 +399,7 @@
     var goal = el("div", "s-card");
     if (tg && tg.current_kg != null && tg.target_kg != null) {
       goal.appendChild(el("h3", null, tx("1 · Dein Ziel", "1 · Your goal") + " ✓"));
-      goal.appendChild(el("p", null, "<strong>" + esc(tg.current_kg) + " kg → " + esc(tg.target_kg) + " kg</strong>"));
+      goal.appendChild(el("p", null, "<strong>" + esc(nf(tg.current_kg)) + " kg → " + esc(nf(tg.target_kg)) + " kg</strong>"));
       goal.appendChild(el("p", "hint", tx("Aus deiner Transformation übernommen. Anderes Ziel? Transformation erneut durchlaufen.",
         "Taken from your transformation. Different goal? Run the transformation again.")));
       store.setFunnelStep("goal_selected");
@@ -405,9 +428,32 @@
       a2.href = "check.html";
       sc.appendChild(a2);
     } else {
-      sc.appendChild(el("h3", "hint", tx("2 · Score", "2 · Score")));
+      /* Vorher stand hier nur „2 · Score" — eine Überschrift ohne Satz und
+         ohne Knopf. Ein gesperrter Schritt muss sagen, was er ist und wann
+         er aufgeht, sonst ist er nur eine leere Kachel. */
+      sc.className = "s-card s-locked";
+      sc.appendChild(el("h3", null, tx("2 · Score", "2 · Score")));
+      sc.appendChild(el("p", "hint", tx("Ein kurzer Fragebogen findet heraus, was deinen Fortschritt am stärksten bremst. Öffnet sich, sobald dein Ziel steht.",
+        "A short questionnaire finds what slows your progress most. Unlocks once your goal is set.")));
     }
     root.appendChild(sc);
+
+    /* Schritte 3 und 4 waren vor dem Ziel unsichtbar: oben vier Punkte,
+       unten zwei Karten. Wer nicht sieht, wie weit der Weg ist, bricht ihn
+       eher ab. Gesperrt heißt sichtbar, nicht abwesend. */
+    if (!tg) {
+      var l3 = el("div", "s-card s-locked");
+      l3.appendChild(el("h3", null, tx("3 · Wenige Planfragen", "3 · A few plan questions")));
+      l3.appendChild(el("p", "hint", tx("Trainingstage, Ausrüstung, Zeitbudget — nur was für deinen Plan wirklich fehlt.",
+        "Training days, equipment, time budget — only what your plan is actually missing.")));
+      root.appendChild(l3);
+
+      var l4 = el("div", "s-card s-locked");
+      l4.appendChild(el("h3", null, tx("4 · Deine 12-Wochen-Vorschau", "4 · Your 12-week preview")));
+      l4.appendChild(el("p", "hint", tx("Kalorien, Protein, Trainingstage, Schritte — festgelegt, bevor du zusagst.",
+        "Calories, protein, training days, steps — fixed before you commit.")));
+      root.appendChild(l4);
+    }
 
     /* Schritt 3 — Planfragen */
     if (tg) {
@@ -494,15 +540,15 @@
       pv.appendChild(el("h3", null, tx("4 · Deine 12-Wochen-Vorschau", "4 · Your 12-week preview")));
       var st = dp.selectedTransformation, pg = dp.phaseGoal;
       pv.appendChild(el("p", null,
-        "<strong>" + tx("Gesamtziel", "Overall goal") + ":</strong> " + st.finalTargetWeightKg + " kg " +
+        "<strong>" + tx("Gesamtziel", "Overall goal") + ":</strong> " + nf(st.finalTargetWeightKg) + " kg " +
         tx("in ehrlich ~", "in an honest ~") + st.expectedTotalWeeks + " " + tx("Wochen", "weeks") + "<br>" +
         (pg.isFinalPhase
-          ? "<strong>" + tx("Diese 12 Wochen", "These 12 weeks") + ":</strong> " + tx("dein Ziel liegt in dieser Phase", "your goal sits inside this phase") + " (" + pg.week12TargetMinKg + "–" + pg.week12TargetMaxKg + " kg)"
-          : "<strong>" + tx("Phase 1 (12 Wochen)", "Phase 1 (12 weeks)") + ":</strong> " + pg.week12TargetMinKg + "–" + pg.week12TargetMaxKg + " kg")));
+          ? "<strong>" + tx("Diese 12 Wochen", "These 12 weeks") + ":</strong> " + tx("dein Ziel liegt in dieser Phase", "your goal sits inside this phase") + " (" + nf(pg.week12TargetMinKg) + "–" + nf(pg.week12TargetMaxKg) + " kg)"
+          : "<strong>" + tx("Phase 1 (12 Wochen)", "Phase 1 (12 weeks)") + ":</strong> " + nf(pg.week12TargetMinKg) + "–" + nf(pg.week12TargetMaxKg) + " kg")));
       pv.appendChild(el("p", "hint",
-        dp.nutrition.calorieTarget + " kcal · " + dp.nutrition.proteinTargetGrams + " g " + tx("Protein", "protein") + " · " +
+        nfi(dp.nutrition.calorieTarget) + " kcal · " + nfi(dp.nutrition.proteinTargetGrams) + " g " + tx("Protein", "protein") + " · " +
         dp.training.daysPerWeek + "× " + tx("Training", "training") + " (" + dp.training.weekdays.map(wdName).join(", ") + ") · " +
-        dp.dailyTargets.steps + " " + tx("Schritte", "steps")));
+        nfi(dp.dailyTargets.steps) + " " + tx("Schritte", "steps")));
       if (dp.scoreContext && dp.scoreContext.consequence) pv.appendChild(el("div", "s-note", esc(dp.scoreContext.consequence)));
       if (dp.scoreContext && dp.scoreContext.medicalCautions && dp.scoreContext.medicalCautions.length) {
         pv.appendChild(el("div", "s-note warn", tx(
@@ -599,7 +645,7 @@
     track("today_opened");
 
     if (day > 84) { vCompleted(p); return; }
-    if (day < 1) { root.appendChild(el("div", "s-card", tx("Dein Plan startet am ", "Your plan starts on ") + p.startDate + ".")); return; }
+    if (day < 1) { root.appendChild(el("div", "s-card", tx("Dein Plan startet am ", "Your plan starts on ") + dt(p.startDate) + ".")); return; }
 
     var info = weekInfo(p, ymd) || {};
     var isDeload = p.training.deloadWeeks.indexOf(week) >= 0;
@@ -623,8 +669,12 @@
     head.appendChild(el("span", "k", tx("Woche", "Week") + " " + week + " · " + tx("Tag", "Day") + " " + day + " / 84" + (isDeload ? " · " + tx("reduzierte Woche", "deload week") : "")));
     head.appendChild(el("div", "goal", esc(pick(rxToday.headline))));
     if (rxToday.focus) {
-      head.appendChild(el("div", "status" + (rxToday.mode === "reentry" || rxToday.mode === "recover" ? " warn" : ""),
-        tx("Fokus heute: ", "Today's focus: ") + esc(pick(rxToday.focus))));
+      /* Grün heißt in dieser App „läuft". Der Fokussatz ist eine Anweisung,
+         kein Status — er bekommt deshalb Textfarbe. Farbe nur dann, wenn der
+         Tag wirklich vom Normalfall abweicht. */
+      var abweichung = rxToday.mode === "reentry" || rxToday.mode === "recover" || rxToday.mode === "short";
+      head.appendChild(el("div", "status" + (abweichung ? " warn" : ""),
+        '<span class="lbl">' + esc(tx("Fokus heute", "Today's focus")) + "</span>" + esc(pick(rxToday.focus))));
     }
     root.appendChild(head);
 
@@ -665,13 +715,13 @@
       tasks.push({ id: "protein", measured: true,
         b: (rest.protein > 0 ? tx("Noch ", "Still ") + rest.protein + " g " + tx("Protein", "protein")
                              : tx("Protein erreicht ✓", "Protein reached ✓")),
-        s: rest.eaten.kcal + " / " + rest.kcalGoal + " kcal · " +
+        s: nfi(rest.eaten.kcal) + " / " + nfi(rest.kcalGoal) + " kcal · " +
            (rest.kcal >= 0 ? tx("noch ", "still ") + rest.kcal + " frei" : Math.abs(rest.kcal) + " " + tx("darüber", "over")),
         go: "sheet" });
     } else {
-      tasks.push({ id: "protein", b: tx("Mindestens ", "At least ") + rxToday.protein + " g " + tx("Protein erreichen", "of protein"), s: rxToday.kcal + " kcal " + tx("Tagesziel", "daily target"), go: "sheet" });
+      tasks.push({ id: "protein", b: tx("Mindestens ", "At least ") + nfi(rxToday.protein) + " g " + tx("Protein erreichen", "of protein"), s: nfi(rxToday.kcal) + " kcal " + tx("Tagesziel", "daily target"), go: "sheet" });
     }
-    tasks.push({ id: "steps", b: rxToday.steps + " " + tx("Schritte erreichen", "steps"), s: null });
+    tasks.push({ id: "steps", b: nfi(rxToday.steps) + " " + tx("Schritte erreichen", "steps"), s: null });
 
     var list = el("div", "s-tasks");
     tasks.slice(0, 3).forEach(function (t) {
@@ -708,7 +758,7 @@
     var wd = new Date(ymd + "T12:00:00").getDay();
     if (p.dailyTargets.weighInWeekdays.indexOf(wd) >= 0) {
       var todaysWeight = planWeights(p).filter(function (w) { return w.date === ymd; })[0];
-      chip("weigh", todaysWeight ? ("⚖ " + todaysWeight.kg + " kg ✓") : tx("⚖ Gewicht eintragen", "⚖ Log weight"), !!todaysWeight, function () {
+      chip("weigh", todaysWeight ? ("⚖ " + nf(todaysWeight.kg) + " kg ✓") : tx("⚖ Gewicht eintragen", "⚖ Log weight"), !!todaysWeight, function () {
         openWeightSheet(ymd, render);
       });
     }
@@ -802,13 +852,13 @@
 
       box.appendChild(el("h3", null, tx("Heute gegessen", "Eaten today")));
       box.appendChild(el("p", "ctx",
-        rest.eaten.kcal + " / " + rest.kcalGoal + " kcal · " +
+        nfi(rest.eaten.kcal) + " / " + nfi(rest.kcalGoal) + " kcal · " +
         rest.eaten.protein + " / " + rest.proteinGoal + " g " + tx("Protein", "protein")));
       if (rest.protein > 0 || rest.kcal > 0) {
         box.appendChild(el("p", "hint",
           tx("Es fehlen noch ", "Still missing ") +
           Math.max(0, rest.protein) + " g " + tx("Protein", "protein") + " und " +
-          Math.max(0, rest.kcal) + " kcal."));
+          nfi(Math.max(0, rest.kcal)) + " kcal."));
       }
 
       /* Bereits eingetragen — mit der Möglichkeit, einen Fehler zu löschen */
@@ -816,7 +866,7 @@
         var row = el("div", "s-food-row");
         var t = el("div", "t");
         t.appendChild(el("b", null, esc(e.label)));
-        t.appendChild(el("span", null, e.kcal + " kcal · " + e.protein + " g"));
+        t.appendChild(el("span", null, nfi(e.kcal) + " kcal · " + nfi(e.protein) + " g"));
         row.appendChild(t);
         var del = el("button", "btn btn-ghost btn-sm", "✕");
         del.setAttribute("aria-label", tx("Eintrag löschen", "Delete entry"));
@@ -837,7 +887,7 @@
         var b = el("button", "btn btn-ghost");
         b.style.cssText = "display:block;width:100%;margin-bottom:8px;text-align:left";
         b.innerHTML = "<b>" + esc(label) + "</b><br><span style='color:var(--muted);font-size:0.85rem'>" +
-          kcal + " kcal · " + protein + " g " + tx("Protein", "protein") + "</span>";
+          nfi(kcal) + " kcal · " + nfi(protein) + " g " + tx("Protein", "protein") + "</span>";
         b.addEventListener("click", function () {
           addAndReopen(foodlog.makeEntry({ label: label, kcal: kcal, protein: protein,
             source: source, blockId: blockId || null, at: ymd }));
@@ -900,14 +950,33 @@
   }
 
   function vCompleted(p) {
-    root.appendChild(el("h2", null, tx("12 Wochen geschafft.", "12 weeks done.")));
+    /* Die Bilanz wird gerechnet, nicht behauptet. Vorher stand hier
+       „12 Wochen geschafft." — auch dann, wenn von 10 geplanten Kilo
+       eines herunterging. Ein Lob für ein verfehltes Ziel kostet mehr
+       Vertrauen, als jede richtige Zahl danach zurückholt. */
     var series = planWeights(p);
-    var startW = p.selectedTransformation.startWeightKg;
-    var lastW = series.length ? series[series.length - 1].kg : null;
-    root.appendChild(el("div", "s-card",
-      (lastW != null ? "<p><strong>" + startW + " kg → " + lastW + " kg</strong></p>" : "") +
-      "<p>" + tx("Dein Programm ist abgeschlossen. Unter Fortschritt siehst du die ganze Strecke. Wenn dein Gesamtziel noch offen ist, startest du die nächste Phase mit einem frischen Wochencheck-Stand — dein bisheriger Verlauf bleibt erhalten.",
-        "Your program is complete. Progress shows the whole journey. If your overall goal is still open, start the next phase fresh — your history stays.") + "</p>"));
+    var bilanz = decide.phaseOutcome(p, series, decide.executionScore(p, daylog(), todayYmd(), {
+      days: 84, weights: series, stepsByDay: healthSteps(), nutritionByDay: nutritionByDay(p)
+    }));
+
+    root.appendChild(el("h2", null, esc(pick(bilanz.headline))));
+
+    var card = el("div", "s-card");
+    if (bilanz.endKg != null) {
+      card.appendChild(el("p", null, "<strong>" + esc(nf(bilanz.startKg)) + " kg → " + esc(nf(bilanz.endKg)) + " kg</strong>"));
+    }
+    card.appendChild(el("p", null, esc(pick(bilanz.verdict))));
+    root.appendChild(card);
+
+    /* Der nächste Schritt steht getrennt und allein — er ist der Grund,
+       warum dieser Bildschirm überhaupt existiert. */
+    var step = el("div", "s-why");
+    step.appendChild(el("p", null, esc(pick(bilanz.nextStep))));
+    root.appendChild(step);
+
+    root.appendChild(el("p", "hint", tx("Unter Fortschritt siehst du die ganze Strecke. Dein bisheriger Verlauf bleibt erhalten.",
+      "Progress shows the whole journey. Your history stays.")));
+
     var next = el("button", "btn btn-primary", tx("Nächste 12-Wochen-Phase planen", "Plan the next 12-week phase"));
     next.addEventListener("click", function () {
       var cur = plan();
@@ -957,12 +1026,12 @@
       return tx("Heute: Arbeitsgewicht finden (RIR 2)", "Today: find your working weight (RIR 2)");
     }
     if (last4.reps != null && last4.reps < ex.repsHi) {
-      return tx("Ziel heute: " + last4.weightKg + " kg × " + (last4.reps + 1) + " (eine mehr als letztes Mal)",
-                "Goal today: " + last4.weightKg + " kg × " + (last4.reps + 1) + " (one more than last time)");
+      return tx("Ziel heute: " + nf(last4.weightKg) + " kg × " + (last4.reps + 1) + " (eine mehr als letztes Mal)",
+                "Goal today: " + nf(last4.weightKg) + " kg × " + (last4.reps + 1) + " (one more than last time)");
     }
     var inc = ["squat", "legpress", "hinge", "hipthrust", "splitsquat", "gobletsquat", "dbrdl", "legcurl"].indexOf(ex.id) >= 0 ? 5 : 2.5;
-    return tx("Ziel heute: " + (last4.weightKg + inc) + " kg × " + ex.repsLo + " (Gewicht rauf, unten neu starten)",
-              "Goal today: " + (last4.weightKg + inc) + " kg × " + ex.repsLo + " (add load, restart at the bottom)");
+    return tx("Ziel heute: " + nf(last4.weightKg + inc) + " kg × " + ex.repsLo + " (Gewicht rauf, unten neu starten)",
+              "Goal today: " + nf(last4.weightKg + inc) + " kg × " + ex.repsLo + " (add load, restart at the bottom)");
   }
   /* Verbesserungen vs. letztes Mal zählen — der sichtbare Fortschritts-Moment. */
   function countImprovements(entries, last) {
@@ -1030,7 +1099,7 @@
       }
       n.appendChild(el("b", null, esc(en() ? ex.nameEn : ex.name) + (ex.inShort ? " <span class='short-mark'>KURZ</span>" : "")));
       n.appendChild(el("span", null, sets + " × " + ex.repsLo + "–" + ex.repsHi + " · RIR " + ex.rir + " · " + tx("Pause", "rest") + " " + ex.restSec + " s" +
-        (last4 && last4.weightKg ? " · " + tx("letztes Mal", "last time") + ": " + last4.weightKg + " kg × " + (last4.reps || "?") : "")));
+        (last4 && last4.weightKg ? " · " + tx("letztes Mal", "last time") + ": " + nf(last4.weightKg) + " kg × " + (last4.reps || "?") : "")));
       n.appendChild(el("span", "s-goal", esc(progressionGoal(ex, last4))));
       row.appendChild(n);
       var wIn = el("input"); wIn.type = "number"; wIn.step = "0.5"; wIn.placeholder = "kg";
@@ -1093,8 +1162,8 @@
     if (!p) { location.hash = "#einrichten"; return; }
     var planHead = el("h2", null, tx("Mein Plan", "My plan"));
     root.appendChild(planHead);
-    var editLink = el("p", "s-sub");
-    editLink.innerHTML = '<a href="#anpassen" style="color:var(--accent-2)">' + tx("Plan anpassen →", "Adjust plan →") + "</a>";
+    var editLink = el("p", "s-sub s-inline-link");
+    editLink.innerHTML = '<a href="#anpassen">' + esc(tx("Plan anpassen →", "Adjust plan →")) + "</a>";
     root.appendChild(editLink);
     var tabs = ["woche", "training", "ernaehrung", "einkauf", "iphone"];
     var names = { woche: tx("Woche", "Week"), training: "Training", ernaehrung: tx("Ernährung", "Nutrition"), einkauf: tx("Einkauf", "Shopping"), iphone: "iPhone" };
@@ -1170,8 +1239,8 @@
     var line = el("p", "hint");
     if (d.tdeeSource === "apple_health") {
       line.textContent = tx(
-        "Grundlage: dein gemessener Tagesverbrauch aus Apple Health (" + d.tdee + " kcal). Die Schätzformel hätte " + d.tdeeFormula + " kcal gesagt.",
-        "Basis: your measured daily burn from Apple Health (" + d.tdee + " kcal). The estimate formula would have said " + d.tdeeFormula + " kcal.");
+        "Grundlage: dein gemessener Tagesverbrauch aus Apple Health (" + nfi(d.tdee) + " kcal). Die Schätzformel hätte " + nfi(d.tdeeFormula) + " kcal gesagt.",
+        "Basis: your measured daily burn from Apple Health (" + nfi(d.tdee) + " kcal). The estimate formula would have said " + nfi(d.tdeeFormula) + " kcal.");
       return line;
     }
     var why = {
@@ -1180,23 +1249,23 @@
       unplausibel_hoch: tx("der gemessene Wert war unplausibel hoch", "the measured value was implausibly high")
     }[d.tdeeRejected];
     line.textContent = why
-      ? tx("Grundlage: Schätzformel (" + d.tdee + " kcal). Apple Health meldete " + d.tdeeMeasured + " kcal, das wurde nicht übernommen — " + why + ".",
-           "Basis: estimate formula (" + d.tdee + " kcal). Apple Health reported " + d.tdeeMeasured + " kcal, which was not used — " + why + ".")
-      : tx("Grundlage: Schätzformel aus Größe, Gewicht, Alter und Aktivität (" + d.tdee + " kcal).",
-           "Basis: estimate from height, weight, age and activity (" + d.tdee + " kcal).");
+      ? tx("Grundlage: Schätzformel (" + nfi(d.tdee) + " kcal). Apple Health meldete " + nfi(d.tdeeMeasured) + " kcal, das wurde nicht übernommen — " + why + ".",
+           "Basis: estimate formula (" + nfi(d.tdee) + " kcal). Apple Health reported " + nfi(d.tdeeMeasured) + " kcal, which was not used — " + why + ".")
+      : tx("Grundlage: Schätzformel aus Größe, Gewicht, Alter und Aktivität (" + nfi(d.tdee) + " kcal).",
+           "Basis: estimate from height, weight, age and activity (" + nfi(d.tdee) + " kcal).");
     return line;
   }
 
   function subNutrition(p) {
     var n = p.nutrition;
     root.appendChild(el("p", "s-sub",
-      n.calorieTarget + " kcal (" + n.calorieRangeMin + "–" + n.calorieRangeMax + ") · " +
+      nfi(n.calorieTarget) + " kcal (" + nfi(n.calorieRangeMin) + "–" + nfi(n.calorieRangeMax) + ") · " +
       n.proteinTargetGrams + " g " + tx("Protein", "protein") + " · " + n.mealCount + " " + tx("Mahlzeiten", "meals")));
     root.appendChild(tdeeOrigin(p));
     (n.meals || []).forEach(function (m, mi) {
       var slotNames = { breakfast: tx("Frühstück", "Breakfast"), lunch: tx("Mittagessen", "Lunch"), dinner: tx("Abendessen", "Dinner"), snack: "Snack" };
       var card = el("div", "s-meal");
-      card.appendChild(el("div", "slot", esc(slotNames[m.slot] || m.slot) + " · ~" + m.targetKcal + " kcal"));
+      card.appendChild(el("div", "slot", esc(slotNames[m.slot] || m.slot) + " · ~" + nfi(m.targetKcal) + " kcal"));
       m.options.forEach(function (o) {
         var sel = (n.mealTemplateIds[mi] || "").split("@");
         var chosenId = sel[0];
@@ -1208,7 +1277,7 @@
         var opt = el("div", "opt" + (isChosen ? " chosen" : ""));
         var row = el("div", "row");
         row.appendChild(el("b", null, esc(pick(o.name))));
-        row.appendChild(el("span", "kp", kcalShow + " kcal · " + protShow + " g P"));
+        row.appendChild(el("span", "kp", nfi(kcalShow) + " kcal · " + nfi(protShow) + " g P"));
         opt.appendChild(row);
         opt.appendChild(el("div", "items", o.items.map(function (i) { return esc(en() ? i.nameEn : i.name) + " " + (Math.round(i.grams * scale / 5) * 5) + " g"; }).join(" · ")));
         opt.appendChild(el("div", "prep", esc(pick(o.prep))));
@@ -1272,7 +1341,7 @@
         });
         lab.appendChild(cb);
         lab.appendChild(el("span", null, esc(en() ? it.nameEn : it.name)));
-        var amount = it.grams >= 1000 ? (Math.round(it.grams / 100) / 10) + " kg" : it.grams + " g";
+        var amount = it.grams >= 1000 ? nf(it.grams / 1000) + " kg" : nfi(it.grams) + " g";
         lab.appendChild(el("span", "amt", amount));
         wrap.appendChild(lab);
       });
@@ -1322,10 +1391,10 @@
 
     var grid = el("div", "s-stat");
     function cell(v, l) { var c = el("div", "cell"); c.appendChild(el("div", "v", v)); c.appendChild(el("div", "l", l)); grid.appendChild(c); }
-    cell(startW + " kg", tx("Start", "Start"));
-    cell(curW != null ? curW + " kg" : "—", tx("Aktuell", "Current"));
-    cell(pg.week12TargetMinKg + "–" + pg.week12TargetMaxKg + " kg", tx("Ziel Woche 12", "Week-12 target"));
-    cell(st.finalTargetWeightKg + " kg", tx("Gesamtziel (~" + st.expectedTotalWeeks + " Wo.)", "Overall (~" + st.expectedTotalWeeks + " wks)"));
+    cell(nf(startW) + " kg", tx("Start", "Start"));
+    cell(curW != null ? nf(curW) + " kg" : "—", tx("Aktuell", "Current"));
+    cell(nf(pg.week12TargetMinKg) + "–" + nf(pg.week12TargetMaxKg) + " kg", tx("Ziel Woche 12", "Week-12 target"));
+    cell(nf(st.finalTargetWeightKg) + " kg", tx("Gesamtziel (~" + st.expectedTotalWeeks + " Wo.)", "Overall (~" + st.expectedTotalWeeks + " wks)"));
     root.appendChild(grid);
 
     /* Aussage — geglättet, keine Ein-Punkt-Panik */
@@ -1379,7 +1448,7 @@
       var tc = el("div", "s-card");
       tc.appendChild(el("h3", null, tx("Wenn du so weitermachst", "If you continue like this")));
       if (traj.projectedDate) {
-        tc.appendChild(el("div", "goal", traj.goalKg + " kg " + tx("am", "on") + " " + traj.projectedDate));
+        tc.appendChild(el("div", "goal", nf(traj.goalKg) + " kg " + tx("am", "on") + " " + dt(traj.projectedDate)));
         var vs = traj.daysVsPlan;
         if (vs != null && Math.abs(vs) >= 7) {
           tc.appendChild(el("p", "hint", vs > 0
@@ -1724,7 +1793,7 @@
     if (p) {
       var pm = el("div", "s-card");
       pm.appendChild(el("h3", null, tx("Plan", "Plan")));
-      pm.appendChild(el("p", "hint", "Version " + p.version + " · Status: " + p.status + " · " + tx("Start", "start") + ": " + (p.startDate || "—")));
+      pm.appendChild(el("p", "hint", "Version " + p.version + " · Status: " + p.status + " · " + tx("Start", "start") + ": " + (p.startDate ? dt(p.startDate) : "—")));
       var hist = store.getHistory();
       if (hist.length) {
         hist.slice(-5).reverse().forEach(function (h) {

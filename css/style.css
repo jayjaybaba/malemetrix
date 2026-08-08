@@ -175,6 +175,9 @@ h1, h2, h3, h4 {
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  /* Die Schrift ist 18 Punkt hoch — als Tippfläche zu wenig. Die Fläche
+     wächst, die Wortmarke bleibt gleich groß. */
+  min-height: 44px;
 }
 
 /* P15 BRAND — Split-X-Identität: Wortmarke MALEMETRI + Custom-X (SVG).
@@ -1775,8 +1778,10 @@ input[type="range"]::-moz-range-thumb {
   background: var(--card);
   border: 1px solid var(--line);
   color: var(--text);
-  height: 42px;
-  min-width: 42px;
+  /* 44 pt ist Apples Mindestmaß für eine Tippfläche (HIG). 42 sah gleich
+     aus und war zwei Punkt zu klein. */
+  height: 44px;
+  min-width: 44px;
   padding: 0 12px;
   border-radius: 12px;
   display: inline-flex;

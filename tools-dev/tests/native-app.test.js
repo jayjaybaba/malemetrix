@@ -256,6 +256,85 @@ group("Entscheidungsschicht ist in der App verdrahtet");
 }
 
 
+group("Zahlen und Daten stehen in der Sprache des Nutzers");
+{
+  const app = read("js/simple/app.js");
+  ok(/function nf\(/.test(app) && /Intl\.NumberFormat/.test(app),
+    "es gibt genau einen Zahlenformatierer, und der nutzt Intl");
+  ok(/function dt\(/.test(app) && /Intl\.DateTimeFormat/.test(app),
+    "und einen Datumsformatierer");
+
+  /* Der Fortschritts-Bildschirm hat „93.7 kg" und „85 kg am 2026-12-24"
+     gezeigt — beides sind Datenbankausgaben, keine deutschen Saetze. */
+  const roh = [];
+  app.split("\n").forEach((z, i) => {
+    if (/^\s*(\/\*|\*|\/\/)/.test(z)) return;
+    // Gewichte: eine Variable, direkt gefolgt von " kg"
+    if (/[A-Za-z0-9_\]\)]\s*\+\s*" kg"/.test(z) && !/nf\(|zde\(|zen\(/.test(z)) roh.push((i + 1) + " (kg)");
+    // Datumsangaben: ein *Date-Feld direkt in einen Text gehaengt
+    if (/\+\s*(traj\.projectedDate|p\.startDate|last\.date)\b/.test(z)) roh.push((i + 1) + " (Datum)");
+  });
+  ok(roh.length === 0, "keine ungeformatierte Zahl oder Datumsangabe in der Ausgabe" +
+    (roh.length ? " — Zeile " + roh.join(", ") : ""));
+
+  /* Auch die Entscheidungsschicht baut fertige Saetze — dort gilt dasselbe. */
+  const dec = read("js/simple/decide.js");
+  ok(/function zde\(/.test(dec), "decide.js formatiert deutsche Zahlen mit Komma");
+}
+
+group("App-Oberflaeche: Regeln, die auf dem Telefon anders sind als am Schreibtisch");
+{
+  const css = read("css/simple.css");
+
+  /* Apples Mindestmass fuer eine Tippflaeche. Der Browser-Durchlauf hat
+     98 Elemente darunter gefunden; die Regel dagegen steht zentral. */
+  ok(/min-height:\s*44px/.test(css), "die 44-pt-Regel steht im App-Stylesheet");
+  ok(/\.sapp button/.test(css), "und gilt fuer alle Knoepfe der App, nicht nur einzelne");
+  ["30px", "34px"].forEach(function (alt) {
+    ok(!new RegExp("width:\\s*" + alt + ";\\s*height:\\s*" + alt).test(css),
+      "kein quadratisches Bedienelement mehr mit " + alt);
+  });
+
+  /* Der Sprachknopf auf meinplan.html hing an einer Klasse, die es weder in
+     CSS noch in JS gab — unformatiert und ohne Wirkung. */
+  const seite = read("meinplan.html");
+  ok(!/class="[^"]*\blang-toggle\b/.test(seite),
+    "kein Element traegt mehr die tote Klasse lang-toggle");
+  ok(/class="icon-btn lang-btn"/.test(seite), "der Sprachknopf traegt die Klasse, die js/main.js bindet");
+  ok(/querySelectorAll\("\.lang-btn"\)/.test(read("js/main.js")), "und js/main.js bindet sie wirklich");
+
+  /* Auf Touch bleibt :hover nach dem Antippen haengen. Jede Hover-Regel im
+     App-Stylesheet muss deshalb hinter einem Zeiger-Test stehen. */
+  const hoverRegeln = css.split("\n")
+    .map((z, i) => ({ z: z, nr: i + 1 }))
+    .filter((o) => /:hover/.test(o.z) && !/^\s*\/\*/.test(o.z));
+  const guardBloecke = [];
+  {
+    let tiefe = 0, offen = false;
+    css.split("\n").forEach((z, i) => {
+      if (/@media[^{]*\(hover:\s*hover\)/.test(z)) { offen = true; tiefe = 0; }
+      if (offen) {
+        tiefe += (z.match(/{/g) || []).length - (z.match(/}/g) || []).length;
+        guardBloecke.push(i + 1);
+        if (tiefe <= 0 && /}/.test(z)) offen = false;
+      }
+    });
+  }
+  const ungeschuetzt = hoverRegeln.filter((o) => guardBloecke.indexOf(o.nr) < 0);
+  ok(ungeschuetzt.length === 0,
+    "keine ungeschuetzte :hover-Regel in css/simple.css" +
+    (ungeschuetzt.length ? " — Zeile " + ungeschuetzt.map((o) => o.nr).join(", ") : ""));
+
+  /* Gruen heisst in dieser App „laeuft". Der Fokussatz ist eine Anweisung. */
+  const statusRegel = (css.match(/\.s-head \.status\s*{[^}]*}/) || [""])[0];
+  ok(statusRegel.length > 0, "die Fokuszeile hat eine eigene Regel");
+  ok(!/var\(--green\)/.test(statusRegel),
+    "die Fokuszeile ist nicht gruen — Gruen bleibt fuer erreichte Ziele reserviert");
+  ok(/\.s-head \.status\.warn/.test(css),
+    "abweichende Tage bekommen weiterhin eine eigene Farbe");
+}
+
+
 group("Xcode Cloud: der Weg ohne API-Schluessel ist vollstaendig");
 {
   const sh = "ios-app/App/ci_scripts/ci_post_clone.sh";
@@ -290,8 +369,13 @@ group("Essens-Protokoll ist vollstaendig verdrahtet");
   ok(/foodlog = MMSimple\.foodlog/.test(app), "app.js kennt das Modul");
   ok(/nutritionByDay: nutritionByDay\(p\)/.test(app),
     "die gemessene Ernaehrung geht in JEDEN Execution-Score-Aufruf");
-  ok((app.match(/nutritionByDay: nutritionByDay\(p\)/g) || []).length === 3,
-    "in alle drei Aufrufe (Today, Fortschritt, Wochencheck) — sonst waeren die Zahlen widerspruechlich");
+  /* Die Zahl der Aufrufe darf wachsen — was nicht wachsen darf, ist die
+     Zahl der Aufrufe OHNE gemessene Ernaehrung. Sonst zeigen zwei
+     Bildschirme zwei verschiedene Umsetzungsquoten. */
+  const aufrufe = (app.match(/decide\.executionScore\(/g) || []).length;
+  const mitEssen = (app.match(/nutritionByDay: nutritionByDay\(p\)/g) || []).length;
+  ok(aufrufe >= 3 && mitEssen === aufrufe,
+    "jeder der " + aufrufe + " Execution-Score-Aufrufe bekommt die gemessene Ernaehrung (" + mitEssen + ")");
   ok(/openFoodSheet/.test(app), "das Eintragen-Blatt existiert");
 
   const store = read("js/simple/plan-store.js");

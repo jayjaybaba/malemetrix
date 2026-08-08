@@ -84,6 +84,57 @@ group("Execution Score: misst Ausfuehrung, nicht Ergebnis");
     "am Starttag gibt es noch keinen Score statt einer 0 zu behaupten");
 }
 
+group("Execution Score: unter fuenf Tagen gibt es keine Quote");
+{
+  /* Gefunden im Browser-Durchlauf: am zweiten Nutzungstag stand auf dem
+     Startbildschirm „Deine Umsetzung liegt bei 0 % ueber 1 Tage". Aus einem
+     einzigen Tag. Eine Quote braucht Tage, sonst ist sie ein Vorwurf. */
+  ok(decide.EXEC_MIN_DAYS === 5, "die Untergrenze ist benannt und exportiert");
+
+  for (let n = 1; n < decide.EXEC_MIN_DAYS; n++) {
+    const heute = model.addDays("2026-06-01", n);
+    const e = decide.executionScore(PLAN, {}, heute, { days: 14 });
+    ok(e.score === null && e.reason === "zu_wenige_tage",
+      "nach " + n + " Tag(en) noch keine Quote (" + e.score + ")");
+    ok(e.training === null && e.nutrition === null && e.steps === null && e.weighIn === null,
+      "auch die Teilbereiche bleiben leer statt 0 zu behaupten (Tag " + n + ")");
+  }
+
+  const ab5 = decide.executionScore(PLAN, {}, model.addDays("2026-06-01", 5), { days: 14 });
+  ok(ab5.score === 0 && ab5.days === 5,
+    "ab fuenf Tagen zaehlt Nichtstun wieder als 0 — die Leitplanke ist eine Verzoegerung, keine Ausrede");
+
+  /* Der Tagesauftrag darf die Zahl in dieser Zeit nicht erwaehnen. */
+  const fruehText = JSON.stringify(decide.dailyPrescription({
+    plan: PLAN, todayYmd: "2026-06-03", daylog: {}, weights: [], today: {}
+  }));
+  ok(!/Umsetzung liegt bei/.test(fruehText),
+    "in der ersten Woche steht keine Umsetzungsquote im Tagesauftrag");
+}
+
+group("Execution Score: Grammatik im Umsetzungssatz");
+{
+  /* „ueber 1 Tage" war der zweite Teil desselben Befunds. */
+  const log = makeDaylog("2026-06-15", "2026-06-28", 0.2);
+  const schwach = decide.executionScore(PLAN, log, "2026-06-29", { days: 14 });
+  const r = decide.dailyPrescription({
+    plan: PLAN, todayYmd: "2026-06-29", daylog: log, execution: schwach, health: null
+  });
+  ok(/Umsetzung liegt bei/.test(JSON.stringify(r.why)),
+    "bei schwacher Umsetzung wird die Quote genannt");
+  ok(/über 14 Tage/.test(JSON.stringify(r.why)), "Plural bleibt Plural");
+
+  /* Der Text muss auch dann stimmen, wenn ein Aufrufer einen Ein-Tages-Score
+     hereinreicht — die Leitplanke sitzt in executionScore, die Grammatik hier. */
+  const eins = decide.dailyPrescription({
+    plan: PLAN, todayYmd: "2026-06-29", daylog: log,
+    execution: { score: 20, days: 1 }, health: null
+  });
+  const t = JSON.stringify(eins.why);
+  ok(/über einen Tag\./.test(t), "ein Tag heisst 'einen Tag'");
+  ok(!/ 1 Tage/.test(t), "nie 'ueber 1 Tage'");
+}
+
 group("Execution Score: der heutige Tag zaehlt nicht mit");
 {
   const log = makeDaylog("2026-06-15", "2026-06-28", 1);
@@ -399,6 +450,103 @@ group("Determinismus");
   const a = JSON.stringify(rx());
   const b = JSON.stringify(rx());
   ok(a === b, "gleicher Zustand -> identischer Tagesauftrag");
+}
+
+/* ========================= PHASENBILANZ ================================= */
+/* Gefunden im Browser-Durchlauf: der Abschlussbildschirm sagte
+   „12 Wochen geschafft." bei 95 kg -> 93,7 kg und einem Ziel von 85 kg.
+   Plan: Start 95, Phasenziel 87–89 (nahe Kante 89), Gesamtziel 85. */
+function bilanz(endKg, execScore, over) {
+  const w = endKg == null ? [] : [{ date: "2026-06-01", kg: 95 }, { date: "2026-08-24", kg: endKg }];
+  const ex = execScore == null ? { score: null } : { score: execScore, days: 84 };
+  return decide.phaseOutcome(over && over.plan ? over.plan : PLAN, over && over.weights ? over.weights : w, ex);
+}
+const alleTexte = (b) => [b.headline, b.verdict, b.nextStep]
+  .map((t) => (t ? t.de + " | " + t.en : "")).join(" || ");
+
+group("Phasenbilanz: Ziel erreicht");
+{
+  const b = bilanz(88.5, 96);
+  ok(b.status === "erreicht", "88,5 kg bei Phasenziel 89 -> erreicht (" + b.status + ", " + b.reachedPct + " %)");
+  ok(/Ziel erreicht/.test(b.headline.de), "und nur dann steht 'Ziel erreicht' in der Überschrift");
+  ok(b.attribution === null, "bei Erfolg wird keine Ursache gesucht — das wäre eine Relativierung");
+  ok(/85/.test(b.nextStep.de), "der nächste Schritt nennt das noch offene Gesamtziel");
+}
+
+group("Phasenbilanz: der gefundene Fall — 1,3 kg statt 6 kg");
+{
+  const b = bilanz(93.7, 45);
+  ok(b.status === "kaum", "22 % des Phasenziels -> 'kaum', nicht 'geschafft' (" + b.status + ")");
+  ok(!/geschafft|erreicht|Glückwunsch|stark|super/i.test(alleTexte(b)),
+    "kein Lob für ein verfehltes Ziel — an keiner Stelle des Bildschirms");
+  ok(/1,3 kg abgenommen/.test(b.verdict.de), "die tatsächliche Veränderung wird genannt — mit Komma");
+  ok(/6 kg/.test(b.verdict.de), "und die geplante daneben");
+  ok(!/\d\.\d/.test(alleTexte(b).split("||")[0]), "im deutschen Satz steht kein Dezimalpunkt");
+  ok(b.attribution === "ausfuehrung", "bei 45 % Umsetzung liegt es an der Ausführung");
+  ok(/nicht schärfere|dieselben Zahlen/.test(b.nextStep.de),
+    "und der Plan wird deshalb NICHT verschärft");
+}
+
+group("Phasenbilanz: gut umgesetzt und trotzdem verfehlt -> der Plan war schuld");
+{
+  const b = bilanz(93.7, 92);
+  ok(b.attribution === "plan", "ab 85 % Umsetzung liegt es an den Zahlen, nicht am Nutzer");
+  ok(/nicht an dir/.test(b.nextStep.de), "das wird auch so gesagt");
+  ok(/gemessenen Verbrauch/.test(b.nextStep.de), "und die Konsequenz benannt: gemessener statt berechneter Verbrauch");
+  const mittel = bilanz(93.7, 78);
+  ok(mittel.attribution === "unklar", "zwischen 70 und 85 wird keine Ursache behauptet");
+  const ohne = bilanz(93.7, null);
+  ok(ohne.attribution === "unklar", "ohne Umsetzungsdaten erst recht nicht");
+}
+
+group("Phasenbilanz: Teilerfolg wird als Teilerfolg benannt");
+{
+  const b = bilanz(91.5, 88);
+  ok(b.status === "teilweise", "58 % -> teilweise (" + b.reachedPct + " %)");
+  ok(/3,5 kg abgenommen/.test(b.headline.de), "die Überschrift nennt die echte Strecke");
+  ok(!/geschafft/.test(alleTexte(b)), "aber sie sagt nicht 'geschafft'");
+}
+
+group("Phasenbilanz: falsche Richtung wird nicht beschönigt");
+{
+  const b = bilanz(96.2, 30);
+  ok(b.status === "falsche_richtung", "zugenommen im Cut -> falsche_richtung");
+  ok(/nicht in die geplante Richtung/.test(b.verdict.de), "das steht als Satz da");
+  ok(!/geschafft|erreicht/.test(alleTexte(b)), "und wird nicht gefeiert");
+  const stillstand = bilanz(95, 30);
+  ok(stillstand.status === "falsche_richtung", "Stillstand zählt genauso — 0 kg ist kein Fortschritt");
+}
+
+group("Phasenbilanz: ohne Wiegungen gibt es kein Ergebnis");
+{
+  const leer = bilanz(null, 90);
+  ok(leer.status === "keine_daten", "keine Wiegungen -> keine_daten");
+  ok(leer.reachedPct === null && leer.endKg === null, "keine erfundenen Zahlen");
+  ok(/zu wenige Wiegungen/.test(leer.verdict.de), "der Grund wird genannt");
+  ok(/Wiege-Tag/.test(leer.nextStep.de), "und der nächste Schritt ist die kleinste sinnvolle Änderung");
+  const eine = decide.phaseOutcome(PLAN, [{ date: "2026-06-01", kg: 95 }], { score: 90 });
+  ok(eine.status === "keine_daten", "eine einzelne Wiegung ist auch keine Bilanz");
+}
+
+group("Phasenbilanz: Aufbau statt Abnahme");
+{
+  const auf = makePlan({ tg: { current_kg: 70, target_kg: 78, direction: "gain", kind: "realistic" } });
+  const b = decide.phaseOutcome(auf, [{ date: "2026-06-01", kg: 70 }, { date: "2026-08-24", kg: 74 }], { score: 90 });
+  ok(b.status === "erreicht" || b.status === "teilweise",
+    "Zunahme zählt im Aufbau als Fortschritt (" + b.status + ", " + b.reachedPct + " %)");
+  ok(/zugenommen/.test(alleTexte(b)), "und heißt dann 'zugenommen', nicht 'abgenommen'");
+  const runter = decide.phaseOutcome(auf, [{ date: "2026-06-01", kg: 70 }, { date: "2026-08-24", kg: 69 }], { score: 90 });
+  ok(runter.status === "falsche_richtung", "Abnahme im Aufbau ist die falsche Richtung");
+}
+
+group("Phasenbilanz: keine internen Begriffe im Nutzertext, deterministisch");
+{
+  const b = bilanz(93.7, 45);
+  ok(!/ausfuehrung|falsche_richtung|keine_daten|reachedPct|attribution/.test(alleTexte(b)),
+    "keine Statusschlüssel im sichtbaren Text");
+  ok(JSON.stringify(bilanz(93.7, 45)) === JSON.stringify(bilanz(93.7, 45)),
+    "gleiche Eingabe -> identische Bilanz");
+  ok(b.headline && b.verdict && b.nextStep, "jeder Fall hat Überschrift, Befund und genau einen nächsten Schritt");
 }
 
 console.log("\n" + (failed ? "FAILED" : "OK") + " — " + passed + " bestanden, " + failed + " fehlgeschlagen");

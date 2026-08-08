@@ -14,13 +14,47 @@
 .sapp h2 { font-size: 1.35rem; margin: 4px 0 4px; }
 .sapp .s-sub { color: var(--muted); font-size: 0.92rem; margin: 0 0 14px; }
 
+/* ---- Tippflächen: 44 pt, ausnahmslos --------------------------------------
+   Der Browser-Durchlauf hat 98 Bedienelemente unter Apples Mindestmaß
+   gefunden — auf einer einzigen Ansicht 86. Sichtbar war das nicht: die
+   Knöpfe SEHEN richtig aus, sie sind nur 33 bis 39 Punkt hoch, und dann
+   trifft der Daumen daneben statt darauf.
+
+   Deshalb steht die Regel hier einmal für alle Bedienelemente der App und
+   nicht 14-mal einzeln. Wo optisch kleiner gewirkt werden soll, wächst nur
+   die Tippfläche mit, nicht die Farbfläche (siehe .s-ex .setbox button).
+   Geprüft von tools-dev/qa/app-sweep.mjs bei jedem Durchlauf. */
+.sapp button,
+.sapp input:not([type="checkbox"]):not([type="radio"]),
+.sapp select, .sapp textarea,
+.sapp .s-task, .sapp .s-shop label {
+  min-height: 44px;
+}
+.sapp input:not([type="checkbox"]):not([type="radio"]),
+.sapp select, .sapp textarea { padding-top: 10px; padding-bottom: 10px; }
+
+/* Kästchen bleiben Kästchen — die Tippfläche ist bei ihnen die ganze Zeile
+   (das Label schaltet das Kästchen mit), und die ist oben auf 44 gesetzt. */
+.sapp input[type="checkbox"], .sapp input[type="radio"] { min-height: 0; }
+
+/* Ein Textlink, der wie ein Link aussehen soll, aber wie ein Knopf zu
+   treffen sein muss. */
+.s-inline-link { display: flex; align-items: center; min-height: 44px; margin: 0 0 6px; }
+.s-inline-link a { color: var(--accent-2); text-decoration: none; }
+
 /* Kopfzeile: Woche · Ziel */
 .s-head { border: 1px solid var(--line); border-radius: 14px; background: var(--card); padding: 14px 16px; margin-bottom: 14px; }
 .s-head .k { font-size: 0.68rem; letter-spacing: 0.14em; color: var(--accent-2); text-transform: uppercase; display: block; margin-bottom: 4px; }
 .s-head .goal { color: var(--text); font-weight: 600; }
 .s-head .phase { color: var(--muted); font-size: 0.9rem; margin-top: 3px; }
-.s-head .status { margin-top: 8px; font-size: 0.88rem; color: var(--green); }
+/* Farbe ist in dieser App eine Aussage, kein Schmuck:
+   Textfarbe = normaler Tag, Bernstein = der Tag weicht bewusst ab.
+   Gruen bleibt fuer „Ziel erreicht" reserviert und steht hier nicht. */
+.s-head .status { margin-top: 8px; font-size: 0.88rem; color: var(--text); }
+.s-head .status .lbl { color: var(--muted); margin-right: 6px; }
+.s-head .status .lbl::after { content: ":"; }
 .s-head .status.warn { color: var(--amber); }
+.s-head .status.warn .lbl { color: var(--amber); opacity: 0.72; }
 
 /* Begruendung des Tagesauftrags. Bewusst zurueckhaltend: Der Auftrag steht
    oben, die Begruendung liest, wer sie braucht — sie draengt sich nicht auf.
@@ -32,7 +66,12 @@
 /* Aufgabenliste (max. 3 primäre) */
 .s-tasks { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
 .s-task { display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); padding: 13px 14px; cursor: pointer; transition: border-color 0.15s; }
-.s-task:hover { border-color: var(--accent-line); }
+/* Auf dem iPhone bleibt :hover nach dem Antippen haengen — die Kachel sieht
+   dann dauerhaft ausgewaehlt aus, obwohl nichts ausgewaehlt ist. Hover gibt es
+   deshalb nur dort, wo es wirklich einen Zeiger gibt. */
+@media (hover: hover) and (pointer: fine) {
+  .s-task:hover { border-color: var(--accent-line); }
+}
 .s-task .box { width: 26px; height: 26px; border-radius: 8px; border: 2px solid var(--line-strong); flex: 0 0 auto; display: grid; place-items: center; font-size: 15px; color: transparent; }
 .s-task.done .box { border-color: var(--green); background: var(--green-soft); color: var(--green); }
 .s-task .t { flex: 1; }
@@ -76,7 +115,9 @@
 .s-ex .short-mark { color: var(--accent-2); font-size: 0.7rem; letter-spacing: 0.1em; }
 .s-ex input[type="number"] { width: 64px; background: var(--bg-2); border: 1px solid var(--line-strong); color: var(--text); border-radius: 8px; padding: 7px 8px; font-size: 0.9rem; }
 .s-ex .setbox { display: flex; gap: 5px; }
-.s-ex .setbox button { width: 30px; height: 30px; border-radius: 8px; border: 1.5px solid var(--line-strong); background: transparent; color: var(--muted); cursor: pointer; font-size: 0.8rem; }
+/* Satz-Kästchen: 30 war hübsch und beim Training mit schwitzigen Fingern
+   zu klein. Beim Abhaken eines Satzes darf man sich nicht vertippen. */
+.s-ex .setbox button { width: 44px; height: 44px; border-radius: 8px; border: 1.5px solid var(--line-strong); background: transparent; color: var(--muted); cursor: pointer; font-size: 0.8rem; }
 .s-ex .setbox button.on { border-color: var(--green); color: var(--green); background: var(--green-soft); }
 .s-ex select { background: var(--bg-2); border: 1px solid var(--line); color: var(--muted); border-radius: 8px; padding: 6px; font-size: 0.8rem; max-width: 130px; }
 
@@ -94,8 +135,8 @@
 
 /* Einkaufsliste */
 .s-shop .cat { font-size: 0.72rem; letter-spacing: 0.12em; color: var(--accent-2); text-transform: uppercase; margin: 14px 0 6px; }
-.s-shop label { display: flex; gap: 10px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line); cursor: pointer; font-size: 0.92rem; }
-.s-shop label input { width: 18px; height: 18px; accent-color: var(--accent-2); }
+.s-shop label { display: flex; gap: 10px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--line); cursor: pointer; font-size: 0.92rem; }
+.s-shop label input { width: 22px; height: 22px; flex: 0 0 auto; accent-color: var(--accent-2); }
 .s-shop label.done span { text-decoration: line-through; color: var(--muted-2); }
 .s-shop .amt { margin-left: auto; color: var(--muted); font-size: 0.84rem; }
 
@@ -138,14 +179,14 @@
 .s-timer { position: sticky; top: 8px; z-index: 40; display: flex; align-items: center; gap: 10px; background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: 12px; padding: 10px 14px; margin: 10px 0; }
 .s-timer .t { font-size: 1.3rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--accent-2); min-width: 62px; }
 .s-timer .l { color: var(--muted); font-size: 0.84rem; flex: 1; }
-.s-timer button { border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 0.8rem; }
+.s-timer button { border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 8px; padding: 6px 14px; cursor: pointer; font-size: 0.8rem; }
 .s-timer.done { background: var(--green-soft); border-color: var(--green); }
 .s-timer.done .t { color: var(--green); }
 .s-goal { color: var(--accent-2); font-size: 0.82rem; }
 
 /* Portions-Stepper (Ernährung) */
 .s-portion { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-.s-portion button { width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--line-strong); background: transparent; color: var(--text); cursor: pointer; font-size: 1rem; }
+.s-portion button { width: 44px; height: 44px; border-radius: 9px; border: 1px solid var(--line-strong); background: transparent; color: var(--text); cursor: pointer; font-size: 1rem; }
 .s-portion .f { color: var(--muted); font-size: 0.84rem; min-width: 130px; text-align: center; }
 
 /* Fotos (gerätelokal) */
@@ -158,6 +199,12 @@
 .s-steps { display: flex; gap: 6px; margin: 6px 0 16px; }
 .s-steps i { height: 3px; flex: 1; background: var(--line); border-radius: 2px; }
 .s-steps i.on { background: var(--accent-2); }
+
+/* Ein Schritt, der noch nicht dran ist. Er steht sichtbar da, damit der Weg
+   von Anfang an vollstaendig ist — aber er draengt sich nicht auf. */
+.s-locked { background: transparent; border-style: dashed; }
+.s-locked h3 { color: var(--muted); font-weight: 500; }
+.s-locked .hint { color: var(--muted-2); }
 
 .s-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
 

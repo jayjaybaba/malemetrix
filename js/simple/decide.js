@@ -67,6 +67,7 @@
      Bewusst NICHT im Score: Gewicht, Taille, Kalorienverbrauch. Das sind
      Ergebnisse. */
   var EXEC_WEIGHTS = { training: 0.40, nutrition: 0.30, steps: 0.20, weighIn: 0.10 };
+  var EXEC_MIN_DAYS = 5;      // darunter gibt es keine Quote, sondern null
 
   /**
    * @param {object} plan
@@ -97,6 +98,14 @@
     }
 
     var range = dayRange(start, last);
+    // Unter fuenf Tagen ist eine Quote keine Aussage, sondern Rauschen —
+    // und am zweiten Tag liest sie sich wie ein Vorwurf, bevor ueberhaupt
+    // etwas passiert ist. Dieselbe Leitplanke wie beim gemessenen Verbrauch
+    // (resolveTdee) und beim Essens-Protokoll (foodlog.adherence).
+    if (range.length < EXEC_MIN_DAYS) {
+      return { score: null, days: range.length, training: null, nutrition: null,
+               steps: null, weighIn: null, reason: "zu_wenige_tage" };
+    }
     var tPlanned = 0, tDone = 0, nPlanned = 0, nDone = 0;
     var sPlanned = 0, sDone = 0, wPlanned = 0, wDone = 0;
     var weighDays = plan.dailyTargets.weighInWeekdays || [];
@@ -219,6 +228,153 @@
     return out;
   }
 
+  /* ================= 2b · PHASENBILANZ =================
+     Was ist in zwoelf Wochen tatsaechlich passiert?
+
+     Der Abschlussbildschirm hat vorher unabhaengig vom Ergebnis
+     „12 Wochen geschafft" gesagt — auch bei 95 kg -> 93,7 kg mit Ziel 85 kg.
+     Das ist die eine Sorte Satz, die eine App wie diese nicht sagen darf:
+     ein Lob fuer ein verfehltes Ziel. Wer das einmal liest, glaubt der
+     naechsten Zahl nicht mehr.
+
+     Diese Funktion trennt drei Dinge, die der alte Bildschirm vermischt hat:
+       1. Die Zeit ist um.                (immer wahr)
+       2. Das Ziel wurde erreicht.        (pruefbar)
+       3. Woran es lag.                   (Ausfuehrung oder Plan)
+
+     Und sie nennt genau einen naechsten Schritt — nicht drei Optionen. */
+  var PHASE = { erreicht: 95, teilweise: 40 };   // Prozent des Phasenziels
+
+  /* Hier wandern Zahlen direkt in fertige Saetze. Im deutschen Satz gehoert
+     ein Komma, im englischen ein Punkt — sonst steht „1.3 kg abgenommen"
+     in einem sonst sauberen deutschen Text. */
+  function z(n) { return Math.round(n * 10) / 10; }
+  function zde(n) { return String(z(n)).replace(".", ","); }
+  function zen(n) { return String(z(n)); }
+
+  /**
+   * @param {object} plan
+   * @param {Array<{date:string,kg:number}>} weights  chronologisch
+   * @param {object|null} execution  Ergebnis von executionScore(...)
+   * @returns {object} Bilanz mit Ueberschrift, Befund und naechstem Schritt
+   */
+  function phaseOutcome(plan, weights, execution) {
+    var st = (plan && plan.selectedTransformation) || {};
+    var pg = (plan && plan.phaseGoal) || {};
+    var exec = execution || { score: null };
+    var startKg = st.startWeightKg;
+
+    var out = {
+      status: null, startKg: startKg, endKg: null, deltaKg: null,
+      phaseTargetKg: null, reachedPct: null, attribution: null,
+      goalKg: st.finalTargetWeightKg != null ? st.finalTargetWeightKg : null,
+      executionScore: exec.score != null ? exec.score : null,
+      headline: null, verdict: null, nextStep: null
+    };
+
+    /* Ohne zwei Wiegungen gibt es keine Bilanz — und das wird gesagt, statt
+       eine Zahl zu erfinden oder zu gratulieren. */
+    var reihe = (weights || []).filter(function (w) { return w && typeof w.kg === "number" && isFinite(w.kg); });
+    if (startKg == null || reihe.length < 2) {
+      out.status = "keine_daten";
+      out.headline = tx("Zwölf Wochen sind vorbei.", "Twelve weeks are over.");
+      out.verdict = tx("Es liegen zu wenige Wiegungen vor, um zu sagen, was sich verändert hat. Ohne Messung gibt es kein Ergebnis — nur ein Gefühl.",
+                       "There are too few weigh-ins to say what changed. Without measurement there is no result — only a feeling.");
+      out.nextStep = tx("Nächste Phase: ein fester Wiege-Tag pro Woche. Das ist die kleinste Änderung mit der größten Wirkung.",
+                        "Next phase: one fixed weigh-in day per week. Smallest change, biggest effect.");
+      return out;
+    }
+
+    var endKg = reihe[reihe.length - 1].kg;
+    var cut = plan.derived && plan.derived.cut != null
+      ? plan.derived.cut
+      : (st.direction ? st.direction === "cut" : (st.finalTargetWeightKg || startKg) < startKg);
+
+    /* Das Phasenziel ist eine Spanne. Gemessen wird gegen die nahe Kante —
+       wer die erreicht hat, hat das Ziel erreicht. */
+    var ziel = cut ? pg.week12TargetMaxKg : pg.week12TargetMinKg;
+    if (ziel == null) ziel = st.finalTargetWeightKg;
+
+    out.endKg = Math.round(endKg * 10) / 10;
+    out.deltaKg = Math.round((endKg - startKg) * 10) / 10;
+    out.phaseTargetKg = ziel != null ? Math.round(ziel * 10) / 10 : null;
+
+    var soll = ziel != null ? (ziel - startKg) : null;      // geplante Veraenderung
+    var ist = endKg - startKg;                              // tatsaechliche
+    if (soll != null && Math.abs(soll) > 0.01) {
+      out.reachedPct = Math.round((ist / soll) * 100);
+    }
+
+    var richtig = cut ? ist < -0.2 : ist > 0.2;             // hat sich etwas bewegt?
+    var pct = out.reachedPct;
+
+    if (pct != null && pct >= PHASE.erreicht) out.status = "erreicht";
+    else if (!richtig) out.status = "falsche_richtung";
+    else if (pct != null && pct >= PHASE.teilweise) out.status = "teilweise";
+    else out.status = "kaum";
+
+    /* Woran lag es? Nur bei verfehltem Ziel — bei Erfolg ist die Frage
+       ueberfluessig und wirkt wie eine Relativierung. */
+    if (out.status !== "erreicht") {
+      if (exec.score == null) out.attribution = "unklar";
+      else if (exec.score < EXEC.poor) out.attribution = "ausfuehrung";
+      else if (exec.score >= EXEC.good) out.attribution = "plan";
+      else out.attribution = "unklar";
+    }
+
+    var betrag = Math.abs(out.deltaKg);
+    var wort = cut ? tx("abgenommen", "lost") : tx("zugenommen", "gained");
+    var strecke = zde(betrag) + " kg " + wort.de;
+    var strecken = zen(betrag) + " kg " + wort.en;
+    var geplant = soll != null ? Math.abs(soll) : null;
+
+    if (out.status === "erreicht") {
+      out.headline = tx("Ziel erreicht.", "Goal reached.");
+      out.verdict = tx("Du hast " + strecke + ". Das Phasenziel lag bei " + zde(out.phaseTargetKg) + " kg — du stehst bei " + zde(out.endKg) + " kg.",
+                       "You " + strecken + ". The phase target was " + zen(out.phaseTargetKg) + " kg — you are at " + zen(out.endKg) + " kg.");
+      out.nextStep = out.goalKg != null && ((cut && out.endKg > out.goalKg + 0.5) || (!cut && out.endKg < out.goalKg - 0.5))
+        ? tx("Bis zum Gesamtziel (" + zde(out.goalKg) + " kg) fehlt noch etwas. Die nächste Phase startet mit denselben Zahlen — sie funktionieren.",
+             "There is still ground to the overall goal (" + zen(out.goalKg) + " kg). The next phase starts with the same numbers — they work.")
+        : tx("Damit ist dein Gesamtziel erreicht. Die nächste Phase ist keine Diät mehr, sondern Halten.",
+             "That is your overall goal. The next phase is not a diet — it is holding.");
+      return out;
+    }
+
+    if (out.status === "falsche_richtung") {
+      out.headline = tx("Zwölf Wochen sind vorbei.", "Twelve weeks are over.");
+      out.verdict = tx("Dein Gewicht hat sich nicht in die geplante Richtung bewegt: " + zde(out.startKg) + " kg zu Beginn, " + zde(out.endKg) + " kg heute.",
+                       "Your weight did not move in the planned direction: " + zen(out.startKg) + " kg at the start, " + zen(out.endKg) + " kg today.");
+    } else if (pct == null) {
+      /* Ohne hinterlegtes Phasenziel gibt es keinen Prozentsatz — dann wird
+         nur berichtet, was gemessen wurde, und nichts dazuerfunden. */
+      out.headline = tx("Zwölf Wochen, " + strecke + ".", "Twelve weeks, " + strecken + ".");
+      out.verdict = tx("Von " + zde(out.startKg) + " kg auf " + zde(out.endKg) + " kg. Für diese Phase ist kein Zielgewicht hinterlegt, deshalb steht hier keine Quote.",
+                       "From " + zen(out.startKg) + " kg to " + zen(out.endKg) + " kg. No phase target is stored, so there is no percentage here.");
+    } else if (out.status === "kaum") {
+      out.headline = tx("Zwölf Wochen sind vorbei.", "Twelve weeks are over.");
+      out.verdict = tx("Du hast " + strecke + " — geplant waren " + zde(geplant) + " kg. Das ist etwa " + pct + " % des Phasenziels.",
+                       "You " + strecken + " — the plan was " + zen(geplant) + " kg. That is about " + pct + "% of the phase target.");
+    } else {
+      out.headline = tx("Zwölf Wochen, " + strecke + ".", "Twelve weeks, " + strecken + ".");
+      out.verdict = tx("Das sind " + pct + " % des Phasenziels von " + zde(geplant) + " kg. Nicht das ganze Ziel, aber eine echte Veränderung.",
+                       "That is " + pct + "% of the phase target of " + zen(geplant) + " kg. Not the whole goal, but a real change.");
+    }
+
+    /* Genau ein naechster Schritt — abgeleitet aus der Ursache, nicht aus
+       einer Liste von Moeglichkeiten. */
+    if (out.attribution === "ausfuehrung") {
+      out.nextStep = tx("Deine Umsetzung lag bei " + out.executionScore + " %. Die nächste Phase bekommt deshalb dieselben Zahlen — nicht schärfere. Was zählt, ist die Anzahl der Tage, an denen der Plan wirklich stattfindet.",
+                        "Your execution was at " + out.executionScore + "%. The next phase gets the same numbers — not tighter ones. What counts is the number of days the plan actually happens.");
+    } else if (out.attribution === "plan") {
+      out.nextStep = tx("Du hast den Plan mit " + out.executionScore + " % umgesetzt. Dann lag es nicht an dir, sondern an den Zahlen: die nächste Phase rechnet mit deinem gemessenen Verbrauch statt mit der Formel.",
+                        "You executed the plan at " + out.executionScore + "%. So it was not you — it was the numbers: the next phase uses your measured expenditure instead of the formula.");
+    } else {
+      out.nextStep = tx("Für eine Ursache fehlen Daten aus dieser Phase. Die nächste Phase beginnt mit dem, was fehlte: täglich abhaken und einmal pro Woche wiegen.",
+                        "There is not enough data from this phase to name a cause. The next phase starts with what was missing: daily check-offs and one weigh-in per week.");
+    }
+    return out;
+  }
+
   /* ================= 3 · DAILY PRESCRIPTION =================
      Der Kern. Aus dem Zustand von heute entsteht GENAU EIN Tagesauftrag mit
      genau einem Schwerpunkt und einer nachvollziehbaren Begruendung.
@@ -284,6 +440,7 @@
   }
 
   function tx(de, en) { return { de: de, en: en }; }
+  function tage(n) { return n === 1 ? "einen Tag" : n + " Tage"; }
 
   /* Interne Signalnamen gehoeren nicht in den Nutzertext. „schlaf + hrv"
      liest sich wie ein Log-Eintrag, nicht wie eine Erklaerung. */
@@ -453,7 +610,7 @@
     /* --- Ausfuehrung einordnen, ohne zu moralisieren --------------------- */
     if (exec.score != null) {
       if (exec.score < EXEC.poor) {
-        why("Deine Umsetzung liegt bei " + exec.score + " % über " + exec.days + " Tage. Der Plan wird deshalb nicht verschärft — zuerst zählt Ausführung, dann Zahlen.",
+        why("Deine Umsetzung liegt bei " + exec.score + " % über " + tage(exec.days) + ". Der Plan wird deshalb nicht verschärft — zuerst zählt Ausführung, dann Zahlen.",
             "Your execution is at " + exec.score + "% over " + exec.days + " days. The plan will not be tightened — execution first, numbers second.");
       } else if (exec.score >= 95) {
         why("Umsetzung " + exec.score + " %. Auf diesem Niveau sind Zahlen aussagekräftig — Anpassungen im Wochencheck greifen jetzt wirklich.",
@@ -532,9 +689,11 @@
   }
 
   return {
-    EXEC_WEIGHTS: EXEC_WEIGHTS, EXEC: EXEC, REVIEW_DAYS: REVIEW_DAYS,
+    EXEC_WEIGHTS: EXEC_WEIGHTS, EXEC: EXEC, EXEC_MIN_DAYS: EXEC_MIN_DAYS, REVIEW_DAYS: REVIEW_DAYS,
+    PHASE: PHASE,
     executionScore: executionScore,
     trajectory: trajectory,
+    phaseOutcome: phaseOutcome,
     missedStreak: missedStreak,
     recoverySignal: recoverySignal,
     dailyPrescription: dailyPrescription,
