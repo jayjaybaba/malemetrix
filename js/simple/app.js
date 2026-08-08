@@ -1315,9 +1315,18 @@
 
   function subNutrition(p) {
     var n = p.nutrition;
-    root.appendChild(el("p", "s-sub",
-      nfi(n.calorieTarget) + " kcal (" + nfi(n.calorieRangeMin) + "–" + nfi(n.calorieRangeMax) + ") · " +
-      n.proteinTargetGrams + " g " + tx("Protein", "protein") + " · " + n.mealCount + " " + tx("Mahlzeiten", "meals")));
+    /* Die drei Zielzahlen sind das Wichtigste auf diesem Bildschirm. Als
+       graue Unterzeile standen sie leiser da als die Fussnote darunter. */
+    var ziele = el("div", "s-mini");
+    [[nfi(n.calorieTarget), "kcal", nfi(n.calorieRangeMin) + "–" + nfi(n.calorieRangeMax)],
+     [n.proteinTargetGrams + " g", tx("Protein", "protein"), null],
+     [String(n.mealCount), tx("Mahlzeiten", "meals"), null]].forEach(function (z) {
+      var c = el("div", "cell");
+      c.appendChild(el("div", "v", esc(z[0])));
+      c.appendChild(el("div", "l", esc(z[1]) + (z[2] ? " · " + esc(z[2]) : "")));
+      ziele.appendChild(c);
+    });
+    root.appendChild(ziele);
     root.appendChild(tdeeOrigin(p));
     (n.meals || []).forEach(function (m, mi) {
       var slotNames = { breakfast: tx("Frühstück", "Breakfast"), lunch: tx("Mittagessen", "Lunch"), dinner: tx("Abendessen", "Dinner"), snack: "Snack" };

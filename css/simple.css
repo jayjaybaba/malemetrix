@@ -93,6 +93,10 @@
 /* Karten */
 .s-card { border: 1px solid var(--line); border-radius: 14px; background: var(--card); padding: 15px 16px; margin: 12px 0; }
 .s-card h3 { font-size: 1.02rem; margin: 0 0 8px; }
+/* Fussnoten sind ueberall Fussnoten, nicht nur in Karten. Die Regel stand
+   nur unter .s-card — ausserhalb wurde daraus normaler Fliesstext, und die
+   Herkunft des Kalorienziels stand groesser und heller da als das Ziel. */
+.sapp .hint { color: var(--muted-2); font-size: 0.84rem; line-height: 1.5; }
 .s-card .hint { color: var(--muted-2); font-size: 0.84rem; }
 .s-note { border-left: 3px solid var(--accent-2); padding: 10px 14px; background: var(--accent-soft); border-radius: 0 10px 10px 0; font-size: 0.9rem; margin: 12px 0; }
 .s-note.warn { border-left-color: var(--amber); background: var(--amber-soft); }
@@ -181,11 +185,17 @@
 /* Teilwerte INNERHALB einer Karte: keine eigenen Raender. Sonst entstehen
    Kaesten in Kaesten in Kaesten, und der Blick findet keinen Anfang mehr.
    Getrennt wird durch eine Haarlinie, nicht durch einen Rahmen. */
-.s-mini { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin: 4px 0 12px; border-top: 1px solid var(--line); padding-top: 10px; }
-.s-mini .cell { padding: 0 6px; border-left: 1px solid var(--line); text-align: center; }
+/* Flex statt Grid: die Zahl der Zellen wechselt (vier bei der Ausfuehrung,
+   drei bei den Ernaehrungszielen), und flex:1 teilt einfach gleich auf. */
+.s-mini { display: flex; margin: 4px 0 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+.s-mini .cell { flex: 1; min-width: 0; padding: 0 6px; border-left: 1px solid var(--line); text-align: center; }
 .s-mini .cell:first-child { border-left: 0; padding-left: 0; }
 .s-mini .cell .v { font-size: 1rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 .s-mini .cell .l { color: var(--muted); font-size: 0.72rem; margin-top: 2px; }
+/* Steht die Reihe fuer sich (nicht in einer Karte), traegt sie die
+   Kernzahlen des Bildschirms und darf entsprechend groesser sein. */
+.sapp > .s-mini { margin-top: 2px; }
+.sapp > .s-mini .cell .v { font-size: 1.25rem; }
 
 .s-bars { display: flex; gap: 3px; align-items: flex-end; height: 60px; margin: 10px 0; }
 .s-bars .b { flex: 1; background: var(--accent-soft); border-radius: 3px 3px 0 0; min-height: 4px; position: relative; }
