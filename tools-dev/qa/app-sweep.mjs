@@ -347,15 +347,25 @@ async function main() {
         await page.addInitScript((t) => localStorage.setItem("mm_simple_plan_tab", JSON.stringify(t)), a.tab);
       }
 
-      await page.goto(`http://localhost:${PORT}/meinplan.html${a.hash}`, { waitUntil: "networkidle" });
-      await page.waitForTimeout(700);
+      /* "load" statt "networkidle": ein einziger offener Abruf haette den
+         ganzen Lauf nach 30 s abgebrochen — und ein Durchlauf dauert eine
+         halbe Stunde. Genau das ist einmal passiert und hat alle Ergebnisse
+         mitgenommen. Ausserdem faengt jede Ansicht ihren eigenen Fehler:
+         eine haengende Seite ist ein Befund, kein Grund aufzugeben. */
+      try {
+        await page.goto(`http://localhost:${PORT}/meinplan.html${a.hash}`,
+          { waitUntil: "load", timeout: 20000 });
+        await page.waitForTimeout(700);
 
-      const datei = `${z.id}--${a.de.replace(/[^a-zA-Z]+/g, "-").toLowerCase()}.png`;
-      await page.screenshot({ path: path.join(OUT, datei) });
+        const datei = `${z.id}--${a.de.replace(/[^a-zA-Z]+/g, "-").toLowerCase()}.png`;
+        await page.screenshot({ path: path.join(OUT, datei) });
 
-      await pruefeAnsicht(page, z.de, a.de);
-      geprueft++;
-      await ctx.close();
+        await pruefeAnsicht(page, z.de, a.de);
+        geprueft++;
+      } catch (e) {
+        befund("HOCH", z.de, a.de, "Ansicht liess sich nicht pruefen", String(e.message || e).slice(0, 120));
+      }
+      await ctx.close().catch(() => {});
     }
   }
 
