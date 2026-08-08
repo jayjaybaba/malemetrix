@@ -40,8 +40,8 @@ ios-app/App/App/HealthPlugin.swift   Apple Health (nur lesen, was der Plan brauc
 js/native-bridge.js            Bruecke Web -> nativ (nur im App-Bundle geladen)
 css/native.css                 App-Anpassungen (Website-Navigation aus)
 ios-app/                       das Xcode-Projekt (von Capacitor erzeugt)
-tools-dev/tests/native-app.test.js    70 Pruefungen, laufen ohne Mac
-tools-dev/tests/health-energy.test.js 50 Pruefungen fuer die Health-Leitplanken
+tools-dev/run-tests.mjs        npm test — alle Testdateien in einem Lauf
+tools-dev/qa/*.mjs             Browser-Nachweise (siehe unten)
 .github/workflows/ios-app.yml  Build + Simulator-Test + TestFlight
 ```
 
@@ -246,7 +246,7 @@ die App und koennen ueber das Echte reden statt ueber Vermutungen.
 Der Job **build** in `.github/workflows/ios-app.yml` laeuft bei jeder
 Aenderung, ohne jeden Zugang, auf einem echten Mac. Er
 
-- fuehrt die 120 Fachpruefungen aus (`native-app.test.js`, `health-energy.test.js`),
+- fuehrt `npm test` aus — alle 49 Testdateien, nicht nur eine,
 - uebersetzt die App mit Xcode,
 - startet sie im iPhone-Simulator und prueft, dass sie den ersten Bildschirm
   ueberlebt (ein Absturz im WebView wuerde hier auffallen),

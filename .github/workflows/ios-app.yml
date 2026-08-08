@@ -44,8 +44,46 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Schnelle Pruefungen auf Linux, bevor ein teurer Mac-Runner anspringt.
+  # Der Browser-Nachweis gehoert hierher, nicht auf den Mac: er hat Fehler
+  # gefunden, die kein Unit-Test sehen kann — ein totes Onboarding im Bundle,
+  # ein Blatt unter der Kopfzeile, einen Bildschirm, der nach dem Eintragen
+  # den alten Stand zeigt.
+  pruefen:
+    name: Fachtests und Browser-Nachweise
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+
+      - name: Fachtests (alle Suiten)
+        run: npm test
+
+      - name: Browser installieren
+        run: npx playwright install --with-deps chromium
+
+      - name: Bundle bauen und im Browser starten
+        run: |
+          node scripts/build-app.mjs
+          node tools-dev/qa/bundle-smoke.mjs
+
+      - name: Bewegung, Tempo und Essens-Protokoll
+        run: |
+          node tools-dev/qa/motion.mjs
+          node tools-dev/qa/tempo.mjs
+          node tools-dev/qa/essen.mjs
+
+      # Der vollstaendige Durchlauf (44 Bildschirme) dauert eine halbe Stunde
+      # und laeuft deshalb von Hand: node tools-dev/qa/app-sweep.mjs
+
   build:
     name: Bauen und im Simulator pruefen
+    needs: pruefen
     runs-on: macos-15
     timeout-minutes: 40
     steps:
@@ -66,7 +104,7 @@ jobs:
         run: npm ci
 
       - name: Fachtests (Bundle, Bruecke, Projektformalien)
-        run: node tools-dev/tests/native-app.test.js
+        run: npm test
 
       - name: Web-Bundle bauen und in das Xcode-Projekt syncen
         run: |

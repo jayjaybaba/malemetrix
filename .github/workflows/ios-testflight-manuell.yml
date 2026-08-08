@@ -73,10 +73,7 @@ jobs:
       - run: npm ci
 
       - name: Fachtests
-        run: |
-          node tools-dev/tests/native-app.test.js
-          node tools-dev/tests/decide.test.js
-          node tools-dev/tests/foodlog.test.js
+        run: npm test
 
       - name: Web-Bundle bauen und syncen
         run: |
