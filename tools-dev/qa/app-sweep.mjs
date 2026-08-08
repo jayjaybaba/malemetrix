@@ -171,6 +171,28 @@ async function pruefeAnsicht(page, zustand, ansicht) {
       klein.slice(0, 4).join(" · "));
   }
 
+  /* --- 3b · Bedienelemente ausserhalb des Bildes --------------------------
+     Der Ueberlauftest oben misst die Seitenbreite. Wird ein Knopf INNERHALB
+     einer Karte abgeschnitten, bleibt die Seite schmal und der Test still —
+     im Workout lag so das vierte Satz-Kaestchen unsichtbar hinter dem
+     Kartenrand. Ein Knopf, den man nicht sieht, ist kein Knopf. */
+  const abgeschnitten = await page.evaluate(() => {
+    const out = [];
+    document.querySelectorAll("main button, main input, main select, main a[href]").forEach((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) return;
+      if (r.right > window.innerWidth + 1 || r.left < -1) {
+        out.push((el.textContent || el.placeholder || el.tagName).trim().slice(0, 24) +
+          " (bis " + Math.round(r.right) + "px)");
+      }
+    });
+    return out.slice(0, 5);
+  });
+  if (abgeschnitten.length) {
+    befund("HOCH", zustand, ansicht,
+      abgeschnitten.length + " Bedienelement(e) liegen ausserhalb des Bildes", abgeschnitten.join(" · "));
+  }
+
   /* --- 4b · Aufgabenzeilen, die um ihren Aktionslink herumbrechen ---------
      Steht rechts ein „Starten →" und bricht die Unterzeile links daneben in
      eine zweite Zeile, entsteht eine ausgefranste L-Form: die zweite Zeile

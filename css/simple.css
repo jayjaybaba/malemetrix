@@ -115,13 +115,21 @@
 .s-week .d .s-tag { color: var(--accent-2); font-size: 0.76rem; white-space: nowrap; flex: 0 0 auto; }
 
 /* Training */
-.s-ex { border-top: 1px solid var(--line); padding: 10px 0; display: flex; align-items: center; gap: 10px; }
+/* Uebung: Name oben, Bedienung darunter. Alles in einer Zeile hat bei
+   „Einarmiges Kurzhantel-Rudern" plus zwei Feldern plus vier Satz-Kaestchen
+   nicht funktioniert — der Name wurde auf drei Zeichen gequetscht und das
+   letzte Kaestchen lag ausserhalb des Bildes. */
+.s-ex { border-top: 1px solid var(--line); padding: 12px 0; display: flex; flex-direction: column; gap: 9px; }
+.s-ex .ctl { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
 .s-ex:first-of-type { border-top: 0; }
 .s-ex .n { flex: 1; }
 .s-ex .n b { font-weight: 600; display: block; }
-.s-ex .n span { color: var(--muted); font-size: 0.82rem; }
+/* Jede Angabe auf eine eigene Zeile. Inline standen „…Pause 120 s" und
+   „Heute: Arbeitsgewicht finden" direkt aneinander: „120 sHeute:".
+   Nur direkte Kinder — „KURZ" steht INNERHALB des Namens und bleibt dort. */
+.s-ex .n > span { display: block; color: var(--muted); font-size: 0.82rem; }
 .s-ex .short-mark { color: var(--accent-2); font-size: 0.7rem; letter-spacing: 0.1em; }
-.s-ex input[type="number"] { width: 64px; background: var(--bg-2); border: 1px solid var(--line-strong); color: var(--text); border-radius: 8px; padding: 7px 8px; font-size: 0.9rem; }
+.s-ex input[type="number"] { width: 72px; background: var(--bg-2); border: 1px solid var(--line-strong); color: var(--text); border-radius: 8px; padding: 7px 8px; font-size: 0.9rem; }
 .s-ex .setbox { display: flex; gap: 5px; }
 /* Satz-Kästchen: 30 war hübsch und beim Training mit schwitzigen Fingern
    zu klein. Beim Abhaken eines Satzes darf man sich nicht vertippen. */

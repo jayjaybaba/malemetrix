@@ -1146,13 +1146,18 @@
         (last4 && last4.weightKg ? " · " + tx("letztes Mal", "last time") + ": " + nf(last4.weightKg) + " kg × " + (last4.reps || "?") : "")));
       n.appendChild(el("span", "s-goal", esc(progressionGoal(ex, last4))));
       row.appendChild(n);
+      /* Eingaben und Satz-Kaestchen in eine eigene Zeile: nebeneinander mit
+         dem Uebungsnamen blieben fuer „Einarmiges Kurzhantel-Rudern" drei
+         Zeichen Breite, und ab vier Saetzen lief das letzte Kaestchen aus
+         dem Bild — sichtbar abgeschnitten und nicht mehr antippbar. */
+      var ctl = el("div", "ctl");
       var wIn = el("input"); wIn.type = "number"; wIn.step = "0.5"; wIn.placeholder = "kg";
       wIn.value = e.weightKg != null ? e.weightKg : (last4 && last4.weightKg != null ? last4.weightKg : "");
       wIn.addEventListener("change", function () { e.weightKg = parseFloat(wIn.value) || null; w.entries[ex.id] = e; setDayEntry(ymd, entry); });
       var rIn = el("input"); rIn.type = "number"; rIn.placeholder = tx("Wdh", "reps");
       rIn.value = e.reps != null ? e.reps : "";
       rIn.addEventListener("change", function () { e.reps = parseInt(rIn.value, 10) || null; w.entries[ex.id] = e; setDayEntry(ymd, entry); });
-      row.appendChild(wIn); row.appendChild(rIn);
+      ctl.appendChild(wIn); ctl.appendChild(rIn);
       var sb = el("div", "setbox");
       for (var si = 1; si <= sets; si++) {
         (function (si2) {
@@ -1168,7 +1173,7 @@
           sb.appendChild(b);
         })(si);
       }
-      row.appendChild(sb);
+      ctl.appendChild(sb);
       if (ex.substitute) {
         var sel = el("select");
         var o1 = el("option"); o1.value = ""; o1.textContent = tx("Übung ok", "Exercise ok");
@@ -1176,8 +1181,9 @@
         sel.appendChild(o1); sel.appendChild(o2);
         sel.value = e.sub ? "sub" : "";
         sel.addEventListener("change", function () { e.sub = sel.value === "sub"; w.entries[ex.id] = e; setDayEntry(ymd, entry); });
-        row.appendChild(sel);
+        ctl.appendChild(sel);
       }
+      row.appendChild(ctl);
       card.appendChild(row);
     });
     root.appendChild(card);
