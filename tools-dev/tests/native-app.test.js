@@ -251,6 +251,18 @@ group("Entscheidungsschicht ist in der App verdrahtet");
   ok(/decide\.dailyPrescription\(/.test(app), "Today nutzt den Tagesauftrag");
   ok(/decide\.executionScore\(/.test(app), "Fortschritt und Wochencheck nutzen den Execution Score");
   ok(/decide\.trajectory\(/.test(app), "Fortschritt zeigt den Verlauf");
+
+  /* Das Blatt tauscht seinen Inhalt aus, statt sich zu schliessen und neu zu
+     oeffnen — sonst faehrt es bei jedem Eintrag 220 ms hinaus und 320 ms
+     wieder herein. Und der Bildschirm DAHINTER muss mit: sonst stehen dort
+     nach dem Eintragen weiter die Zielwerte statt der eingetragenen Zahlen. */
+  ok(/function refreshSheet\(\)/.test(app), "es gibt einen Weg, nur den Blattinhalt zu erneuern");
+  ok(!/closeSheet\(\); openFoodSheet\(/.test(app),
+    "das Essens-Blatt schliesst und oeffnet sich nicht mehr bei jedem Eintrag");
+  ok((app.match(/refreshSheet\(\); render\(\);/g) || []).length >= 2,
+    "und jeder Eintrag/jede Loeschung zeichnet auch den Bildschirm dahinter neu");
+  ok(/tools-dev\/qa\/essen\.mjs/.test(read("tools-dev/qa/essen.mjs")),
+    "ein Browser-Nachweis rechnet die Summen im Blatt nach");
   const weekly = read("js/simple/weekly-check.js");
   ok(/ctx\.execution/.test(weekly), "der Wochencheck nimmt die Messung entgegen");
 }

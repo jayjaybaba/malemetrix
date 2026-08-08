@@ -248,7 +248,21 @@
     document.body.appendChild(sheet);
     build(sheet);
     window._mmSheet = [back, sheet];
+    sheetBuild = build;
     try { if (MM.fokusFangen) MM.fokusFangen(sheet, function () { closeSheet(); }); } catch (e) {}
+  }
+  /* Inhalt austauschen, ohne das Blatt anzufassen.
+     Das Essens-Protokoll hat sich nach jedem Eintrag geschlossen und neu
+     geoeffnet. Ohne Animation fiel das nicht auf; mit ihr faehrt das Blatt
+     bei jedem Antippen 220 ms hinaus und 320 ms wieder herein, obwohl sich
+     nur eine Liste um eine Zeile verlaengert hat. */
+  var sheetBuild = null;
+  function refreshSheet() {
+    var nodes = window._mmSheet;
+    if (!nodes || !sheetBuild) return;
+    var sheet = nodes[1];
+    sheet.innerHTML = "";
+    sheetBuild(sheet);
   }
   /* Das Blatt geht in 320 ms auf und in 220 ms zu. Zu ist schneller als auf:
      wer schliesst, hat sich entschieden und will nicht warten.
@@ -754,10 +768,10 @@
     var rest = foodlog.remaining(p.nutrition, fd.entries, rxToday.kcal);
     if (fd.entries.length) {
       tasks.push({ id: "protein", measured: true,
-        b: (rest.protein > 0 ? tx("Noch ", "Still ") + rest.protein + " g " + tx("Protein", "protein")
+        b: (rest.protein > 0 ? tx("Noch ", "Still ") + nfi(rest.protein) + " g " + tx("Protein", "protein")
                              : tx("Protein erreicht ✓", "Protein reached ✓")),
         s: nfi(rest.eaten.kcal) + " / " + nfi(rest.kcalGoal) + " kcal · " +
-           (rest.kcal >= 0 ? tx("noch ", "still ") + rest.kcal + " frei" : Math.abs(rest.kcal) + " " + tx("darüber", "over")),
+           (rest.kcal >= 0 ? tx("noch ", "still ") + nfi(rest.kcal) + " frei" : nfi(Math.abs(rest.kcal)) + " " + tx("darüber", "over")),
         go: "sheet" });
     } else {
       tasks.push({ id: "protein", b: nfi(rxToday.protein) + " g " + tx("Protein", "protein"),
@@ -897,11 +911,11 @@
       box.appendChild(el("h3", null, tx("Heute gegessen", "Eaten today")));
       box.appendChild(el("p", "ctx",
         nfi(rest.eaten.kcal) + " / " + nfi(rest.kcalGoal) + " kcal · " +
-        rest.eaten.protein + " / " + rest.proteinGoal + " g " + tx("Protein", "protein")));
+        nfi(rest.eaten.protein) + " / " + nfi(rest.proteinGoal) + " g " + tx("Protein", "protein")));
       if (rest.protein > 0 || rest.kcal > 0) {
         box.appendChild(el("p", "hint",
           tx("Es fehlen noch ", "Still missing ") +
-          Math.max(0, rest.protein) + " g " + tx("Protein", "protein") + " und " +
+          nfi(Math.max(0, rest.protein)) + " g " + tx("Protein", "protein") + " und " +
           nfi(Math.max(0, rest.kcal)) + " kcal."));
       }
 
@@ -915,7 +929,10 @@
         var del = el("button", "btn btn-ghost btn-sm", "✕");
         del.setAttribute("aria-label", tx("Eintrag löschen", "Delete entry"));
         del.addEventListener("click", function () {
-          removeFood(ymd, e.id); closeSheet(); openFoodSheet(ymd, rx);
+          /* render() dazu: der Heute-Bildschirm liegt hinter dem Blatt und
+             zeigte sonst bis zum naechsten Ansichtswechsel den alten Stand —
+             Zielwerte statt der eingetragenen Zahlen. */
+          removeFood(ymd, e.id); refreshSheet(); render();
         });
         row.appendChild(del);
         box.appendChild(row);
@@ -925,7 +942,7 @@
         if (!entry) return;
         addFood(ymd, entry, rx.kcal);
         track("food_logged", { source: entry.source });
-        closeSheet(); openFoodSheet(ymd, rx);
+        refreshSheet(); render();
       }
       function optionButton(label, kcal, protein, source, blockId) {
         var b = el("button", "btn btn-ghost");
