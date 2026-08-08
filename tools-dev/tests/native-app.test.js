@@ -256,6 +256,44 @@ group("Entscheidungsschicht ist in der App verdrahtet");
 }
 
 
+group("App-Bundle: nur was gebraucht wird — aber alles, was gebraucht wird");
+{
+  const build = read("scripts/build-app.mjs");
+  ok(!/const DIRS = \[[^\]]*"js"/.test(build),
+    "js/ wird nicht mehr pauschal kopiert (824 KB js/os hatte niemand angefordert)");
+  ok(/sammleSkripte/.test(build), "die Skripte kommen aus den Referenzen der Seiten");
+  ok(/module\.add\(rel\)/.test(build) && /bfrom/.test(build),
+    "und ES-Modul-Importe zaehlen mit — daran ist transformation.html gescheitert");
+  /* Der eigentliche Beweis: die Datei, an der es haengt, muss ankommen. */
+  ok(/import \* as G from "\.\/supabase\/functions\/_shared\/transform-goals\.mjs/.test(read("transformation.html")),
+    "transformation.html laedt die Zielengine weiterhin als Modul");
+  /* Im Bundle heisst sie .js: iOS kennt die Endung .mjs nicht und liefert
+     application/octet-stream, womit WebKit das Modul ablehnt. */
+  ok(/\.mjs\$\/, "\.js"/.test(build) && /\\.mjs\(\["'\?\]\)/.test(build),
+    "der Build benennt .mjs im Bundle nach .js um und zieht den Importpfad mit");
+  if (exists("app-build")) {
+    ok(exists("app-build/supabase/functions/_shared/transform-goals.js"),
+      "und die Zielengine liegt wirklich im gebauten Bundle");
+    ok(/transform-goals\.js/.test(read("app-build/transformation.html")),
+      "die gebaute Seite zeigt auf den umbenannten Pfad");
+  }
+  ok(/NACHGELADEN/.test(build) && /i18n-en\.js/.test(build),
+    "zur Laufzeit nachgeladene Dateien stehen in einer benannten Liste, nicht im Zufall");
+  ok(/uebersprungen\.length/.test(build),
+    "der Build sagt laut, was er weglaesst — stilles Weglassen liest sich wie Vollstaendigkeit");
+
+  /* Ein Service Worker im App-Binary wuerde nach einem Store-Update die alte
+     Fassung weiterliefern. */
+  const main = read("js/main.js");
+  ok(/MM\.native\.isApp \|\| MM\.native\.inBundle/.test(main) && /!inApp && "serviceWorker" in navigator/.test(main),
+    "in der App wird kein Service Worker registriert");
+  ok(/inBundle: true/.test(read("js/native-bridge.js")),
+    "und die Bruecke markiert jede Seite, die aus dem Bundle kommt");
+
+  ok(/bundle-smoke/.test(read("tools-dev/qa/bundle-smoke.mjs")),
+    "es gibt einen Browser-Nachweis, dass das verschlankte Bundle wirklich laedt");
+}
+
 group("Zahlen und Daten stehen in der Sprache des Nutzers");
 {
   const app = read("js/simple/app.js");

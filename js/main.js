@@ -689,7 +689,14 @@
 
     // PWA: Service Worker registrieren (nur über http/https)
     try {
-      if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+      /* In der nativen App NIE. Dort liegen alle Dateien ohnehin lokal, und
+         ein Cache-Worker wuerde nach einem App-Store-Update die alte Fassung
+         weiter ausliefern — ein Fehler, den niemand mehr findet.
+         (Capacitor bedient iOS ueber capacitor://, damit greift die
+         Protokollpruefung schon heute; das hier gilt auch dann noch, wenn
+         die App spaeter einmal ueber http ausgeliefert wird.) */
+      var inApp = !!(window.MM && MM.native && (MM.native.isApp || MM.native.inBundle));
+      if (!inApp && "serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
         var sub = location.pathname.indexOf("/ebooks/") !== -1 || location.pathname.indexOf("/blog/") !== -1;
         var swPath = sub ? "../sw.js" : "sw.js";
         /* App-Seiten: hier zahlt sich der Cache aus. Marketing-Seiten nicht —

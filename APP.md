@@ -257,6 +257,31 @@ heisst: dass sie sich auf einem echten iPhone gut anfuehlt. Der Simulator kennt
 keine echten Health-Daten, keine echte Mitteilungszustellung und kein echtes
 Scrollverhalten. Das entscheidet der erste TestFlight-Build auf deinem Geraet.
 
+### Vier Werkzeuge, die im Browser pruefen, was Unit-Tests nicht sehen
+
+Unit-Tests pruefen Logik. Die peinlichen Fehler sitzen daneben: ein Knopf ohne
+Wirkung, eine Tippflaeche, die der Daumen verfehlt, ein Modal, ueber dem noch
+die Kopfzeile liegt, eine Datei, die im Bundle fehlt. Dafuer gibt es vier
+Laeufe in einem echten Chromium bei iPhone-16-Pro-Groesse (393x852):
+
+```bash
+node tools-dev/qa/app-sweep.mjs      # 11 Ansichten x 4 Zustaende, ~25 Min
+node tools-dev/qa/motion.mjs         # Bewegung: greift sie, und im richtigen Moment?
+node tools-dev/qa/tempo.mjs          # Ladezeit auf 4x gedrosselter CPU
+node scripts/build-app.mjs && node tools-dev/qa/bundle-smoke.mjs
+```
+
+| Werkzeug | Prueft | Gefunden hat es u. a. |
+|---|---|---|
+| `app-sweep` | jede Ansicht in jedem Zustand: Laufzeitfehler, tote Knoepfe, Ueberlauf, Tippflaechen, leere Bildschirme, verdeckter Inhalt | 98 Bedienelemente unter 44 pt; „Umsetzung 0 % ueber 1 Tage" am zweiten Tag |
+| `motion` | ob Animationen wirklich laufen, nur beim Ansichtswechsel, und bei „Bewegung reduzieren" verschwinden | das Blatt lag UNTER der festen Kopfzeile — es war gar kein Modal |
+| `tempo` | Kaltstart, Ansichtswechsel, Abhaken, mit Grenzwerten | derzeit 580 ms / 1496 ms / 124 ms / 37 ms |
+| `bundle-smoke` | ob das fertige `app-build/` in jeder Seite ohne fehlende Datei laedt | `transformation.html` konnte seine Zielengine nicht laden — Onboarding-Schritt 1 war in der App tot |
+
+`app-sweep` schreibt `tools-dev/qa/out/sweep/bericht.json` und je einen
+Screenshot pro Bildschirm. Der Bericht gehoert auf die Platte, nicht nur in
+die Konsole: ein Lauf dauert eine halbe Stunde.
+
 ## Lokal bauen (falls du doch mal einen Mac vor dir hast)
 
 ```bash

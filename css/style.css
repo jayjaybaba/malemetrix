@@ -323,6 +323,9 @@ h1[tabindex="-1"]:focus, section[tabindex="-1"]:focus, .os-body[tabindex="-1"]:f
      bleiben nur Warenkorb und Menü-Button. Die Zeile wird von main.js
      eingefügt und nutzt dieselbe .lang-code-Mechanik wie der Header-Knopf. */
   .header-actions .lang-btn { display: none; }
+  /* Ausnahme: meinplan.html hat keine .main-nav und damit kein Menue, in das
+     die Sprachwahl wandern koennte. Dort bliebe sonst gar keine. */
+  .header-actions.solo .lang-btn { display: inline-flex; }
   .main-nav .nav-lang {
     display: flex; align-items: center; justify-content: space-between;
     width: 100%; padding: 14px 4px; margin: 0;
@@ -1618,7 +1621,9 @@ input[type="range"]::-moz-range-thumb {
   font-weight: 500;
 }
 
-.footer-col ul { display: grid; gap: 11px; }
+/* Die Links tragen ihre Hoehe jetzt selbst (44 pt), der grosszuegige
+   Zeilenabstand von frueher kaeme oben drauf. */
+.footer-col ul { display: grid; gap: 2px; }
 /* Fussnotenlinks sind 16 Punkt hoch. Als Text richtig, als Tippflaeche zu
    klein — auf dem Telefon waechst die Flaeche, nicht die Schrift. */
 .footer-col a { color: var(--muted); font-size: 0.9rem; transition: color 0.2s; display: inline-flex; align-items: center; min-height: 44px; }
@@ -2299,7 +2304,8 @@ input[type="range"]::-moz-range-thumb {
   .logo { font-size: 1.1rem; }
   /* Legacy .logo-mark Mobile-Regel entfernt (P15 Split-X) */
   .header-actions { gap: 8px; }
-  .icon-btn { height: 38px; min-width: 38px; padding: 0 8px; }
+  /* 38 war zwei Reihen zu klein fuer einen Daumen. Apple verlangt 44. */
+  .icon-btn { height: 44px; min-width: 44px; padding: 0 8px; }
   .icon-btn svg { width: 16px; height: 16px; }
   .cart-btn, .nav-toggle { width: 38px; height: 38px; flex-shrink: 0; }
 

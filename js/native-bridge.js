@@ -20,7 +20,13 @@
 
   MM.native = {
     isApp: isNative,
-    platform: isNative ? C.getPlatform() : "web"
+    platform: isNative ? C.getPlatform() : "web",
+    /* Diese Datei liegt ausschliesslich im App-Bundle. Ihre blosse Anwesenheit
+       ist damit der verlaessliche Hinweis „diese Seite kommt aus dem Bundle" —
+       unabhaengig davon, ob Capacitor gerade antwortet. js/main.js registriert
+       daraufhin keinen Service Worker: ein Cache im Bundle wuerde nach einem
+       App-Store-Update die alte Fassung weiterliefern. */
+    inBundle: true
   };
 
   if (!isNative) return;

@@ -1451,11 +1451,17 @@
     if (exec.score != null) {
       var ec = el("div", "s-card");
       ec.appendChild(el("h3", null, tx("Ausführung — letzte " + exec.days + " Tage", "Execution — last " + exec.days + " days")));
-      ec.appendChild(el("div", "goal", exec.score + " / 100"));
-      var eg = el("div", "s-stat");
+      /* Eine Zahl, kein Bruch: „100 / 100" stand vorher über vier Kacheln,
+         auf denen ebenfalls „100 %" steht. Zweimal dieselbe Aussage in zwei
+         verschiedenen Schreibweisen. */
+      ec.appendChild(el("div", "s-big", nfi(exec.score) + " <small>%</small>"));
+      /* Die vier Teilwerte gehören in DIESE Karte, sie sind keine eigenen.
+         Vorher: vier umrandete Kacheln in einer umrandeten Karte in einer
+         Liste umrandeter Karten. */
+      var eg = el("div", "s-mini");
       function ecell(v, l) {
         var c = el("div", "cell");
-        c.appendChild(el("div", "v", v == null ? "—" : v + " %"));
+        c.appendChild(el("div", "v", v == null ? "—" : nfi(v) + " %"));
         c.appendChild(el("div", "l", l)); eg.appendChild(c);
       }
       ecell(exec.training, tx("Training", "Training"));
@@ -1889,12 +1895,20 @@
     /* Rechtliches + Diagnose */
     var more = el("div", "s-card");
     more.appendChild(el("h3", null, tx("Mehr", "More")));
-    more.appendChild(el("p", "hint",
-      "<a href='tools.html'>" + tx("Rechner & Tools", "Calculators & tools") + "</a> · " +
-      "<a href='blog.html'>" + tx("Wissen", "Knowledge") + "</a> · " +
-      "<a href='datenschutz.html'>" + tx("Datenschutz", "Privacy") + "</a> · " +
-      "<a href='impressum.html'>" + tx("Impressum", "Imprint") + "</a> · " +
-      "<a href='agb.html'>" + tx("AGB", "Terms") + "</a>"));
+    /* Vorher eine Zeile Fliesstext mit Mittelpunkten dazwischen: fuenf
+       Ziele, jedes 16 Punkt hoch und keine zwei Millimeter auseinander.
+       Jetzt eine Liste — jede Zeile eine eigene Flaeche. */
+    var links = el("div", "s-links");
+    [["tools.html", tx("Rechner & Tools", "Calculators & tools")],
+     ["blog.html", tx("Wissen", "Knowledge")],
+     ["datenschutz.html", tx("Datenschutz", "Privacy")],
+     ["impressum.html", tx("Impressum", "Imprint")],
+     ["agb.html", tx("AGB", "Terms")]].forEach(function (l) {
+      var a = el("a", null, esc(l[1]));
+      a.href = l[0];
+      links.appendChild(a);
+    });
+    more.appendChild(links);
     root.appendChild(more);
   }
 
