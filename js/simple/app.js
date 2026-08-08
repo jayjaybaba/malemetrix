@@ -732,14 +732,14 @@
     if (session && rxToday.training) {
       var sub;
       if (rxToday.mode === "short" || rxToday.mode === "reentry") {
-        sub = tx("Kurzfassung: " + rxToday.sessionMinutes + " Minuten, die ersten Übungen zuerst",
-                 "Short version: " + rxToday.sessionMinutes + " minutes, first exercises first");
+        sub = tx("Kurzfassung · " + rxToday.sessionMinutes + " Minuten",
+                 "Short version · " + rxToday.sessionMinutes + " minutes");
       } else if (rxToday.mode === "recover") {
-        sub = tx("Ein Satz weniger je Übung, Last bleibt", "One set less per exercise, load stays");
+        sub = tx("Ein Satz weniger, Last bleibt", "One set less, load stays");
       } else if (rxToday.mode === "deload") {
-        sub = tx("Reduzierte Woche: 1 Satz weniger, ~80 % Last", "Deload: one set less, ~80% load");
+        sub = tx("Reduzierte Woche · ~80 % Last", "Deload · ~80% load");
       } else {
-        sub = tx("Eine Wiederholung mehr als letztes Mal", "One more rep than last time");
+        sub = tx("Eine Wiederholung mehr", "One more rep");
       }
       tasks.push({ id: "training", b: pick(session.name), s: sub, go: "#workout" });
     } else if (session && !rxToday.training) {
@@ -761,7 +761,7 @@
         go: "sheet" });
     } else {
       tasks.push({ id: "protein", b: nfi(rxToday.protein) + " g " + tx("Protein", "protein"),
-      s: tx("mindestens · ", "at least · ") + nfi(rxToday.kcal) + " kcal " + tx("Tagesziel", "daily target"), go: "sheet" });
+      s: tx("mindestens · ", "at least · ") + nfi(rxToday.kcal) + " kcal", go: "sheet" });
     }
     tasks.push({ id: "steps", b: nfi(rxToday.steps) + " " + tx("Schritte", "steps"), s: null });
 
@@ -800,7 +800,7 @@
     var wd = new Date(ymd + "T12:00:00").getDay();
     if (p.dailyTargets.weighInWeekdays.indexOf(wd) >= 0) {
       var todaysWeight = planWeights(p).filter(function (w) { return w.date === ymd; })[0];
-      chip("weigh", todaysWeight ? ("⚖ " + nf(todaysWeight.kg) + " kg ✓") : tx("⚖ Gewicht eintragen", "⚖ Log weight"), !!todaysWeight, function () {
+      chip("weigh", todaysWeight ? (nf(todaysWeight.kg) + " kg ✓") : tx("Gewicht eintragen", "Log weight"), !!todaysWeight, function () {
         openWeightSheet(ymd, render);
       });
     }
@@ -810,11 +810,11 @@
       if (activeMod) { setModifier(ymd, null); track("day_modifier_cleared"); render(); return; }
       openModifySheet(ymd);
     });
-    if (info.shopping) chip("shop", tx("🛒 Einkaufstag", "🛒 Shopping day"), !!entry.tasks.shopping, function () { location.hash = "#plan"; MM.store.set("simple_plan_tab", "einkauf"); render(); });
-    if (info.mealPrep) chip("prep", tx("🍳 Meal-Prep", "🍳 Meal prep"), !!entry.tasks.prep, function () { entry.tasks.prep = !entry.tasks.prep; setDayEntry(ymd, entry); render(); });
-    if (info.review && week >= 2) chip("review", tx("📋 Wochencheck fällig", "📋 Weekly check due"), false, function () { location.hash = "#check"; });
+    if (info.shopping) chip("shop", tx("Einkaufstag", "Shopping day"), !!entry.tasks.shopping, function () { location.hash = "#plan"; MM.store.set("simple_plan_tab", "einkauf"); render(); });
+    if (info.mealPrep) chip("prep", tx("Meal-Prep", "Meal prep"), !!entry.tasks.prep, function () { entry.tasks.prep = !entry.tasks.prep; setDayEntry(ymd, entry); render(); });
+    if (info.review && week >= 2) chip("review", tx("Wochencheck fällig", "Weekly check due"), false, function () { location.hash = "#check"; });
     if ([1, 22, 50, 78].indexOf(day) >= 0) {
-      chip("photo", tx("📷 Fortschrittsfoto (bleibt auf deinem Gerät)", "📷 Progress photo (stays on your device)"), !!entry.tasks.photo, function () {
+      chip("photo", tx("Fortschrittsfoto (bleibt auf deinem Gerät)", "Progress photo (stays on your device)"), !!entry.tasks.photo, function () {
         capturePhoto("d" + day, function (okSaved) {
           if (okSaved) { entry.tasks.photo = true; setDayEntry(ymd, entry); }
           render();
@@ -1236,14 +1236,21 @@
       var row = el("div", "d" + (wd === todayWd ? " today" : ""));
       row.appendChild(el("span", "wd", wdName(wd)));
       var what = [];
-      if (d.training) { var s = sessionForWeekday(p, wd); what.push("💪 " + (s ? pick(s.name) : "Training")); }
+      /* Kein Emoji: ein gelber Bizeps ist der einzige gesaettigte Farbfleck
+         auf einem sonst praezisen Bildschirm und sieht aus wie Clipart.
+         Dass es ein Trainingstag ist, sagt der Name der Einheit. */
+      if (d.training) { var s = sessionForWeekday(p, wd); what.push(s ? pick(s.name) : "Training"); }
       else what.push(tx("Bewegung / Schritte", "Movement / steps"));
       row.appendChild(el("span", "what", esc(what.join(" · "))));
       var tags = [];
       if (d.shopping) tags.push(tx("Einkauf", "Shopping"));
       if (d.mealPrep) tags.push("Prep");
       if (d.review) tags.push(tx("Wochencheck", "Check"));
-      if (tags.length) row.appendChild(el("span", "tag", esc(tags.join(" · "))));
+      /* Klasse „s-tag", nicht „tag": css/style.css hat ein globales .tag mit
+         Rahmen, Fuellung und Pillenform. Das sah hier aus wie ein Knopf, war
+         aber keiner — und hat der Zeile so viel Breite genommen, dass
+         „Bewegung / Schritte" daneben umgebrochen ist. */
+      if (tags.length) row.appendChild(el("span", "s-tag", esc(tags.join(" · "))));
       wrap.appendChild(row);
     });
     root.appendChild(wrap);
@@ -1843,14 +1850,18 @@
     if (p) {
       var pm = el("div", "s-card");
       pm.appendChild(el("h3", null, tx("Plan", "Plan")));
-      pm.appendChild(el("p", "hint", "Version " + p.version + " · Status: " + p.status + " · " + tx("Start", "start") + ": " + (p.startDate ? dt(p.startDate) : "—")));
+      /* „Status: active" war ein interner Wert im deutschen Text. */
+      var statusText = { draft: tx("Entwurf", "draft"), active: tx("aktiv", "active"),
+        paused: tx("pausiert", "paused"), completed: tx("abgeschlossen", "completed") }[p.status] || p.status;
+      pm.appendChild(el("p", "hint", tx("Version ", "Version ") + p.version + " · " + statusText +
+        " · " + tx("Start", "start") + ": " + (p.startDate ? dt(p.startDate) : "—")));
       var hist = store.getHistory();
       if (hist.length) {
         hist.slice(-5).reverse().forEach(function (h) {
           pm.appendChild(el("p", "hint", "v" + h.version + " (" + (h.changedAt || "").slice(0, 10) + ", " + h.source + "): " + esc(h.reason)));
         });
       }
-      var editBtn = el("a", "btn btn-primary btn-sm", tx("Plan anpassen (Training, Ernährung, Zeiten)", "Adjust plan (training, nutrition, times)"));
+      var editBtn = el("a", "btn btn-ghost btn-sm", tx("Plan anpassen", "Adjust plan"));
       editBtn.href = "#anpassen";
       editBtn.style.marginRight = "8px";
       pm.appendChild(editBtn);

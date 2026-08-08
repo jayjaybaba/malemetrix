@@ -171,6 +171,29 @@ async function pruefeAnsicht(page, zustand, ansicht) {
       klein.slice(0, 4).join(" · "));
   }
 
+  /* --- 4b · Aufgabenzeilen, die um ihren Aktionslink herumbrechen ---------
+     Steht rechts ein „Starten →" und bricht die Unterzeile links daneben in
+     eine zweite Zeile, entsteht eine ausgefranste L-Form: die zweite Zeile
+     faengt ganz links an, der Link schwebt auf halber Hoehe daneben. Sieht
+     nach Versehen aus. Die Unterzeile ist ein Hinweis — sie muss in eine
+     Zeile passen. */
+  const fransig = await page.evaluate(() => {
+    const out = [];
+    document.querySelectorAll(".s-task").forEach((row) => {
+      const sub = row.querySelector(".t span");
+      const go = row.querySelector(".go");
+      if (!sub || !go) return;
+      const lh = parseFloat(getComputedStyle(sub).lineHeight) || 18;
+      const zeilen = Math.round(sub.getBoundingClientRect().height / lh);
+      if (zeilen > 1) out.push((sub.textContent || "").trim().slice(0, 40) + " (" + zeilen + " Zeilen)");
+    });
+    return out;
+  });
+  if (fransig.length) {
+    befund("MITTEL", zustand, ansicht,
+      fransig.length + " Aufgabenzeile(n) brechen neben dem Aktionslink um", fransig.join(" · "));
+  }
+
   /* --- 5 · Leerer Bildschirm --------------------------------------------- */
   const text = (await page.locator("main").innerText().catch(() => "")).trim();
   if (text.length < 20) {

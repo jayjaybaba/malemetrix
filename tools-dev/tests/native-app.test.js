@@ -386,6 +386,16 @@ group("Bewegung: drei Motive, ein Ausschalter");
     "keine Feder, kein Nachwippen");
   ok(!/skeleton|shimmer/i.test(css), "keine Skelett-Platzhalter — die Daten liegen lokal");
 
+  /* Farb-Emoji in einer praezisen dunklen Oberflaeche sehen aus wie Clipart —
+     und auf dem iPhone deutlich lauter als im Testbrowser, weil dort die
+     volle Apple-Farbfassung greift. ✓ ✎ → sind Textzeichen und bleiben. */
+  const emoji = /[\u{1F300}-\u{1FAFF}\u{2696}\u{26A1}\u{2764}]/u;
+  const treffer = app.split("\n")
+    .map((z, i) => ({ z, nr: i + 1 }))
+    .filter((o) => emoji.test(o.z) && !/^\s*(\/\*|\*|\/\/)/.test(o.z));
+  ok(treffer.length === 0, "keine Farb-Emoji in der App-Oberflaeche" +
+    (treffer.length ? " — Zeile " + treffer.map((o) => o.nr).join(", ") : ""));
+
   /* Ein Blatt, ueber dem noch etwas liegt, ist kein Modal. Die feste
      Kopfzeile der Website steht bei z-index 100 — das Blatt muss darueber. */
   const zKopf = parseInt((read("css/style.css").match(/\.site-header\s*{[^}]*z-index:\s*(\d+)/) || [])[1], 10);

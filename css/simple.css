@@ -110,8 +110,9 @@
 .s-week .d { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; font-size: 0.9rem; }
 .s-week .d.today { border-color: var(--accent-line); background: var(--accent-soft); }
 .s-week .d .wd { width: 34px; color: var(--muted); font-size: 0.78rem; letter-spacing: 0.08em; }
-.s-week .d .what { flex: 1; }
-.s-week .d .tag { color: var(--accent-2); font-size: 0.78rem; }
+.s-week .d .what { flex: 1; min-width: 0; }
+/* Ein stiller Vermerk am Zeilenende, kein Bedienelement. */
+.s-week .d .s-tag { color: var(--accent-2); font-size: 0.76rem; white-space: nowrap; flex: 0 0 auto; }
 
 /* Training */
 .s-ex { border-top: 1px solid var(--line); padding: 10px 0; display: flex; align-items: center; gap: 10px; }
