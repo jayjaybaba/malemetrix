@@ -54,6 +54,14 @@
   }
   /* Ganze Zahlen mit Tausenderpunkt: 2.400 kcal, 8.000 Schritte. */
   function nfi(v) { return nf(v, 0); }
+  /* Eine Rate wie -0,45 kg/Woche. Das Minus ist Teil der Aussage, deshalb
+     bleibt es stehen; das Plus wird ergaenzt, damit eine Zunahme nicht wie
+     eine Abnahme aussieht. */
+  function rate(v) {
+    var n = typeof v === "number" ? v : parseFloat(v);
+    if (!isFinite(n)) return "—";
+    return (n > 0 ? "+" : "") + nf(n, 2) + " kg/" + tx("Woche", "week");
+  }
   /* „2026-12-24" -> „24. Dez. 2026". Ohne Wochentag: das Datum steht meist
      in einem Satz, der die Woche schon genannt hat. */
   function dt(ymd) {
@@ -297,7 +305,7 @@
         var tr = weekly.trend(planWeights(activePlan()), ymd);
         fb.style.color = "var(--green)";
         fb.textContent = tr
-          ? tx("Gespeichert ✓ — Trend: " + (tr.deltaPerWeek > 0 ? "+" : "") + tr.deltaPerWeek + " kg/Woche", "Saved ✓ — trend: " + (tr.deltaPerWeek > 0 ? "+" : "") + tr.deltaPerWeek + " kg/week")
+          ? tx("Gespeichert ✓ — Trend: " + rate(tr.deltaPerWeek), "Saved ✓ — trend: " + rate(tr.deltaPerWeek))
           : tx("Gespeichert ✓", "Saved ✓");
         setTimeout(function () { closeSheet(); if (onSaved) onSaved(); }, 700);
       });
@@ -731,9 +739,9 @@
       } else if (rxToday.mode === "deload") {
         sub = tx("Reduzierte Woche: 1 Satz weniger, ~80 % Last", "Deload: one set less, ~80% load");
       } else {
-        sub = tx("Progression: 1 Wiederholung mehr als letztes Mal", "Progression: one more rep than last time");
+        sub = tx("Eine Wiederholung mehr als letztes Mal", "One more rep than last time");
       }
-      tasks.push({ id: "training", b: (pick(session.name)) + " " + tx("absolvieren", "complete"), s: sub, go: "#workout" });
+      tasks.push({ id: "training", b: pick(session.name), s: sub, go: "#workout" });
     } else if (session && !rxToday.training) {
       tasks.push({ id: "movement", b: tx("Heute kein Training", "No training today"), s: tx("So entschieden — siehe Begründung oben", "Decided that way — see the reason above") });
     } else {
@@ -752,9 +760,10 @@
            (rest.kcal >= 0 ? tx("noch ", "still ") + rest.kcal + " frei" : Math.abs(rest.kcal) + " " + tx("darüber", "over")),
         go: "sheet" });
     } else {
-      tasks.push({ id: "protein", b: tx("Mindestens ", "At least ") + nfi(rxToday.protein) + " g " + tx("Protein erreichen", "of protein"), s: nfi(rxToday.kcal) + " kcal " + tx("Tagesziel", "daily target"), go: "sheet" });
+      tasks.push({ id: "protein", b: nfi(rxToday.protein) + " g " + tx("Protein", "protein"),
+      s: tx("mindestens · ", "at least · ") + nfi(rxToday.kcal) + " kcal " + tx("Tagesziel", "daily target"), go: "sheet" });
     }
-    tasks.push({ id: "steps", b: nfi(rxToday.steps) + " " + tx("Schritte erreichen", "steps"), s: null });
+    tasks.push({ id: "steps", b: nfi(rxToday.steps) + " " + tx("Schritte", "steps"), s: null });
 
     var list = el("div", "s-tasks");
     tasks.slice(0, 3).forEach(function (t) {
@@ -825,8 +834,10 @@
     }
 
     /* Tagesabschluss */
-    var closeBtn = el("button", "btn " + (entry.closed ? "btn-ghost btn-sm" : "btn-dark"), entry.closed ? tx("Tag abgeschlossen ✓", "Day closed ✓") : tx("Tag abschließen", "Close the day"));
-    closeBtn.style.marginTop = "14px";
+    /* Der Tagesabschluss ist die letzte Handlung des Bildschirms. Als halb
+       breiter Knopf zwischen Chips sah er aus wie noch ein Chip. */
+    var closeBtn = el("button", "btn s-primary " + (entry.closed ? "btn-ghost btn-sm" : "btn-dark"),
+      entry.closed ? tx("Tag abgeschlossen ✓", "Day closed ✓") : tx("Tag abschließen", "Close the day"));
     closeBtn.addEventListener("click", function () {
       if (entry.closed) return;
       entry.closed = true;
@@ -1427,17 +1438,17 @@
     cell(nf(startW) + " kg", tx("Start", "Start"));
     cell(curW != null ? nf(curW) + " kg" : "—", tx("Aktuell", "Current"));
     cell(nf(pg.week12TargetMinKg) + "–" + nf(pg.week12TargetMaxKg) + " kg", tx("Ziel Woche 12", "Week-12 target"));
-    cell(nf(st.finalTargetWeightKg) + " kg", tx("Gesamtziel (~" + st.expectedTotalWeeks + " Wo.)", "Overall (~" + st.expectedTotalWeeks + " wks)"));
+    cell(nf(st.finalTargetWeightKg) + " kg", tx("Gesamtziel (~" + st.expectedTotalWeeks + " Wochen)", "Overall (~" + st.expectedTotalWeeks + " weeks)"));
     root.appendChild(grid);
 
     /* Aussage — geglättet, keine Ein-Punkt-Panik */
     if (tr) {
       var target = weekly.plannedRate(p) || 0;
       var onTrack = Math.abs(tr.deltaPerWeek - target) <= Math.max(0.15, Math.abs(target) * 0.4);
-      root.appendChild(el("div", "s-note" + (onTrack ? "" : " warn"),
-        onTrack ? tx("Du bist aktuell auf Kurs (Trend " + tr.deltaPerWeek + " kg/Woche).", "You're currently on track (trend " + tr.deltaPerWeek + " kg/week).")
-                : tx("Dein Trend (" + tr.deltaPerWeek + " kg/Woche) liegt außerhalb des Zielkorridors. Im Wochencheck prüfen wir Umsetzung, Kalorien und Schritte.",
-                    "Your trend (" + tr.deltaPerWeek + " kg/week) sits outside the corridor. The weekly check will look at execution, calories and steps.")));
+      root.appendChild(el("div", "s-note" + (onTrack ? " ok" : " warn"),
+        onTrack ? tx("Du bist aktuell auf Kurs (Trend " + rate(tr.deltaPerWeek) + ").", "You're currently on track (trend " + rate(tr.deltaPerWeek) + ").")
+                : tx("Dein Trend (" + rate(tr.deltaPerWeek) + ") liegt außerhalb des Zielkorridors. Im Wochencheck prüfen wir Umsetzung, Kalorien und Schritte.",
+                    "Your trend (" + rate(tr.deltaPerWeek) + ") sits outside the corridor. The weekly check will look at execution, calories and steps.")));
     } else {
       root.appendChild(el("div", "s-note", tx("Noch zu wenige Gewichtsdaten für einen Trend — wiege dich an deinen festen Wiege-Tagen.", "Not enough weight data for a trend yet — weigh in on your fixed days.")));
     }
@@ -1495,16 +1506,16 @@
             : tx("Das sind " + Math.abs(vs) + " Tage später als geplant.", "That is " + Math.abs(vs) + " days later than planned.")));
         }
         tc.appendChild(el("p", "hint", tx(
-          "Gerechnet mit deiner gemessenen Rate von " + traj.actualRatePerWeek + " kg/Woche, nicht mit der geplanten. Ändert sich dein Verhalten, ändert sich dieses Datum.",
-          "Calculated from your measured rate of " + traj.actualRatePerWeek + " kg/week, not the planned one. Change your behaviour and this date changes.")));
+          "Gerechnet mit deiner gemessenen Rate von " + rate(traj.actualRatePerWeek) + ", nicht mit der geplanten. Ändert sich dein Verhalten, ändert sich dieses Datum.",
+          "Calculated from your measured rate of " + rate(traj.actualRatePerWeek) + ", not the planned one. Change your behaviour and this date changes.")));
       } else if (traj.status === "stalled") {
         tc.appendChild(el("p", null, tx(
           "Dein Gewicht bewegt sich gerade nicht. Ein Zieldatum daraus zu rechnen wäre eine erfundene Zahl — deshalb steht hier keine.",
           "Your weight is not moving right now. Projecting a date from that would be a made-up number — so there is none here.")));
       } else if (traj.status === "wrong_direction") {
         tc.appendChild(el("p", null, tx(
-          "Der Trend läuft aktuell in die andere Richtung (" + traj.actualRatePerWeek + " kg/Woche). Der Wochencheck sieht sich zuerst deine Ausführung an, nicht deine Kalorien.",
-          "The trend currently runs the other way (" + traj.actualRatePerWeek + " kg/week). The weekly check looks at your execution first, not your calories.")));
+          "Der Trend läuft aktuell in die andere Richtung (" + rate(traj.actualRatePerWeek) + "). Der Wochencheck sieht sich zuerst deine Ausführung an, nicht deine Kalorien.",
+          "The trend currently runs the other way (" + rate(traj.actualRatePerWeek) + "). The weekly check looks at your execution first, not your calories.")));
       }
       root.appendChild(tc);
     }

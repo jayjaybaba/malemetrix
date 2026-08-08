@@ -292,6 +292,30 @@ group("App-Bundle: nur was gebraucht wird — aber alles, was gebraucht wird");
 
   ok(/bundle-smoke/.test(read("tools-dev/qa/bundle-smoke.mjs")),
     "es gibt einen Browser-Nachweis, dass das verschlankte Bundle wirklich laedt");
+
+  /* Medien, die auf iOS nie abgespielt oder nie angezeigt werden. */
+  ok(!inBundle("assets/hero/mm-home-hero.webm"), "kein WebM im Bundle — WebKit spielt es nicht");
+  ok(inBundle("assets/hero/mm-home-hero.mp4"), "das MP4 daneben ist da, sonst faellt das Video ins Leere");
+  ["check.html", "tools.html"].forEach(function (p) {
+    ok(!/type="video\/webm"/.test(read("app-build/" + p)),
+      p + " bietet das fehlende WebM nicht mehr an (sonst: 404 vor dem Rueckfall aufs MP4)");
+    ok(/mm-home-hero\.mp4/.test(read("app-build/" + p)), p + " zeigt weiterhin auf das MP4");
+  });
+  ok(!inBundle("icons/tiktok-app-icon-1024.png") && !inBundle("icons/icon-1024.png"),
+    "Store- und Marketingvorlagen bleiben draussen (das App-Icon liegt im Xcode-Projekt)");
+  ok(inBundle("icons/icon-180.png"), "das Touch-Icon, auf das jede Seite zeigt, ist drin");
+
+  /* Die Groesse selbst ist eine Zusage: 7,0 MB waren es vor dieser Runde. */
+  const groesse = (function dirSize(d) {
+    let n = 0;
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const q = path.join(d, e.name);
+      n += e.isDirectory() ? dirSize(q) : fs.statSync(q).size;
+    }
+    return n;
+  })(OUT);
+  ok(groesse < 4.5 * 1048576,
+    "das Bundle bleibt unter 4,5 MB (aktuell " + (groesse / 1048576).toFixed(1) + " MB)");
 }
 
 group("Zahlen und Daten stehen in der Sprache des Nutzers");
@@ -311,6 +335,8 @@ group("Zahlen und Daten stehen in der Sprache des Nutzers");
     if (/[A-Za-z0-9_\]\)]\s*\+\s*" kg"/.test(z) && !/nf\(|zde\(|zen\(/.test(z)) roh.push((i + 1) + " (kg)");
     // Datumsangaben: ein *Date-Feld direkt in einen Text gehaengt
     if (/\+\s*(traj\.projectedDate|p\.startDate|last\.date)\b/.test(z)) roh.push((i + 1) + " (Datum)");
+    // Raten: „-0.45 kg/Woche" stand doppelt auf dem Fortschritts-Bildschirm
+    if (/(deltaPerWeek|RatePerWeek)\s*\+\s*" kg\//.test(z)) roh.push((i + 1) + " (Rate)");
   });
   ok(roh.length === 0, "keine ungeformatierte Zahl oder Datumsangabe in der Ausgabe" +
     (roh.length ? " — Zeile " + roh.join(", ") : ""));

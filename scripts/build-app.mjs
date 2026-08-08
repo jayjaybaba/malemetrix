@@ -37,8 +37,19 @@ const DIRS = ["css", "fonts", "icons", "img", "assets/brand", "assets/transform"
 /** Einzeldateien. */
 const FILES = ["manifest.webmanifest"];
 
-/** Diese Dateien gehoeren nicht ins App-Bundle (Verkauf/Analyse/Legacy-Ballast). */
-const SKIP = new Set(["js/paypal.js", "js/checkout.js", "js/shop.js"]);
+/** Diese Dateien gehoeren nicht ins App-Bundle (Verkauf/Analyse/Legacy-Ballast).
+ *
+ *  Die drei Medien am Ende sind kein Ballast aus Versehen, sondern gezielt:
+ *  WebKit spielt kein WebM — das Video liegt daneben als MP4 vor, und die
+ *  <source>-Kette faellt ohnehin auf das MP4 zurueck. Die beiden 1024er
+ *  Icons sind Store- und Marketingvorlagen; das App-Icon selbst liegt im
+ *  Xcode-Projekt, nicht im Web-Bundle. Zusammen 1,4 MB, die kein Nutzer je
+ *  abruft, aber jeder mit herunterlaedt. */
+const SKIP = new Set([
+  "js/paypal.js", "js/checkout.js", "js/shop.js",
+  "assets/hero/mm-home-hero.webm",
+  "icons/icon-1024.png", "icons/tiktok-app-icon-1024.png"
+]);
 
 /**
  * Skripte, die zur Laufzeit nachgeladen werden und deshalb in keinem
@@ -84,6 +95,10 @@ function injectBridge(html) {
   /* Passend zur Umbenennung in sammleSkripte(): die Importpfade der Seite
      zeigen im Bundle auf .js. */
   out = out.replace(/(from\s+["'][^"']+)\.mjs(["'?])/g, "$1.js$2");
+  /* Das WebM liegt nicht im Bundle (WebKit spielt es nicht). Dann darf die
+     Seite es auch nicht anbieten — sonst holt es sich ein Browser, der es
+     koennte, und laeuft in einen 404, bevor er auf das MP4 zurueckfaellt. */
+  out = out.replace(/\s*<source[^>]+type="video\/webm"[^>]*>/g, "");
   if (!out.includes("js/native-bridge.js")) {
     // Die Bruecke muss laufen, bevor die App rendert (MM.native wird von
     // js/simple/iphone.js abgefragt) -> vor allen anderen Skripten.
