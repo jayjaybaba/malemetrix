@@ -156,7 +156,11 @@
     pulldown:   { de: "Latzug / Klimmzug",      en: "Lat pulldown / pull-up", alt: "dbrow",   home: "dbrow",       injury: ["schulter"] },
     curl:       { de: "Bizeps-Curls",           en: "Biceps curls",        alt: "dbrow",      home: "curl",        injury: [] },
     triceps:    { de: "Trizepsdrücken",         en: "Triceps extension",   alt: "pushup",     home: "pushup",      injury: ["schulter"] },
-    core:       { de: "Plank / Beinheben",      en: "Plank / leg raise",   alt: "core",       home: "core",        injury: [] }
+    /* alt: null — fuer Rumpfuebungen gibt es keinen sinnvollen Ersatz. Vorher
+       stand hier "core", und der Plan zeigte "Plank / Beinheben · Ersatz:
+       Plank / Beinheben". `home: "core"` bleibt: die Uebung geht zu Hause
+       genauso, das ist keine Selbstreferenz, sondern die Antwort. */
+    core:       { de: "Plank / Beinheben",      en: "Plank / leg raise",   alt: null,         home: "core",        injury: [] }
   };
 
   /* Slot: [exId, sets, repsLo, repsHi, restSec, short] — short=true: Teil der

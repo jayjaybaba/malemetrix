@@ -98,7 +98,16 @@ group("Zuhause & Verletzung → Ersatzübungen (Bewegungsmuster bleibt)");
   ok(rk.ok && ids2.indexOf("squat") < 0, "Knie-Verletzung: Kniebeuge ersetzt");
   const all = [];
   rk.plan.training.sessions.forEach(s => s.exercises.forEach(e => all.push(e)));
-  ok(all.every(e => e.substitute && e.substitute.id), "jede Übung hat eine Ersatzübung");
+  /* Frueher stand hier „jede Uebung hat eine Ersatzuebung". Genau diese
+     Forderung hat den Selbstverweis erzwungen: core trug alt: "core", damit
+     das Feld gefuellt ist — und der Plan zeigte „Plank / Beinheben · Ersatz:
+     Plank / Beinheben". Richtig ist: ein Ersatz ist entweder eine ANDERE
+     Uebung oder gar keiner. */
+  const ohneErsatz = [...new Set(all.filter(e => !e.substitute || !e.substitute.id).map(e => e.id))];
+  ok(ohneErsatz.every(id => id === "core"),
+    "ohne Ersatz ist nur die Rumpfuebung — sonst nichts (" + (ohneErsatz.join(", ") || "keine") + ")");
+  ok(all.every(e => !e.substitute || e.substitute.name !== e.name),
+    "und kein Ersatz zeigt auf die Uebung selbst");
   ok(rk.plan.training.sessions.every(s => s.exercises.some(e => e.inShort)), "jede Session hat eine Kurzversion");
   ok(!!rk.plan.training.progressionRule.de && !!rk.plan.training.comebackRule.de, "Progressions- und Wiedereinstiegsregel vorhanden");
 }
@@ -206,6 +215,34 @@ group("Schichtarbeit & Zeiten");
   ok(r.ok && r.plan.lifestyle.workPattern === "shift", "Schichtmodell gespeichert");
   ok(r.plan.reminderPreferences.morningBriefTime === "11:00", "Morgen-Brief folgt Aufstehzeit");
   ok(r.plan.reminderPreferences.eveningCloseTime === "00:30", "Tagesabschluss 2h vor Schlafenszeit (über Mitternacht)");
+}
+
+group("Keine Uebung ist ihr eigener Ersatz");
+{
+  /* Gefunden im Browser: der Trainingsplan zeigte
+     „Plank / Beinheben · Ersatz: Plank / Beinheben".
+     In den Uebungsdaten stand alt: "core" bei der Uebung core. */
+  const p = engine.createPlan(mkInput(), "2026-08-10").plan;
+  let selbst = [];
+  (p.training.sessions || []).forEach(function (s) {
+    (s.exercises || []).forEach(function (x) {
+      if (x.substitute && x.substitute.name === x.name) selbst.push(x.name);
+    });
+  });
+  ok(selbst.length === 0, "kein Ersatz zeigt auf die Uebung selbst" +
+    (selbst.length ? " — " + selbst.join(", ") : ""));
+
+  /* Und die Datenquelle selbst, unabhaengig davon, welcher Plan gerade
+     erzeugt wird. */
+  const src = require("fs").readFileSync(require("path").join(__dirname, "../../js/simple/plan-engine.js"), "utf8");
+  const treffer = [];
+  const blk = (src.match(/var EX = \{[\s\S]*?\n  \};/) || [""])[0];
+  blk.split("\n").forEach(function (z) {
+    const m = z.match(/^\s*(\w+):\s*\{.*?alt:\s*"(\w+)"/);
+    if (m && m[1] === m[2]) treffer.push(m[1]);
+  });
+  ok(treffer.length === 0, "auch in den Uebungsdaten steht kein Selbstverweis" +
+    (treffer.length ? " — " + treffer.join(", ") : ""));
 }
 
 console.log("\n" + (failed ? "FAILED" : "OK") + " — " + passed + " bestanden, " + failed + " fehlgeschlagen");

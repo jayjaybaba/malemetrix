@@ -1288,9 +1288,17 @@
       s.exercises.forEach(function (ex) {
         var row = el("div", "s-ex");
         var n = el("div", "n");
-        n.appendChild(el("b", null, esc(en() ? ex.nameEn : ex.name) + (ex.inShort ? " <span class='short-mark'>" + tx("KURZVERSION", "SHORT") + "</span>" : "")));
-        n.appendChild(el("span", null, ex.sets + " × " + ex.repsLo + "–" + ex.repsHi + " · RIR " + ex.rir + " · " + ex.restSec + " s" +
-          (ex.substitute ? " · " + tx("Ersatz", "swap") + ": " + esc(en() ? ex.substitute.nameEn : ex.substitute.name) : "")));
+        n.appendChild(el("b", null, esc(en() ? ex.nameEn : ex.name) +
+          (ex.inShort ? " <span class='short-mark'>" + tx("KURZ", "SHORT") + "</span>" : "")));
+        /* „150 s" allein sagt nichts — in der Trainingsansicht steht daneben
+           „Pause 120 s", hier stand nur die Zahl. */
+        var ersatzName = ex.substitute ? (en() ? ex.substitute.nameEn : ex.substitute.name) : null;
+        var eigenerName = en() ? ex.nameEn : ex.name;
+        n.appendChild(el("span", null, ex.sets + " × " + ex.repsLo + "–" + ex.repsHi +
+          " · RIR " + ex.rir + " · " + tx("Pause", "rest") + " " + ex.restSec + " s" +
+          /* Eine Uebung als eigenen Ersatz aufzufuehren ist keine Information. */
+          (ersatzName && ersatzName !== eigenerName
+            ? " · " + tx("Ersatz", "swap") + ": " + esc(ersatzName) : "")));
         row.appendChild(n);
         c.appendChild(row);
       });

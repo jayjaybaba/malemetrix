@@ -132,7 +132,9 @@
    „Heute: Arbeitsgewicht finden" direkt aneinander: „120 sHeute:".
    Nur direkte Kinder — „KURZ" steht INNERHALB des Namens und bleibt dort. */
 .s-ex .n > span { display: block; color: var(--muted); font-size: 0.82rem; }
-.s-ex .short-mark { color: var(--accent-2); font-size: 0.7rem; letter-spacing: 0.1em; }
+/* Ein Vermerk am Namen, kein Bedienelement: Cyan ist in dieser App die
+   Marken- und Bedienfarbe und war hier lauter als der Uebungsname selbst. */
+.s-ex .short-mark { color: var(--muted-2); font-size: 0.66rem; letter-spacing: 0.1em; font-weight: 500; margin-left: 4px; }
 .s-ex input[type="number"] { width: 72px; background: var(--bg-2); border: 1px solid var(--line-strong); color: var(--text); border-radius: 8px; padding: 7px 8px; font-size: 0.9rem; }
 .s-ex .setbox { display: flex; gap: 5px; }
 /* Satz-Kästchen: 30 war hübsch und beim Training mit schwitzigen Fingern
