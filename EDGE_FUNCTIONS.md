@@ -38,6 +38,9 @@ der POST nie gesendet. Seit P10: **Origin-Allowlist** (`https://www.malemetrix.c
 | `send-brief` | Scheduler (server→server) | ✅ `x-scheduler-secret` (kein User-JWT, bewusst) | n. a. (kein Browser-Aufruf) | `false` ✅ (P10 — nötig, damit der Scheduler ohne JWT durchkommt) | unverändert | Push-Stack insgesamt CONFIG REQUIRED (VAPID) |
 | `mm-transform` | Browser (transformation.html) | ✅ Standard (Handler, getUser(jwt)) + Schutzschichten: atomare Reservierung, Lifetime-Freikontingent (4 Bilder für Nicht-Kunden), 12 Bilder/h/User, 24/h/IP (ip_hash), Tages-Deckel 400, serverseitige Zielengine-Validierung (transform-goals.mjs) — Details: TRANSFORMATION.md — Details: TRANSFORMATION.md | ✅ Allowlist, OPTIONS→204 | `false` ✅ | Neu 05.08.2026 — Körper-Transformation via fal.ai (Details: TRANSFORMATION.md) | ✅ **JA — Plattform-v9 deployt & live gemessen 06.08.2026** (Neuausrichtung: Zielengine-Validierung serverseitig, Consent-Pflicht, fal-Datenschutz-Header, atomare Kontingent-Reservierung; Migration 0016 ip_hash live). ACHTUNG: verlangt consent + height_cm — der alte Live-Client bekommt bis zum Merge consent_required (Generierung gesperrt = Credits geschützt). OPTIONS→204 mit P10-Allowlist, POST ohne Auth→401. `FAL_KEY` liegt verschlüsselt im **Vault** (Getter `public.mm_get_fal_key`, service_role-only, Migration 0015; verifiziert: anon → permission denied). fal-Konto aufgeladen, Key authentifiziert. Ein künftig leeres fal-Guthaben meldet die Function als `provider_balance` statt als Schlüsselfehler. |
 
+| `ig-webhook` | Meta (server→server) | ✅ **HMAC-SHA256 über den rohen Body** (`x-hub-signature-256`, `IG_APP_SECRET`, Konstantzeit-Vergleich) — kein User-JWT möglich, Meta kann keinen senden. Ohne gültige Signatur 403, BEVOR ein DB-Client entsteht. GET-Verifikation vergleicht `IG_VERIFY_TOKEN` in Konstantzeit. | n. a. (kein Browser-Aufruf) | `false` ✅ (nötig — sonst 401 vor dem Handler) | Neu 08.08.2026 — Instagram-Comment-Funnel (Details: INSTAGRAM_FUNNEL.md). Entscheidungslogik in `funnel.mjs`, 112 Unit-Assertions | ❌ **Nein — Deploy und Meta-Setup stehen aus.** Voraussetzung: Migration 0019, Secrets `IG_APP_SECRET` / `IG_VERIFY_TOKEN` / `IG_ACCESS_TOKEN` / `IG_BUSINESS_ID`, Webhook-Eintrag bei Meta. Bis dahin ist `ig_settings.active = false` — der Funnel schweigt auch bei versehentlichem Deploy. |
+| `ig-admin` | Browser (OS-App `#insta`) | ✅ Standard (Handler, getUser(jwt)) + Owner-Rolle aus `public.user_roles` — Reihenfolge Token-Auth → Owner-Check → Body | ✅ Allowlist, OPTIONS→204 | `false` ✅ | Neu 08.08.2026 — Verwaltung des Funnels (Bericht, Regeln, Leads, Not-Aus, DSGVO-Löschung) | ❌ **Nein — Deploy steht aus** (gemeinsam mit ig-webhook) |
+
 **Secrets-Konvention:** `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (Standard).
 `delete-account` akzeptiert übergangsweise auch das ältere `SERVICE_ROLE_KEY`.
 Service-Role-Key existiert NUR als Function-Secret — nie im Repo/Client/Log.
@@ -73,6 +76,11 @@ supabase functions deploy resolve-product-access
 supabase functions deploy mm-ai
 supabase functions deploy delete-account
 supabase functions deploy send-brief
+
+# 3) Instagram-Funnel (neu, 08.08.2026) — erst NACH `supabase db push`,
+#    sonst laufen die Functions gegen fehlende Tabellen:
+supabase functions deploy ig-webhook
+supabase functions deploy ig-admin
 ```
 
 Nach dem mm-commerce-Deploy: Kauf-Recovery mit der historischen Capture-ID

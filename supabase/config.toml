@@ -85,3 +85,19 @@ verify_jwt = false
 # kann keinen JWT senden), POST validiert den Bearer-JWT im Handler (P0.6).
 [functions.mm-plan-ics]
 verify_jwt = false
+
+# ig-webhook: Meta ruft diese URL server-zu-server auf und kann prinzipbedingt
+# KEINEN Supabase-JWT mitschicken. verify_jwt würde deshalb jeden echten
+# Webhook mit 401 abweisen. Die Authentizität kommt stattdessen aus der
+# HMAC-SHA256-Signatur über den rohen Body (`x-hub-signature-256`, App-Secret):
+# ohne gültige Signatur endet der Request mit 403, bevor irgendetwas
+# geschrieben oder eine Nachricht gesendet wird. Der GET-Pfad (einmalige
+# Webhook-Verifikation) vergleicht IG_VERIFY_TOKEN in Konstantzeit.
+[functions.ig-webhook]
+verify_jwt = false
+
+# ig-admin: identischer ES256-Fall wie mm-admin (P0.6) — der Handler validiert
+# den Bearer-Token selbst (admin.auth.getUser) und verlangt die Owner-Rolle aus
+# public.user_roles. verify_jwt=false macht die Function NICHT öffentlich.
+[functions.ig-admin]
+verify_jwt = false

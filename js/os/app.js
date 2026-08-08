@@ -27,7 +27,7 @@
   function todayYmd() { var d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
 
   /* ---------- Routing ---------- */
-  var VIEWS = ["today", "plan", "track", "progress", "learn", "baseline", "pathway", "transform", "workout", "week", "settings", "coach", "advisor", "review", "twin", "simulator", "experiments", "protocol", "timeline", "memory", "map", "learned", "grants", "usage"];
+  var VIEWS = ["today", "plan", "track", "progress", "learn", "baseline", "pathway", "transform", "workout", "week", "settings", "coach", "advisor", "review", "twin", "simulator", "experiments", "protocol", "timeline", "memory", "map", "learned", "grants", "usage", "insta"];
   function view() { var h = (location.hash || "#today").slice(1).split("?")[0]; return VIEWS.indexOf(h) >= 0 ? h : "today"; }
   function hashParam(name) { var q = (location.hash || "").split("?")[1] || ""; var m = q.split("&").filter(function (kv) { return kv.split("=")[0] === name; })[0]; return m ? decodeURIComponent(m.split("=")[1] || "") : ""; }
   window.addEventListener("hashchange", function () { render(true); window.scrollTo(0, 0); });
@@ -58,7 +58,7 @@
 
   /* Kurzmeldung an die Live-Region in mein-protokoll.html. Absichtlich
      knapp: hier gehört der Ansichtsname hin, nicht die Ansicht. */
-  var VIEW_LABEL = { today: "Today", plan: "Plan", track: "Track", progress: "Progress", learn: "Learn", baseline: "Baseline", pathway: "Pathway", transform: "Transform", workout: "Workout", week: "Wochenplan", settings: "Einstellungen", coach: "Coach", advisor: "Advisor", review: "Ergebnisprüfung", twin: "Twin", simulator: "Simulator", experiments: "Experimente", protocol: "Persönlicher Standard", timeline: "Timeline", memory: "Memory", map: "Performance Map", learned: "Gelernt", grants: "Mitglieder & Zugänge", usage: "Nutzung" };
+  var VIEW_LABEL = { today: "Today", plan: "Plan", track: "Track", progress: "Progress", learn: "Learn", baseline: "Baseline", pathway: "Pathway", transform: "Transform", workout: "Workout", week: "Wochenplan", settings: "Einstellungen", coach: "Coach", advisor: "Advisor", review: "Ergebnisprüfung", twin: "Twin", simulator: "Simulator", experiments: "Experimente", protocol: "Persönlicher Standard", timeline: "Timeline", memory: "Memory", map: "Performance Map", learned: "Gelernt", grants: "Mitglieder & Zugänge", usage: "Nutzung", insta: "Instagram-Funnel" };
   function announce(msg) {
     var el = document.getElementById("mmStatus");
     if (!el) return;
@@ -1016,7 +1016,8 @@
       html += sec("Betreiber",
         '<p class="muted" style="margin:0 0 10px">Nur für dich sichtbar: anonyme Reichweite und Nutzung deiner Website sowie registrierte Konten, Produkte, Abos und manuelle Zugangsvergaben.</p>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap"><a class="os-ghost" href="#usage">Nutzung ansehen →</a>' +
-        '<a class="os-ghost" href="#grants">Mitglieder &amp; Zugänge →</a></div>');
+        '<a class="os-ghost" href="#grants">Mitglieder &amp; Zugänge →</a>' +
+        '<a class="os-ghost" href="#insta">Instagram-Funnel →</a></div>');
     }
     html += '<p style="margin-top:16px"><a class="os-ghost" href="#today">← Zurück zu Today</a></p>';
     return html;
@@ -1768,6 +1769,236 @@
     }
   }
 
+  /* ==================== INSTAGRAM-FUNNEL (nur Owner) ====================
+     Kommentar unter einem Beitrag → automatische Direktnachricht mit dem
+     passenden Link. Das ist die einzige von Meta erlaubte automatische
+     Erstansprache (Private Reply): genau eine Antwort pro Kommentar, innerhalb
+     von 7 Tagen. Es gibt bewusst KEINEN Weg, alle Liker oder alle Besucher
+     anzuschreiben — diese Listen gibt keine Plattform heraus, und
+     unaufgeforderte Werbenachrichten wären nach § 7 UWG abmahnfähig.
+
+     Diese Ansicht ist reine Bedienung. Jede Autorisierung erzwingt die Edge
+     Function ig-admin serverseitig gegen public.user_roles. */
+  var igDays = 30;
+  var igData = null;      // { report, rules, leads, setup } oder { error }
+  var igBusy = false;
+
+  var IG_GRUND = {
+    skipped_no_rule: "kein Stichwort getroffen",
+    skipped_inactive: "Funnel war ausgeschaltet",
+    skipped_optout: "Person hat widersprochen",
+    skipped_cooldown: "Sperrfrist pro Person",
+    skipped_cap: "Tageslimit erreicht",
+    skipped_window: "Kommentar älter als 7 Tage",
+    skipped_own: "eigener Kommentar",
+    dm_failed: "Senden fehlgeschlagen"
+  };
+  var IG_STATUS = {
+    "new": "neu", contacted: "angeschrieben", replied: "hat geantwortet",
+    converted: "gewonnen", opted_out: "abgemeldet"
+  };
+
+  function igCall(payload) {
+    if (!(MM.account && MM.account.invokeFunction)) {
+      return Promise.resolve({ error: "Kein Konto-Backend aktiv." });
+    }
+    return MM.account.invokeFunction("ig-admin", payload)
+      .then(function (r) { return (r && (r.data || r)) || { error: "leer" }; })
+      .catch(function () { return { error: "Verbindung zum Server fehlgeschlagen." }; });
+  }
+
+  function igLoad() {
+    igBusy = true;
+    Promise.all([
+      igCall({ action: "report", days: igDays }),
+      igCall({ action: "rules_list" }),
+      igCall({ action: "leads", limit: 50 }),
+      igCall({ action: "setup_state" })
+    ]).then(function (res) {
+      igBusy = false;
+      if (res[0] && res[0].error === "forbidden") { igData = { error: "Nur der Konto-Inhaber darf das." }; render(); return; }
+      igData = {
+        report: (res[0] && res[0].report) || null,
+        rules: (res[1] && res[1].rules) || [],
+        leads: (res[2] && res[2].leads) || [],
+        setup: res[3] && res[3].ok ? res[3] : null
+      };
+      render();
+    });
+  }
+
+  /* Was fehlt noch, damit überhaupt etwas passieren kann? Ohne diese Liste
+     sucht man beim Einrichten im Dunkeln: der Funnel schweigt dann einfach,
+     und man weiß nicht, ob eine Regel fehlt oder ein Zugangsschlüssel. */
+  function igSetupBlock(s, rules) {
+    if (!s) return "";
+    var offen = [];
+    var SEC_TXT = {
+      IG_APP_SECRET: "App-Secret der Meta-App (prüft die Echtheit der Webhooks)",
+      IG_VERIFY_TOKEN: "Verify-Token (einmalige Webhook-Freischaltung bei Meta)",
+      IG_ACCESS_TOKEN: "Zugangs-Token mit der Berechtigung zum Nachrichtenversand",
+      IG_BUSINESS_ID: "eigene Instagram-Konto-ID (erkennt deine eigenen Kommentare)"
+    };
+    Object.keys(SEC_TXT).forEach(function (k) {
+      if (!(s.secrets && s.secrets[k])) offen.push("<b>" + k + "</b> fehlt — " + SEC_TXT[k]);
+    });
+    if (!rules.length) offen.push("Es gibt noch <b>keine aktive Regel</b>. Ohne Stichwort geht nie eine Nachricht raus.");
+    if (s.settings && s.settings.active !== true) offen.push("Der Funnel steht auf <b>aus</b>. Unten einschalten, wenn alles andere steht.");
+
+    if (!offen.length) {
+      return sec("Einrichtung", '<p class="small" style="margin:0;color:var(--green,#3ddc84)">' +
+        'Alles eingerichtet: Zugangsschlüssel gesetzt, Regeln vorhanden, Funnel aktiv.</p>');
+    }
+    return sec("Einrichtung — noch offen",
+      '<p class="small muted" style="margin:0 0 10px">Solange hier etwas steht, passiert nichts. Das ist Absicht: ' +
+      'ein halb eingerichteter Funnel, der trotzdem sendet, wäre gefährlicher als gar keiner. ' +
+      'Die Schritt-für-Schritt-Anleitung steht in <b>INSTAGRAM_FUNNEL.md</b>.</p>' +
+      '<ul class="small" style="margin:0;padding-left:18px">' +
+      offen.map(function (o) { return "<li style=\"margin:4px 0\">" + o + "</li>"; }).join("") + "</ul>");
+  }
+
+  function igRuleRow(r) {
+    return '<div class="os-decision" style="margin:6px 0">' +
+      '<b>' + (r.is_default ? "STANDARD" : esc(r.keyword)) + '</b>' +
+      '<span class="s">' + (r.active ? "" : "AUS · ") +
+      (r.is_default ? "greift, wenn kein Stichwort passt" : (r.match_mode === "exact" ? "exakt" : "enthält") + " · Rang " + esc(String(r.priority))) +
+      (r.link_url ? " · " + esc(r.link_url) : "") + '</span>' +
+      '<p class="small muted" style="margin:6px 0 8px;white-space:pre-wrap">' + esc(r.message) + '</p>' +
+      '<button class="os-ghost" data-igruledel="' + esc(String(r.id)) + '">Regel löschen</button></div>';
+  }
+
+  function igLeadRow(l) {
+    var wann = (l.last_comment_at || l.first_seen_at || "").slice(0, 10);
+    return '<div class="os-decision" style="margin:6px 0">' +
+      '<b>' + esc(l.username ? "@" + l.username : "ohne Benutzernamen") + '</b>' +
+      '<span class="s">' + esc(IG_STATUS[l.status] || l.status) +
+      ' · ' + esc(String(l.comment_count)) + ' Kommentare · ' + esc(String(l.dm_count)) + ' Nachrichten' +
+      (wann ? " · zuletzt " + esc(fmtMetricDate(wann)) : "") + '</span>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' +
+      (l.status === "converted" ? "" : '<button class="os-ghost" data-igwon="' + esc(l.igsid) + '">Als Kunde markieren</button>') +
+      (l.status === "opted_out" ? "" : '<button class="os-ghost" data-igstop="' + esc(l.igsid) + '">Nicht mehr anschreiben</button>') +
+      '<button class="os-ghost" data-igforget="' + esc(l.igsid) + '">Daten löschen</button></div></div>';
+  }
+
+  function vInsta() {
+    if (!(MM.entitlements && MM.entitlements.isOwner && MM.entitlements.isOwner())) {
+      return '<div class="card"><p class="muted">Dieser Bereich ist dem Konto-Inhaber vorbehalten.</p></div>';
+    }
+    var html = '<div class="os-head"><span class="eyebrow" style="margin:0">MM / Instagram</span>' +
+      '<span style="display:flex;gap:6px">' +
+      [7, 30, 90].map(function (d) {
+        return '<button class="os-chip' + (igDays === d ? " sel" : "") + '" data-igdays="' + d + '">' + d + ' Tage</button>';
+      }).join("") + '</span></div>';
+
+    if (!igData) {
+      return html + '<div class="card"><p class="muted">' + (igBusy ? "Wird geladen…" : "Bericht wird geladen…") + '</p></div>';
+    }
+    if (igData.error) {
+      return html + '<div class="card"><p class="muted">' + esc(igData.error) + '</p>' +
+        '<button class="os-ghost" data-igdays="' + igDays + '" style="margin-top:10px">Erneut versuchen</button></div>';
+    }
+
+    var r = igData.report || {};
+    var cfg = (igData.setup && igData.setup.settings) || {};
+
+    html += '<div class="card" style="margin-bottom:14px">' +
+      '<p class="small muted" style="margin:0">Wer unter einem Beitrag ein hinterlegtes Stichwort kommentiert, bekommt automatisch ' +
+      '<b>eine</b> Direktnachricht mit dem passenden Link. Antwortet er, führst du das Gespräch von Hand weiter. ' +
+      'Mehr erlaubt Instagram nicht — und mehr wäre in Deutschland auch nicht zulässig.</p></div>';
+
+    html += '<div class="os-statstrip">' +
+      '<span class="os-stat"><span class="k">HEUTE GESENDET</span><b>' + (r.heute_gesendet || 0) + " / " + (r.tageslimit || 0) + '</b></span>' +
+      '<span class="os-stat"><span class="k">GESENDET ' + igDays + 'T</span><b>' + (r.gesendet || 0) + '</b></span>' +
+      '<span class="os-stat"><span class="k">ANTWORTEN</span><b>' + (r.antworten || 0) + '</b></span>' +
+      '<span class="os-stat"><span class="k">GEWONNEN</span><b>' + (r.gewonnen || 0) + '</b></span>' +
+      '</div>';
+
+    html += igSetupBlock(igData.setup, igData.rules || []);
+
+    /* Not-Aus und Deckel. Der Schalter schreibt in die Datenbank, nicht in den
+       Code — Stoppen darf keinen Deploy brauchen. */
+    html += sec("Schalter",
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
+      '<button id="igToggle" class="btn ' + (r.aktiv ? "btn-dark" : "btn-primary") + ' btn-sm">' +
+      (r.aktiv ? "Funnel ausschalten" : "Funnel einschalten") + '</button>' +
+      '<label class="small" style="display:flex;gap:6px;align-items:center">Tageslimit' +
+      '<input id="igCap" type="number" min="0" max="500" value="' + esc(String(r.tageslimit || 0)) + '" ' +
+      'style="width:80px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:rgba(127,127,127,0.06);color:var(--text)"></label>' +
+      '<label class="small" style="display:flex;gap:6px;align-items:center">Sperrfrist pro Person (Tage)' +
+      '<input id="igCool" type="number" min="0" max="365" value="' + esc(String(cfg.per_lead_cooldown_days == null ? 30 : cfg.per_lead_cooldown_days)) + '" ' +
+      'style="width:80px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:rgba(127,127,127,0.06);color:var(--text)"></label>' +
+      '<button id="igSaveCfg" class="os-ghost">Speichern</button></div>' +
+      '<p class="small muted" style="margin:10px 0 0">Das Tageslimit schützt dich vor einem viralen Beitrag, der über Nacht ' +
+      'hunderte Nachrichten auslöst — der schnellste Weg zu einer Kontosperre. Die Sperrfrist verhindert, dass dieselbe Person ' +
+      'bei jedem Kommentar erneut angeschrieben wird.</p>' +
+      '<p id="igCfgMsg" class="small" role="status" aria-live="polite" style="display:none;margin-top:8px"></p>');
+
+    /* Warum NICHT gesendet wurde, ist beim Einrichten die wichtigste Zahl. */
+    var gruende = (r.gruende || []).filter(function (g) { return g.name !== "pending"; });
+    if (gruende.length) {
+      html += sec("Nicht gesendet — warum",
+        '<div class="os-metriclist">' + gruende.map(function (g) {
+          return '<div><span>' + esc(IG_GRUND[g.name] || g.name) + '</span><b></b><i>' + (g.anzahl || 0) + '</i></div>';
+        }).join("") + '</div>');
+    }
+    if ((r.stichworte || []).length) {
+      html += sec("Welche Stichwörter greifen",
+        '<div class="os-metriclist">' + r.stichworte.map(function (s) {
+          return '<div><span>' + esc(s.name) + '</span><b></b><i>' + (s.anzahl || 0) + '</i></div>';
+        }).join("") + '</div>');
+    }
+
+    html += sec("Regeln",
+      '<p class="small muted" style="margin:0 0 12px">Stichwort → Nachricht. <code>{name}</code> wird durch den Benutzernamen ersetzt, ' +
+      '<code>{link}</code> durch den Link. Der Hinweis „Antworte STOPP“ wird automatisch angehängt — ohne ihn wäre die Nachricht ' +
+      'rechtlich angreifbar.</p>' +
+      ((igData.rules || []).length ? igData.rules.map(igRuleRow).join("")
+        : '<p class="small muted">Noch keine Regel. Ohne Regel passiert nichts.</p>') +
+      '<div style="margin-top:14px;display:grid;gap:8px">' +
+      '<label class="small" for="igKw">Stichwort (klein, z. B. „plan“)' +
+      '<input id="igKw" type="text" maxlength="40" spellcheck="false" placeholder="plan" ' +
+      'style="width:100%;margin-top:4px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(127,127,127,0.06);color:var(--text)"></label>' +
+      '<label class="small" for="igMsg2">Nachricht (10–900 Zeichen)' +
+      '<textarea id="igMsg2" rows="4" maxlength="900" placeholder="Hey {name} — hier ist der Link zu deinem Score: {link}" ' +
+      'style="width:100%;margin-top:4px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(127,127,127,0.06);color:var(--text)"></textarea></label>' +
+      '<label class="small" for="igLink">Link (https://…)' +
+      '<input id="igLink" type="url" spellcheck="false" placeholder="https://www.malemetrix.com/check.html" ' +
+      'style="width:100%;margin-top:4px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(127,127,127,0.06);color:var(--text)"></label>' +
+      '<label class="small" style="display:flex;gap:8px;align-items:center"><input id="igDefault" type="checkbox"> ' +
+      'Standard-Regel (antwortet auf JEDEN Kommentar, auch ohne Stichwort)</label>' +
+      '<div><button id="igRuleAdd" class="btn btn-primary btn-sm">Regel speichern</button></div>' +
+      '<p id="igRuleMsg" class="small" role="status" aria-live="polite" style="display:none"></p></div>');
+
+    html += sec("Leute",
+      '<p class="small muted" style="margin:0 0 12px">Wer kommentiert hat, was er bekommen hat, ob er geantwortet hat. ' +
+      '„Daten löschen“ entfernt die Person vollständig (Art. 17 DSGVO) — die Kommentar-Datensätze bleiben pseudonym bestehen, ' +
+      'damit eine Wiederholung von Meta nicht erneut eine Nachricht auslöst.</p>' +
+      ((igData.leads || []).length ? igData.leads.map(igLeadRow).join("")
+        : '<p class="small muted">Noch niemand. Sobald jemand kommentiert, steht er hier.</p>'));
+
+    html += '<p style="margin-top:12px"><a class="os-ghost" href="#settings">← Zurück zu den Einstellungen</a></p>';
+    return html;
+  }
+
+  function igSay(id, txt, gut) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = "block";
+    el.style.color = gut ? "var(--green,#3ddc84)" : "var(--amber,#f5a623)";
+    el.textContent = txt;
+  }
+
+  var IG_FEHLER = {
+    forbidden: "Nur der Konto-Inhaber darf das.",
+    unauthorized: "Bitte zuerst anmelden.",
+    invalid_keyword: "Stichwort: nur Kleinbuchstaben, Ziffern, Leerzeichen und - _ (2–40 Zeichen).",
+    invalid_message: "Die Nachricht muss zwischen 10 und 900 Zeichen lang sein.",
+    invalid_link: "Der Link muss mit https:// beginnen.",
+    keyword_exists: "Dieses Stichwort gibt es schon.",
+    invalid_igsid: "Unbekannte Person.",
+    invalid_status: "Unbekannter Zustand."
+  };
+
   function grantsCall(action, email) {
     var msg = document.getElementById("grMsg");
     function say(t, gut) {
@@ -2488,7 +2719,7 @@
     var v = view();
     if (v !== "track") trackEcho = null;   // Mess-Antwort gehört nur zur Track-Ansicht
     var body = v === "plan" ? vPlan() : v === "track" ? vTrack() : v === "progress" ? vProgress() : v === "learn" ? vLearn() : v === "baseline" ? vBaseline() : v === "pathway" ? vPathway() : v === "transform" ? vTransform() : v === "workout" ? vWorkout() : v === "week" ? vWeek() : v === "settings" ? vSettings() :
-      v === "coach" ? vCoach() : v === "advisor" ? vAdvisor() : v === "review" ? vReview() : v === "twin" ? vTwin() : v === "simulator" ? vSimulator() : v === "experiments" ? vExperiments() : v === "protocol" ? vProtocol() : v === "timeline" ? vTimeline() : v === "memory" ? vMemory() : v === "map" ? vMap() : v === "learned" ? vLearned() : v === "grants" ? vGrants() : v === "usage" ? vUsage() : vToday(snap);
+      v === "coach" ? vCoach() : v === "advisor" ? vAdvisor() : v === "review" ? vReview() : v === "twin" ? vTwin() : v === "simulator" ? vSimulator() : v === "experiments" ? vExperiments() : v === "protocol" ? vProtocol() : v === "timeline" ? vTimeline() : v === "memory" ? vMemory() : v === "map" ? vMap() : v === "learned" ? vLearned() : v === "grants" ? vGrants() : v === "usage" ? vUsage() : v === "insta" ? vInsta() : vToday(snap);
     var fab = (v !== "workout" && v !== "settings" && snap.state !== "signed_out") ? '<button class="os-fab" data-fab aria-label="Schnell erfassen">+</button>' : "";
     host.innerHTML = '<div class="os-shell os-env-' + (v === "progress" || v === "workout" ? "performance" : v === "plan" ? "metabolic" : v === "learn" && OS.pathway() === "enhanced" ? "clinical" : "instrument") + '">' + navBar(v) + '<div class="os-body" tabindex="-1">' + body + '</div>' + fab + '</div>';
     /* Ausdrücklich angefahrener Abschnitt (#plan?f=stack). Der Parameter
@@ -2505,6 +2736,11 @@
     // Nutzungsbericht beim Betreten der Ansicht einmal nachladen.
     if (v === "usage" && !usageData) usageLoad();
     if (v !== "usage") usageData = null;   // beim Verlassen verwerfen → immer frische Zahlen
+    // Gleiches Muster für den Instagram-Funnel: beim Betreten laden, beim
+    // Verlassen verwerfen. Ein veralteter Tagesstand wäre hier gefährlich —
+    // danach richtet sich der Deckel.
+    if (v === "insta" && !igData && !igBusy) igLoad();
+    if (v !== "insta") { igData = null; igBusy = false; }
     /* Nach einem Navigationsklick den Fokus in den neuen Inhalt setzen.
        Ohne das bleibt der Fokus auf dem entfernten Link und fällt auf
        <body> zurück — der Screenreader steht wieder am Seitenanfang. */
@@ -2536,6 +2772,67 @@
         return;
       }
       if (t.closest("#grMembers")) { membersCall(); return; }
+
+      /* ---- Instagram-Funnel (Owner) ---- */
+      var idn = t.closest("[data-igdays]"); if (idn) {
+        igDays = parseInt(idn.getAttribute("data-igdays"), 10) || 30;
+        igData = null; render(); return;
+      }
+      if (t.closest("#igToggle")) {
+        var an = !(igData && igData.report && igData.report.aktiv);
+        igCall({ action: "settings_save", active: an }).then(function (d) {
+          if (d && d.error) { igSay("igCfgMsg", IG_FEHLER[d.error] || "Das hat nicht geklappt.", false); return; }
+          igData = null; render();
+        });
+        return;
+      }
+      if (t.closest("#igSaveCfg")) {
+        igCall({
+          action: "settings_save",
+          daily_cap: parseInt((document.getElementById("igCap") || {}).value, 10),
+          per_lead_cooldown_days: parseInt((document.getElementById("igCool") || {}).value, 10)
+        }).then(function (d) {
+          if (d && d.error) { igSay("igCfgMsg", IG_FEHLER[d.error] || "Das hat nicht geklappt.", false); return; }
+          igSay("igCfgMsg", "Gespeichert.", true);
+          igData = null; setTimeout(render, 500);
+        });
+        return;
+      }
+      if (t.closest("#igRuleAdd")) {
+        igCall({
+          action: "rule_save",
+          keyword: ((document.getElementById("igKw") || {}).value || "").trim().toLowerCase(),
+          message: (document.getElementById("igMsg2") || {}).value || "",
+          link_url: (document.getElementById("igLink") || {}).value || "",
+          is_default: !!(document.getElementById("igDefault") || {}).checked
+        }).then(function (d) {
+          if (d && d.error) { igSay("igRuleMsg", IG_FEHLER[d.error] || "Das hat nicht geklappt.", false); return; }
+          igData = null; render();
+        });
+        return;
+      }
+      var ird = t.closest("[data-igruledel]"); if (ird) {
+        igCall({ action: "rule_delete", id: parseInt(ird.getAttribute("data-igruledel"), 10) })
+          .then(function () { igData = null; render(); });
+        return;
+      }
+      var iwon = t.closest("[data-igwon]"); if (iwon) {
+        igCall({ action: "lead_status", igsid: iwon.getAttribute("data-igwon"), status: "converted" })
+          .then(function () { igData = null; render(); });
+        return;
+      }
+      var istop = t.closest("[data-igstop]"); if (istop) {
+        igCall({ action: "lead_status", igsid: istop.getAttribute("data-igstop"), status: "opted_out" })
+          .then(function () { igData = null; render(); });
+        return;
+      }
+      /* Löschen ist endgültig und trifft eine echte Person — hier wird gefragt. */
+      var ifg = t.closest("[data-igforget]"); if (ifg) {
+        if (!window.confirm("Alle gespeicherten Daten dieser Person löschen? Das lässt sich nicht rückgängig machen.")) return;
+        igCall({ action: "lead_forget", igsid: ifg.getAttribute("data-igforget") })
+          .then(function () { igData = null; render(); });
+        return;
+      }
       var cb = t.closest("#mmClaimBtn"); if (cb) { var val = (document.getElementById("mmClaim") || {}).value; var m2 = document.getElementById("mmClaimMsg"); cb.disabled = true; MM.account.claimAccessCode(val).then(function (r) { if (m2) { m2.style.display = "block"; m2.style.color = r.ok ? "var(--green,#3ddc84)" : "var(--amber,#f5a623)"; m2.textContent = r.ok ? "Zugang aktiviert." : (r.message || "Code nicht erkannt."); } cb.disabled = false; if (r.ok) { if (MM.track) MM.track("claim_access", {}); setTimeout(render, 700); } }); return; }
       // Zahlung prüfen (P0.10): server-autoritative PayPal-Recovery im Konto.
       // Löst NIE eine neue Zahlung aus — reine Verifikation bei PayPal.
