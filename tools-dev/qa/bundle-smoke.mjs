@@ -81,10 +81,12 @@ async function main() {
       fehler.push(t.slice(0, 140));
     });
 
-    /* "load" statt "networkidle": eine Seite mit einem dauerhaft offenen
-       Abruf wuerde sonst 30 s lang haengen und den Lauf abbrechen. */
-    await page.goto(`http://localhost:${PORT}/${seite}`, { waitUntil: "load", timeout: 20000 });
-    await page.waitForTimeout(800);
+    /* "domcontentloaded": die Seiten laden Cloudflare-Beacon und
+       Supabase-SDK von fremden Hosts. Ohne Netz haengen die bis zum Timeout,
+       und "load" wuerde darauf warten. Geprueft wird die App, nicht die
+       Erreichbarkeit fremder Server. */
+    await page.goto(`http://localhost:${PORT}/${seite}`, { waitUntil: "domcontentloaded", timeout: 20000 });
+    await page.waitForTimeout(1000);
 
     ok(fehlend.length === 0, `${seite}: keine fehlende Datei` +
       (fehlend.length ? " — 404 auf " + fehlend.join(", ") : ""));

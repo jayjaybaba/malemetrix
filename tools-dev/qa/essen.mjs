@@ -97,7 +97,7 @@ async function main() {
   await page.addInitScript((s) => {
     Object.keys(s).forEach((k) => localStorage.setItem(k, JSON.stringify(s[k])));
   }, state());
-  await page.goto(`http://localhost:${PORT}/meinplan.html#heute`, { waitUntil: "load" });
+  await page.goto(`http://localhost:${PORT}/meinplan.html#heute`, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(800);
 
   gruppe("Das Blatt oeffnet sich und rechnet");

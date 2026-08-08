@@ -85,7 +85,7 @@ async function seite(browser, reduziert) {
   await page.addInitScript((s) => {
     Object.keys(s).forEach((k) => localStorage.setItem(k, JSON.stringify(s[k])));
   }, state());
-  await page.goto(`http://localhost:${PORT}/meinplan.html#heute`, { waitUntil: "networkidle" });
+  await page.goto(`http://localhost:${PORT}/meinplan.html#heute`, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(600);
   return { ctx, page };
 }

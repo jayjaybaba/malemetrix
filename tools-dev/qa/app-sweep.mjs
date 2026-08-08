@@ -178,9 +178,20 @@ async function pruefeAnsicht(page, zustand, ansicht) {
      Kartenrand. Ein Knopf, den man nicht sieht, ist kein Knopf. */
   const abgeschnitten = await page.evaluate(() => {
     const out = [];
+    /* Was in einer waagerecht scrollbaren Leiste liegt, ist erreichbar —
+       der angeschnittene letzte Chip IST der Hinweis, dass es weitergeht.
+       Gemeldet wird nur, was hinter einem festen Rand verschwindet. */
+    const scrollbar = (el) => {
+      for (let n = el.parentElement; n && n !== document.body; n = n.parentElement) {
+        const ox = getComputedStyle(n).overflowX;
+        if ((ox === "auto" || ox === "scroll") && n.scrollWidth > n.clientWidth + 1) return true;
+      }
+      return false;
+    };
     document.querySelectorAll("main button, main input, main select, main a[href]").forEach((el) => {
       const r = el.getBoundingClientRect();
       if (r.width === 0 || r.height === 0) return;
+      if (scrollbar(el)) return;
       if (r.right > window.innerWidth + 1 || r.left < -1) {
         out.push((el.textContent || el.placeholder || el.tagName).trim().slice(0, 24) +
           " (bis " + Math.round(r.right) + "px)");
@@ -358,9 +369,15 @@ async function main() {
          mitgenommen. Ausserdem faengt jede Ansicht ihren eigenen Fehler:
          eine haengende Seite ist ein Befund, kein Grund aufzugeben. */
       try {
+        /* "domcontentloaded", nicht "load": die Seite laedt zwei Skripte von
+           fremden Hosts (Cloudflare-Beacon, Supabase-SDK). Ohne Netz haengen
+           die bis zum Timeout, und "load" wartet auf sie — gemessen wurden so
+           13 Sekunden fuer einen Bildschirm, der in 150 ms fertig ist.
+           Was zaehlt, ist wann die Oberflaeche steht, nicht wann ein fremder
+           Server geantwortet hat. */
         await page.goto(`http://localhost:${PORT}/meinplan.html${a.hash}`,
-          { waitUntil: "load", timeout: 20000 });
-        await page.waitForTimeout(700);
+          { waitUntil: "domcontentloaded", timeout: 20000 });
+        await page.waitForTimeout(900);
 
         const datei = `${z.id}--${a.de.replace(/[^a-zA-Z]+/g, "-").toLowerCase()}.png`;
         await page.screenshot({ path: path.join(OUT, datei) });
