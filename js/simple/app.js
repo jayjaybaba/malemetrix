@@ -54,6 +54,16 @@
   }
   /* Ganze Zahlen mit Tausenderpunkt: 2.400 kcal, 8.000 Schritte. */
   function nfi(v) { return nf(v, 0); }
+  /* „Es fehlt noch: weekdays" stand so auf dem Bildschirm — eine interne
+     Feldkennung. plan-input.js liefert jetzt lesbare Saetze mit; hier wird
+     nur noch die Sprache gewaehlt und ein Satz daraus gebaut. */
+  function fehlendeAngaben(collected) {
+    var t = collected && collected.missingText;
+    var liste = t ? (en() ? t.en : t.de) : null;
+    if (!liste || !liste.length) liste = (collected && collected.missing) || [];
+    return tx("Es fehlt noch: ", "Still missing: ") + liste.join(", ") + ".";
+  }
+
   /* Eine Rate wie -0,45 kg/Woche. Das Minus ist Teil der Aussage, deshalb
      bleibt es stehen; das Plus wird ergaenzt, damit eine Zunahme nicht wie
      eine Abnahme aussieht. */
@@ -404,7 +414,34 @@
   }
   window.addEventListener("hashchange", render);
   document.addEventListener("mm:langchange", render);
-  document.addEventListener("mm:account", render);
+
+  /* Hier stand `document.addEventListener("mm:account", render)` — auf ein
+     Ereignis, das KEIN Modul im Projekt jemals ausloest. Die Folge war der
+     schlimmste Moment, den diese App haben kann: der Bildschirm wurde
+     gezeichnet, bevor der Kontostand feststand, und danach nie wieder. Ein
+     Kunde, der bezahlt hat, sah auf der Planvorschau „Plan freischalten —
+     kaufen" samt Anmeldeformular. Erst ein Wechsel der Ansicht half.
+
+     js/account.js bietet dafuer onChange(cb) an. Neu gezeichnet wird nur,
+     wenn sich der Zugang wirklich aendert — onChange feuert auch bei jedem
+     Synchronisierungslauf, und ein Neuzeichnen bei jedem davon waere teuer
+     und wuerde die Leseposition stoeren. */
+  var letzterZugang = null;
+  function zugangSignatur() {
+    var a = access();
+    return [!!a.protocol, !!a.twelve_week, !!a.coaching].join("|");
+  }
+  letzterZugang = zugangSignatur();
+  try {
+    if (MM.account && typeof MM.account.onChange === "function") {
+      MM.account.onChange(function () {
+        var jetzt = zugangSignatur();
+        if (jetzt === letzterZugang) return;
+        letzterZugang = jetzt;
+        render();
+      });
+    }
+  } catch (e) { /* ohne Konto-Modul bleibt es beim lokalen Zustand */ }
 
   /* ================================================================
      EINRICHTEN — Ziel → Score → Planfragen → Vorschau → Aktivierung
@@ -569,7 +606,7 @@
       goPrev.addEventListener("click", function () {
         var collected = input.collect({ transformGoal: tg, checkResult: cr, answers: wizardAnswers, measured: measuredEnergy() });
         if (!collected.ok) {
-          err.textContent = tx("Es fehlt noch: ", "Still missing: ") + collected.missing.join(", ");
+          err.textContent = fehlendeAngaben(collected);
           err.style.display = "";
           return;
         }
@@ -1838,7 +1875,7 @@
     var save = el("button", "btn btn-primary", tx("Anpassung speichern", "Save adjustment"));
     save.addEventListener("click", function () {
       var collected = input.collect({ transformGoal: tg, checkResult: MM.store.get("check_result", null), answers: editAnswers, measured: measuredEnergy() });
-      if (!collected.ok) { err.textContent = tx("Es fehlt noch: ", "Still missing: ") + collected.missing.join(", "); err.style.display = ""; return; }
+      if (!collected.ok) { err.textContent = fehlendeAngaben(collected); err.style.display = ""; return; }
       var r = engine.createPlan(collected, p.startDate || todayYmd());
       if (!r.ok) { err.textContent = r.errors.join("; "); err.style.display = ""; return; }
       var rc = store.reconfigurePlan(r.plan, tx("Vom Nutzer angepasst (Plan-Einstellungen)", "Adjusted by the user (plan settings)"));

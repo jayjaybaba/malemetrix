@@ -353,6 +353,40 @@ group("App-Bundle: nur was gebraucht wird — aber alles, was gebraucht wird");
     "das Bundle bleibt unter 4,5 MB (aktuell " + (groesse / 1048576).toFixed(1) + " MB)");
 }
 
+group("Der erste Weg: kein Sackgassen-Text, kein totes Ereignis");
+{
+  const app = read("js/simple/app.js");
+  const inp = read("js/simple/plan-input.js");
+
+  /* „Es fehlt noch: weekdays" stand als Fehlermeldung auf dem Bildschirm —
+     eine interne Feldkennung. Und schlimmer: sie erschien auch dann, wenn
+     die Frage BEANTWORTET war, die Zahl der Tage aber nicht zur gewaehlten
+     Trainingshaeufigkeit passte. Der Nutzer tippt die Frage an, sieht sie
+     gefuellt und kommt nicht weiter. */
+  ok(/missingText/.test(inp), "collect() liefert lesbare Saetze, nicht nur Kennungen");
+  ok(/function fehlendeAngaben\(/.test(app), "die Oberflaeche hat einen Helfer dafuer");
+  const rohStellen = (app.match(/collected\.missing\.join/g) || []).length;
+  ok(rohStellen === 0, "nirgends werden die rohen Kennungen ausgegeben (" + rohStellen + ")");
+  ok(/genau " \+ soll \+ " Trainingstage/.test(inp),
+    "und die Zahl-passt-nicht-Meldung nennt die Zahl, nicht das Feld");
+
+  /* Auf ein Ereignis zu lauschen, das kein Modul ausloest, ist kein
+     Sicherheitsnetz — es sieht nur aus wie eines. */
+  /* Nur echter Code, keine Kommentarzeilen — dort steht die alte Zeile
+     absichtlich noch, damit klar bleibt, was hier schiefging. */
+  const codeZeilen = app.split("\n").filter((z) => !/^\s*(\/\*|\*|\/\/)/.test(z)).join("\n");
+  ok(!/addEventListener\("mm:account"/.test(codeZeilen),
+    "kein Lauschen auf mm:account — dieses Ereignis loest niemand aus");
+  const irgendwoAusgeloest = ["js/account.js", "js/main.js", "js/simple/plan-store.js"]
+    .some((f) => /CustomEvent\("mm:account"/.test(read(f)));
+  ok(!irgendwoAusgeloest, "und es wird auch weiterhin nirgends ausgeloest");
+  ok(/MM\.account\.onChange/.test(app) && /zugangSignatur/.test(app),
+    "stattdessen haengt die Oberflaeche an MM.account.onChange — und zeichnet nur bei echter Aenderung neu");
+
+  ok(/tools-dev\/qa\/onboarding\.mjs/.test(read("tools-dev/qa/onboarding.mjs")),
+    "der erste Weg hat einen eigenen Browser-Nachweis");
+}
+
 group("Keine internen Werte auf dem Bildschirm");
 {
   /* „Status: active" stand im deutschen Profiltext — ein Speicherwert,

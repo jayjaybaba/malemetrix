@@ -253,24 +253,42 @@
     var score = mapScore(sources.checkResult);
     var a = sources.answers || {};
     var missing = [];
+    /* Neben der Kennung auch ein Satz, den man lesen kann. Vorher stand auf
+       dem Bildschirm „Es fehlt noch: weekdays" — eine interne Feldkennung,
+       direkt vor den Augen des Nutzers. Jede Frage hat eine Beschriftung;
+       die gehoert dorthin. */
+    var missingText = { de: [], en: [] };
+    function fehlt(id, deTxt, enTxt) {
+      missing.push(id);
+      missingText.de.push(deTxt);
+      missingText.en.push(enTxt);
+    }
 
-    if (!trf) missing.push("transformation");
+    if (!trf) fehlt("transformation", "dein Zielbild aus der Transformation", "your target from the transformation");
     var q = questionsFor({ tg: sources.transformGoal, trf: trf, answers: a });
     var vals = {};
     q.forEach(function (item) {
       if (item.value == null || (Array.isArray(item.value) && item.type === "weekdays" && !item.value.length)) {
-        if (item.required) missing.push(item.id);
+        if (item.required) fehlt(item.id, "„" + item.label + "\u201c", "\u201c" + (item.labelEn || item.label) + "\u201d");
       } else vals[item.id] = item.value;
     });
-    // Konsistenz: weekdays muss zu daysPerWeek passen
+    /* Konsistenz: weekdays muss zu daysPerWeek passen.
+       Hier lag eine Sackgasse: wer 2 Tage anklickt, obwohl der Plan 3 vorsieht,
+       bekam „Es fehlt noch: weekdays" — bei einer Frage, die er BEANTWORTET
+       hat. Er tippt sie an, sieht sie gefuellt und kommt nicht weiter. Der
+       Satz muss die Zahl nennen, nicht das Feld. */
     if (vals.daysPerWeek && Array.isArray(vals.weekdays) && vals.weekdays.length !== vals.daysPerWeek) {
-      missing.push("weekdays");
+      var n = vals.weekdays.length, soll = vals.daysPerWeek;
+      fehlt("weekdays",
+        "genau " + soll + " Trainingstage — du hast " + n + (n === 1 ? " gewählt" : " gewählt"),
+        "exactly " + soll + " training days — you picked " + n);
       delete vals.weekdays;
     }
 
     return {
       ok: missing.length === 0,
       missing: missing,
+      missingText: missingText,
       transformation: trf,
       score: score,               // null erlaubt: Score ist Input, kein Gate
       answers: vals,
