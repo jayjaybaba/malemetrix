@@ -32,7 +32,11 @@
   </div>
 </header>
 
-<main class="sapp" id="sapp" aria-live="polite"></main>
+<!-- Kein aria-live auf dem ganzen Bildschirm: main wird bei jedem Haekchen
+     komplett neu gezeichnet, und VoiceOver las daraufhin die gesamte Seite
+     vor. Angesagt wird jetzt gezielt in der Statuszeile darunter. -->
+<main class="sapp" id="sapp"></main>
+<div id="sappStatus" role="status" aria-live="polite" class="sr-only"></div>
 
 <nav class="s-nav" aria-label="App-Navigation">
   <a href="#heute"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span data-i18n="sapp.today">Heute</span></a>

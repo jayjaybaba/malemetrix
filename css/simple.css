@@ -69,7 +69,16 @@
 
 /* Aufgabenliste (max. 3 primäre) */
 .s-tasks { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
-.s-task { display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); padding: 13px 14px; cursor: pointer; transition: border-color 0.15s; }
+/* .s-task ist ein <button>: erst damit ist die Aufgabe mit Tastatur und
+   VoiceOver bedienbar. Die drei Zeilen darunter nehmen dem Knopf sein
+   Standardaussehen wieder ab, damit sich optisch nichts aendert. */
+.s-task { display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); padding: 13px 14px; cursor: pointer; transition: border-color 0.15s;
+  width: 100%; text-align: left; font: inherit; color: inherit; }
+/* Der Fokusring darf nicht verschwinden — er ist fuer Tastaturnutzer die
+   einzige Ortsangabe. */
+.sapp button:focus-visible, .sapp a:focus-visible, .sapp input:focus-visible, .sapp select:focus-visible {
+  outline: 2px solid var(--accent-2); outline-offset: 2px;
+}
 /* Auf dem iPhone bleibt :hover nach dem Antippen haengen — die Kachel sieht
    dann dauerhaft ausgewaehlt aus, obwohl nichts ausgewaehlt ist. Hover gibt es
    deshalb nur dort, wo es wirklich einen Zeiger gibt. */

@@ -47,6 +47,15 @@
      locale-neutral — formatiert wird erst hier, an der Oberfläche. */
   /* Aus einem Eingabefeld kommt Text. Was keine endliche Zahl ergibt, ist
      keine Null und keine Zahl — es ist eine fehlende Angabe. */
+  /* Eine kurze Ansage fuer Hilfstechnik. Frueher lag aria-live auf dem
+     GANZEN Bildschirm — bei jedem Haekchen zeichnet render() alles neu, und
+     VoiceOver las die komplette Seite von vorne. Angesagt wird jetzt genau
+     der eine Satz, der sich geaendert hat. */
+  function ansagen(satz) {
+    var n = document.getElementById("sappStatus");
+    if (n) n.textContent = satz;
+  }
+
   function zahlOderNichts(v) {
     var n = parseFloat(v);
     return isFinite(n) ? n : null;
@@ -255,16 +264,31 @@
 
   /* ---------------- Bottom-Sheet (eine Schicht, wiederverwendbar) --------- */
   function openSheet(build) {
+    /* Wohin der Fokus nach dem Schliessen zurueckkehrt. Ohne das faellt er
+       auf <body>, und wer mit Tastatur oder VoiceOver arbeitet, faengt oben
+       auf der Seite wieder an. */
+    var zurueck = document.activeElement;
     closeSheet(true);       // ein noch auslaufendes Blatt sofort weg, nicht überlagert
     var back = el("div", "s-sheet-back");
     var sheet = el("div", "s-sheet");
+    /* Ein Blatt, das alles verdeckt, ist ein Dialog — und muss sich auch so
+       ansagen. Sonst liest VoiceOver weiter den Bildschirm dahinter. */
+    sheet.setAttribute("role", "dialog");
+    sheet.setAttribute("aria-modal", "true");
     /* Nicht direkt closeSheet als Handler: der Klick reicht das Event als
        erstes Argument durch, und das waere dann das "sofort"-Flag. */
     back.addEventListener("click", function () { closeSheet(); });
     document.body.appendChild(back);
     document.body.appendChild(sheet);
     build(sheet);
+    var h = sheet.querySelector("h3");
+    if (h) { if (!h.id) h.id = "s-sheet-titel"; sheet.setAttribute("aria-labelledby", h.id); }
+    /* Der Hintergrund wird fuer Hilfstechnik stillgelegt — sonst ist er
+       weiterhin durchtabbar, obwohl er verdeckt ist. */
+    [root, document.getElementById("siteHeader"), document.querySelector(".s-nav")]
+      .forEach(function (n) { if (n) n.setAttribute("aria-hidden", "true"); });
     window._mmSheet = [back, sheet];
+    sheetZurueck = zurueck;
     sheetBuild = build;
     try { if (MM.fokusFangen) MM.fokusFangen(sheet, function () { closeSheet(); }); } catch (e) {}
   }
@@ -291,11 +315,24 @@
      alte 220 ms lang unter dem neuen. */
   var SHEET_OUT_MS = 220;
   var auslaufend = [];
+  var sheetZurueck = null;
   function closeSheet(sofort) {
     var nodes = (window._mmSheet || []).concat(auslaufend);
+    var zurueck = sheetZurueck;
     window._mmSheet = null;
+    sheetZurueck = null;
     auslaufend = [];
     if (!nodes.length) return;
+    /* Hintergrund wieder freigeben und den Fokus dorthin zuruecklegen, wo er
+       herkam. */
+    [root, document.getElementById("siteHeader"), document.querySelector(".s-nav")]
+      .forEach(function (n) { if (n) n.removeAttribute("aria-hidden"); });
+    nodes.forEach(function (n) { try { if (MM.fokusFreigeben) MM.fokusFreigeben(n); } catch (e) {} });
+    setTimeout(function () {
+      try {
+        if (zurueck && document.contains(zurueck) && zurueck.offsetParent !== null) zurueck.focus();
+      } catch (e) {}
+    }, 0);
     var weg = function () { nodes.forEach(function (n) { if (n.parentNode) n.parentNode.removeChild(n); }); };
     if (sofort || reducedMotion()) { weg(); return; }
     nodes.forEach(function (n) { n.classList.add("is-closing"); });
@@ -577,6 +614,8 @@
           options.forEach(function (o) {
             var b = el("button", String(val) === String(o) ? "on" : "", q.type === "weekday" ? wdName(o) : esc(labelFor(q.id, o)));
             b.type = "button";
+            /* „ausgewaehlt" darf nicht nur eine Farbe sein. */
+            b.setAttribute("aria-pressed", String(String(val) === String(o)));
             b.addEventListener("click", function () { wizardAnswers[q.id] = o; saveDraft(); render(); });
             opts.appendChild(b);
           });
@@ -588,6 +627,7 @@
           options2.forEach(function (o) {
             var b = el("button", cur.indexOf(o) >= 0 ? "on" : "", q.type === "weekdays" ? wdName(o) : esc(labelFor(q.id, o)));
             b.type = "button";
+            b.setAttribute("aria-pressed", String(cur.indexOf(o) >= 0));
             b.addEventListener("click", function () {
               var ix = cur.indexOf(o);
               if (ix >= 0) cur.splice(ix, 1); else cur.push(o);
@@ -598,6 +638,9 @@
           wrap.appendChild(opts2);
         } else {
           var inp = el("input");
+          /* Ohne Namen sagt VoiceOver nur „Textfeld". Der Name ist genau die
+             Beschriftung, die optisch darueber steht. */
+          inp.setAttribute("aria-label", en() ? q.labelEn : q.label);
           inp.type = q.type === "time" ? "time" : "number";
           if (q.min != null) inp.min = q.min;
           if (q.max != null) inp.max = q.max;
@@ -775,7 +818,9 @@
     /* Kopf */
     var head = el("div", "s-head");
     head.appendChild(el("span", "k", tx("Woche", "Week") + " " + week + " · " + tx("Tag", "Day") + " " + day + " / 84" + (isDeload ? " · " + tx("reduzierte Woche", "deload week") : "")));
-    head.appendChild(el("div", "goal", esc(pick(rxToday.headline))));
+    /* Der Hauptbildschirm hatte keine einzige Ueberschrift — fuer eine
+       Screenreader-Navigation heisst das: kein Einstiegspunkt. */
+    head.appendChild(el("h1", "goal", esc(pick(rxToday.headline))));
     if (rxToday.focus) {
       /* Grün heißt in dieser App „läuft". Der Fokussatz ist eine Anweisung,
          kein Status — er bekommt deshalb Textfarbe. Farbe nur dann, wenn der
@@ -837,7 +882,12 @@
       // Bei gemessener Ernaehrung entscheidet das Protokoll, nicht das Haekchen.
       var done = t.measured ? !!(foodlog.dayHit(p.nutrition, foodDay(ymd).entries, rxToday.kcal) || {}).hit
                             : !!entry.tasks[t.id];
-      var row = el("div", "s-task" + (done ? " done" : ""));
+      /* Ein klickbares DIV ist mit der Tastatur nicht erreichbar und fuer
+         VoiceOver kein Bedienelement. Die drei Tagesaufgaben sind das
+         Wichtigste auf diesem Bildschirm — sie muessen Knoepfe sein. */
+      var row = el("button", "s-task" + (done ? " done" : ""));
+      row.type = "button";
+      row.setAttribute("aria-pressed", String(done));
       row.appendChild(el("span", "box", "✓"));
       var tt = el("div", "t");
       tt.appendChild(el("b", null, esc(t.b)));
@@ -851,6 +901,7 @@
         if (t.id === "protein") { openFoodSheet(ymd, rxToday); return; }
         entry.tasks[t.id] = !done;
         setDayEntry(ymd, entry);
+        ansagen(t.b + " — " + (entry.tasks[t.id] ? tx("erledigt", "done") : tx("offen", "open")));
         render();
       });
       list.appendChild(row);
@@ -1221,10 +1272,15 @@
          Zeichen Breite, und ab vier Saetzen lief das letzte Kaestchen aus
          dem Bild — sichtbar abgeschnitten und nicht mehr antippbar. */
       var ctl = el("div", "ctl");
+      /* „kg" und „Wdh" allein sagen nicht, zu welcher Uebung sie gehoeren —
+         auf einem Bildschirm mit sechs Uebungen ist das unbrauchbar. */
+      var exName = en() ? ex.nameEn : ex.name;
       var wIn = el("input"); wIn.type = "number"; wIn.step = "0.5"; wIn.placeholder = "kg";
+      wIn.setAttribute("aria-label", exName + " — " + tx("Gewicht in kg", "weight in kg"));
       wIn.value = e.weightKg != null ? e.weightKg : (last4 && last4.weightKg != null ? last4.weightKg : "");
       wIn.addEventListener("change", function () { e.weightKg = parseFloat(wIn.value) || null; w.entries[ex.id] = e; setDayEntry(ymd, entry); });
       var rIn = el("input"); rIn.type = "number"; rIn.placeholder = tx("Wdh", "reps");
+      rIn.setAttribute("aria-label", exName + " — " + tx("Wiederholungen", "repetitions"));
       rIn.value = e.reps != null ? e.reps : "";
       rIn.addEventListener("change", function () { e.reps = parseInt(rIn.value, 10) || null; w.entries[ex.id] = e; setDayEntry(ymd, entry); });
       ctl.appendChild(wIn); ctl.appendChild(rIn);
@@ -1232,6 +1288,8 @@
       for (var si = 1; si <= sets; si++) {
         (function (si2) {
           var b = el("button", e.setsDone >= si2 ? "on" : "", String(si2));
+          b.setAttribute("aria-pressed", String(e.setsDone >= si2));
+          b.setAttribute("aria-label", exName + " — " + tx("Satz ", "set ") + si2);
           b.addEventListener("click", function () {
             var inc = !(e.setsDone >= si2);
             e.setsDone = e.setsDone >= si2 ? si2 - 1 : si2;
@@ -1246,6 +1304,7 @@
       ctl.appendChild(sb);
       if (ex.substitute) {
         var sel = el("select");
+        sel.setAttribute("aria-label", exName + " — " + tx("Übung oder Ersatz", "exercise or swap"));
         var o1 = el("option"); o1.value = ""; o1.textContent = tx("Übung ok", "Exercise ok");
         var o2 = el("option"); o2.value = "sub"; o2.textContent = tx("Ersatz: ", "Swap: ") + (en() ? ex.substitute.nameEn : ex.substitute.name);
         sel.appendChild(o1); sel.appendChild(o2);
@@ -1735,6 +1794,7 @@
       if (auto) wrap.appendChild(el("div", "why", tx("Aus deinen abgehakten Trainings übernommen — korrigierbar.", "Taken from your completed sessions — you can correct it.")));
       if (q.type === "number") {
         var inp = el("input"); inp.type = "number"; inp.min = 0; inp.max = 7;
+        inp.setAttribute("aria-label", en() ? q.labelEn : q.label);
         inp.value = checkAnswers[q.id] != null ? checkAnswers[q.id] : "";
         inp.addEventListener("change", function () { checkAnswers[q.id] = parseInt(inp.value, 10); delete checkAnswers._trainingsAuto; });
         wrap.appendChild(inp);
@@ -1745,6 +1805,7 @@
           var sel = isMulti ? (checkAnswers[q.id] || []).indexOf(o) >= 0 : checkAnswers[q.id] === o;
           var b = el("button", sel ? "on" : "", esc(checkLabel(o)));
           b.type = "button";
+          b.setAttribute("aria-pressed", String(!!sel));
           b.addEventListener("click", function () {
             if (isMulti) {
               var arr = checkAnswers[q.id] || [];
@@ -1853,6 +1914,7 @@
         options.forEach(function (o) {
           var b = el("button", String(val) === String(o) ? "on" : "", q.type === "weekday" ? wdName(o) : esc(labelFor(q.id, o)));
           b.type = "button";
+          b.setAttribute("aria-pressed", String(String(val) === String(o)));
           b.addEventListener("click", function () { editAnswers[q.id] = o; render(); });
           opts.appendChild(b);
         });
@@ -1864,6 +1926,7 @@
         options2.forEach(function (o) {
           var b = el("button", cur.indexOf(o) >= 0 ? "on" : "", q.type === "weekdays" ? wdName(o) : esc(labelFor(q.id, o)));
           b.type = "button";
+          b.setAttribute("aria-pressed", String(cur.indexOf(o) >= 0));
           b.addEventListener("click", function () {
             var ix = cur.indexOf(o);
             if (ix >= 0) cur.splice(ix, 1); else cur.push(o);
@@ -1874,6 +1937,7 @@
         wrap.appendChild(opts2);
       } else {
         var inp = el("input");
+        inp.setAttribute("aria-label", en() ? q.labelEn : q.label);
         inp.type = q.type === "time" ? "time" : "number";
         if (q.min != null) inp.min = q.min;
         if (q.max != null) inp.max = q.max;
