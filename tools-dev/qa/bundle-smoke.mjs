@@ -70,8 +70,15 @@ async function main() {
     page.on("console", (m) => {
       if (m.type() !== "error") return;
       const t = m.text();
+      /* Fremde Hosts sind nicht unser Problem: die Analyse-Beacons
+         (Cloudflare, Plausible) scheitern hier je nach Umgebung mal an
+         fehlendem Netz, mal an CORS. Gefiltert wird nach HOST, nicht nach
+         Fehlertext — alles von localhost zaehlt weiter als Fehler. */
+      const fremd = (t.match(/https?:\/\/[^\s'"]+/g) || [])
+        .some((u) => !u.includes("localhost") && !u.includes("127.0.0.1"));
+      if (fremd) return;
       if (/ERR_CONNECTION|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|net::ERR_FAILED/.test(t)) return;
-      fehler.push(t.slice(0, 120));
+      fehler.push(t.slice(0, 140));
     });
 
     /* "load" statt "networkidle": eine Seite mit einem dauerhaft offenen

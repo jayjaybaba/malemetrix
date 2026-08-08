@@ -112,15 +112,36 @@ der Nutzer freiwillig ein Konto anlegt.
 | Fitness- und Gesundheitsdaten (Gewicht, Trainingsprotokoll, Planziele) | nur mit Konto | App-Funktionalitaet (Synchronisierung zwischen Geraeten) | ja | **nein** |
 | Apple-Health-Daten (Verbrauch, Schritte, Schlaf, HRV, Ruhepuls) | **nein** — bleiben auf dem Geraet, nur der gemittelte Tagesverbrauch geht in die lokale Planrechnung | — | — | — |
 | Fotos | **nein** — Fortschrittsfotos verlassen das Geraet nie, gespeichert wird nur ein Haekchen | — | — | — |
-| Standort, Kontakte, Kennungen, Nutzungsdaten, Diagnose | **nein** | — | — | — |
+| Nutzungsdaten (Seitenaufrufe, Herkunft, Geraeteklasse) | **ja**, immer | Analyse | **nein** | **nein** |
+| Standort, Kontakte, Kennungen, Diagnose | **nein** | — | — | — |
 
-**Tracking (App Tracking Transparency):** Nein. Die App verfolgt Nutzer nicht
-ueber Apps und Websites anderer Anbieter hinweg, es gibt keine Werbe-SDKs und
-keine Werbe-IDs. Damit ist auch kein ATT-Dialog noetig.
+> **Achtung, hier stand vorher etwas Falsches.** Bis zum 08.08.2026 fuehrte
+> diese Tabelle „Nutzungsdaten: nein" und darunter den Satz „Ohne Konto
+> verlaesst kein einziges Datum das Geraet". Beides stimmt nicht: `js/analytics.js`
+> laedt Cloudflare Web Analytics, und der Token dafuer ist in `js/config.js`
+> gesetzt. Der Beacon laeuft auf jedem Bildschirm, auch ohne Konto. Eine
+> falsche Angabe im App-Privacy-Formular ist ein Ablehnungsgrund — und eine,
+> die Apple leicht nachprueft, weil sie den Netzverkehr der App sieht.
+>
+> Wenn du das **nicht** willst: `cloudflareToken` in `js/config.js` leeren.
+> Dann faellt die Zeile oben weg und der alte Satz stimmt wieder. Solange der
+> Token steht, gilt die Tabelle wie hier.
 
-**Ohne Konto** verlaesst kein einziges Datum das Geraet. Die Analyse-Ereignisse
-(`ANALYTICS.md`) zaehlen nur lokal und enthalten grundsaetzlich keine
+**Tracking (App Tracking Transparency):** Nein. Cloudflare Web Analytics ist
+cookielos, nutzt keine Werbe-ID und verknuepft nichts mit einer Person oder
+mit Daten anderer Anbieter. Es gibt keine Werbe-SDKs. Damit ist kein
+ATT-Dialog noetig — die Nutzungsdaten sind „nicht verknuepft" und „kein
+Tracking".
+
+**Ohne Konto** verlassen ausser diesen Zaehldaten keine Inhalte das Geraet:
+kein Gewicht, kein Trainingsprotokoll, kein Health-Wert, kein Foto. Die
+Ereignisse aus `ANALYTICS.md` bleiben lokal und enthalten nie
 Gesundheitswerte.
+
+**Datenschutzmanifest.** `ios-app/App/App/PrivacyInfo.xcprivacy` sagt
+dasselbe in Apples Format — seit Fruehjahr 2024 Pflicht fuer neue
+Einreichungen. Die Datei und die Tabelle oben muessen uebereinstimmen;
+`tools-dev/tests/native-app.test.js` prueft das bei jedem Lauf mit.
 
 ## Alterseinstufung
 

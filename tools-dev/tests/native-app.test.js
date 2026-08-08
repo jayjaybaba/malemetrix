@@ -127,6 +127,29 @@ group("iOS-Projekt: Formalien fuer den Upload");
   ok(/<key>CFBundleDevelopmentRegion<\/key>\s*<string>de<\/string>/.test(plist),
     "Hauptsprache Deutsch");
 
+  /* Datenschutzmanifest. Ohne diese Datei weist Apple neue Einreichungen
+     zurueck — und sie muss zur Wahrheit passen: die App laedt Cloudflare Web
+     Analytics (js/analytics.js, Token in js/config.js gesetzt). */
+  ok(exists("ios-app/App/App/PrivacyInfo.xcprivacy"), "PrivacyInfo.xcprivacy existiert");
+  const priv = read("ios-app/App/App/PrivacyInfo.xcprivacy");
+  ok(/<key>NSPrivacyTracking<\/key>\s*<false\/>/.test(priv),
+    "kein Tracking im ATT-Sinn — Cloudflare Web Analytics ist cookielos und ohne Werbe-ID");
+  ok(/NSPrivacyCollectedDataTypeProductInteraction/.test(priv),
+    "die Nutzungsdaten sind gemeldet, weil sie wirklich uebertragen werden");
+  ok(/NSPrivacyAccessedAPICategoryUserDefaults/.test(priv) && /CA92\.1/.test(priv),
+    "UserDefaults ist mit Grund angegeben (Capacitor Preferences)");
+  /* Gesundheitsdaten verlassen das Geraet nicht — dann duerfen sie hier auch
+     nicht als erhoben stehen. Eine Falschangabe in die vorsichtige Richtung
+     ist auch eine Falschangabe. */
+  ok(!/NSPrivacyCollectedDataTypeHealth|NSPrivacyCollectedDataTypeFitness/.test(priv),
+    "Health-Daten sind NICHT als erhoben gemeldet — sie werden nicht uebertragen");
+  ok(/PrivacyInfo\.xcprivacy in Resources/.test(read("ios-app/App/App.xcodeproj/project.pbxproj")),
+    "und die Datei landet wirklich im Bundle (Resources-Phase)");
+  /* Die Angabe haengt daran, dass Analyse ueberhaupt aktiv ist. Wird der
+     Token entfernt, muss das Manifest mit. */
+  ok(/cloudflareToken:\s*"[0-9a-f]{8,}"/.test(read("js/config.js")),
+    "Cloudflare-Analyse ist tatsaechlich konfiguriert (sonst Manifest anpassen)");
+
   const cfg = JSON.parse(read("capacitor.config.json"));
   ok(cfg.appId === "de.malemetrix.app", "Bundle-ID de.malemetrix.app");
   ok(cfg.webDir === "app-build", "Capacitor baut aus app-build/");

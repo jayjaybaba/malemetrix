@@ -334,7 +334,12 @@ async function main() {
       page.on("console", (m) => {
         if (m.type() !== "error") return;
         const t = m.text();
-        // Gesperrte Netzabrufe sind Sandbox-Rauschen, kein App-Fehler.
+        /* Fremde Hosts sind nicht unser Problem: die Analyse-Beacons scheitern
+           je nach Umgebung an fehlendem Netz oder an CORS. Gefiltert wird nach
+           HOST — alles von localhost zaehlt weiter als Fehler. */
+        const fremd = (t.match(/https?:\/\/[^\s'"]+/g) || [])
+          .some((u) => !u.includes("localhost") && !u.includes("127.0.0.1"));
+        if (fremd) return;
         if (/ERR_CONNECTION|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|net::ERR_FAILED|Failed to load resource/.test(t)) return;
         jsFehler++;
         befund("HOCH", z.de, a.de, "Konsolenfehler", t.slice(0, 160));

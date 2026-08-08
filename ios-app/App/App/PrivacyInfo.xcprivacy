@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  PrivacyInfo.xcprivacy — Apples Datenschutzmanifest.
+
+  Seit Fruehjahr 2024 verlangt Apple diese Datei fuer jede neu eingereichte
+  App. Fehlt sie oder widerspricht sie den Angaben in App Store Connect,
+  kommt die Einreichung zurueck. Sie muss zur Wahrheit passen, nicht zur
+  bequemsten Antwort.
+
+  WAS MALEMETRIX WIRKLICH TUT
+
+  1. Nutzungsdaten: js/analytics.js laedt Cloudflare Web Analytics
+     (cookielos, ohne Werbe-ID). Gezaehlt werden Seitenaufrufe, Herkunft und
+     Geraeteklasse — nicht mit einer Person verknuepft und nicht fuer
+     Werbung oder Tracking im Sinne von ATT. Deshalb:
+     NSPrivacyCollectedDataTypeProductInteraction, Linked = false,
+     Tracking = false, Zweck = Analytics.
+
+  2. Gesundheitsdaten aus Apple Health (Schritte, Verbrauch, HRV, Ruhepuls,
+     Schlaf, Gewicht) verlassen das Geraet NICHT. Sie werden gelesen,
+     gerechnet und lokal abgelegt. Was nicht uebertragen wird, wird hier
+     auch nicht als „collected" gemeldet — eine Falschangabe in die
+     vorsichtige Richtung ist ebenfalls eine Falschangabe.
+
+  3. E-Mail: nur, wenn der Nutzer im Profil aktiv ein Konto anlegt, um
+     seinen Plan zwischen Geraeten zu synchronisieren. Kein Zwang, keine
+     Vorbedingung fuer die App.
+
+  API-BEGRUENDUNGEN
+  UserDefaults nutzt Capacitor selbst (Preferences-Plugin) — Grund CA92.1:
+  ausschliesslich fuer Daten dieser App. Weitere der von Apple gelisteten
+  APIs (Dateizeitstempel, freier Speicher, Systemzeit, Boot-Zeit) ruft
+  weder die App noch eine eingebundene Bibliothek auf; deshalb steht dazu
+  hier nichts.
+-->
+<plist version="1.0">
+<dict>
+  <key>NSPrivacyTracking</key>
+  <false/>
+
+  <key>NSPrivacyTrackingDomains</key>
+  <array/>
+
+  <key>NSPrivacyCollectedDataTypes</key>
+  <array>
+    <dict>
+      <key>NSPrivacyCollectedDataType</key>
+      <string>NSPrivacyCollectedDataTypeProductInteraction</string>
+      <key>NSPrivacyCollectedDataTypeLinked</key>
+      <false/>
+      <key>NSPrivacyCollectedDataTypeTracking</key>
+      <false/>
+      <key>NSPrivacyCollectedDataTypePurposes</key>
+      <array>
+        <string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
+      </array>
+    </dict>
+    <dict>
+      <key>NSPrivacyCollectedDataType</key>
+      <string>NSPrivacyCollectedDataTypeEmailAddress</string>
+      <key>NSPrivacyCollectedDataTypeLinked</key>
+      <true/>
+      <key>NSPrivacyCollectedDataTypeTracking</key>
+      <false/>
+      <key>NSPrivacyCollectedDataTypePurposes</key>
+      <array>
+        <string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+      </array>
+    </dict>
+  </array>
+
+  <key>NSPrivacyAccessedAPITypes</key>
+  <array>
+    <dict>
+      <key>NSPrivacyAccessedAPIType</key>
+      <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+      <key>NSPrivacyAccessedAPITypeReasons</key>
+      <array>
+        <string>CA92.1</string>
+      </array>
+    </dict>
+  </array>
+</dict>
+</plist>
