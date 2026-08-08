@@ -88,12 +88,32 @@
 
   /* Kauf-Elemente, die im App-Bundle keinen Sinn ergeben, ausblenden statt
      ins Leere zeigen zu lassen. */
-  window.addEventListener("DOMContentLoaded", function () {
-    var sel = 'a[href*="shop.html"], a[href*="checkout.html"], a[href*="ebooks.html"], a[href*="coaching.html"]';
-    Array.prototype.forEach.call(document.querySelectorAll(sel), function (a) {
+  var KAUF_SEL = 'a[href*="shop.html"], a[href*="checkout.html"], a[href*="ebooks.html"], ' +
+                 'a[href*="coaching.html"], a[href*="protokoll.html"], a[href*="kurs-programm.html"]';
+  function kaufflaechenAusblenden(wurzel) {
+    Array.prototype.forEach.call((wurzel || document).querySelectorAll(KAUF_SEL), function (a) {
       if (a.closest) { var li = a.closest("li"); if (li) { li.hidden = true; return; } }
       a.hidden = true;
     });
+  }
+  window.addEventListener("DOMContentLoaded", function () {
+    kaufflaechenAusblenden(document);
+    /* Einmal auf DOMContentLoaded reicht nicht: die Score-Seite baut ihr
+       Ergebnis erst NACH dem Fragebogen zusammen, und genau dort standen
+       zwei Angebotskarten mit Preisen. Ein Beobachter faengt auch das, was
+       spaeter dazukommt. */
+    try {
+      var beob = new MutationObserver(function (eintraege) {
+        eintraege.forEach(function (e) {
+          Array.prototype.forEach.call(e.addedNodes || [], function (n) {
+            if (n.nodeType !== 1) return;
+            if (n.matches && n.matches(KAUF_SEL)) { n.hidden = true; return; }
+            kaufflaechenAusblenden(n);
+          });
+        });
+      });
+      beob.observe(document.body, { childList: true, subtree: true });
+    } catch (e) { /* ohne Beobachter greifen CSS und der Erstlauf */ }
   });
 
   /* ---------- 3 · Haptik bei der App-Navigation ----------------------- */

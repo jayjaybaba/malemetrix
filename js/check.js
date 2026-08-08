@@ -8,6 +8,16 @@
   const C = window.MM_CHECK;
   const $ = (sel) => document.querySelector(sel);
 
+  /* Laeuft diese Seite aus dem App-Bundle? js/native-bridge.js liegt
+     ausschliesslich dort und setzt MM.native.inBundle. Im App-Bundle darf
+     kein Kaufweg erscheinen: digitale Kaeufe muessten ueber In-App-Purchase
+     laufen, und eine App darf auch nicht an Apple vorbei auf einen externen
+     Shop verlinken (App-Store-Richtlinie 3.1.1). Die Score-Seite ist
+     Onboarding-Schritt 2 und liegt im Bundle — dort standen bisher „99 €
+     einmalig" und „199 € / Monat" auf zwei Karten, die nicht einmal
+     funktionierten. */
+  const imBundle = () => !!(window.MM && MM.native && MM.native.inBundle);
+
   /* Adaptive Schrittliste (V2): welche Fragen ueberhaupt sinnvoll sind,
      haengt von den bisherigen Antworten ab — Status, Kontext, Signale.
      Wird nach JEDER Antwort neu berechnet (progressive disclosure). */
@@ -994,8 +1004,15 @@
       '<span class="card-num" style="color:' + recColor + '">' + (rec.kind === 'medical' ? 'ZUERST: SICHERHEIT' : 'PASST ZU DEINEM PROFIL') + '</span>' +
       '<h3 style="margin:2px 0 6px">' + rec.title + '</h3>' +
       '<p class="small muted" style="margin:0 0 14px">' + rec.why + '</p>' +
-      (rec.primary.href ? '<a class="btn btn-primary btn-sm" href="' + rec.primary.href + '" data-track="cta_reco">' + rec.primary.label + '</a>' : '<span class="btn btn-dark btn-sm" style="cursor:default">' + rec.primary.label + '</span>') +
+      /* Im App-Bundle kein Kaufweg: digitale Kaeufe muessten in einer
+         iOS-App ueber In-App-Purchase laufen (Richtlinie 3.1.1), und eine App
+         darf auch nicht an Apple vorbei auf einen externen Shop verlinken.
+         Die Empfehlung selbst bleibt — sie ist Inhalt, nicht Werbung. */
+      ((imBundle() || !rec.primary.href)
+        ? '<span class="btn btn-dark btn-sm" style="cursor:default">' + rec.primary.label + '</span>'
+        : '<a class="btn btn-primary btn-sm" href="' + rec.primary.href + '" data-track="cta_reco">' + rec.primary.label + '</a>') +
       '</div>' +
+      (imBundle() ? '' :
       '<p class="small muted" style="margin-bottom:18px">Beide Wege im Überblick — kein Muss: Der Score, die Guides und die Tools oben sind komplett kostenlos.</p>' +
       '<div class="grid-2">' +
       '<a class="card offer-card featured" href="protokoll.html" data-track="cta_protokoll"><span class="card-num">SELBSTSTÄNDIG</span>' +
@@ -1006,7 +1023,7 @@
       '<h3 style="font-size:1.05rem;margin:6px 0 2px">1:1 Coaching</h3><p class="offer-price">199 €<small> / Monat · monatlich kündbar</small></p>' +
       '<p class="small muted" style="margin:0 0 14px">Individuelle Analyse und laufende Optimierung deiner Performance — persönlich begleitet.</p>' +
       '<span class="btn btn-dark btn-sm btn-block">1:1 ansehen</span></a>' +
-      '</div>';
+      '</div>');
 
     /* ---------- Persönlicher DM-CTA ---------- */
     const ig = (window.MM_CONFIG || {}).instagram;

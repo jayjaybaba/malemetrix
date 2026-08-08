@@ -681,6 +681,35 @@ group("Ersatzweg zu TestFlight: ohne API-Schluessel, mit manueller Signatur");
     "sie enthaelt nur den oeffentlichen Teil — kein privater Schluessel im Repository");
 }
 
+group("Keine Kaufflaechen in der App — auch nicht spaeter gerenderte");
+{
+  /* Der Score-Bildschirm ist Onboarding-Schritt 2 und liegt im Bundle. Sein
+     Ergebnis zeigte zwei Angebotskarten mit „99 € einmalig" und
+     „199 € / Monat" — beide sogar tot, weil die Bruecke externe Ziele
+     abfaengt. Digitale Kaeufe muessten in einer iOS-App ueber
+     In-App-Purchase laufen (Richtlinie 3.1.1), und eine App darf auch nicht
+     an Apple vorbei auf einen externen Shop verlinken. */
+  const check = read("js/check.js");
+  ok(/const imBundle = \(\) =>/.test(check), "check.js weiss, ob es aus dem Bundle laeuft");
+  ok(/imBundle\(\) \? '' :/.test(check), "und laesst den Angebotsblock dort ganz weg");
+  ok(/imBundle\(\) \|\| !rec\.primary\.href/.test(check),
+    "auch der Empfehlungs-Knopf wird im Bundle zu reinem Text");
+
+  /* Zweite Sicherung: das Stylesheet der App. */
+  const ncss = read("css/native.css");
+  ["offer-card", "offer-price", "price-card", "cta-strip", "upsell", "shop-teaser"].forEach(function (k) {
+    ok(new RegExp("is-native-app \\." + k).test(ncss), "css/native.css blendet ." + k + " aus");
+  });
+
+  /* Dritte Sicherung: die Bruecke. Ein Einmal-Lauf auf DOMContentLoaded
+     reicht nicht — das Score-Ergebnis entsteht erst nach dem Fragebogen. */
+  const bridge = read("js/native-bridge.js");
+  ok(/new MutationObserver/.test(bridge),
+    "die Bruecke beobachtet auch spaeter eingefuegte Kaufflaechen");
+  ok(/protokoll\.html/.test(bridge) && /coaching\.html/.test(bridge),
+    "und kennt beide Zielseiten aus dem Score-Ergebnis");
+}
+
 group("Keine Geheimnisse im App-Bundle");
 {
   const suspicious = [];

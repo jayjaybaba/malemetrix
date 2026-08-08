@@ -29,6 +29,8 @@ html.is-native-app .site-header .header-inner { justify-content: space-between; 
 html.is-native-app .cta-strip,
 html.is-native-app .upsell,
 html.is-native-app .price-card,
+html.is-native-app .offer-card,
+html.is-native-app .offer-price,
 html.is-native-app .shop-teaser { display: none !important; }
 
 /* Rechtstexte bleiben erreichbar — sie sind Pflicht, nicht Werbung. */
